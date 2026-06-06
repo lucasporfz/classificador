@@ -219,12 +219,18 @@ function clsBuildTurnRecords(turns) {
   return turns.map((t, i) => {
     const counts = { arrow: 0, spell: 0, rune: 0, grenade: 0 };
     const dmgs = { arrow: [], spell: [], rune: [], grenade: [] };
+    // ts em que a SPELL realmente bateu — a spell AoE cai ~1s depois do AA, então alinhar
+    // o cast pelo ts das hits de spell (e não pelo ts do AA, que é a 1ª hit do turno) evita
+    // pegar o cast anterior por empate de distância. Default = ts do turno se não houver spell.
+    const spellTsList = [];
     for (const l of (t.rpComponentLines || [])) {
       const c = l.correctedComponent; if (!(c in counts)) continue;
       counts[c]++;
+      if (c === 'spell' && Number.isFinite(l.ts)) spellTsList.push(l.ts);
       if (Number.isFinite(l.revertedDmg) && l.revertedDmg > 0) dmgs[c].push({ v: l.revertedDmg, raw: l.dmg, ok: !!l.overkill });
     }
-    return { idx: i + 1, ts: t.ts, counts, dmgs };
+    const spellTs = spellTsList.length ? Math.min(...spellTsList) : t.ts;
+    return { idx: i + 1, ts: t.ts, spellTs, counts, dmgs };
   });
 }
 
@@ -490,7 +496,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   const traceOn = !!(opts && opts.trace);
   const turnTrace = [];
   for (const r of turnRecords) {
-    const sCast = r.counts.spell > 0 ? clsNearest(playerSpellCasts, r.ts) : null;
+    const sCast = r.counts.spell > 0 ? clsNearest(playerSpellCasts, r.spellTs) : null;
     const gCast = r.counts.grenade > 0 ? nearestGren(r.ts) : null;
     const rUse = r.counts.rune > 0 ? clsNearest(runeUses, r.ts) : null;
     const aligned = (r.counts.spell === 0 || sCast) && (r.counts.grenade === 0 || gCast) && (r.counts.rune === 0 || rUse);
