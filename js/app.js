@@ -111,21 +111,25 @@ function renderClassifierCharts(res, compDefs) {
       });
     } catch (err) { console.error('[classifier chart] failed:', canvasId, err); return null; }
   };
-  // componentes por turno — multi-linha (só log observado).
-  const compLabels = ['arrow', 'spell', 'rune', 'grenade'];
-  const compNames = [t('cls_comp_arrow'), 'spell', 'rune', t('cls_kind_grenade')];
-  const compColors = ['#F59E0B', '#22C55E', '#60A5FA', '#F87171'];
+  // componentes por turno — uma linha por componente/spell REAL da rotação (das linhas
+  // observadas), não o set fixo do validador. Assim pega as spells de qualquer vocação e
+  // não inventa runa/granada quando não há. Usa o hitsTimeline alinhado de cada linha.
+  const compPalette = ['#F59E0B', '#22C55E', '#60A5FA', '#F87171', '#A78BFA', '#FBBF24', '#34D399', '#F472B6', '#38BDF8', '#FB923C', '#C084FC'];
+  const compRows = (res.rows || []).filter(r => Array.isArray(r.hitsTimeline) && r.hitsTimeline.some(v => v > 0));
   const compCv = $('clsTimelineComponents');
-  if (compCv) {
+  if (compCv && compRows.length) {
     try {
       clsTimelineComponentsChart = new Chart(compCv, {
         type: 'line',
-        data: { labels, datasets: compLabels.map((key, idx) => ({
-          label: compNames[idx],
-          data: series.map(p => (p.components && p.components[key]) || 0),
-          borderColor: compColors[idx], backgroundColor: compColors[idx],
-          borderWidth: 2, pointRadius: 0, tension: 0.35, fill: false
-        })) },
+        data: { labels, datasets: compRows.map((r, idx) => {
+          const color = compPalette[idx % compPalette.length];
+          return {
+            label: r.kind === 'arrow' ? t('cls_comp_arrow') : r.label,
+            data: r.hitsTimeline,
+            borderColor: color, backgroundColor: color,
+            borderWidth: 2, pointRadius: 0, tension: 0.35, fill: false
+          };
+        }) },
         options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { labels: { color: '#8BA4C2', font: { size: 11 } } }, title: { display: true, text: t('val_timeline_components'), color: '#DDE6F3' } }, scales: scales() }
       });
     } catch (err) { console.error('[classifier chart] failed: clsTimelineComponents', err); }

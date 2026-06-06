@@ -482,6 +482,9 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   // temporalSeries = hits/dano/relTime por turno; componentSeries = hits por componente.
   const baseTs = turns[0].ts;
   const temporalSeries = [];
+  // por turno alinhado, a contribuição de cada componente/spell (p/ o gráfico "componentes
+  // por turno"): uma linha por linha real da rotação, não o set fixo do validador.
+  const alignedTurns = [];
   const componentSeries = { arrowHitsPerTurn: [], spellHitsPerTurn: [], runeHitsPerTurn: [], grenadeHitsPerShot: [] };
   // diagnóstico opcional (oráculo): traço por turno alinhado, sem footprint no app.
   const traceOn = !!(opts && opts.trace);
@@ -515,6 +518,12 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     componentSeries.spellHitsPerTurn.push(r.counts.spell);
     componentSeries.runeHitsPerTurn.push(r.counts.rune);
     if (r.counts.grenade > 0) componentSeries.grenadeHitsPerShot.push(r.counts.grenade);
+    alignedTurns.push({
+      arrow: r.counts.arrow,
+      spellText: sCast ? sCast.text : null, spellHits: r.counts.spell,
+      runeName: rUse ? rUse.name : null, runeHits: r.counts.rune,
+      grenText: gCast ? gCast.text : null, grenHits: r.counts.grenade,
+    });
     if (traceOn) {
       turnTrace.push({
         idx: r.idx, ts: r.ts,
@@ -531,10 +540,19 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   // --- tabela única (ordem: arrow · runas · spells · granada) ---
   const grenLabel = text => clsSpellLabel(text);
   const rows = [];
-  if (arrowAligned.length) rows.push(clsAgg('Auto ataque', 'arrow', arrowAligned));
-  for (const [name, list] of [...perRune.entries()].sort((a, b) => b[1].length - a[1].length)) rows.push(clsAgg(name, 'rune', list));
+  if (arrowAligned.length) {
+    const aRow = clsAgg('Auto ataque', 'arrow', arrowAligned);
+    aRow.hitsTimeline = alignedTurns.map(a => a.arrow);
+    rows.push(aRow);
+  }
+  for (const [name, list] of [...perRune.entries()].sort((a, b) => b[1].length - a[1].length)) {
+    const rRow = clsAgg(name, 'rune', list);
+    rRow.hitsTimeline = alignedTurns.map(a => a.runeName === name ? a.runeHits : 0);
+    rows.push(rRow);
+  }
   for (const [text, list] of [...perSpell.entries()].sort((a, b) => b[1].length - a[1].length)) {
     const row = clsAgg(clsSpellLabel(text), 'spell', list);
+    row.hitsTimeline = alignedTurns.map(a => a.spellText === text ? a.spellHits : 0);
     const pt = perSpellTiers.get(text);
     if (pt && (pt.base.length || pt.bonus.length)) {
       row.tiers = [];
@@ -552,7 +570,11 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     }
     rows.push(row);
   }
-  for (const [text, list] of [...perGren.entries()].sort((a, b) => b[1].length - a[1].length)) rows.push(clsAgg(grenLabel(text), 'grenade', list));
+  for (const [text, list] of [...perGren.entries()].sort((a, b) => b[1].length - a[1].length)) {
+    const gRow = clsAgg(grenLabel(text), 'grenade', list);
+    gRow.hitsTimeline = alignedTurns.map(a => a.grenText === text ? a.grenHits : 0);
+    rows.push(gRow);
+  }
   // granadas castadas que NÃO deram dano (erraram): mostra a linha com 0 hits / 0 dano.
   for (const text of grenadeSpells) {
     if (perGren.has(text)) continue;
