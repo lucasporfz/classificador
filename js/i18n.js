@@ -1,0 +1,113 @@
+// i18n enxuto — só as strings do Classificador (+ as poucas val_* usadas nos gráficos).
+const I18N = {
+  pt: {
+    title: 'Classificador — Tibia',
+    btn_lang_pt: 'PT',
+    btn_lang_en: 'EN',
+    cls_title: 'Classificador — hits e dano por componente, detalhado por spell',
+    cls_desc: 'Cole o <strong>server log</strong> e o <strong>local chat</strong> da mesma hunt. O local chat informa qual spell foi lançada em cada turno, permitindo separar o componente "spell" por incantação (ex.: Divine Caldera). É só leitura dos dois logs — não há simulação.',
+    cls_load_server: 'abrir server log .txt',
+    cls_load_local: 'abrir local chat .txt',
+    cls_run: 'classificar',
+    cls_status_ready: 'cole os dois logs abaixo',
+    cls_status_need_both: 'cole os dois logs (server log e local chat)',
+    cls_status_running: 'classificando…',
+    cls_status_done: 'pronto',
+    cls_server_label: 'server log',
+    cls_local_label: 'local chat',
+    cls_server_ph: 'Cole aqui o server log...',
+    cls_local_ph: 'Cole aqui o local chat...',
+    cls_no_turns: 'Nenhum turno encontrado no server log (confira o conteúdo / vocação RP).',
+    cls_no_spell: 'Nenhum turno de spell casado com uma incantação.',
+    cls_player: 'jogador',
+    cls_dmg_spell: 'dano do jogador',
+    cls_kind_spell: 'spell',
+    cls_kind_grenade: 'granada',
+    cls_h_rotation: 'rotação — hits e dano por componente/spell',
+    cls_h_charts: 'gráficos do log',
+    cls_th_comp: 'componente',
+    cls_th_turns: 'turnos',
+    cls_th_hits: 'hits méd',
+    cls_th_dmg_base: 'dano base',
+    cls_th_dmg_eff: 'dano efetivo',
+    cls_comp_arrow: 'Auto ataque',
+    cls_comp_spell: 'spell',
+    cls_comp_rune: 'runa',
+    cls_comp_grenade: 'granada',
+    cls_tier_base: 'sem bônus',
+    cls_tier_bonus: 'com bônus',
+    cls_unmatched: '{u}/{n} turnos excluídos por não alinhar 100% os dois logs (cast fora da janela ou fora da cobertura do local chat).',
+    val_rp_component_real: 'log real',
+    val_rp_component_sim: 'simulação',
+    val_timeline_real: 'log real',
+    val_timeline_hits: 'hits por turno',
+    val_timeline_components: 'componentes por turno',
+    val_timeline_damage: 'dano por turno',
+    val_axis_turn: 'turno',
+    val_impact_analyser: 'Impact Analyser · dano médio últimos 30s',
+  },
+  en: {
+    title: 'Classifier — Tibia',
+    btn_lang_pt: 'PT',
+    btn_lang_en: 'EN',
+    cls_title: 'Classifier — hits and damage per component, broken down by spell',
+    cls_desc: 'Paste the <strong>server log</strong> and the <strong>local chat</strong> from the same hunt. The local chat tells which spell was cast each turn, so the "spell" component can be split per incantation (e.g. Divine Caldera). It only reads both logs — there is no simulation.',
+    cls_load_server: 'open server log .txt',
+    cls_load_local: 'open local chat .txt',
+    cls_run: 'classify',
+    cls_status_ready: 'paste both logs below',
+    cls_status_need_both: 'paste both logs (server log and local chat)',
+    cls_status_running: 'classifying…',
+    cls_status_done: 'done',
+    cls_server_label: 'server log',
+    cls_local_label: 'local chat',
+    cls_server_ph: 'Paste the server log here...',
+    cls_local_ph: 'Paste the local chat here...',
+    cls_no_turns: 'No turns found in the server log (check the content / RP vocation).',
+    cls_no_spell: 'No spell turn matched to an incantation.',
+    cls_player: 'player',
+    cls_dmg_spell: 'player damage',
+    cls_kind_spell: 'spell',
+    cls_kind_grenade: 'grenade',
+    cls_h_rotation: 'rotation — hits and damage per component/spell',
+    cls_h_charts: 'log charts',
+    cls_th_comp: 'component',
+    cls_th_turns: 'turns',
+    cls_th_hits: 'avg hits',
+    cls_th_dmg_base: 'base dmg',
+    cls_th_dmg_eff: 'effective dmg',
+    cls_comp_arrow: 'Auto attack',
+    cls_comp_spell: 'spell',
+    cls_comp_rune: 'rune',
+    cls_comp_grenade: 'grenade',
+    cls_tier_base: 'no bonus',
+    cls_tier_bonus: 'with bonus',
+    cls_unmatched: '{u}/{n} turns excluded for not aligning both logs 100% (cast outside the window or beyond the local chat coverage).',
+    val_rp_component_real: 'real log',
+    val_rp_component_sim: 'simulation',
+    val_timeline_real: 'real log',
+    val_timeline_hits: 'hits per turn',
+    val_timeline_components: 'turn components',
+    val_timeline_damage: 'damage per turn',
+    val_axis_turn: 'turn',
+    val_impact_analyser: 'Impact Analyser · avg damage last 30s',
+  }
+};
+
+let LANG = 'pt';
+const t = key => (I18N[LANG] && I18N[LANG][key]) || key;
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.innerHTML = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+  document.documentElement.lang = LANG === 'pt' ? 'pt-BR' : 'en';
+  document.title = t('title');
+  const pt = document.getElementById('langPt'), en = document.getElementById('langEn');
+  if (pt) pt.classList.toggle('active', LANG === 'pt');
+  if (en) en.classList.toggle('active', LANG === 'en');
+  if (typeof onLangChange === 'function') onLangChange();
+}

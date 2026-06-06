@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classificador — Tibia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <h1 data-i18n="cls_title">Classificador</h1>
+    <span class="spacer"></span>
+    <button id="langPt" class="guide-btn active" data-i18n="btn_lang_pt">PT</button>
+    <button id="langEn" class="guide-btn" data-i18n="btn_lang_en">EN</button>
+  </div>
+
+  <p class="desc" data-i18n="cls_desc">
+    Cole o <strong>server log</strong> e o <strong>local chat</strong> da mesma hunt.
+  </p>
+
+  <div class="val-controls">
+    <button id="btnClsLocalFile" class="btn-blue" data-i18n="cls_load_local">abrir local chat .txt</button>
+    <input type="file" id="clsLocalFileInput" accept=".txt,.log" style="display:none">
+    <button id="btnClsServerFile" class="btn-blue" data-i18n="cls_load_server">abrir server log .txt</button>
+    <input type="file" id="clsServerFileInput" accept=".txt,.log" style="display:none">
+    <button id="btnClassify" data-i18n="cls_run">classificar</button>
+    <span id="clsStatus" class="sim-status" data-i18n="cls_status_ready">cole os dois logs abaixo</span>
+  </div>
+
+  <div class="logs-grid">
+    <div>
+      <label data-i18n="cls_local_label">local chat</label>
+      <textarea id="clsLocalInput" data-i18n-placeholder="cls_local_ph" placeholder="Cole aqui o local chat..."></textarea>
+    </div>
+    <div>
+      <label data-i18n="cls_server_label">server log</label>
+      <textarea id="clsServerInput" data-i18n-placeholder="cls_server_ph" placeholder="Cole aqui o server log..."></textarea>
+    </div>
+  </div>
+
+  <div id="clsResults" style="display:none"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/mob-element-mods.js"></script>
+<script src="js/rp-grenade-peak.js"></script>
+<script src="js/parser-rp-helpers.js"></script>
+<script src="js/classifier-parser.js"></script>
+<script src="js/classifier.js"></script>
+<script src="js/histogram.js"></script>
+<script src="js/charts-helpers.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
