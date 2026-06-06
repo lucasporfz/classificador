@@ -51,10 +51,66 @@ helper, define it in a file that loads before its callers.
 - **`js/mob-element-mods.js`** / **`js/rp-grenade-peak.js`** / **`js/charts-helpers.js`**:
   data table + helpers extracted from the original monolithic app.
 
+## Delicate rules (don't break these)
+
+- **Spell cast↔turn alignment uses the SPELL-hit timestamp, not the turn's first hit.**
+  The AoE spell lands ~1s *after* the auto-attack (the turn's first hit). `clsNearest`
+  searches `[T-1, T+2]` and breaks ties toward the **earlier** cast (`dt < bestDt` is
+  strict). If `T` were the AA's ts, an `exori gran` cast 1s after the AA would tie with an
+  `exori`/`exori mas` cast 1s before, and the tie would pick the *wrong, earlier* spell.
+  This mislabels Fierce Berserk turns as Berserk/Groundshaker in EK and creates fake
+  "same spell repeated" runs in the chart. Fix: `clsBuildTurnRecords` exports `spellTs` =
+  `min(ts)` of the turn's `correctedComponent==='spell'` lines, and the match uses
+  `clsNearest(playerSpellCasts, r.spellTs)`. (Rune comes from the definitive server
+  "Using one of N … runes" line; grenade has its own ~3s cast→explode rule — neither was
+  changed.)
+- **The "componentes por turno" chart is driven by the real rotation rows, not a fixed
+  component set.** Each `row` carries `hitsTimeline` (a per-aligned-turn array, 0 where the
+  component didn't fire, built from `alignedTurns` in `classifyWithLocalChat`). `app.js`
+  draws one line per row whose timeline has any value > 0, with a colour palette. This is
+  why it picks up every vocation's named spells and never shows an empty rune/grenade line.
+  Do **not** revert it to the validator's hardcoded `['arrow','spell','rune','grenade']`
+  reading `temporalSeries.components` — that lumps all spells into one line and invents
+  absent components.
+
+## How to validate a classifier change
+
+1. `node --check js/classifier.js` (and any file you touched).
+2. Run the **oracle on every fixture before and after** and `diff` the output — changes
+   must be confined to the logs you expect; RP/druid should stay identical when you only
+   touch EK behaviour, etc.
+3. When a change **reclassifies** turns, confirm each move two independent ways: **timing**
+   (the spell hits coincide with the new cast, ~1s after the AA) **and damage magnitude**
+   (the turn's base damage matches the new label's `dmgBase`, not the old one). Both must
+   agree before accepting the change.
+4. The component split is mechanical (AA-first, then AoE by order) for single-target/EK and
+   band-based for RP packs — a fix for one regime must not regress the other.
+
+## Relationship to the original app
+
+This repo was extracted from a larger Tibia XP/h simulator (lives at `../claude`,
+`index novo.html` + `js/`). The **classifier logic is shared**: `js/classifier.js`,
+`js/classifier-parser.js`, `js/parser-rp-helpers.js` here are copies of the originals, and
+the classifier UI in the original lives inside `index novo.html`
+(`renderClassifier`/`renderClassifierCharts`). When you fix classifier behaviour, apply the
+**same change to both** repos and keep `js/classifier.js` byte-identical (verify with
+`diff --strip-trailing-cr`). In the original repo also run `node tools/check-inline.mjs`
+(2/2) and `node tools/rp-gabarito.mjs --parser` (38/38 — the validator's parser, which the
+classifier never touches, must stay green).
+
+## Deploy
+
+Public GitHub repo `lucasporfz/classificador`, branch `main`. GitHub Pages serves the root:
+**https://lucasporfz.github.io/classificador/**. A plain `git push origin main` redeploys
+(Pages rebuilds in ~1–2 min). Local preview: any static server, e.g.
+`python -m http.server 5599` then open `http://127.0.0.1:5599/`.
+
 ## Conventions
 
 - Windows + PowerShell environment. The `Bash` tool is also available; heredocs mangle
   backslashes — write script files with the `Write` tool, not heredocs.
 - Commit only when asked; end commit messages with
   `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
-- `logs/*.txt` are real combat logs used as fixtures by the oracle.
+- `logs/*.txt` are real combat logs used as fixtures by the oracle. Pairs cover RP pack
+  (`server log rp` + `localchat rp`), RP party (`darklight …`), RP boss single-target
+  (`murcion …`), EK packs (`bastion …`, `night harpy …`) and druid (`uhax …`).
