@@ -47,7 +47,8 @@ helper, define it in a file that loads before its callers.
   physical and varies — that separates them. Do not loosen these rules without re-validating
   against logs.
 - **`js/app.js`**: UI glue + Chart.js rendering (rotation table, per-component histograms,
-  components/hits/damage per turn, Impact Analyser). No simulation line.
+  components/hits/damage per turn, Impact Analyser). No simulation line. Also owns the
+  **multi-session log picker** — see section below.
 - **`js/mob-element-mods.js`** / **`js/rp-grenade-peak.js`** / **`js/charts-helpers.js`**:
   data table + helpers extracted from the original monolithic app.
 
@@ -72,6 +73,41 @@ helper, define it in a file that loads before its callers.
   Do **not** revert it to the validator's hardcoded `['arrow','spell','rune','grenade']`
   reading `temporalSeries.components` — that lumps all spells into one line and invents
   absent components.
+
+## Multi-session log picker (js/app.js)
+
+O Tibia acumula várias sessões num mesmo arquivo de log, cada uma precedida por uma linha
+`Channel ... saved Www Mmm DD HH:MM:SS YYYY`. Alguns arquivos mais antigos (ex.: `murcion`)
+não têm essa linha e começam direto com `HH:MM:SS`.
+
+**Funções principais (todas em `js/app.js`):**
+
+- `clsSplitSessions(text)` — divide o texto em sessões pelo cabeçalho. Se nenhum cabeçalho
+  for encontrado, retorna uma sessão única cobrindo o arquivo inteiro (`header: ''`).
+- `clsSessionLabel(s)` — formata `DD/Mmm/YYYY HH:MM–HH:MM` a partir do cabeçalho e dos
+  timestamps da sessão.
+- `clsParseSessionDate(s)` — extrai `{year, month, day, saveSec}` do cabeçalho para o
+  pareamento. Retorna `null` se não houver cabeçalho.
+- `clsBuildPairs(svSessions, lcSessions)` — para cada sessão de server log, encontra o local
+  chat do **mesmo dia** com `saveSec` mais próximo (tolerância ≤ 1 hora). Usa o horário de
+  **save** (fim da sessão), não o `firstTs`, porque ambos os arquivos são salvos juntos no
+  fim da sessão, com diferença de segundos.
+- `clsUpdatePairPicker()` — atualiza `#clsPairSelect`:
+  - **Fast path 1+1**: se cada arquivo tem exatamente 1 sessão (com ou sem cabeçalho),
+    pareamento direto, sem picker, sem mensagem de erro.
+  - **2+ pares**: mostra o `<select>` com as opções; auto-seleciona o primeiro par.
+  - **0 pares**: oculta picker, exibe `cls_status_no_pairs`.
+- `clsLoadFile(inputId, isServer)` — lê o arquivo, atualiza `clsServerSessions` /
+  `clsLocalSessions`, reseta **ambas** as textareas para `sessions[0]` dos respectivos
+  arquivos (evita resíduo de seleção anterior), depois chama `clsUpdatePairPicker`.
+
+**Wiring dos botões:** `input.value = ''` é feito no **click handler** (antes de abrir o
+diálogo), não no `onload` — limpar o input dentro do callback async trava o file input no
+Chrome/Windows.
+
+**Arquivos sem cabeçalho** (ex.: `murcion server log rp.txt`, `murcion local chat rp.txt`):
+`clsSplitSessions` os retorna como 1 sessão com `header: ''`; o fast path 1+1 os popula
+diretamente nas textareas sem passar pelo algoritmo de data.
 
 ## How to validate a classifier change
 

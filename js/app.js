@@ -7,16 +7,116 @@ let clsTimelineHitsChart = null;
 let clsTimelineDamageChart = null;
 let clsImpactChart = null;
 let clsRowHistCharts = [];
+let clsServerSessions = null;
+let clsLocalSessions  = null;
 
 function clsSpellNameSafe(text) {
   return typeof clsSpellLabel === 'function' ? clsSpellLabel(text) : text;
 }
 
-function clsLoadFile(inputId, targetId) {
+function clsSplitSessions(text) {
+  const headerRe = /^Channel .+ saved /;
+  const tsRe = /^(\d{2}:\d{2}:\d{2})/;
+  const sessions = [];
+  let cur = null;
+  for (const line of text.replace(/^﻿/, '').split(/\r?\n/)) {
+    if (headerRe.test(line)) {
+      if (cur) sessions.push(cur);
+      cur = { header: line, lines: [line], firstTs: null, lastTs: null };
+    } else if (cur) {
+      cur.lines.push(line);
+      const m = tsRe.exec(line);
+      if (m) { if (!cur.firstTs) cur.firstTs = m[1]; cur.lastTs = m[1]; }
+    }
+  }
+  if (cur) sessions.push(cur);
+  if (sessions.length === 0) {
+    const allLines = text.replace(/^﻿/, '').split(/\r?\n/);
+    let firstTs = null, lastTs = null;
+    for (const line of allLines) {
+      const m = tsRe.exec(line);
+      if (m) { if (!firstTs) firstTs = m[1]; lastTs = m[1]; }
+    }
+    sessions.push({ header: '', lines: allLines, firstTs, lastTs });
+  }
+  return sessions.map(s => ({ ...s, text: s.lines.join('\n') }));
+}
+
+function clsSessionLabel(s) {
+  const m = /saved \w+ (\w+) +(\d+) (\d{2}:\d{2}):\d{2} (\d{4})/.exec(s.header);
+  if (!m) return s.header;
+  const [, mon, day, , year] = m;
+  const start = s.firstTs ? s.firstTs.slice(0, 5) : '?';
+  const end   = s.lastTs  ? s.lastTs.slice(0, 5)  : '?';
+  return `${day.padStart(2, '0')}/${mon}/${year} ${start}–${end}`;
+}
+
+function clsParseSessionDate(s) {
+  const MONTHS = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  // header: "Channel ... saved Www Mmm DD HH:MM:SS YYYY" — hora = quando o arquivo foi salvo
+  const m = /saved \w+ (\w+) +(\d+) (\d{2}):(\d{2}):(\d{2}) (\d{4})/.exec(s.header);
+  if (!m) return null;
+  const saveSec = +m[3]*3600 + +m[4]*60 + +m[5];
+  return { year: +m[6], month: MONTHS[m[1]] || 0, day: +m[2], saveSec };
+}
+
+function clsBuildPairs(svSessions, lcSessions) {
+  const pairs = [];
+  for (const sv of svSessions) {
+    const sd = clsParseSessionDate(sv);
+    if (!sd) continue;
+    let best = null, bestDiff = Infinity;
+    for (const lc of lcSessions) {
+      const ld = clsParseSessionDate(lc);
+      if (!ld || ld.year !== sd.year || ld.month !== sd.month || ld.day !== sd.day) continue;
+      const diff = Math.abs(ld.saveSec - sd.saveSec);
+      if (diff < bestDiff) { bestDiff = diff; best = lc; }
+    }
+    if (best && bestDiff <= 3600) pairs.push({ sv, lc: best, label: clsSessionLabel(sv) });
+  }
+  return pairs;
+}
+
+function clsUpdatePairPicker() {
+  const sel = $('clsPairSelect');
+  if (!clsServerSessions || !clsLocalSessions) { sel.style.display = 'none'; return; }
+  if (clsServerSessions.length === 1 && clsLocalSessions.length === 1) {
+    $('clsServerInput').value = clsServerSessions[0].text;
+    $('clsLocalInput').value  = clsLocalSessions[0].text;
+    sel.style.display = 'none';
+    return;
+  }
+  const pairs = clsBuildPairs(clsServerSessions, clsLocalSessions);
+  sel._pairs = pairs;
+  if (pairs.length === 0) {
+    sel.style.display = 'none';
+    $('clsStatus').textContent = t('cls_status_no_pairs');
+    return;
+  }
+  const applyPair = p => { $('clsServerInput').value = p.sv.text; $('clsLocalInput').value = p.lc.text; };
+  applyPair(pairs[0]);
+  if (pairs.length === 1) { sel.style.display = 'none'; return; }
+  sel.innerHTML = pairs.map((p, i) => `<option value="${i}">${p.label}</option>`).join('');
+  sel.style.display = '';
+}
+
+function clsLoadFile(inputId, isServer) {
   const file = $(inputId).files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (ev) => { $(targetId).value = ev.target.result; };
+  reader.onload = (ev) => {
+    const sessions = clsSplitSessions(ev.target.result);
+    if (isServer) {
+      clsServerSessions = sessions;
+      $('clsServerInput').value = sessions[0].text;
+      if (clsLocalSessions) $('clsLocalInput').value = clsLocalSessions[0].text;
+    } else {
+      clsLocalSessions = sessions;
+      $('clsLocalInput').value = sessions[0].text;
+      if (clsServerSessions) $('clsServerInput').value = clsServerSessions[0].text;
+    }
+    clsUpdatePairPicker();
+  };
   reader.readAsText(file);
 }
 
@@ -147,10 +247,15 @@ let lastClsResult = null;
 function onLangChange() { if (lastClsResult) renderClassifier(lastClsResult); }
 
 // ---- wiring ----
-$('btnClsServerFile').addEventListener('click', () => $('clsServerFileInput').click());
-$('btnClsLocalFile').addEventListener('click', () => $('clsLocalFileInput').click());
-$('clsServerFileInput').addEventListener('change', () => clsLoadFile('clsServerFileInput', 'clsServerInput'));
-$('clsLocalFileInput').addEventListener('change', () => clsLoadFile('clsLocalFileInput', 'clsLocalInput'));
+$('btnClsServerFile').addEventListener('click', () => { $('clsServerFileInput').value = ''; $('clsServerFileInput').click(); });
+$('btnClsLocalFile').addEventListener('click',  () => { $('clsLocalFileInput').value  = ''; $('clsLocalFileInput').click(); });
+$('clsServerFileInput').addEventListener('change', () => clsLoadFile('clsServerFileInput', true));
+$('clsLocalFileInput').addEventListener('change',  () => clsLoadFile('clsLocalFileInput',  false));
+$('clsPairSelect').addEventListener('change', function() {
+  const p = this._pairs[+this.value];
+  $('clsServerInput').value = p.sv.text;
+  $('clsLocalInput').value  = p.lc.text;
+});
 $('btnClassify').addEventListener('click', () => {
   const sv = $('clsServerInput').value.trim();
   const lc = $('clsLocalInput').value.trim();
