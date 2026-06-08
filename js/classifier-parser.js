@@ -30,7 +30,12 @@ function parseLogForClassifier(logText) {
     const a = attackPattern.exec(body);
     if (!a) {
       const ru = runeUsePattern.exec(body);
-      if (ru) { const rune = normalizeRuneName(ru[1]); events.push({ ts, type: 'rune', rune, element: getRuneElement(rune) }); continue; }
+      if (ru) {
+        const rune = normalizeRuneName(ru[1]);
+        const element = getRuneElement(rune);
+        if (element !== 'unknown') events.push({ ts, type: 'rune', rune, element });
+        continue;
+      }
       const x = xpPattern.exec(body);
       if (x) events.push({ ts, type: 'xp', xp: +x[1] });
       continue;
