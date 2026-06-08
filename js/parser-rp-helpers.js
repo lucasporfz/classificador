@@ -414,7 +414,15 @@ function rpClassifyTurnByBands(lines, mark) {
       else { sEnd = bandStart(n); if (sEnd <= c0 || !sustained(sEnd, n)) sEnd = n; }
       return { arrowEnd: c0, spellEnd: sEnd, reason: 'crit_arrow_then_spell_grenade' };
     }
-    // normal (sem granada): arrow | spell na troca de crit.
+    // normal (sem granada): antes de usar c0 como fronteira, verifica se o bloco
+    // pré-crit [0,c0) termina com uma banda holy (hits de spell sem crit — e.g.
+    // Caldera acerta alguns mobs não-crit antes dos crits do mesmo cast).
+    if (c0 > 0) {
+      const innerBandStart = bandStart(c0);
+      if (innerBandStart < c0 && sustained(innerBandStart, c0) && isHolyBand(innerBandStart, c0)) {
+        return { arrowEnd: innerBandStart, spellEnd: n, reason: 'crit_run_precrit_holy' };
+      }
+    }
     return { arrowEnd: c0, spellEnd: n, reason: 'crit_run_arrow_spell' };
   }
 

@@ -5,6 +5,7 @@
 // Uso: node tools/rp-classify-proto.mjs "logs/<server>.txt" "logs/<localchat>.txt"
 //      [--spell "<incant|label>"] [--hits N]   (filtros opcionais imprimem os turnos
 //      alinhados que casam, hit a hit)
+//      [--session N]   (seleciona o N-ésimo par de sessões; padrão = 1)
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import process from 'node:process';
 const ROOT = process.cwd(); const read = p => fs.readFileSync(p, 'utf8');
 
@@ -24,8 +25,84 @@ for (let i = 0; i < argv.length; i++) {
 }
 const serverLogPath = positional[0] || 'logs/server log rp.txt';
 const localChatPath = positional[1] || 'logs/localchat rp.txt';
+
+// ---- session splitting (mesma lógica do app) ----
+function splitSessions(text) {
+  const headerRe = /^Channel .+ saved /;
+  const tsRe = /^(\d{2}:\d{2}:\d{2})/;
+  const sessions = [];
+  let cur = null;
+  for (const line of text.replace(/^﻿/, '').split(/\r?\n/)) {
+    if (headerRe.test(line)) {
+      if (cur) sessions.push(cur);
+      cur = { header: line, lines: [line] };
+    } else if (cur) {
+      cur.lines.push(line);
+    }
+  }
+  if (cur) sessions.push(cur);
+  if (sessions.length === 0) sessions.push({ header: '', lines: text.replace(/^﻿/, '').split(/\r?\n/) });
+  return sessions.map(s => ({ ...s, text: s.lines.join('\n') }));
+}
+
+function parseSessionDate(s) {
+  const MONTHS = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+  const m = /saved \w+ (\w+) +(\d+) (\d{2}):(\d{2}):(\d{2}) (\d{4})/.exec(s.header);
+  if (!m) return null;
+  return { year: +m[6], month: MONTHS[m[1]] || 0, day: +m[2], saveSec: +m[3]*3600 + +m[4]*60 + +m[5] };
+}
+
+function buildPairs(svSessions, lcSessions) {
+  const pairs = [];
+  for (const sv of svSessions) {
+    const sd = parseSessionDate(sv);
+    if (!sd) continue;
+    let best = null, bestDiff = Infinity;
+    for (const lc of lcSessions) {
+      const ld = parseSessionDate(lc);
+      if (!ld || ld.year !== sd.year || ld.month !== sd.month || ld.day !== sd.day) continue;
+      const diff = Math.abs(ld.saveSec - sd.saveSec);
+      if (diff < bestDiff) { bestDiff = diff; best = lc; }
+    }
+    if (best && bestDiff <= 3600) pairs.push({ sv, lc: best });
+  }
+  return pairs;
+}
+
+const svSessions = splitSessions(read(serverLogPath));
+const lcSessions = splitSessions(read(localChatPath));
+let svText, lcText;
+
+if (svSessions.length === 1 && lcSessions.length === 1) {
+  svText = svSessions[0].text;
+  lcText = lcSessions[0].text;
+} else {
+  const pairs = buildPairs(svSessions, lcSessions);
+  if (pairs.length === 0) {
+    console.error('ERRO: nenhum par de sessões encontrado (datas não batem ou cabeçalhos ausentes)');
+    process.exit(1);
+  }
+  const sessionIdx = flags.session ? +flags.session - 1 : 0;
+  if (sessionIdx < 0 || sessionIdx >= pairs.length) {
+    console.error(`ERRO: --session ${sessionIdx + 1} inválido (${pairs.length} par(es) disponível(is))`);
+    process.exit(1);
+  }
+  if (pairs.length > 1) {
+    const labels = pairs.map((p, i) => {
+      const d = parseSessionDate(p.sv);
+      const label = d ? `${String(d.day).padStart(2,'0')}/${d.month}/${d.year}` : p.sv.header.slice(0, 40);
+      return `  [${i+1}] ${label}${i === sessionIdx ? ' ←' : ''}`;
+    });
+    console.log(`(${pairs.length} pares de sessões; usando --session ${sessionIdx + 1}. Use --session N para outra.)`);
+    console.log(labels.join('\n'));
+    console.log('');
+  }
+  svText = pairs[sessionIdx].sv.text;
+  lcText = pairs[sessionIdx].lc.text;
+}
+
 const wantTrace = flags.spell != null || flags.hits != null;
-const res = ctx.classifyWithLocalChat(read(serverLogPath), read(localChatPath), { trace: wantTrace });
+const res = ctx.classifyWithLocalChat(svText, lcText, { trace: wantTrace });
 
 console.log('=== ' + serverLogPath.replace(/^logs\//, '') + ' + ' + localChatPath.replace(/^logs\//, '') + ' ===');
 if (res.error) { console.log('ERRO: ' + res.error); process.exit(1); }
@@ -55,7 +132,7 @@ if (wantTrace) {
   const label = tx => (typeof ctx.clsSpellLabel === 'function' ? ctx.clsSpellLabel(tx) : tx) || tx;
   const matchSpell = sp => !spellFilter || (sp && (sp.toLowerCase() === spellFilter || label(sp).toLowerCase() === spellFilter));
   const compCount = tr => tr.spell ? tr.counts.spell : (tr.gren ? tr.counts.grenade : (tr.rune ? tr.counts.rune : tr.counts.arrow));
-  const hits = (res.turnTrace || []).filter(tr => matchSpell(tr.spell) && (hitsFilter == null || compCount(tr) === hitsFilter));
+  const hits = (res.turnTrace || []).filter(tr => (matchSpell(tr.spell) || matchSpell(tr.rune) || matchSpell(tr.gren)) && (hitsFilter == null || compCount(tr) === hitsFilter));
   console.log('\n--- TURNOS' +
     (spellFilter ? ' · spell="' + flags.spell + '"' : '') +
     (hitsFilter != null ? ' · hits=' + hitsFilter : '') +

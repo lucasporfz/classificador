@@ -473,6 +473,21 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     const usePositional = data.distinctMobs === 1 || isMeleeVoc;
     clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts, usePositional);
     turnRecords = clsBuildTurnRecords(turns);
+  } else {
+    // Sessão mista (hunt em pack + boss single-target): o band classifier precisa de ≥2 mobs
+    // distintos p/ holyConst funcionar. Turnos em que todos os hits caem num único mob e o band
+    // disse "all arrow" (sem crit-change que sirva de âncora) ficam errados. Re-classifica esses
+    // turnos por posição — mesmo critério do path boss puro (distinctMobs===1).
+    const singleMobAllArrow = turns.filter(t => {
+      const ls = t.rpComponentLines || [];
+      if (!ls.length) return false;
+      const mobs = new Set(ls.map(l => l.mob).filter(Boolean));
+      return mobs.size === 1 && ls.every(l => l.correctedComponent === 'arrow');
+    });
+    if (singleMobAllArrow.length > 0) {
+      clsReclassifyByOrder(singleMobAllArrow, runeUses, playerSpellCasts, playerGrenCasts, true);
+      turnRecords = clsBuildTurnRecords(turns);
+    }
   }
 
   const nearestGren = G => {
@@ -480,6 +495,41 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     for (const c of playerGrenCasts) if (c.ts >= G - 3 && c.ts <= G - 1) { const dt = G - c.ts; if (dt < bestDt) { bestDt = dt; best = c; } }
     return best;
   };
+
+  // Chat é PRIMÁRIO (quando isRpRegime): o cast no chat + c.ts+3 é determinístico.
+  // A heurística low/high do parser é fallback (quando não há chat).
+  // Fase 1: identificar os turnos cobertos por um cast de chat.
+  // Fase 2: limpar marcas heurísticas não confirmadas pelo chat nem pelo band classifier.
+  // Fase 3: marcar turnos que a heurística perdeu mas o chat identificou.
+  if (isRpRegime && playerGrenCasts.length > 0) {
+    const chatExplodeIdxs = new Set();
+    for (const c of playerGrenCasts) {
+      const tIdx = turns.findIndex(t => t.ts >= c.ts + 1 && t.ts <= c.ts + 3);
+      if (tIdx >= 0) chatExplodeIdxs.add(tIdx);
+    }
+    let reclassified = false;
+    for (let i = 0; i < turns.length; i++) {
+      const tr = turnRecords[i];
+      if (turns[i].rpGrenadeHeuristic && !chatExplodeIdxs.has(i) && !(tr && tr.counts.grenade > 0)) {
+        turns[i].rpGrenade = null;
+        reclassified = true;
+      }
+    }
+    for (const c of playerGrenCasts) {
+      const tGren = turns.find(t => t.ts >= c.ts + 1 && t.ts <= c.ts + 3 && (t.rpGrenade || '') !== 'explode');
+      if (!tGren) continue;
+      const tIdx = turns.indexOf(tGren);
+      const tr = turnRecords[tIdx];
+      if (!tr || tr.counts.spell === 0 || tr.counts.grenade > 0) continue;
+      if (playerSpellCasts.some(sc => sc.ts >= tr.spellTs - 2 && sc.ts < tr.spellTs)) continue;
+      for (const l of (tGren.rpComponentLines || [])) {
+        if (l.correctedComponent === 'spell') l.correctedComponent = 'grenade';
+      }
+      tGren.rpGrenade = 'explode';
+      reclassified = true;
+    }
+    if (reclassified) turnRecords = clsBuildTurnRecords(turns);
+  }
 
   const perSpell = new Map(), perGren = new Map(), perRune = new Map();
   const perSpellTiers = new Map();  // spells de execução: {base:[...], bonus:[...]} por cast
