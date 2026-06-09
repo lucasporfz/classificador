@@ -1,0 +1,22 @@
+=== murcion server log rp.txt + murcion local chat rp.txt ===
+jogador: Royal'Drone   | spell: exori san, exori gran con, exevo mas san   | granada: exevo tempo mas san
+
+--- ROTAÇÃO (tabela única) ---
+  turnos  hits méd  dano base  dano efet  componente/spell
+     156      1.00       1006       1196  Auto ataque
+      56      1.00       1421       1654  Strong Ethereal Spear (exori gran con)
+      54      1.00        710        761  Divine Caldera (exevo mas san)
+      50      1.00        496        592  Divine Missile (exori san)
+       1      0.00          0          0  Divine Grenade (exevo tempo mas san)
+  (0/161 turnos excluídos por não alinhar 100% os 2 logs)
+
+--- detecção das incantações (top 8) ---
+  covered  recall  overcast  total  classe   speaker: incantação
+       33    87%     4.94    184  —          Luszckyn: exura vita
+       31    82%     4.94    157  —          Burkzin: exura sio
+       23    61%     2.17     50  ✔ spell    Royal'Drone: exori san
+       19    50%     2.16     41  —          Royal'Drone: utito tempo san
+       17    45%     3.29     56  ✔ spell    Royal'Drone: exori gran con
+       17    45%     2.76     47  spell      Izeekao: exori gran con
+       14    37%     3.93     56  ✔ spell    Royal'Drone: exevo mas san
+       12    32%     1.67     21  —          Burkzin: exura gran mas res

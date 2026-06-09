@@ -322,7 +322,11 @@ function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts
     for (const l of ordered) { if (grenSet.has(l)) l.correctedComponent = 'grenade'; else nonGren.push(l); }
     if (!nonGren.length) continue;
     const rune = nearRune(t.ts), spell = nearSpell(t.ts);
-    const power = rune ? 'rune' : 'spell';
+    const runeBlockedBySpell = usePositional && rune && spell && runeUses.some(u =>
+      u.ts >= t.ts - 1 && u.ts <= t.ts + 1 &&
+      playerSpellCasts.some(c => c.ts >= t.ts - 1 && c.ts <= t.ts + 1 && Math.abs(c.ts - u.ts) <= 1)
+    );
+    const power = (rune && !runeBlockedBySpell) ? 'rune' : 'spell';
     if (nonGren.length === 1) {
       // 1 hit em magnitude de AA (≪ banda do poder) ⇒ a runa/spell não saiu, é varinha.
       const looksAA = aaRef > 0 && nonGren[0].revertedDmg <= aaRef * AA_FALSE_POWER_FACTOR;
@@ -356,12 +360,15 @@ function parseLocalChat(text) {
 }
 
 // Linhas "Using one of N <runa> runes" do server log -> [{ts, name}].
+// Filtra runas de suporte/cura (elemento 'unknown') — só runas de dano entram.
 function parseRuneUses(serverLogText) {
   const out = [];
   for (const line of String(serverLogText || '').split(/\r?\n/)) {
     const tm = CLS_TS_RE.exec(line); if (!tm) continue;
     const rm = CLS_RUNE_USE_RE.exec(line); if (!rm) continue;
-    out.push({ ts: +tm[1] * 3600 + +tm[2] * 60 + +tm[3], name: normalizeRuneName(rm[1]) });
+    const name = normalizeRuneName(rm[1]);
+    if (getRuneElement(name) === 'unknown') continue;
+    out.push({ ts: +tm[1] * 3600 + +tm[2] * 60 + +tm[3], name });
   }
   return out;
 }
@@ -378,6 +385,77 @@ function clsNearest(arr, T) {
   let best = null, bestDt = 99;
   for (const c of arr) if (c.ts >= T - 1 && c.ts <= T + 2) { const dt = Math.abs(c.ts - T); if (dt < bestDt) { bestDt = dt; best = c; } }
   return best;
+}
+
+function clsHasRuneNear(runeUses, T) {
+  return (runeUses || []).some(u => u.ts >= T - 1 && u.ts <= T + 1);
+}
+
+function clsHasPrecedingSpellCast(playerSpellCasts, T, windowSec) {
+  const w = Number.isFinite(windowSec) ? windowSec : 3;
+  return (playerSpellCasts || []).some(c => c.ts >= T - w && c.ts <= T);
+}
+
+function clsPromoteAllArrowSpellTurn(t) {
+  for (const l of (t.rpComponentLines || [])) {
+    l.correctedComponent = 'spell';
+    l.correctionReason = 'chat_spell_all_arrow_fallback';
+    l.boundaryReason = 'chat_spell_all_arrow_fallback';
+  }
+}
+
+function clsGrenadeEvidenceScore(t, tr) {
+  if (!t) return -1;
+  const ls = t.rpComponentLines || [];
+  if (tr && tr.counts && tr.counts.grenade > 0) return 100;
+  if ((t.rpGrenade || '') === 'explode') return 90;
+  if (ls.some(l => l.correctedComponent === 'grenade')) return 80;
+  if (ls.some(l => /grenade/i.test(l.correctionReason || '') || /grenade/i.test(l.boundaryReason || ''))) return 70;
+  if (tr && tr.counts && tr.counts.spell > 0) return 10;
+  return 0;
+}
+
+function clsFindChatGrenadeTurnIndex(turns, turnRecords, cast, playerSpellCasts) {
+  const candidates = [];
+  for (let i = 0; i < turns.length; i++) {
+    const t = turns[i];
+    if (!t || t.ts < cast.ts + 1 || t.ts > cast.ts + 3) continue;
+    const tr = turnRecords[i];
+    candidates.push({ idx: i, t, tr, score: clsGrenadeEvidenceScore(t, tr), dt: Math.abs(t.ts - (cast.ts + 3)) });
+  }
+  if (!candidates.length) return -1;
+  candidates.sort((a, b) => (b.score - a.score) || (a.dt - b.dt) || (a.t.ts - b.t.ts));
+  if (candidates[0].score >= 70) return candidates[0].idx;
+
+  const fallback = candidates
+    .filter(c => c.tr && c.tr.counts && c.tr.counts.spell > 0 && c.tr.counts.grenade === 0)
+    .filter(c => !playerSpellCasts.some(sc => sc.ts >= c.tr.spellTs - 2 && sc.ts < c.tr.spellTs))
+    .sort((a, b) => (a.dt - b.dt) || (a.t.ts - b.t.ts))[0];
+  return fallback ? fallback.idx : -1;
+}
+
+function clsFindSpellGrenadeSuffixStart(lines) {
+  const spellIdxs = (lines || [])
+    .map((l, i) => ({ l, i }))
+    .filter(x => x.l.correctedComponent === 'spell');
+  if (spellIdxs.length < 6) return -1;
+
+  const val = l => Number.isFinite(l.holyOriginal) ? l.holyOriginal : l.revertedDmg;
+  const med = arr => median(arr.slice().sort((a, b) => a - b));
+  let best = null;
+  for (let k = 2; k <= spellIdxs.length - 3; k++) {
+    const left = spellIdxs.slice(0, k).map(x => x.l).filter(l => !l.overkill).map(val).filter(Number.isFinite);
+    const right = spellIdxs.slice(k).map(x => x.l).filter(l => !l.overkill).map(val).filter(Number.isFinite);
+    if (left.length < 3 || right.length < 3) continue;
+    const lm = med(left), rm = med(right);
+    const gap = Math.abs(rm - lm);
+    const low = Math.max(1, Math.min(lm, rm));
+    const high = Math.max(lm, rm);
+    if (high < low * 1.12 || gap < 90) continue;
+    const score = gap + Math.min(left.length, right.length);
+    if (!best || score > best.score) best = { k, score };
+  }
+  return best ? spellIdxs[best.k].i : -1;
 }
 
 // Núcleo: cruza os dois logs e devolve a tabela única + diagnóstico de detecção.
@@ -488,6 +566,19 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       clsReclassifyByOrder(singleMobAllArrow, runeUses, playerSpellCasts, playerGrenCasts, true);
       turnRecords = clsBuildTurnRecords(turns);
     }
+    let promotedAllArrow = false;
+    for (const t of turns) {
+      const ls = t.rpComponentLines || [];
+      if (ls.length < 10) continue;
+      if (!ls.every(l => l.correctedComponent === 'arrow' && l.correctionReason === 'bands_all_arrow')) continue;
+      if (!clsHasPrecedingSpellCast(playerSpellCasts, t.ts, 3)) continue;
+      if (!playerGrenCasts.some(c => c.ts === t.ts)) continue;
+      if (clsHasRuneNear(runeUses, t.ts)) continue;
+      if ((t.rpGrenade || '') === 'explode') continue;
+      clsPromoteAllArrowSpellTurn(t);
+      promotedAllArrow = true;
+    }
+    if (promotedAllArrow) turnRecords = clsBuildTurnRecords(turns);
   }
 
   const nearestGren = G => {
@@ -504,7 +595,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   if (isRpRegime && playerGrenCasts.length > 0) {
     const chatExplodeIdxs = new Set();
     for (const c of playerGrenCasts) {
-      const tIdx = turns.findIndex(t => t.ts >= c.ts + 1 && t.ts <= c.ts + 3);
+      const tIdx = clsFindChatGrenadeTurnIndex(turns, turnRecords, c, playerSpellCasts);
       if (tIdx >= 0) chatExplodeIdxs.add(tIdx);
     }
     let reclassified = false;
@@ -516,14 +607,19 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       }
     }
     for (const c of playerGrenCasts) {
-      const tGren = turns.find(t => t.ts >= c.ts + 1 && t.ts <= c.ts + 3 && (t.rpGrenade || '') !== 'explode');
-      if (!tGren) continue;
-      const tIdx = turns.indexOf(tGren);
+      const tIdx = clsFindChatGrenadeTurnIndex(turns, turnRecords, c, playerSpellCasts);
+      if (tIdx < 0) continue;
+      const tGren = turns[tIdx];
       const tr = turnRecords[tIdx];
+      if ((tGren.rpGrenade || '') === 'explode' && tr && tr.counts.grenade > 0) continue;
       if (!tr || tr.counts.spell === 0 || tr.counts.grenade > 0) continue;
+      if (data.distinctMobs === 1) continue;
       if (playerSpellCasts.some(sc => sc.ts >= tr.spellTs - 2 && sc.ts < tr.spellTs)) continue;
-      for (const l of (tGren.rpComponentLines || [])) {
-        if (l.correctedComponent === 'spell') l.correctedComponent = 'grenade';
+      const lines = tGren.rpComponentLines || [];
+      const suffixStart = clsFindSpellGrenadeSuffixStart(lines);
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        if (l.correctedComponent === 'spell' && (suffixStart < 0 || i >= suffixStart)) l.correctedComponent = 'grenade';
       }
       tGren.rpGrenade = 'explode';
       reclassified = true;
@@ -545,10 +641,29 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   // diagnóstico opcional (oráculo): traço por turno alinhado, sem footprint no app.
   const traceOn = !!(opts && opts.trace);
   const turnTrace = [];
+  const runeUseByTurnIndex = new Map();
+  if (runeUses.length) {
+    const candidates = [];
+    for (const r of turnRecords) {
+      if (r.counts.rune <= 0) continue;
+      for (let i = 0; i < runeUses.length; i++) {
+        const u = runeUses[i];
+        if (u.ts < r.ts - 1 || u.ts > r.ts + 2) continue;
+        candidates.push({ turnIndex: r.idx - 1, runeIndex: i, rune: u, dt: Math.abs(u.ts - r.ts), turnTs: r.ts });
+      }
+    }
+    candidates.sort((a, b) => (a.dt - b.dt) || (a.turnTs - b.turnTs) || (a.rune.ts - b.rune.ts) || (a.turnIndex - b.turnIndex) || (a.runeIndex - b.runeIndex));
+    const usedRunes = new Set();
+    for (const c of candidates) {
+      if (runeUseByTurnIndex.has(c.turnIndex) || usedRunes.has(c.runeIndex)) continue;
+      runeUseByTurnIndex.set(c.turnIndex, c.rune);
+      usedRunes.add(c.runeIndex);
+    }
+  }
   for (const r of turnRecords) {
     const sCast = r.counts.spell > 0 ? clsNearest(playerSpellCasts, r.spellTs) : null;
     const gCast = r.counts.grenade > 0 ? nearestGren(r.ts) : null;
-    const rUse = r.counts.rune > 0 ? clsNearest(runeUses, r.ts) : null;
+    const rUse = r.counts.rune > 0 ? (runeUseByTurnIndex.get(r.idx - 1) || null) : null;
     const aligned = (r.counts.spell === 0 || sCast) && (r.counts.grenade === 0 || gCast) && (r.counts.rune === 0 || rUse);
     if (!aligned) { excludedTurns++; continue; }
     if (r.counts.arrow > 0) arrowAligned.push({ hits: r.counts.arrow, dmgs: r.dmgs.arrow });

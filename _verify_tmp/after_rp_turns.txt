@@ -1,0 +1,146 @@
+  turnos  hits méd  dano base  dano efet  componente/spell
+  turno 1  ts=71215  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=3 spell=6 rune=0 gren=0
+  turno 2  ts=71218  runa [great fireball]  | comp: arrow=2 spell=0 rune=6 gren=0
+  turno 3  ts=71220  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=0 spell=8 rune=0 gren=0
+  turno 4  ts=71222  runa [great fireball]  | comp: arrow=6 spell=0 rune=8 gren=0
+  turno 5  ts=71224  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=7 rune=0 gren=0
+  turno 6  ts=71226  runa [great fireball]  | comp: arrow=4 spell=0 rune=7 gren=0
+  turno 7  ts=71228  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=8 rune=0 gren=0
+  turno 8  ts=71230  runa [great fireball]  | comp: arrow=4 spell=0 rune=7 gren=0
+  turno 9  ts=71233  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=4 spell=12 rune=0 gren=0
+  turno 10  ts=71235  runa [great fireball]  | comp: arrow=7 spell=0 rune=7 gren=0
+  turno 11  ts=71237  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=8 rune=0 gren=0
+  turno 12  ts=71239  runa [great fireball]  | comp: arrow=6 spell=0 rune=8 gren=0
+  turno 13  ts=71241  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=9 rune=0 gren=0
+  turno 14  ts=71243  só AA  | comp: arrow=7 spell=0 rune=0 gren=0
+  turno 15  ts=71246  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=10 spell=11 rune=0 gren=9
+  turno 16  ts=71248  runa [great fireball]  | comp: arrow=9 spell=0 rune=9 gren=0
+  turno 17  ts=71250  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=9 rune=0 gren=0
+  turno 18  ts=71252  runa [great fireball]  | comp: arrow=5 spell=0 rune=7 gren=0
+  turno 19  ts=71254  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=13 rune=0 gren=0
+  turno 20  ts=71256  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=9 rune=0 gren=0
+  turno 21  ts=71258  runa [great fireball]  | comp: arrow=7 spell=0 rune=7 gren=0
+  turno 22  ts=71261  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=6 rune=0 gren=0
+  turno 23  ts=71263  runa [great fireball]  | comp: arrow=5 spell=0 rune=6 gren=0
+  turno 24  ts=71265  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=4 spell=6 rune=0 gren=0
+  turno 25  ts=71267  runa [great fireball]  | comp: arrow=6 spell=0 rune=6 gren=0
+  turno 26  ts=71269  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=7 rune=0 gren=0
+  turno 27  ts=71271  runa [great fireball]  | comp: arrow=8 spell=0 rune=8 gren=0
+  turno 28  ts=71273  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=12 rune=0 gren=0
+  turno 29  ts=71276  runa [great fireball]  | comp: arrow=9 spell=0 rune=10 gren=0
+  turno 30  ts=71278  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=4 spell=9 rune=0 gren=0
+  turno 31  ts=71280  runa [great fireball]  | comp: arrow=6 spell=0 rune=12 gren=0
+  turno 32  ts=71282  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=9 rune=0 gren=0
+  turno 33  ts=71284  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=13 rune=0 gren=0
+  turno 34  ts=71286  runa [great fireball]  | comp: arrow=6 spell=0 rune=12 gren=0
+  turno 35  ts=71289  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=4 spell=9 rune=0 gren=0
+  turno 36  ts=71291  runa [great fireball]  | comp: arrow=9 spell=0 rune=9 gren=0
+  turno 37  ts=71293  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=10 rune=0 gren=0
+  turno 38  ts=71295  runa [great fireball]  | comp: arrow=9 spell=0 rune=9 gren=0
+  turno 39  ts=71297  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=8 rune=0 gren=0
+  turno 40  ts=71300  runa [great fireball]  | comp: arrow=7 spell=0 rune=9 gren=0
+  turno 41  ts=71302  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=9 rune=0 gren=0
+  turno 42  ts=71304  runa [great fireball]  | comp: arrow=8 spell=0 rune=12 gren=0
+  turno 43  ts=71306  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=6 rune=0 gren=0
+  turno 44  ts=71308  só AA  | comp: arrow=9 spell=0 rune=0 gren=0
+  turno 45  ts=71310  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=9 rune=0 gren=8
+  turno 46  ts=71313  runa [great fireball]  | comp: arrow=8 spell=0 rune=8 gren=0
+  turno 47  ts=71315  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=6 rune=0 gren=0
+  turno 48  ts=71317  runa [great fireball]  | comp: arrow=6 spell=0 rune=4 gren=0
+  turno 49  ts=71319  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=3 spell=7 rune=0 gren=0
+  turno 50  ts=71321  runa [great fireball]  | comp: arrow=4 spell=0 rune=8 gren=0
+  turno 51  ts=71324  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=4 spell=7 rune=0 gren=0
+  turno 52  ts=71326  runa [great fireball]  | comp: arrow=3 spell=0 rune=7 gren=0
+  turno 53  ts=71328  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=7 rune=0 gren=0
+  turno 54  ts=71330  runa [great fireball]  | comp: arrow=6 spell=0 rune=8 gren=0
+  turno 55  ts=71332  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=5 rune=0 gren=0
+  turno 56  ts=71334  runa [great fireball]  | comp: arrow=5 spell=0 rune=8 gren=0
+  turno 57  ts=71336  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=8 rune=0 gren=0
+  turno 58  ts=71339  runa [great fireball]  | comp: arrow=8 spell=0 rune=11 gren=0
+  turno 59  ts=71341  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=8 rune=0 gren=0
+  turno 60  ts=71343  runa [great fireball]  | comp: arrow=6 spell=0 rune=13 gren=0
+  turno 61  ts=71345  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=11 rune=0 gren=0
+  turno 62  ts=71347  runa [great fireball]  | comp: arrow=8 spell=0 rune=12 gren=0
+  turno 63  ts=71350  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=9 spell=11 rune=0 gren=0
+  turno 64  ts=71352  runa [great fireball]  | comp: arrow=9 spell=0 rune=15 gren=0
+  turno 65  ts=71354  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=12 rune=0 gren=0
+  turno 66  ts=71356  runa [great fireball]  | comp: arrow=7 spell=0 rune=14 gren=0
+  turno 67  ts=71358  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=11 rune=0 gren=0
+  turno 68  ts=71360  só AA  | comp: arrow=6 spell=0 rune=0 gren=0
+  turno 69  ts=71363  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=10 rune=0 gren=7
+  turno 70  ts=71365  runa [great fireball]  | comp: arrow=10 spell=0 rune=14 gren=0
+  turno 71  ts=71367  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=10 rune=0 gren=0
+  turno 72  ts=71369  runa [great fireball]  | comp: arrow=5 spell=0 rune=5 gren=0
+  turno 73  ts=71371  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=7 rune=0 gren=0
+  turno 74  ts=71373  runa [great fireball]  | comp: arrow=7 spell=0 rune=7 gren=0
+  turno 75  ts=71376  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=7 rune=0 gren=0
+  turno 76  ts=71378  runa [great fireball]  | comp: arrow=6 spell=0 rune=7 gren=0
+  turno 77  ts=71380  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=8 rune=0 gren=0
+  turno 78  ts=71382  só AA  | comp: arrow=8 spell=0 rune=0 gren=0
+  turno 79  ts=71384  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=9 rune=0 gren=0
+  turno 80  ts=71386  runa [great fireball]  | comp: arrow=5 spell=0 rune=6 gren=0
+  turno 81  ts=71389  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=4 spell=11 rune=0 gren=0
+  turno 82  ts=71391  só AA  | comp: arrow=7 spell=0 rune=0 gren=0
+  turno 83  ts=71393  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=10 spell=10 rune=0 gren=0
+  turno 84  ts=71395  só AA  | comp: arrow=9 spell=0 rune=0 gren=0
+  turno 85  ts=71397  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=12 spell=16 rune=0 gren=10
+  turno 86  ts=71399  runa [great fireball]  | comp: arrow=11 spell=0 rune=12 gren=0
+  turno 87  ts=71401  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=9 spell=12 rune=0 gren=0
+  turno 88  ts=71403  runa [great fireball]  | comp: arrow=6 spell=0 rune=10 gren=0
+  turno 89  ts=71406  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=8 rune=0 gren=0
+  turno 90  ts=71408  só AA  | comp: arrow=6 spell=0 rune=0 gren=0
+  turno 91  ts=71410  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=9 spell=12 rune=0 gren=0
+  turno 92  ts=71412  runa [great fireball]  | comp: arrow=7 spell=0 rune=11 gren=0
+  turno 93  ts=71414  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=11 rune=0 gren=0
+  turno 94  ts=71416  runa [great fireball]  | comp: arrow=6 spell=0 rune=10 gren=0
+  turno 95  ts=71418  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=9 rune=0 gren=0
+  turno 96  ts=71421  runa [great fireball]  | comp: arrow=7 spell=0 rune=10 gren=0
+  turno 97  ts=71423  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=11 rune=0 gren=0
+  turno 98  ts=71425  runa [great fireball]  | comp: arrow=7 spell=0 rune=8 gren=0
+  turno 99  ts=71427  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=9 spell=11 rune=0 gren=0
+  turno 100  ts=71429  runa [great fireball]  | comp: arrow=9 spell=0 rune=11 gren=0
+  turno 101  ts=71432  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=3 spell=7 rune=0 gren=0
+  turno 102  ts=71434  só AA  | comp: arrow=10 spell=0 rune=0 gren=0
+  turno 103  ts=71436  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=9 spell=11 rune=0 gren=8
+  turno 104  ts=71438  runa [great fireball]  | comp: arrow=9 spell=0 rune=14 gren=0
+  turno 105  ts=71440  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=11 spell=12 rune=0 gren=0
+  turno 106  ts=71442  runa [great fireball]  | comp: arrow=8 spell=0 rune=11 gren=0
+  turno 107  ts=71445  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=11 rune=0 gren=0
+  turno 108  ts=71447  runa [great fireball]  | comp: arrow=8 spell=0 rune=12 gren=0
+  turno 109  ts=71449  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=9 spell=10 rune=0 gren=0
+  turno 110  ts=71451  runa [great fireball]  | comp: arrow=4 spell=0 rune=8 gren=0
+  turno 111  ts=71453  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=7 rune=0 gren=0
+  turno 112  ts=71455  runa [great fireball]  | comp: arrow=8 spell=0 rune=9 gren=0
+  turno 113  ts=71458  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=8 rune=0 gren=0
+  turno 114  ts=71460  runa [great fireball]  | comp: arrow=3 spell=0 rune=8 gren=0
+  turno 115  ts=71462  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=12 rune=0 gren=0
+  turno 116  ts=71464  runa [great fireball]  | comp: arrow=9 spell=0 rune=12 gren=0
+  turno 117  ts=71466  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=9 spell=11 rune=0 gren=0
+  turno 118  ts=71468  runa [great fireball]  | comp: arrow=6 spell=0 rune=11 gren=0
+  turno 119  ts=71470  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=9 spell=9 rune=0 gren=0
+  turno 120  ts=71473  runa [great fireball]  | comp: arrow=3 spell=0 rune=10 gren=0
+  turno 121  ts=71475  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=10 rune=0 gren=0
+  turno 122  ts=71477  runa [great fireball]  | comp: arrow=5 spell=0 rune=10 gren=0
+  turno 123  ts=71479  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=13 rune=0 gren=0
+  turno 124  ts=71481  runa [great fireball]  | comp: arrow=7 spell=0 rune=14 gren=0
+  turno 125  ts=71484  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=10 rune=0 gren=0
+  turno 126  ts=71486  runa [great fireball]  | comp: arrow=10 spell=0 rune=12 gren=0
+  turno 127  ts=71488  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=8 spell=6 rune=0 gren=0
+  turno 128  ts=71490  runa [great fireball]  | comp: arrow=6 spell=0 rune=10 gren=0
+  turno 129  ts=71492  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=8 rune=0 gren=0
+  turno 130  ts=71494  runa [great fireball]  | comp: arrow=8 spell=0 rune=9 gren=0
+  turno 131  ts=71497  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=10 rune=0 gren=0
+  turno 132  ts=71499  runa [great fireball]  | comp: arrow=8 spell=0 rune=9 gren=0
+  turno 133  ts=71501  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=2 spell=12 rune=0 gren=0
+  turno 134  ts=71503  só AA  | comp: arrow=8 spell=0 rune=0 gren=0
+  turno 135  ts=71505  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=7 rune=0 gren=5
+  turno 136  ts=71507  runa [great fireball]  | comp: arrow=4 spell=0 rune=7 gren=0
+  turno 137  ts=71510  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=6 rune=0 gren=0
+  turno 138  ts=71512  runa [great fireball]  | comp: arrow=4 spell=0 rune=6 gren=0
+  turno 139  ts=71514  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=6 rune=0 gren=0
+  turno 140  ts=71516  runa [great fireball]  | comp: arrow=5 spell=0 rune=6 gren=0
+  turno 141  ts=71518  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=5 spell=6 rune=0 gren=0
+  turno 142  ts=71520  runa [great fireball]  | comp: arrow=7 spell=0 rune=6 gren=0
+  turno 143  ts=71522  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=7 spell=9 rune=0 gren=0
+  turno 144  ts=71525  runa [great fireball]  | comp: arrow=5 spell=0 rune=8 gren=0
+  turno 145  ts=71527  Divine Caldera (exevo mas san) [exevo mas san]  | comp: arrow=6 spell=7 rune=0 gren=0

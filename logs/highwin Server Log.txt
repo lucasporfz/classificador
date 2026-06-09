@@ -1,0 +1,1001 @@
+Channel Server Log saved Tue Jun 09 08:47:41 2026
+08:47:03 You gained 50 mana.
+08:47:03 A darklight striker loses 1062 hitpoints due to your critical attack. (active prey bonus)
+08:47:03 You were healed for 115 hitpoints.
+08:47:03 You gained 34 mana.
+08:47:03 You lose 1046 hitpoints due to an attack by a darklight striker. 
+08:47:03 You were healed by Dolerozs for 2450 hitpoints.
+08:47:03 You lose 386 hitpoints due to an attack by a darklight striker. 
+08:47:03 You lose 1028 hitpoints due to an attack by a walking pillar. 
+08:47:03 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:03 You lose 582 hitpoints due to an attack by a walking pillar. 
+08:47:03 A walking pillar loses 697 hitpoints due to your attack. 
+08:47:03 You were healed for 100 hitpoints.
+08:47:03 You gained 32 mana.
+08:47:03 A darklight striker loses 780 hitpoints due to your attack. (active prey bonus)
+08:47:03 You were healed for 95 hitpoints.
+08:47:03 You gained 28 mana.
+08:47:03 A walking pillar loses 697 hitpoints due to your attack. 
+08:47:03 You were healed for 100 hitpoints.
+08:47:03 You gained 32 mana.
+08:47:03 A walking pillar loses 2124 hitpoints due to your attack. (poison charm)
+08:47:03 A walking pillar loses 697 hitpoints due to your attack. 
+08:47:03 You were healed for 100 hitpoints.
+08:47:03 You gained 32 mana.
+08:47:03 A darklight source loses 722 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:03 You were healed for 103 hitpoints.
+08:47:03 You gained 37 mana.
+08:47:03 Using one of 3048 ultimate spirit potions...
+08:47:03 Using one of 3048 ultimate spirit potions...
+08:47:03 Using one of 3048 ultimate spirit potions...
+08:47:03 Using one of 3048 ultimate spirit potions...
+08:47:04 You gained 243 mana.
+08:47:04 You healed yourself for 481 hitpoints.
+08:47:04 You lose 548 hitpoints due to an attack by a darklight source. 
+08:47:05 You lose 552 hitpoints due to an attack by a darklight source. 
+08:47:05 You lose 475 hitpoints due to an attack by a darklight striker. 
+08:47:05 You lose 486 hitpoints due to an attack by a darklight source. 
+08:47:05 You lose 350 hitpoints due to an attack by a walking pillar. 
+08:47:05 You lose 1134 hitpoints due to an attack by a walking pillar. 
+08:47:05 You were healed by Dolerozs for 2629 hitpoints.
+08:47:05 You lose 529 hitpoints due to an attack by a darklight striker. 
+08:47:05 You lose 1119 hitpoints due to an attack by a darklight striker. 
+08:47:05 A walking pillar loses 598 hitpoints due to your attack. 
+08:47:05 You were healed for 70 hitpoints.
+08:47:05 You gained 22 mana.
+08:47:05 A walking pillar loses 630 hitpoints due to your attack. 
+08:47:05 You were healed for 74 hitpoints.
+08:47:05 You gained 24 mana.
+08:47:05 A darklight source loses 642 hitpoints due to your attack. 
+08:47:05 You were healed for 75 hitpoints.
+08:47:05 You gained 24 mana.
+08:47:05 A walking pillar loses 632 hitpoints due to your attack. 
+08:47:05 You were healed for 74 hitpoints.
+08:47:05 You gained 24 mana.
+08:47:05 A darklight matter loses 2005 hitpoints due to your attack. (active prey bonus, wound charm)
+08:47:05 A darklight matter loses 817 hitpoints due to your attack. (active prey bonus)
+08:47:05 You were healed for 76 hitpoints.
+08:47:05 You gained 27 mana.
+08:47:05 A darklight striker loses 623 hitpoints due to your attack. (active prey bonus)
+08:47:05 You were healed for 62 hitpoints.
+08:47:05 You gained 19 mana.
+08:47:05 A darklight source loses 627 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:05 You were healed for 73 hitpoints.
+08:47:05 You gained 26 mana.
+08:47:05 You lose 364 hitpoints due to an attack by a walking pillar. 
+08:47:05 You lose 629 hitpoints due to an attack by a darklight matter. 
+08:47:06 You lose 502 hitpoints due to an attack by a darklight source. 
+08:47:07 You healed yourself for 1402 hitpoints.
+08:47:07 You lose 668 hitpoints due to an attack by a darklight source. 
+08:47:07 You lose 589 hitpoints due to an attack by a darklight striker. 
+08:47:07 You lose 1182 hitpoints due to an attack by a darklight source. 
+08:47:07 You lose 335 hitpoints due to an attack by a walking pillar. 
+08:47:07 You lose 597 hitpoints due to an attack by a walking pillar. 
+08:47:07 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:07 You gained 19135 experience points (Animus mastery, Bakragore's tribute).
+08:47:07 You lose 636 hitpoints due to an attack by a darklight striker. 
+08:47:07 You lose 1000 hitpoints due to an attack by a darklight striker. 
+08:47:07 You lose 692 hitpoints due to an attack by a walking pillar. 
+08:47:07 You lose 1052 hitpoints due to an attack by a walking pillar. 
+08:47:07 A darklight source loses 2313 hitpoints due to your critical attack. (increased damage by Expose Weakness, Onslaught)
+08:47:07 You were healed for 235 hitpoints.
+08:47:07 You gained 84 mana.
+08:47:07 A darklight source loses 2329 hitpoints due to your critical attack. (increased damage by Expose Weakness, Onslaught)
+08:47:07 You were healed for 237 hitpoints.
+08:47:07 You gained 84 mana.
+08:47:07 A darklight striker loses 2451 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness, Onslaught)
+08:47:07 You were healed for 212 hitpoints.
+08:47:07 You gained 71 mana.
+08:47:07 A darklight striker loses 2236 hitpoints due to your critical attack. (active prey bonus, Onslaught)
+08:47:07 You were healed for 194 hitpoints.
+08:47:07 You gained 58 mana.
+08:47:07 A walking pillar loses 2124 hitpoints due to your attack. (poison charm)
+08:47:07 A walking pillar loses 2177 hitpoints due to your critical attack. (Onslaught)
+08:47:07 You were healed for 221 hitpoints.
+08:47:07 You gained 70 mana.
+08:47:07 A walking pillar loses 2263 hitpoints due to your critical attack. (Onslaught)
+08:47:07 You were healed for 230 hitpoints.
+08:47:07 You gained 73 mana.
+08:47:07 A walking pillar loses 2180 hitpoints due to your critical attack. (Onslaught)
+08:47:07 You were healed for 222 hitpoints.
+08:47:07 You gained 70 mana.
+08:47:07 A darklight striker loses 2363 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness, Onslaught)
+08:47:07 You were healed for 205 hitpoints.
+08:47:07 You gained 69 mana.
+08:47:07 A darklight source loses 2165 hitpoints due to your critical attack. (Onslaught)
+08:47:07 You were healed for 220 hitpoints.
+08:47:07 You gained 70 mana.
+08:47:07 You were healed by Dolerozs for 2637 hitpoints.
+08:47:08 You lose 1104 hitpoints due to an attack by a walking pillar. 
+08:47:08 Thank you for shopping with us! Your boost is now active.
+08:47:08 A transaction was successful. For more details, please check your Tibia Coins History.
+08:47:08 A walking pillar loses 760 hitpoints due to your attack. 
+08:47:08 You were healed for 64 hitpoints.
+08:47:08 You gained 21 mana.
+08:47:08 A darklight source loses 787 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:08 You were healed for 66 hitpoints.
+08:47:08 You gained 24 mana.
+08:47:08 A walking pillar loses 760 hitpoints due to your attack. 
+08:47:08 You were healed for 64 hitpoints.
+08:47:08 You gained 21 mana.
+08:47:08 A darklight striker loses 852 hitpoints due to your attack. (active prey bonus)
+08:47:08 You were healed for 61 hitpoints.
+08:47:08 You gained 19 mana.
+08:47:08 A darklight source loses 787 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:08 You were healed for 66 hitpoints.
+08:47:08 You gained 24 mana.
+08:47:08 A darklight striker loses 852 hitpoints due to your attack. (active prey bonus)
+08:47:08 You were healed for 61 hitpoints.
+08:47:08 You gained 19 mana.
+08:47:08 A walking pillar loses 2124 hitpoints due to your attack. (poison charm)
+08:47:08 A walking pillar loses 760 hitpoints due to your attack. 
+08:47:08 You were healed for 64 hitpoints.
+08:47:08 You gained 21 mana.
+08:47:08 A walking pillar loses 760 hitpoints due to your attack. 
+08:47:08 You were healed for 64 hitpoints.
+08:47:08 You gained 21 mana.
+08:47:08 A darklight striker loses 927 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:08 You were healed for 66 hitpoints.
+08:47:08 You gained 23 mana.
+08:47:08 A walking pillar loses 760 hitpoints due to your attack. 
+08:47:08 You were healed for 64 hitpoints.
+08:47:08 You gained 21 mana.
+08:47:08 A darklight matter loses 945 hitpoints due to your attack. (active prey bonus)
+08:47:08 You were healed for 64 hitpoints.
+08:47:08 You gained 23 mana.
+08:47:08 A darklight striker loses 927 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:08 You were healed for 66 hitpoints.
+08:47:08 You gained 23 mana.
+08:47:08 A darklight source loses 757 hitpoints due to your attack. 
+08:47:08 You were healed for 64 hitpoints.
+08:47:08 You gained 21 mana.
+08:47:08 A darklight source loses 757 hitpoints due to your attack. 
+08:47:08 You were healed for 64 hitpoints.
+08:47:08 You gained 21 mana.
+08:47:08 Using one of 3047 ultimate spirit potions...
+08:47:08 You lose 589 hitpoints due to an attack by a darklight source. 
+08:47:08 Using one of 3047 ultimate spirit potions...
+08:47:08 Using one of 3047 ultimate spirit potions...
+08:47:08 Using one of 3047 ultimate spirit potions...
+08:47:08 You gained 232 mana.
+08:47:08 You healed yourself for 506 hitpoints.
+08:47:08 You lose 434 hitpoints due to an attack by a darklight striker. 
+08:47:08 You lose 567 hitpoints due to an attack by a darklight striker. 
+08:47:08 You healed yourself for 1134 hitpoints.
+08:47:08 You lose 596 hitpoints due to an attack by a darklight matter. 
+08:47:08 Using one of 3046 ultimate spirit potions...
+08:47:08 Using one of 3046 ultimate spirit potions...
+08:47:08 Using one of 3046 ultimate spirit potions...
+08:47:09 Using one of 3046 ultimate spirit potions...
+08:47:09 Using one of 3046 ultimate spirit potions...
+08:47:09 Using one of 3046 ultimate spirit potions...
+08:47:09 You lose 466 hitpoints due to an attack by a darklight source. 
+08:47:09 You lose 655 hitpoints due to an attack by a darklight striker. 
+08:47:09 You gained 203 mana.
+08:47:09 You healed yourself for 580 hitpoints.
+08:47:09 You lose 522 hitpoints due to an attack by a darklight source. 
+08:47:09 You healed yourself for 1514 hitpoints.
+08:47:09 You lose 348 hitpoints due to an attack by a walking pillar. 
+08:47:09 You lose 985 hitpoints due to an attack by a walking pillar. 
+08:47:09 You lose 243 hitpoints due to an attack by a darklight striker. 
+08:47:09 You lose 502 hitpoints due to an attack by a darklight striker. 
+08:47:09 You lose 252 hitpoints due to an attack by a walking pillar. 
+08:47:09 You lose 727 hitpoints due to an attack by a walking pillar. 
+08:47:09 You lose 888 hitpoints due to an attack by a walking pillar. 
+08:47:10 You were healed by Dolerozs for 2849 hitpoints.
+08:47:10 A darklight source loses 1588 hitpoints due to your attack. (divine wrath charm, increased damage by Expose Weakness)
+08:47:10 A darklight source loses 1010 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:10 You were healed for 90 hitpoints.
+08:47:10 You gained 32 mana.
+08:47:10 A walking pillar loses 936 hitpoints due to your attack. 
+08:47:10 You were healed for 84 hitpoints.
+08:47:10 You gained 27 mana.
+08:47:10 A darklight source loses 971 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:10 You were healed for 87 hitpoints.
+08:47:10 You gained 31 mana.
+08:47:10 A walking pillar loses 972 hitpoints due to your attack. 
+08:47:10 You were healed for 87 hitpoints.
+08:47:10 You gained 28 mana.
+08:47:10 A darklight striker loses 1072 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:10 You were healed for 82 hitpoints.
+08:47:10 You gained 28 mana.
+08:47:10 A walking pillar loses 953 hitpoints due to your attack. 
+08:47:10 You were healed for 85 hitpoints.
+08:47:10 You gained 27 mana.
+08:47:10 A darklight striker loses 973 hitpoints due to your attack. (active prey bonus)
+08:47:10 You were healed for 74 hitpoints.
+08:47:10 You gained 22 mana.
+08:47:10 A walking pillar loses 984 hitpoints due to your attack. 
+08:47:10 You were healed for 88 hitpoints.
+08:47:10 You gained 28 mana.
+08:47:10 A darklight striker loses 947 hitpoints due to your attack. (active prey bonus)
+08:47:10 You were healed for 72 hitpoints.
+08:47:10 You gained 22 mana.
+08:47:10 A darklight striker loses 1083 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:10 You were healed for 82 hitpoints.
+08:47:10 You gained 28 mana.
+08:47:10 A darklight source loses 982 hitpoints due to your attack. 
+08:47:10 You were healed for 88 hitpoints.
+08:47:10 You gained 28 mana.
+08:47:10 A darklight source loses 974 hitpoints due to your attack. 
+08:47:10 You were healed for 87 hitpoints.
+08:47:10 You gained 28 mana.
+08:47:10 You lose 488 hitpoints due to an attack by a darklight source. 
+08:47:10 Using one of 1476 great fireball runes...
+08:47:10 You lose 580 hitpoints due to an attack by a darklight striker. 
+08:47:10 You lose 992 hitpoints due to an attack by a darklight striker. 
+08:47:10 A darklight source loses 537 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:10 You were healed for 43 hitpoints.
+08:47:10 You gained 16 mana.
+08:47:10 A walking pillar loses 521 hitpoints due to your attack. 
+08:47:10 You were healed for 42 hitpoints.
+08:47:10 You gained 14 mana.
+08:47:10 A darklight source loses 537 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:10 You were healed for 43 hitpoints.
+08:47:10 You gained 16 mana.
+08:47:10 A walking pillar loses 602 hitpoints due to your attack. (poison charm)
+08:47:10 You gained 39327 experience points (active prey bonus, Animus mastery, Bakragore's tribute).
+08:47:10 A darklight striker loses 727 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:10 You were healed for 50 hitpoints.
+08:47:10 You gained 17 mana.
+08:47:10 A walking pillar loses 521 hitpoints due to your attack. 
+08:47:10 You were healed for 42 hitpoints.
+08:47:10 You gained 14 mana.
+08:47:10 A darklight striker loses 1279 hitpoints due to your attack. (active prey bonus, enflame charm)
+08:47:10 You gained 28363 experience points (Animus mastery, Bakragore's tribute).
+08:47:10 A walking pillar loses 521 hitpoints due to your attack. 
+08:47:10 You were healed for 42 hitpoints.
+08:47:10 You gained 14 mana.
+08:47:10 A darklight striker loses 705 hitpoints due to your attack. (active prey bonus)
+08:47:10 You were healed for 48 hitpoints.
+08:47:10 You gained 15 mana.
+08:47:10 A darklight striker loses 727 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:10 You were healed for 50 hitpoints.
+08:47:10 You gained 17 mana.
+08:47:10 A darklight source loses 518 hitpoints due to your attack. 
+08:47:10 You were healed for 42 hitpoints.
+08:47:10 You gained 13 mana.
+08:47:10 A darklight source loses 518 hitpoints due to your attack. 
+08:47:10 You were healed for 42 hitpoints.
+08:47:10 You gained 13 mana.
+08:47:10 A darklight matter loses 703 hitpoints due to your attack. (active prey bonus)
+08:47:10 You were healed for 45 hitpoints.
+08:47:10 You gained 16 mana.
+08:47:10 A darklight source loses 518 hitpoints due to your attack. 
+08:47:10 You were healed for 42 hitpoints.
+08:47:10 You gained 13 mana.
+08:47:10 A darklight matter loses 703 hitpoints due to your attack. (active prey bonus)
+08:47:10 You were healed for 45 hitpoints.
+08:47:10 You gained 16 mana.
+08:47:10 A darklight source loses 518 hitpoints due to your attack. 
+08:47:10 You were healed for 42 hitpoints.
+08:47:10 You gained 13 mana.
+08:47:10 You lose 447 hitpoints due to an attack by a darklight striker. 
+08:47:10 Using one of 3045 ultimate spirit potions...
+08:47:10 You lose 608 hitpoints due to an attack by a darklight matter. 
+08:47:10 Using one of 3045 ultimate spirit potions...
+08:47:10 You lose 342 hitpoints due to an attack by a darklight source. 
+08:47:10 You healed yourself for 1400 hitpoints.
+08:47:10 You gained 28704 experience points (Animus mastery, Bakragore's tribute).
+08:47:11 You lose 1194 hitpoints due to an attack by a darklight source. 
+08:47:11 You were healed by Dolerozs for 6410 hitpoints.
+08:47:11 You lose 729 hitpoints due to an attack by a darklight source. 
+08:47:11 You lose 500 hitpoints due to an attack by a darklight source. 
+08:47:11 You lose 476 hitpoints due to an attack by a darklight striker. 
+08:47:11 You lose 999 hitpoints due to an attack by a darklight source. 
+08:47:11 Using one of 3045 ultimate spirit potions...
+08:47:11 You lose 531 hitpoints due to an attack by a walking pillar. 
+08:47:11 You lose 654 hitpoints due to an attack by a walking pillar. 
+08:47:11 Using one of 3045 ultimate spirit potions...
+08:47:11 Using one of 3045 ultimate spirit potions...
+08:47:11 Using one of 3045 ultimate spirit potions...
+08:47:11 Using one of 3045 ultimate spirit potions...
+08:47:11 You gained 184 mana.
+08:47:11 You healed yourself for 471 hitpoints.
+08:47:11 You healed yourself for 1339 hitpoints.
+08:47:12 You were healed by Dolerozs for 2361 hitpoints.
+08:47:12 You lose 423 hitpoints due to an attack by a darklight striker. 
+08:47:12 You dodged an attack. (Ruse)
+08:47:12 You lose 1140 hitpoints. 
+08:47:12 A darklight source loses 794 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:12 You were healed for 77 hitpoints.
+08:47:12 You gained 28 mana.
+08:47:12 A walking pillar loses 769 hitpoints due to your attack. 
+08:47:12 You were healed for 75 hitpoints.
+08:47:12 You gained 24 mana.
+08:47:12 A darklight striker loses 2247 hitpoints due to your attack. (active prey bonus, enflame charm)
+08:47:12 A darklight striker loses 763 hitpoints due to your attack. (active prey bonus)
+08:47:12 You were healed for 63 hitpoints.
+08:47:12 You gained 19 mana.
+08:47:12 A darklight striker loses 826 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:12 You were healed for 68 hitpoints.
+08:47:12 You gained 23 mana.
+08:47:12 A walking pillar loses 727 hitpoints due to your attack. 
+08:47:12 You were healed for 71 hitpoints.
+08:47:12 You gained 23 mana.
+08:47:12 A darklight source loses 766 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:12 You were healed for 74 hitpoints.
+08:47:12 You gained 27 mana.
+08:47:12 A walking pillar loses 739 hitpoints due to your attack. 
+08:47:12 You were healed for 72 hitpoints.
+08:47:12 You gained 23 mana.
+08:47:12 A darklight striker loses 833 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:12 You were healed for 69 hitpoints.
+08:47:12 You gained 23 mana.
+08:47:12 A darklight source loses 752 hitpoints due to your attack. 
+08:47:12 You were healed for 73 hitpoints.
+08:47:12 You gained 23 mana.
+08:47:12 A darklight source loses 747 hitpoints due to your attack. 
+08:47:12 You were healed for 73 hitpoints.
+08:47:12 You gained 23 mana.
+08:47:12 You gained 28704 experience points (Animus mastery, Bakragore's tribute).
+08:47:12 You lose 573 hitpoints due to an attack by a darklight matter. 
+08:47:12 You gained 28363 experience points (Animus mastery, Bakragore's tribute).
+08:47:12 You lose 456 hitpoints. 
+08:47:13 You healed yourself for 1537 hitpoints.
+08:47:13 You lose 511 hitpoints due to an attack by a darklight source. 
+08:47:13 You lose 717 hitpoints due to an attack by a darklight source. 
+08:47:13 Using one of 3044 ultimate spirit potions...
+08:47:13 Using one of 3044 ultimate spirit potions...
+08:47:13 You lose 592 hitpoints due to an attack by a walking pillar. 
+08:47:13 You lose 623 hitpoints due to an attack by a walking pillar. 
+08:47:13 Using one of 3044 ultimate spirit potions...
+08:47:13 You lose 681 hitpoints due to an attack by a darklight striker. 
+08:47:13 Using one of 3044 ultimate spirit potions...
+08:47:13 You lose 662 hitpoints due to an attack by a darklight striker. 
+08:47:13 You gained 176 mana.
+08:47:13 You healed yourself for 459 hitpoints.
+08:47:13 You lose 522 hitpoints due to an attack by a darklight source. 
+08:47:13 You lose 530 hitpoints due to an attack by a walking pillar. 
+08:47:13 You lose 922 hitpoints due to an attack by a walking pillar. 
+08:47:13 You lose 456 hitpoints. 
+08:47:14 You healed yourself for 1211 hitpoints.
+08:47:14 You lose 484 hitpoints due to an attack by a darklight source. 
+08:47:14 You were healed by Dolerozs for 2426 hitpoints.
+08:47:14 You lose 484 hitpoints due to an attack by a darklight matter. 
+08:47:14 You lose 1062 hitpoints due to an attack by a darklight source. 
+08:47:14 A darklight source loses 725 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:14 You were healed for 60 hitpoints.
+08:47:14 You gained 22 mana.
+08:47:14 A walking pillar loses 728 hitpoints due to your attack. 
+08:47:14 You were healed for 60 hitpoints.
+08:47:14 You gained 19 mana.
+08:47:14 A walking pillar loses 741 hitpoints due to your attack. 
+08:47:14 You were healed for 62 hitpoints.
+08:47:14 You gained 20 mana.
+08:47:14 A darklight matter loses 881 hitpoints due to your attack. (active prey bonus)
+08:47:14 You were healed for 59 hitpoints.
+08:47:14 You gained 21 mana.
+08:47:14 A darklight striker loses 2598 hitpoints due to your attack. (active prey bonus, enflame charm, increased damage by Expose Weakness)
+08:47:14 A darklight striker loses 798 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:14 You were healed for 57 hitpoints.
+08:47:14 You gained 19 mana.
+08:47:14 A walking pillar loses 724 hitpoints due to your attack. 
+08:47:14 You were healed for 60 hitpoints.
+08:47:14 You gained 19 mana.
+08:47:14 A darklight source loses 764 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:14 You were healed for 64 hitpoints.
+08:47:14 You gained 23 mana.
+08:47:14 A walking pillar loses 689 hitpoints due to your attack. 
+08:47:14 You were healed for 57 hitpoints.
+08:47:14 You gained 18 mana.
+08:47:14 A darklight striker loses 768 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:14 You were healed for 54 hitpoints.
+08:47:14 You gained 18 mana.
+08:47:14 A darklight source loses 689 hitpoints due to your attack. 
+08:47:14 You were healed for 57 hitpoints.
+08:47:14 You gained 18 mana.
+08:47:14 A darklight source loses 1710 hitpoints due to your attack. (divine wrath charm)
+08:47:14 A darklight source loses 745 hitpoints due to your attack. 
+08:47:14 You were healed for 62 hitpoints.
+08:47:14 You gained 20 mana.
+08:47:14 A walking pillar loses 843 hitpoints due to your attack. 
+08:47:14 You were healed for 63 hitpoints.
+08:47:14 You gained 20 mana.
+08:47:14 A darklight matter loses 1048 hitpoints due to your attack. (active prey bonus)
+08:47:14 You were healed for 63 hitpoints.
+08:47:14 You gained 22 mana.
+08:47:14 A darklight source loses 873 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:14 You were healed for 66 hitpoints.
+08:47:14 You gained 24 mana.
+08:47:14 A darklight source loses 1778 hitpoints due to your attack. (divine wrath charm, increased damage by Expose Weakness)
+08:47:14 A darklight source loses 873 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:14 You were healed for 66 hitpoints.
+08:47:14 You gained 24 mana.
+08:47:14 A walking pillar loses 843 hitpoints due to your attack. 
+08:47:14 You were healed for 63 hitpoints.
+08:47:14 You gained 20 mana.
+08:47:14 A walking pillar loses 843 hitpoints due to your attack. 
+08:47:14 You were healed for 63 hitpoints.
+08:47:14 You gained 20 mana.
+08:47:14 A darklight matter loses 190 hitpoints due to your attack. (active prey bonus)
+08:47:14 You were healed for 63 hitpoints.
+08:47:14 You gained 22 mana.
+08:47:14 You gained 28429 experience points (Animus mastery, Bakragore's tribute).
+08:47:14 A darklight striker loses 1689 hitpoints due to your attack. (active prey bonus, enflame charm, increased damage by Expose Weakness)
+08:47:14 You gained 28363 experience points (Animus mastery, Bakragore's tribute).
+08:47:14 A walking pillar loses 2378 hitpoints due to your attack. (poison charm)
+08:47:14 A walking pillar loses 843 hitpoints due to your attack. 
+08:47:14 You were healed for 63 hitpoints.
+08:47:14 You gained 20 mana.
+08:47:14 A walking pillar loses 843 hitpoints due to your attack. 
+08:47:14 You were healed for 63 hitpoints.
+08:47:14 You gained 20 mana.
+08:47:14 A darklight striker loses 2516 hitpoints due to your attack. (active prey bonus, enflame charm)
+08:47:14 A darklight striker loses 946 hitpoints due to your attack. (active prey bonus)
+08:47:14 You were healed for 60 hitpoints.
+08:47:14 You gained 18 mana.
+08:47:14 A darklight striker loses 1030 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:14 You were healed for 66 hitpoints.
+08:47:14 You gained 22 mana.
+08:47:14 A darklight source loses 840 hitpoints due to your attack. 
+08:47:14 You were healed for 63 hitpoints.
+08:47:14 You gained 20 mana.
+08:47:14 A darklight source loses 840 hitpoints due to your attack. 
+08:47:14 You were healed for 63 hitpoints.
+08:47:14 You gained 20 mana.
+08:47:14 You lose 456 hitpoints. 
+08:47:14 Using one of 3043 ultimate spirit potions...
+08:47:14 Using one of 3043 ultimate spirit potions...
+08:47:15 Using one of 3043 ultimate spirit potions...
+08:47:15 Using one of 3043 ultimate spirit potions...
+08:47:15 You gained 192 mana.
+08:47:15 You healed yourself for 462 hitpoints.
+08:47:15 You lose 447 hitpoints due to an attack by a darklight source. 
+08:47:15 You lose 543 hitpoints due to an attack by a darklight source. 
+08:47:15 You lose 1121 hitpoints due to an attack by a darklight source. 
+08:47:15 You lose 501 hitpoints due to an attack by a darklight source. 
+08:47:15 You lose 881 hitpoints due to an attack by a darklight matter. 
+08:47:15 You lose 498 hitpoints due to an attack by a darklight matter. 
+08:47:15 You lose 1024 hitpoints due to an attack by a walking pillar. 
+08:47:15 You lose 373 hitpoints due to an attack by a darklight matter. 
+08:47:15 You lose 275 hitpoints due to an attack by a walking pillar. 
+08:47:15 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:15 You lose 719 hitpoints due to an attack by a walking pillar. 
+08:47:15 You healed yourself for 1153 hitpoints.
+08:47:15 Using one of 3042 ultimate spirit potions...
+08:47:15 Using one of 3042 ultimate spirit potions...
+08:47:15 Using one of 3042 ultimate spirit potions...
+08:47:15 Using one of 3042 ultimate spirit potions...
+08:47:15 Using one of 3042 ultimate spirit potions...
+08:47:15 You lose 456 hitpoints. 
+08:47:16 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:16 A darklight source loses 1778 hitpoints due to your attack. (divine wrath charm, increased damage by Expose Weakness)
+08:47:16 A darklight source loses 596 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 29 mana.
+08:47:16 You gained 28704 experience points (Animus mastery, Bakragore's tribute).
+08:47:16 A walking pillar loses 992 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 30 mana.
+08:47:16 A walking pillar loses 992 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 30 mana.
+08:47:16 A darklight matter loses 1234 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 32 mana.
+08:47:16 A walking pillar loses 734 hitpoints due to your attack. (poison charm)
+08:47:16 You gained 39327 experience points (active prey bonus, Animus mastery, Bakragore's tribute).
+08:47:16 A walking pillar loses 992 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 30 mana.
+08:47:16 A darklight source loses 987 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 29 mana.
+08:47:16 A walking pillar loses 992 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 30 mana.
+08:47:16 A darklight striker loses 7 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 28 mana.
+08:47:16 You gained 28363 experience points (Animus mastery, Bakragore's tribute).
+08:47:16 A darklight source loses 1778 hitpoints due to your attack. (divine wrath charm, increased damage by Expose Weakness)
+08:47:16 A darklight source loses 987 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 29 mana.
+08:47:16 A darklight source loses 987 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 82 hitpoints.
+08:47:16 You gained 29 mana.
+08:47:16 You lose 803 mana due to an attack by a walking pillar. 
+08:47:16 You lose 647 mana due to an attack by a walking pillar. 
+08:47:16 You lose 278 mana due to an attack by a walking pillar. 
+08:47:16 You lose 456 mana. 
+08:47:16 You were healed by Dolerozs for 2743 hitpoints.
+08:47:16 A walking pillar loses 720 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 70 hitpoints.
+08:47:16 You gained 25 mana.
+08:47:16 A darklight source loses 716 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 70 hitpoints.
+08:47:16 You gained 25 mana.
+08:47:16 A darklight striker loses 663 hitpoints due to your attack. (active prey bonus)
+08:47:16 You were healed for 55 hitpoints.
+08:47:16 You gained 17 mana.
+08:47:16 A walking pillar loses 677 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 66 hitpoints.
+08:47:16 You gained 24 mana.
+08:47:16 A darklight matter loses 2326 hitpoints due to your attack. (active prey bonus, wound charm, increased damage by Expose Weakness)
+08:47:16 A darklight matter loses 898 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:16 You were healed for 70 hitpoints.
+08:47:16 You gained 27 mana.
+08:47:16 A darklight striker loses 646 hitpoints due to your attack. (active prey bonus)
+08:47:16 You were healed for 54 hitpoints.
+08:47:16 You gained 16 mana.
+08:47:16 A darklight matter loses 2245 hitpoints due to your attack. (active prey bonus, wound charm)
+08:47:16 A darklight matter loses 836 hitpoints due to your attack. (active prey bonus)
+08:47:16 You were healed for 65 hitpoints.
+08:47:16 You gained 23 mana.
+08:47:16 A walking pillar loses 720 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:16 You were healed for 70 hitpoints.
+08:47:16 You gained 25 mana.
+08:47:17 Using one of 1475 great fireball runes...
+08:47:17 You lose 420 mana due to an attack by a darklight source. 
+08:47:17 You lose 812 mana due to an attack by a darklight source. 
+08:47:17 A walking pillar loses 686 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:17 You were healed for 55 hitpoints.
+08:47:17 You gained 20 mana.
+08:47:17 A walking pillar loses 686 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:17 You were healed for 55 hitpoints.
+08:47:17 You gained 20 mana.
+08:47:17 A darklight matter loses 925 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:17 You were healed for 59 hitpoints.
+08:47:17 You gained 23 mana.
+08:47:17 A walking pillar loses 686 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:17 You were healed for 55 hitpoints.
+08:47:17 You gained 20 mana.
+08:47:17 A darklight source loses 1778 hitpoints due to your attack. (divine wrath charm, increased damage by Expose Weakness)
+08:47:17 A darklight source loses 683 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:17 You were healed for 55 hitpoints.
+08:47:17 You gained 20 mana.
+08:47:17 A walking pillar loses 686 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:17 You were healed for 55 hitpoints.
+08:47:17 You gained 20 mana.
+08:47:17 A darklight source loses 1710 hitpoints due to your attack. (divine wrath charm)
+08:47:17 A darklight source loses 660 hitpoints due to your attack. 
+08:47:17 You were healed for 53 hitpoints.
+08:47:17 You gained 17 mana.
+08:47:17 A darklight source loses 683 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:17 You were healed for 55 hitpoints.
+08:47:17 You gained 20 mana.
+08:47:17 A darklight source loses 683 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:17 You were healed for 55 hitpoints.
+08:47:17 You gained 20 mana.
+08:47:17 A darklight striker loses 898 hitpoints due to your attack. (active prey bonus)
+08:47:17 You were healed for 61 hitpoints.
+08:47:17 You gained 19 mana.
+08:47:17 A darklight matter loses 897 hitpoints due to your attack. (active prey bonus)
+08:47:17 You were healed for 58 hitpoints.
+08:47:17 You gained 20 mana.
+08:47:17 A walking pillar loses 686 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:17 You were healed for 55 hitpoints.
+08:47:17 You gained 20 mana.
+08:47:17 You lose 1062 mana due to an attack by a walking pillar. 
+08:47:17 You lose 379 mana due to an attack by a darklight matter. 
+08:47:17 You lose 789 mana due to an attack by a darklight matter. 
+08:47:17 You lose 681 mana due to an attack by a walking pillar. 
+08:47:17 You lose 456 hitpoints. 
+08:47:18 Using one of 3042 ultimate spirit potions...
+08:47:18 Using one of 3042 ultimate spirit potions...
+08:47:18 You gained 201 mana.
+08:47:18 You healed yourself for 429 hitpoints.
+08:47:18 You healed yourself for 1199 hitpoints.
+08:47:18 You lose 331 hitpoints due to an attack by a walking pillar. 
+08:47:18 You lose 456 hitpoints. 
+08:47:18 You gained 28704 experience points (Animus mastery, Bakragore's tribute).
+08:47:19 You lose 593 hitpoints due to an attack by a darklight source. 
+08:47:19 A walking pillar loses 2198 hitpoints due to your attack. (poison charm, increased damage by Expose Weakness)
+08:47:19 A walking pillar loses 825 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 84 hitpoints.
+08:47:19 You gained 30 mana.
+08:47:19 A darklight source loses 135 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 87 hitpoints.
+08:47:19 You gained 31 mana.
+08:47:19 You gained 28704 experience points (Animus mastery, Bakragore's tribute).
+08:47:19 A darklight source loses 845 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 86 hitpoints.
+08:47:19 You gained 31 mana.
+08:47:19 A darklight matter loses 1081 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:19 You were healed for 88 hitpoints.
+08:47:19 You gained 34 mana.
+08:47:19 A walking pillar loses 827 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 84 hitpoints.
+08:47:19 You gained 30 mana.
+08:47:19 A walking pillar loses 824 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 84 hitpoints.
+08:47:19 You gained 30 mana.
+08:47:19 A darklight source loses 1527 hitpoints due to your attack. (divine wrath charm)
+08:47:19 A darklight source loses 831 hitpoints due to your attack. 
+08:47:19 You were healed for 85 hitpoints.
+08:47:19 You gained 27 mana.
+08:47:19 A walking pillar loses 800 hitpoints due to your attack. 
+08:47:19 You were healed for 82 hitpoints.
+08:47:19 You gained 26 mana.
+08:47:19 A walking pillar loses 835 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 85 hitpoints.
+08:47:19 You gained 31 mana.
+08:47:19 You were healed by Dolerozs for 2495 hitpoints.
+08:47:19 You lose 471 hitpoints due to an attack by a darklight striker. 
+08:47:19 You lose 334 hitpoints due to an attack by a darklight matter. 
+08:47:19 You lose 783 hitpoints due to an attack by a darklight matter. 
+08:47:19 A darklight matter loses 950 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:19 You were healed for 74 hitpoints.
+08:47:19 You gained 29 mana.
+08:47:19 A walking pillar loses 764 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 74 hitpoints.
+08:47:19 You gained 27 mana.
+08:47:19 A walking pillar loses 764 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 74 hitpoints.
+08:47:19 You gained 27 mana.
+08:47:19 A darklight source loses 760 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 74 hitpoints.
+08:47:19 You gained 27 mana.
+08:47:19 A walking pillar loses 2124 hitpoints due to your attack. (poison charm)
+08:47:19 A walking pillar loses 735 hitpoints due to your attack. 
+08:47:19 You were healed for 72 hitpoints.
+08:47:19 You gained 23 mana.
+08:47:19 A darklight striker loses 822 hitpoints due to your attack. (active prey bonus)
+08:47:19 You were healed for 68 hitpoints.
+08:47:19 You gained 21 mana.
+08:47:19 A walking pillar loses 764 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 74 hitpoints.
+08:47:19 You gained 27 mana.
+08:47:19 A walking pillar loses 764 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:19 You were healed for 74 hitpoints.
+08:47:19 You gained 27 mana.
+08:47:19 A darklight source loses 731 hitpoints due to your attack. 
+08:47:19 You were healed for 71 hitpoints.
+08:47:19 You gained 23 mana.
+08:47:19 A walking pillar loses 735 hitpoints due to your attack. 
+08:47:19 You were healed for 72 hitpoints.
+08:47:19 You gained 23 mana.
+08:47:19 Using one of 3041 ultimate spirit potions...
+08:47:19 Using one of 3041 ultimate spirit potions...
+08:47:19 You lose 456 hitpoints. 
+08:47:19 You gained 218 mana.
+08:47:19 You healed yourself for 573 hitpoints.
+08:47:19 You healed yourself for 1234 hitpoints.
+08:47:20 You lose 1074 hitpoints due to an attack by a walking pillar. 
+08:47:20 Using one of 3040 ultimate spirit potions...
+08:47:20 Using one of 3040 ultimate spirit potions...
+08:47:20 Using one of 3040 ultimate spirit potions...
+08:47:20 Using one of 3040 ultimate spirit potions...
+08:47:20 Using one of 3040 ultimate spirit potions...
+08:47:20 You gained 39327 experience points (active prey bonus, Animus mastery, Bakragore's tribute).
+08:47:20 You lose 616 hitpoints due to an attack by a walking pillar. 
+08:47:20 You lose 1070 hitpoints due to an attack by a walking pillar. 
+08:47:20 You lose 456 hitpoints. 
+08:47:20 You gained 198 mana.
+08:47:20 You healed yourself for 534 hitpoints.
+08:47:21 You healed yourself for 1533 hitpoints.
+08:47:21 You lose 1089 hitpoints due to an attack by a walking pillar. 
+08:47:21 You lose 1014 hitpoints due to an attack by a walking pillar. 
+08:47:21 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:21 You lose 580 hitpoints due to an attack by a darklight matter. 
+08:47:21 You lose 492 hitpoints due to an attack by a darklight matter. 
+08:47:21 You lose 759 hitpoints due to an attack by a darklight matter. 
+08:47:21 You lose 505 hitpoints due to an attack by a darklight matter. 
+08:47:21 A darklight source loses 1394 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+08:47:21 You were healed for 151 hitpoints.
+08:47:21 You gained 54 mana.
+08:47:21 A walking pillar loses 14 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+08:47:21 You were healed for 151 hitpoints.
+08:47:21 You gained 54 mana.
+08:47:21 You gained 39327 experience points (active prey bonus, Animus mastery, Bakragore's tribute).
+08:47:21 A walking pillar loses 2198 hitpoints due to your attack. (poison charm, increased damage by Expose Weakness)
+08:47:21 A walking pillar loses 1435 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+08:47:21 You were healed for 155 hitpoints.
+08:47:21 You gained 56 mana.
+08:47:21 A walking pillar loses 1410 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+08:47:21 You were healed for 153 hitpoints.
+08:47:21 You gained 54 mana.
+08:47:21 A walking pillar loses 1351 hitpoints due to your critical attack. 
+08:47:21 You were healed for 146 hitpoints.
+08:47:21 You gained 47 mana.
+08:47:21 A darklight source loses 1370 hitpoints due to your critical attack. 
+08:47:21 You were healed for 148 hitpoints.
+08:47:21 You gained 47 mana.
+08:47:21 A darklight striker loses 1337 hitpoints due to your critical attack. (active prey bonus)
+08:47:21 You were healed for 123 hitpoints.
+08:47:21 You gained 37 mana.
+08:47:21 A walking pillar loses 1375 hitpoints due to your critical attack. 
+08:47:21 You were healed for 149 hitpoints.
+08:47:21 You gained 47 mana.
+08:47:21 You gained 28704 experience points (Animus mastery, Bakragore's tribute).
+08:47:21 You were healed by Dolerozs for 2362 hitpoints.
+08:47:21 Using one of 1474 great fireball runes...
+08:47:21 You lose 456 hitpoints. 
+08:47:21 A walking pillar loses 590 hitpoints due to your attack. 
+08:47:21 You were healed for 75 hitpoints.
+08:47:21 You gained 24 mana.
+08:47:21 A walking pillar loses 590 hitpoints due to your attack. 
+08:47:21 You were healed for 75 hitpoints.
+08:47:21 You gained 24 mana.
+08:47:21 A darklight striker loses 798 hitpoints due to your attack. (active prey bonus)
+08:47:21 You were healed for 87 hitpoints.
+08:47:21 You gained 26 mana.
+08:47:21 A darklight source loses 1527 hitpoints due to your attack. (divine wrath charm)
+08:47:21 A darklight source loses 587 hitpoints due to your attack. 
+08:47:21 You were healed for 75 hitpoints.
+08:47:21 You gained 24 mana.
+08:47:21 A darklight matter loses 822 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:21 You were healed for 84 hitpoints.
+08:47:21 You gained 33 mana.
+08:47:21 A walking pillar loses 610 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:21 You were healed for 78 hitpoints.
+08:47:21 You gained 28 mana.
+08:47:22 You lose 500 hitpoints due to an attack by a walking pillar. 
+08:47:22 Using one of 3039 ultimate spirit potions...
+08:47:22 You dodged an attack. (Ruse)
+08:47:22 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:22 You healed yourself for 1237 hitpoints.
+08:47:22 You lose 654 hitpoints due to an attack by a walking pillar. 
+08:47:22 Using one of 3039 ultimate spirit potions...
+08:47:22 Using one of 3039 ultimate spirit potions...
+08:47:22 Using one of 3039 ultimate spirit potions...
+08:47:22 Using one of 3039 ultimate spirit potions...
+08:47:22 Using one of 3039 ultimate spirit potions...
+08:47:22 You lose 456 hitpoints. 
+08:47:22 You were healed by Dolerozs for 2323 hitpoints.
+08:47:22 You gained 176 mana.
+08:47:22 You healed yourself for 561 hitpoints.
+08:47:23 You healed yourself for 1146 hitpoints.
+08:47:23 You lose 616 hitpoints due to an attack by a darklight matter. 
+08:47:23 You lose 736 hitpoints due to an attack by a darklight matter. 
+08:47:23 You lose 604 hitpoints due to an attack by a darklight matter. 
+08:47:23 You lose 454 hitpoints due to an attack by a darklight matter. 
+08:47:23 You lose 456 hitpoints. 
+08:47:23 You were healed by Dolerozs for 2226 hitpoints.
+08:47:23 A darklight matter loses 697 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:23 You were healed for 80 hitpoints.
+08:47:23 You gained 31 mana.
+08:47:23 A walking pillar loses 574 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:23 You were healed for 82 hitpoints.
+08:47:23 You gained 30 mana.
+08:47:23 A darklight striker loses 552 hitpoints due to your attack. (active prey bonus)
+08:47:23 You were healed for 67 hitpoints.
+08:47:23 You gained 20 mana.
+08:47:23 A darklight striker loses 2247 hitpoints due to your attack. (active prey bonus, enflame charm)
+08:47:23 A darklight striker loses 556 hitpoints due to your attack. (active prey bonus)
+08:47:23 You were healed for 68 hitpoints.
+08:47:23 You gained 21 mana.
+08:47:23 A walking pillar loses 542 hitpoints due to your attack. 
+08:47:23 You were healed for 78 hitpoints.
+08:47:23 You gained 25 mana.
+08:47:23 You lose 559 hitpoints due to an attack by a darklight striker. 
+08:47:23 You lose 520 hitpoints due to an attack by a darklight source. 
+08:47:24 You lose 677 hitpoints due to an attack by a walking pillar. 
+08:47:24 A walking pillar loses 2124 hitpoints due to your attack. (poison charm)
+08:47:24 A walking pillar loses 723 hitpoints due to your attack. 
+08:47:24 You were healed for 70 hitpoints.
+08:47:24 You gained 23 mana.
+08:47:24 A darklight matter loses 935 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+08:47:24 You were healed for 73 hitpoints.
+08:47:24 You gained 28 mana.
+08:47:24 A walking pillar loses 752 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:24 You were healed for 73 hitpoints.
+08:47:24 You gained 26 mana.
+08:47:24 A darklight source loses 720 hitpoints due to your attack. 
+08:47:24 You were healed for 70 hitpoints.
+08:47:24 You gained 23 mana.
+08:47:24 A darklight striker loses 811 hitpoints due to your attack. (active prey bonus)
+08:47:24 You were healed for 67 hitpoints.
+08:47:24 You gained 20 mana.
+08:47:24 A darklight striker loses 811 hitpoints due to your attack. (active prey bonus)
+08:47:24 You were healed for 67 hitpoints.
+08:47:24 You gained 20 mana.
+08:47:24 A walking pillar loses 2124 hitpoints due to your attack. (poison charm)
+08:47:24 A walking pillar loses 723 hitpoints due to your attack. 
+08:47:24 You were healed for 70 hitpoints.
+08:47:24 You gained 23 mana.
+08:47:24 A walking pillar loses 752 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:24 You were healed for 73 hitpoints.
+08:47:24 You gained 26 mana.
+08:47:24 A walking pillar loses 752 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:24 You were healed for 73 hitpoints.
+08:47:24 You gained 26 mana.
+08:47:24 A darklight matter loses 898 hitpoints due to your attack. (active prey bonus)
+08:47:24 You were healed for 70 hitpoints.
+08:47:24 You gained 25 mana.
+08:47:24 You lose 533 hitpoints due to an attack by a darklight matter. 
+08:47:24 You lose 567 hitpoints due to an attack by a walking pillar. 
+08:47:24 Using one of 3038 ultimate spirit potions...
+08:47:24 Using one of 3038 ultimate spirit potions...
+08:47:24 You gained 28429 experience points (Animus mastery, Bakragore's tribute).
+08:47:24 You gained 158 mana.
+08:47:24 You healed yourself for 424 hitpoints.
+08:47:24 You lose 456 hitpoints. 
+08:47:24 You lose 1047 hitpoints due to an attack by a walking pillar. 
+08:47:24 You were healed by Zapecao for 2314 hitpoints.
+08:47:24 You were healed by Dolerozs for 2039 hitpoints.
+08:47:25 You gained 39327 experience points (active prey bonus, Animus mastery, Bakragore's tribute).
+08:47:25 You lose 456 hitpoints. 
+08:47:25 You healed yourself for 1257 hitpoints.
+08:47:26 You lose 431 hitpoints due to an attack by a darklight striker. 
+08:47:26 You lose 1056 hitpoints due to an attack by a walking pillar. 
+08:47:26 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:26 A walking pillar loses 755 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:26 You were healed for 88 hitpoints.
+08:47:26 You gained 32 mana.
+08:47:26 A walking pillar loses 688 hitpoints due to your attack. 
+08:47:26 You were healed for 80 hitpoints.
+08:47:26 You gained 26 mana.
+08:47:26 A walking pillar loses 672 hitpoints due to your attack. 
+08:47:26 You were healed for 79 hitpoints.
+08:47:26 You gained 25 mana.
+08:47:26 A walking pillar loses 732 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:26 You were healed for 86 hitpoints.
+08:47:26 You gained 31 mana.
+08:47:26 A darklight source loses 1527 hitpoints due to your attack. (divine wrath charm)
+08:47:26 A darklight source loses 713 hitpoints due to your attack. 
+08:47:26 You were healed for 83 hitpoints.
+08:47:26 You gained 27 mana.
+08:47:26 A darklight striker loses 711 hitpoints due to your attack. (active prey bonus)
+08:47:26 You were healed for 71 hitpoints.
+08:47:26 You gained 22 mana.
+08:47:26 A darklight striker loses 687 hitpoints due to your attack. (active prey bonus)
+08:47:26 You were healed for 68 hitpoints.
+08:47:26 You gained 21 mana.
+08:47:26 You were healed by Dolerozs for 1884 hitpoints.
+08:47:26 You lose 553 hitpoints due to an attack by a darklight matter. 
+08:47:26 You lose 527 hitpoints due to an attack by a darklight matter. 
+08:47:26 Using one of 1473 great fireball runes...
+08:47:26 A walking pillar loses 577 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:26 You were healed for 63 hitpoints.
+08:47:26 You gained 23 mana.
+08:47:26 A walking pillar loses 558 hitpoints due to your attack. 
+08:47:26 You were healed for 61 hitpoints.
+08:47:26 You gained 20 mana.
+08:47:26 A walking pillar loses 558 hitpoints due to your attack. 
+08:47:26 You were healed for 61 hitpoints.
+08:47:26 You gained 20 mana.
+08:47:26 A walking pillar loses 577 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:26 You were healed for 63 hitpoints.
+08:47:26 You gained 23 mana.
+08:47:26 A darklight source loses 555 hitpoints due to your attack. 
+08:47:26 You were healed for 60 hitpoints.
+08:47:26 You gained 19 mana.
+08:47:26 A darklight striker loses 755 hitpoints due to your attack. (active prey bonus)
+08:47:26 You were healed for 70 hitpoints.
+08:47:26 You gained 21 mana.
+08:47:26 A darklight striker loses 755 hitpoints due to your attack. (active prey bonus)
+08:47:26 You were healed for 70 hitpoints.
+08:47:26 You gained 21 mana.
+08:47:26 A darklight matter loses 753 hitpoints due to your attack. (active prey bonus)
+08:47:26 You were healed for 66 hitpoints.
+08:47:26 You gained 23 mana.
+08:47:26 You lose 1106 hitpoints due to an attack by a walking pillar. 
+08:47:26 You lose 380 hitpoints due to an attack by a darklight matter. 
+08:47:26 Using one of 3037 ultimate spirit potions...
+08:47:26 You lose 456 hitpoints. 
+08:47:26 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:26 You gained 28363 experience points (Animus mastery, Bakragore's tribute).
+08:47:26 You gained 28704 experience points (Animus mastery, Bakragore's tribute).
+08:47:26 You gained 28363 experience points (Animus mastery, Bakragore's tribute).
+08:47:27 Using one of 3037 ultimate spirit potions...
+08:47:27 Using one of 3037 ultimate spirit potions...
+08:47:27 Using one of 3037 ultimate spirit potions...
+08:47:27 You were healed by Dolerozs for 2643 hitpoints.
+08:47:27 You gained 212 mana.
+08:47:27 You healed yourself for 444 hitpoints.
+08:47:28 You healed yourself for 1355 hitpoints.
+08:47:28 You dodged an attack. (Ruse)
+08:47:28 You were healed by Dolerozs for 1605 hitpoints.
+08:47:28 A walking pillar loses 678 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:28 You gained 35 mana.
+08:47:28 A walking pillar loses 682 hitpoints due to your attack. 
+08:47:28 You gained 31 mana.
+08:47:28 A darklight matter loses 842 hitpoints due to your attack. (active prey bonus)
+08:47:28 You gained 34 mana.
+08:47:28 A walking pillar loses 679 hitpoints due to your attack. 
+08:47:28 You gained 31 mana.
+08:47:28 A walking pillar loses 696 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:28 You gained 36 mana.
+08:47:28 You lose 565 hitpoints due to an attack by a darklight matter. 
+08:47:28 You lose 872 hitpoints due to an attack by a darklight matter. 
+08:47:28 You lose 426 hitpoints due to an attack by a darklight matter. 
+08:47:28 A walking pillar loses 730 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:28 You were healed for 93 hitpoints.
+08:47:28 You gained 33 mana.
+08:47:28 A walking pillar loses 2124 hitpoints due to your attack. (poison charm)
+08:47:28 A walking pillar loses 702 hitpoints due to your attack. 
+08:47:28 You were healed for 90 hitpoints.
+08:47:28 You gained 29 mana.
+08:47:28 A darklight matter loses 872 hitpoints due to your attack. (active prey bonus)
+08:47:28 You were healed for 89 hitpoints.
+08:47:28 You gained 31 mana.
+08:47:28 A darklight matter loses 872 hitpoints due to your attack. (active prey bonus)
+08:47:28 You were healed for 89 hitpoints.
+08:47:28 You gained 31 mana.
+08:47:28 A walking pillar loses 702 hitpoints due to your attack. 
+08:47:28 You were healed for 90 hitpoints.
+08:47:28 You gained 29 mana.
+08:47:28 A walking pillar loses 730 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:28 You were healed for 93 hitpoints.
+08:47:28 You gained 33 mana.
+08:47:28 You gained 39327 experience points (active prey bonus, Animus mastery, Bakragore's tribute).
+08:47:29 Using one of 3036 ultimate spirit potions...
+08:47:29 Using one of 3036 ultimate spirit potions...
+08:47:29 Using one of 3036 ultimate spirit potions...
+08:47:29 You healed yourself for 1104 hitpoints.
+08:47:30 You lose 603 hitpoints due to an attack by a walking pillar. 
+08:47:30 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:30 You healed yourself for 1293 hitpoints.
+08:47:30 You gained 39327 experience points (active prey bonus, Animus mastery, Bakragore's tribute).
+08:47:30 You lose 377 hitpoints due to an attack by a darklight matter. 
+08:47:30 You were healed by Dolerozs for 491 hitpoints.
+08:47:30 A darklight matter loses 872 hitpoints due to your attack. (active prey bonus)
+08:47:30 You gained 40 mana.
+08:47:30 A walking pillar loses 681 hitpoints due to your attack. 
+08:47:30 You gained 36 mana.
+08:47:30 A walking pillar loses 718 hitpoints due to your attack. (increased damage by Expose Weakness)
+08:47:30 You gained 43 mana.
+08:47:30 A darklight matter loses 851 hitpoints due to your attack. (active prey bonus)
+08:47:30 You gained 39 mana.
+08:47:30 Using one of 1472 great fireball runes...
+08:47:30 A darklight matter loses 753 hitpoints due to your attack. (active prey bonus)
+08:47:30 You gained 35 mana.
+08:47:30 A walking pillar loses 558 hitpoints due to your attack. 
+08:47:30 You gained 30 mana.
+08:47:30 A darklight matter loses 753 hitpoints due to your attack. (active prey bonus)
+08:47:30 You gained 35 mana.
+08:47:30 A walking pillar loses 558 hitpoints due to your attack. 
+08:47:30 You gained 30 mana.
+08:47:31 Using one of 3036 ultimate spirit potions...
+08:47:31 Using one of 3036 ultimate spirit potions...
+08:47:31 Using one of 3036 ultimate spirit potions...
+08:47:32 A darklight matter loses 716 hitpoints due to your attack. (active prey bonus, perfect shot)
+08:47:32 You gained 40 mana.
+08:47:32 A walking pillar loses 528 hitpoints due to your attack. 
+08:47:32 You gained 34 mana.
+08:47:32 A darklight matter loses 697 hitpoints due to your attack. (active prey bonus)
+08:47:32 You gained 40 mana.
+08:47:33 You lose 264 hitpoints due to an attack by a walking pillar. 
+08:47:33 Using one of 1471 great fireball runes...
+08:47:33 A darklight matter loses 1401 hitpoints due to your critical attack. (active prey bonus)
+08:47:33 You were healed for 228 hitpoints.
+08:47:33 You gained 80 mana.
+08:47:33 A walking pillar loses 537 hitpoints due to your attack. (poison charm)
+08:47:33 You gained 39327 experience points (active prey bonus, Animus mastery, Bakragore's tribute).
+08:47:33 A darklight matter loses 1401 hitpoints due to your critical attack. (active prey bonus)
+08:47:33 You were healed for 36 hitpoints.
+08:47:33 You gained 80 mana.
+08:47:33 Using one of 3036 ultimate spirit potions...
+08:47:33 Using one of 3036 ultimate spirit potions...
+08:47:33 You lose 591 hitpoints due to an attack by a darklight matter. 
+08:47:33 Using one of 3036 ultimate spirit potions...
+08:47:33 You healed yourself for 591 hitpoints.
+08:47:35 You lose 364 hitpoints due to an attack by a walking pillar. 
+08:47:35 A darklight matter loses 2005 hitpoints due to your attack. (active prey bonus, wound charm)
+08:47:35 A darklight matter loses 788 hitpoints due to your attack. (active prey bonus)
+08:47:35 You were healed for 129 hitpoints.
+08:47:35 You gained 45 mana.
+08:47:35 A darklight matter loses 2005 hitpoints due to your attack. (active prey bonus, wound charm)
+08:47:35 A darklight matter loses 771 hitpoints due to your attack. (active prey bonus)
+08:47:35 You were healed for 126 hitpoints.
+08:47:35 You gained 44 mana.
+08:47:35 A walking pillar loses 618 hitpoints due to your attack. 
+08:47:35 You were healed for 109 hitpoints.
+08:47:35 You gained 40 mana.
+08:47:35 A darklight matter loses 938 hitpoints due to your attack. (active prey bonus)
+08:47:35 You gained 54 mana.
+08:47:35 A darklight matter loses 2005 hitpoints due to your attack. (active prey bonus, wound charm)
+08:47:35 A darklight matter loses 938 hitpoints due to your attack. (active prey bonus)
+08:47:35 You gained 54 mana.
+08:47:35 A walking pillar loses 755 hitpoints due to your attack. 
+08:47:35 You gained 49 mana.
+08:47:35 You gained 28429 experience points (Animus mastery, Bakragore's tribute).
+08:47:35 You gained 28429 experience points (Animus mastery, Bakragore's tribute).
+08:47:35 You lose 1140 hitpoints. 
+08:47:35 You lose 456 hitpoints. 
+08:47:36 You lose 456 hitpoints. 
+08:47:37 You lose 387 hitpoints due to an attack by a walking pillar. 
+08:47:37 You lose 595 hitpoints due to an attack by a walking pillar. 
+08:47:37 You gained 39327 experience points (active prey bonus, Animus mastery, Bakragore's tribute).
+08:47:37 You lose 456 hitpoints. 
+08:47:37 You lose 1140 hitpoints. 
+08:47:38 You healed yourself for 1362 hitpoints.
+08:47:38 You lose 1140 hitpoints. 
+08:47:38 You lose 456 hitpoints. 
+08:47:39 You lose 456 hitpoints. 
+08:47:40 You were healed by Bruno Abrasax for 1792 hitpoints.
+08:47:40 You lose 456 hitpoints. 
+08:47:41 Momentum was triggered.

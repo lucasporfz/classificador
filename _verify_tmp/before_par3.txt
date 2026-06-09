@@ -1,0 +1,21 @@
+=== _verify_tmp/sv_par3.txt + _verify_tmp/lc_par3.txt ===
+jogador: Mazzeriin   | spell: exevo mas san   | granada: exevo tempo mas san
+
+--- ROTAÇÃO (tabela única) ---
+  turnos  hits méd  dano base  dano efet  componente/spell
+     160      6.63        812        917  Auto ataque
+      61      8.28        696        744  great fireball
+      79      8.61        847        930  Divine Caldera (exevo mas san)
+      18      9.78       1087       1129  Divine Grenade (exevo tempo mas san)
+  (0/160 turnos excluídos por não alinhar 100% os 2 logs)
+
+--- detecção das incantações (top 8) ---
+  covered  recall  overcast  total  classe   speaker: incantação
+       78    99%     3.31   2110  —          Mazzeriin: exura gran san
+       69    87%     1.68    934  —          Uhaacz: exura gran mas res
+       66    84%     3.33   1589  —          Majorowa: exura med ico
+       62    78%     1.74    925  —          Uhaacz: exura sio
+       73    92%     1.10    620  ✔ spell    Mazzeriin: exevo mas san
+       45    57%     1.11    367  spell      Nightt Gaze: exevo gran flam hur
+       34    43%     1.62    408  —          Majorowa: exeta amp res
+       35    44%     1.71    510  —          Nightt Gaze: exura vita

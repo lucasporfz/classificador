@@ -1,0 +1,18 @@
+=== server log rp.txt + localchat rp.txt ===
+jogador: Royal'Drone   | spell: exevo mas san   | granada: exevo tempo mas san
+
+--- ROTAÇÃO (tabela única) ---
+  turnos  hits méd  dano base  dano efet  componente/spell
+     144      6.66        543        633  Auto ataque
+      62      9.19        425        499  great fireball
+      74      9.14        646        794  Divine Caldera (exevo mas san)
+       6      7.83        865       1063  Divine Grenade (exevo tempo mas san)
+  (2/147 turnos excluídos por não alinhar 100% os 2 logs)
+
+--- detecção das incantações (top 8) ---
+  covered  recall  overcast  total  classe   speaker: incantação
+       74    97%     3.78   3255  —          Royal'Drone: exura gran san
+       72    95%     1.03    857  ✔ spell    Royal'Drone: exevo mas san
+       17    22%     1.12    217  —          Royal'Drone: exana amp res
+        6   100%     1.00     79  ✔ grenade  Royal'Drone: exevo tempo mas san
+        6     8%     1.00     73  —          Royal'Drone: utevo grav san

@@ -1,0 +1,23 @@
+=== darklight server log rp.txt + darklight local chat rp.txt ===
+jogador: Royal'Drone   | spell: exevo mas san, exori gran con, exori san   | granada: exevo tempo mas san
+
+--- ROTAÇÃO (tabela única) ---
+  turnos  hits méd  dano base  dano efet  componente/spell
+     124      2.94        660        734  Auto ataque
+      36      3.58        498        532  great fireball
+      47      3.55        635        704  Divine Caldera (exevo mas san)
+       2      1.00       1505       2107  Strong Ethereal Spear (exori gran con)
+       1      1.00        432        432  Divine Missile (exori san)
+       7      5.43        902       1006  Divine Grenade (exevo tempo mas san)
+  (2/130 turnos excluídos por não alinhar 100% os 2 logs)
+
+--- detecção das incantações (top 8) ---
+  covered  recall  overcast  total  classe   speaker: incantação
+       41    79%     2.66    115  —          Burkzin: exura sio
+       42    81%     2.31     98  —          Luszckyn: exura vita
+       40    77%     3.30    136  —          Womolu: exura med ico
+       44    85%     1.32     58  ✔ spell    Royal'Drone: exevo mas san
+       36    69%     1.83     66  —          Womolu: exeta res
+       33    63%     1.61     53  spell      Izeekao: exevo mas san
+       30    58%     1.13     34  spell      Womolu: exori
+       27    52%     1.56     42  spell      Womolu: exori mas
