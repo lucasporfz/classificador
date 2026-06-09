@@ -127,7 +127,7 @@ function clsChartClickHandler(res, resolver) {
     const els = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
     if (!els || !els.length) return;
     const turns = typeof resolver === 'function' ? resolver(els[0], chart) : null;
-    renderTurnDetail(turns && turns.length ? turns : null);
+    renderTurnDetail(turns && turns.length ? turns : null, res, 0);
   };
 }
 
@@ -160,7 +160,7 @@ function clsDetailCritLabel(hit) {
   return parts.length ? parts.join(' + ') : '-';
 }
 
-function renderTurnDetail(turns) {
+function renderTurnDetail(turns, res, selectedIndex) {
   const old = document.getElementById('clsTurnDetail');
   if (old) old.remove();
 
@@ -174,46 +174,77 @@ function renderTurnDetail(turns) {
   const onOutside = ev => { if (!panel.contains(ev.target)) close(); };
 
   const list = Array.isArray(turns) ? turns.filter(Boolean) : [];
+  const trace = res && Array.isArray(res.turnTrace) ? res.turnTrace.filter(Boolean) : [];
+  const activeIndex = Math.max(0, Math.min(Number.isFinite(selectedIndex) ? selectedIndex : 0, Math.max(0, list.length - 1)));
+  const activeTurn = list[activeIndex] || null;
+  const traceIndex = activeTurn && trace.length
+    ? trace.findIndex(t => t === activeTurn || (t.idx != null && t.idx === activeTurn.idx))
+    : -1;
+  const navList = list.length > 1 ? list : trace;
+  const navIndex = list.length > 1 ? activeIndex : traceIndex;
+  const canNav = navList.length > 1 && navIndex >= 0;
+  const canPrev = canNav && navIndex > 0;
+  const canNext = canNav && navIndex < navList.length - 1;
+  const navLabel = canNav
+    ? (String(navIndex + 1) + ' / ' + String(navList.length))
+    : (list.length > 1 ? (String(activeIndex + 1) + ' / ' + String(list.length)) : '');
+  const headerHtml =
+    '<div class="cls-turn-detail-head">' +
+      '<h3 class="cls-h">Detalhes do turno</h3>' +
+      '<div class="cls-turn-detail-nav">' +
+        '<button type="button" class="cls-turn-detail-prev" ' + (canPrev ? '' : 'disabled') + '>&lt;-- turno anterior</button>' +
+        '<span class="cls-turn-detail-index">' + clsEscapeHtml(navLabel) + '</span>' +
+        '<button type="button" class="cls-turn-detail-next" ' + (canNext ? '' : 'disabled') + '>proximo turno --&gt;</button>' +
+      '</div>' +
+      '<button type="button" class="cls-turn-detail-close" aria-label="Fechar">x</button>' +
+    '</div>';
+
   if (!list.length) {
     panel.innerHTML =
-      '<button type="button" class="cls-turn-detail-close" aria-label="Fechar">x</button>' +
-      '<h3 class="cls-h">Detalhes do turno</h3>' +
+      headerHtml +
       '<p class="cls-turn-detail-empty">Dados individuais não disponíveis para este gráfico</p>';
   } else {
+    const turn = activeTurn;
+    const counts = turn.counts || {};
+    const hits = turn.lines || [];
     panel.innerHTML =
-      '<button type="button" class="cls-turn-detail-close" aria-label="Fechar">x</button>' +
-      '<h3 class="cls-h">Detalhes do turno</h3>' +
-      list.map(turn => {
-        const counts = turn.counts || {};
-        const hits = turn.lines || [];
-        return (
-          '<div class="cls-turn-detail-block">' +
-            '<p class="cls-turn-detail-meta"><strong>Turno:</strong> ' + clsFmtTurnTs(turn.ts) +
-              ' &nbsp;·&nbsp; <strong>Componentes:</strong> ' +
-              'AA ' + (counts.arrow || 0) + ', spell ' + (counts.spell || 0) +
-              ', rune ' + (counts.rune || 0) + ', grenade ' + (counts.grenade || 0) +
-            '</p>' +
-            '<table class="cls-table cls-turn-detail-table"><thead><tr>' +
-              '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>Overkill</th><th>Mob alvo</th>' +
-            '</tr></thead><tbody>' +
-              hits.map(h =>
-                '<tr>' +
-                  '<td>' + clsEscapeHtml(clsFmtTurnTs(h.ts)) + '</td>' +
-                  '<td style="text-align:right">' + clsEscapeHtml(h.dmg) + '</td>' +
-                  '<td>' + clsEscapeHtml(clsDetailComponentLabel(h.comp)) + '</td>' +
-                  '<td>' + clsEscapeHtml(clsDetailCritLabel(h)) + '</td>' +
-                  '<td>' + (h.ok ? 'sim' : '-') + '</td>' +
-                  '<td>' + clsEscapeHtml(h.mob || '') + '</td>' +
-                '</tr>'
-              ).join('') +
-            '</tbody></table>' +
-          '</div>'
-        );
-      }).join('');
+      headerHtml +
+      '<div class="cls-turn-detail-block">' +
+        '<p class="cls-turn-detail-meta"><strong>Turno:</strong> ' + clsFmtTurnTs(turn.ts) +
+          ' &nbsp;·&nbsp; <strong>Componentes:</strong> ' +
+          'AA ' + (counts.arrow || 0) + ', spell ' + (counts.spell || 0) +
+          ', rune ' + (counts.rune || 0) + ', grenade ' + (counts.grenade || 0) +
+        '</p>' +
+        '<table class="cls-table cls-turn-detail-table"><thead><tr>' +
+          '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>Overkill</th><th>Mob alvo</th>' +
+        '</tr></thead><tbody>' +
+          hits.map(h =>
+            '<tr>' +
+              '<td>' + clsEscapeHtml(clsFmtTurnTs(h.ts)) + '</td>' +
+              '<td style="text-align:right">' + clsEscapeHtml(h.dmg) + '</td>' +
+              '<td>' + clsEscapeHtml(clsDetailComponentLabel(h.comp)) + '</td>' +
+              '<td>' + clsEscapeHtml(clsDetailCritLabel(h)) + '</td>' +
+              '<td>' + (h.ok ? 'sim' : '-') + '</td>' +
+              '<td>' + clsEscapeHtml(h.mob || '') + '</td>' +
+            '</tr>'
+          ).join('') +
+        '</tbody></table>' +
+      '</div>';
   }
 
   document.body.appendChild(panel);
   panel.querySelector('.cls-turn-detail-close').addEventListener('click', close);
+  const go = dir => {
+    if (!canNav) return;
+    const nextIndex = Math.max(0, Math.min(navIndex + dir, navList.length - 1));
+    if (nextIndex === navIndex) return;
+    if (list.length > 1) renderTurnDetail(list, res, nextIndex);
+    else renderTurnDetail([navList[nextIndex]], res, 0);
+  };
+  const prevBtn = panel.querySelector('.cls-turn-detail-prev');
+  const nextBtn = panel.querySelector('.cls-turn-detail-next');
+  if (prevBtn) prevBtn.addEventListener('click', () => go(-1));
+  if (nextBtn) nextBtn.addEventListener('click', () => go(1));
   setTimeout(() => document.addEventListener('mousedown', onOutside), 0);
 }
 
