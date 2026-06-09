@@ -20,15 +20,30 @@ function parseLogForClassifier(logText) {
   const attackPattern = /(?:(?:A|An|The)\s+)?([A-Za-z][A-Za-z\s'\-]+?)\s+loses\s+(\d+)\s+hitpoints\s+due to your\s+(critical attack|attack)\b\.?\s*(\([^)]*\))?/i;
   const runeUsePattern = /Using one of \d+\s+(.+?)\s+runes?\b/i;
   const xpPattern = /You gained\s+(\d+)\s+experience(?:\s+points?)?\s*(\([^)]*\))?/;
+  const lifeLeechPattern = /^You were healed for\s+(\d+)\s+hitpoints\./i;
+  const manaLeechPattern = /^You gained\s+(\d+)\s+mana\./i;
   const CRIT_CHARM_RE = /low blow|savage blow/i;
 
   const events = [];
+  let pendingLeechHit = null;
   for (const line of String(logText || '').split(/\r?\n/)) {
     const m = tsPattern.exec(line); if (!m) continue;
     const ts = +m[1] * 3600 + +m[2] * 60 + +m[3];
     const body = m[4];
     const a = attackPattern.exec(body);
     if (!a) {
+      const lh = lifeLeechPattern.exec(body);
+      if (lh && pendingLeechHit && pendingLeechHit.ts === ts && pendingLeechHit.lifeLeech == null) {
+        pendingLeechHit.lifeLeech = +lh[1];
+        continue;
+      }
+      const ml = manaLeechPattern.exec(body);
+      if (ml && pendingLeechHit && pendingLeechHit.ts === ts && pendingLeechHit.manaLeech == null) {
+        pendingLeechHit.manaLeech = +ml[1];
+        pendingLeechHit = null;
+        continue;
+      }
+      pendingLeechHit = null;
       const ru = runeUsePattern.exec(body);
       if (ru) {
         const rune = normalizeRuneName(ru[1]);
@@ -50,11 +65,19 @@ function parseLogForClassifier(logText) {
     const hasBountyTalisman = /Bounty Talisman/i.test(suffix);
     const mob = a[1].toLowerCase().trim();
     const dmg = +a[2];
+    pendingLeechHit = null;
     if (isReflection && !hasCharm) { events.push({ ts, type: 'reflect', mob, dmg }); continue; }
     const isPreyEffective = isPrey || hasBountyTalisman;
-    if (hasCritCharm || hasOnslaught) { events.push({ ts, type: 'crit', mob, dmg, isPrey: isPreyEffective, onslaught: hasOnslaught, realCrit: isCrit || hasCritCharm }); continue; }
+    if (hasCritCharm || hasOnslaught) {
+      const ev = { ts, type: 'crit', mob, dmg, isPrey: isPreyEffective, onslaught: hasOnslaught, realCrit: isCrit || hasCritCharm };
+      events.push(ev);
+      if (!hasCritCharm) pendingLeechHit = ev;
+      continue;
+    }
     if (hasCharm) { events.push({ ts, type: 'charm', mob, dmg, isPassive: isReflection }); continue; }
-    events.push({ ts, type: isCrit ? 'crit' : 'normal', mob, dmg, isPrey: isPreyEffective, onslaught: false, realCrit: isCrit });
+    const ev = { ts, type: isCrit ? 'crit' : 'normal', mob, dmg, isPrey: isPreyEffective, onslaught: false, realCrit: isCrit };
+    events.push(ev);
+    pendingLeechHit = ev;
   }
   events.forEach((e, i) => { e.seq = i; });
 

@@ -285,7 +285,100 @@ function clsSplitExecutionTiers(lines, elemKey) {
 // AA (≤ AA_FALSE_POWER_FACTOR× a referência), caso em que a runa/spell não saiu (varinha).
 const AA_DEPTH = 0.5;
 const AA_FALSE_POWER_FACTOR = 1.5;
-function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts, usePositional) {
+const EK_AA_LEECH_THRESHOLD = 2.0;
+
+function clsHitLeechRatio(l) {
+  const dmg = Number.isFinite(l && l.dmg) && l.dmg > 0 ? l.dmg : 0;
+  if (!dmg) return null;
+  const life = Number.isFinite(l.lifeLeech) ? l.lifeLeech : 0;
+  const mana = Number.isFinite(l.manaLeech) ? l.manaLeech : 0;
+  const total = life + mana;
+  return total > 0 ? total / dmg : null;
+}
+
+function clsWarnEkAa(reason, t, payload) {
+  if (typeof console === 'undefined' || typeof console.warn !== 'function') return;
+  console.warn('[classifier] ' + reason, Object.assign({
+    reason,
+    turnTs: t && t.ts,
+  }, payload || {}));
+}
+
+function clsHasEkCritBoundary(nonGren) {
+  if (!nonGren || nonGren.length < 2) return false;
+  const firstCrit = nonGren[0].type === 'crit';
+  return nonGren.slice(1).every(l => (l.type === 'crit') !== firstCrit);
+}
+
+function clsApplyEkPositionalAa(t, nonGren, power) {
+  const aa = nonGren[0] || null;
+  if (!aa) {
+    const clean = nonGren.filter(l => !l.overkill).slice().sort((a, b) => a.revertedDmg - b.revertedDmg);
+    const fallback = clean[0] || nonGren[0] || null;
+    if (fallback) {
+      fallback.ekAaLayer = 'ek_magnitude_fallback';
+      clsWarnEkAa('ek_magnitude_fallback', t, {
+        candidate: { ts: fallback.ts, seq: fallback.seq || 0, mob: fallback.mob, dmg: fallback.dmg, base: fallback.revertedDmg },
+      });
+    }
+    nonGren.forEach(l => { l.correctedComponent = (l === fallback) ? 'arrow' : power; });
+    return;
+  }
+
+  nonGren.forEach((l, i) => {
+    l.correctedComponent = (i === 0) ? 'arrow' : power;
+    if (i === 0) l.ekAaLayer = 'ek_position_primary';
+  });
+
+  if (nonGren.length < 2) return;
+  if (clsHasEkCritBoundary(nonGren)) {
+    aa.ekAaLayer = 'ek_crit_boundary';
+    aa.ekAaCritBoundary = 'confirmed';
+    return;
+  }
+
+  const candidateRatio = clsHitLeechRatio(aa);
+  const otherRatios = nonGren.slice(1).map(clsHitLeechRatio).filter(Number.isFinite);
+  if (candidateRatio != null && otherRatios.length) {
+    const otherAvg = clsMean(otherRatios);
+    if (otherAvg > 0 && candidateRatio >= EK_AA_LEECH_THRESHOLD * otherAvg) {
+      aa.ekAaLeech = 'confirmed';
+      aa.ekAaLeechRatio = candidateRatio;
+      return;
+    }
+    if (candidateRatio > 0 && otherAvg >= EK_AA_LEECH_THRESHOLD * candidateRatio) {
+      nonGren.forEach(l => { l.correctedComponent = power; });
+      aa.ekAaLayer = 'ek_leech_contradiction_no_aa';
+      aa.ekAaLeech = 'contradicted';
+      clsWarnEkAa('ek_leech_contradiction_no_aa', t, {
+        candidate: { ts: aa.ts, seq: aa.seq || 0, mob: aa.mob, dmg: aa.dmg, base: aa.revertedDmg },
+        candidateRatio,
+        otherAverage: otherAvg,
+        threshold: EK_AA_LEECH_THRESHOLD,
+        otherRatios,
+      });
+      return;
+    }
+    aa.ekAaLeech = 'uncertain';
+    clsWarnEkAa('ek_uncertain_leech', t, {
+      candidate: { ts: aa.ts, seq: aa.seq || 0, mob: aa.mob, dmg: aa.dmg, base: aa.revertedDmg },
+      candidateRatio,
+      otherAverage: otherAvg,
+      threshold: EK_AA_LEECH_THRESHOLD,
+      otherRatios,
+    });
+    return;
+  }
+  aa.ekAaLeech = 'missing';
+  clsWarnEkAa('ek_uncertain_leech', t, {
+    candidate: { ts: aa.ts, seq: aa.seq || 0, mob: aa.mob, dmg: aa.dmg, base: aa.revertedDmg },
+    candidateRatio,
+    otherRatios,
+    threshold: EK_AA_LEECH_THRESHOLD,
+  });
+}
+
+function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts, usePositional, useEkAaDecision) {
   // granada: marca 1 hit por cast, no exato C+3
   const allLines = [];
   for (const t of turns) for (const l of (t.rpComponentLines || [])) allLines.push(l);
@@ -334,7 +427,8 @@ function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts
       continue;
     }
     if (usePositional) {
-      nonGren.forEach((l, i) => { l.correctedComponent = (i === 0) ? 'arrow' : power; });
+      if (useEkAaDecision) clsApplyEkPositionalAa(t, nonGren, power);
+      else nonGren.forEach((l, i) => { l.correctedComponent = (i === 0) ? 'arrow' : power; });
     } else {
       const clean = nonGren.filter(l => !l.overkill).slice().sort((a, b) => a.revertedDmg - b.revertedDmg);
       const aa = (clean.length >= 2 && clean[0].revertedDmg <= AA_DEPTH * clean[1].revertedDmg) ? clean[0] : null;
@@ -547,9 +641,9 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   if (data.distinctMobs === 1 || !isRpRegime) {
     // AA posicional p/ single-target (1 mob, sem banda) e p/ EK melee (golpe físico todo
     // turno, logado 1º); caster (druida/mage: spell exevo / runa) usa o AA por outlier.
-    const isMeleeVoc = damageSpells.some(t => /^exori\b/.test(t));
+    const isMeleeVoc = !isRpRegime && damageSpells.some(t => /^exori\b/.test(t));
     const usePositional = data.distinctMobs === 1 || isMeleeVoc;
-    clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts, usePositional);
+    clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts, usePositional, isMeleeVoc);
     turnRecords = clsBuildTurnRecords(turns);
   } else {
     // Sessão mista (hunt em pack + boss single-target): o band classifier precisa de ≥2 mobs
@@ -563,7 +657,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       return mobs.size === 1 && ls.every(l => l.correctedComponent === 'arrow');
     });
     if (singleMobAllArrow.length > 0) {
-      clsReclassifyByOrder(singleMobAllArrow, runeUses, playerSpellCasts, playerGrenCasts, true);
+      clsReclassifyByOrder(singleMobAllArrow, runeUses, playerSpellCasts, playerGrenCasts, true, false);
       turnRecords = clsBuildTurnRecords(turns);
     }
     let promotedAllArrow = false;

@@ -496,6 +496,8 @@ function classifyRpTurnComponents(turn, stat, mark, critMultObserved = 0, preyMu
       dmg: e.dmg,
       seenDmg: e.dmg,
       revertedDmg,
+      lifeLeech: Number.isFinite(e.lifeLeech) ? e.lifeLeech : null,
+      manaLeech: Number.isFinite(e.manaLeech) ? e.manaLeech : null,
       type: e.type,
       isPrey: !!e.isPrey,
       overkill: !!e.overkill,
