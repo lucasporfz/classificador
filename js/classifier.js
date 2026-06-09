@@ -609,6 +609,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       const tr = turnRecords[tIdx];
       if ((tGren.rpGrenade || '') === 'explode' && tr && tr.counts.grenade > 0) continue;
       if (!tr || tr.counts.spell === 0 || tr.counts.grenade > 0) continue;
+      if (data.distinctMobs === 1) continue;
       if (playerSpellCasts.some(sc => sc.ts >= tr.spellTs - 2 && sc.ts < tr.spellTs)) continue;
       const lines = tGren.rpComponentLines || [];
       const suffixStart = clsFindSpellGrenadeSuffixStart(lines);
