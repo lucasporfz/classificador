@@ -120,6 +120,103 @@ function clsLoadFile(inputId, isServer) {
   reader.readAsText(file);
 }
 
+function clsChartClickHandler(res, resolver) {
+  return function(evt, activeEls, chartArg) {
+    const chart = chartArg || this;
+    if (!chart || typeof chart.getElementsAtEventForMode !== 'function') return;
+    const els = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+    if (!els || !els.length) return;
+    const turns = typeof resolver === 'function' ? resolver(els[0], chart) : null;
+    renderTurnDetail(turns && turns.length ? turns : null);
+  };
+}
+
+function clsTurnByDataIndex(res, dataIndex) {
+  return res && res.turnTrace && res.turnTrace[dataIndex] ? [res.turnTrace[dataIndex]] : null;
+}
+
+function clsFmtTurnTs(ts) {
+  if (!Number.isFinite(ts)) return '-';
+  const h = Math.floor(ts / 3600);
+  const m = Math.floor((ts % 3600) / 60);
+  const s = Math.floor(ts % 60);
+  return [h, m, s].map(x => String(x).padStart(2, '0')).join(':');
+}
+
+function clsEscapeHtml(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+function clsDetailComponentLabel(comp) {
+  return comp === 'arrow' ? 'auto ataque' : (comp || '');
+}
+
+function clsDetailCritLabel(hit) {
+  const parts = [];
+  if (hit && hit.type === 'crit') parts.push('crítico');
+  if (hit && hit.onslaught) parts.push('Onslaught');
+  return parts.length ? parts.join(' + ') : '-';
+}
+
+function renderTurnDetail(turns) {
+  const old = document.getElementById('clsTurnDetail');
+  if (old) old.remove();
+
+  const panel = document.createElement('div');
+  panel.id = 'clsTurnDetail';
+  panel.className = 'cls-turn-detail';
+  const close = () => {
+    document.removeEventListener('mousedown', onOutside);
+    panel.remove();
+  };
+  const onOutside = ev => { if (!panel.contains(ev.target)) close(); };
+
+  const list = Array.isArray(turns) ? turns.filter(Boolean) : [];
+  if (!list.length) {
+    panel.innerHTML =
+      '<button type="button" class="cls-turn-detail-close" aria-label="Fechar">x</button>' +
+      '<h3 class="cls-h">Detalhes do turno</h3>' +
+      '<p class="cls-turn-detail-empty">Dados individuais não disponíveis para este gráfico</p>';
+  } else {
+    panel.innerHTML =
+      '<button type="button" class="cls-turn-detail-close" aria-label="Fechar">x</button>' +
+      '<h3 class="cls-h">Detalhes do turno</h3>' +
+      list.map(turn => {
+        const counts = turn.counts || {};
+        const hits = turn.lines || [];
+        return (
+          '<div class="cls-turn-detail-block">' +
+            '<p class="cls-turn-detail-meta"><strong>Turno:</strong> ' + clsFmtTurnTs(turn.ts) +
+              ' &nbsp;·&nbsp; <strong>Componentes:</strong> ' +
+              'AA ' + (counts.arrow || 0) + ', spell ' + (counts.spell || 0) +
+              ', rune ' + (counts.rune || 0) + ', grenade ' + (counts.grenade || 0) +
+            '</p>' +
+            '<table class="cls-table cls-turn-detail-table"><thead><tr>' +
+              '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>Overkill</th><th>Mob alvo</th>' +
+            '</tr></thead><tbody>' +
+              hits.map(h =>
+                '<tr>' +
+                  '<td>' + clsEscapeHtml(clsFmtTurnTs(h.ts)) + '</td>' +
+                  '<td style="text-align:right">' + clsEscapeHtml(h.dmg) + '</td>' +
+                  '<td>' + clsEscapeHtml(clsDetailComponentLabel(h.comp)) + '</td>' +
+                  '<td>' + clsEscapeHtml(clsDetailCritLabel(h)) + '</td>' +
+                  '<td>' + (h.ok ? 'sim' : '-') + '</td>' +
+                  '<td>' + clsEscapeHtml(h.mob || '') + '</td>' +
+                '</tr>'
+              ).join('') +
+            '</tbody></table>' +
+          '</div>'
+        );
+      }).join('');
+  }
+
+  document.body.appendChild(panel);
+  panel.querySelector('.cls-turn-detail-close').addEventListener('click', close);
+  setTimeout(() => document.addEventListener('mousedown', onOutside), 0);
+}
+
 function renderClassifier(res) {
   const box = $('clsResults');
   if (!res || res.error) {
@@ -150,12 +247,14 @@ function renderClassifier(res) {
   // LINHA da rotação (cada spell/componente: AA, cada spell nominal, runa, granada).
   const kindColor = { arrow: '#F59E0B', spell: '#22C55E', rune: '#60A5FA', grenade: '#F87171' };
   const compDefs = (res.rows || [])
-    .filter(r => Array.isArray(r.hitsPerTurn) && r.hitsPerTurn.some(v => v > 0))
+    .map((r, rowIndex) => ({ r, rowIndex }))
+    .filter(x => Array.isArray(x.r.hitsPerTurn) && x.r.hitsPerTurn.some(v => v > 0))
     .map((r, i) => ({
       canvas: 'clsHist' + i,
-      vals: r.hitsPerTurn.filter(v => v > 0),
-      label: (r.kind === 'arrow' ? t('cls_comp_arrow') : r.label),
-      color: kindColor[r.kind] || '#22C55E',
+      rowIndex: r.rowIndex,
+      vals: r.r.hitsPerTurn.filter(v => v > 0),
+      label: (r.r.kind === 'arrow' ? t('cls_comp_arrow') : r.r.label),
+      color: kindColor[r.r.kind] || '#22C55E',
     }));
   const hasSeries = (res.temporalSeries || []).length > 0;
   const chartsHtml = !hasSeries ? '' : (
@@ -207,7 +306,7 @@ function renderClassifierCharts(res, compDefs) {
       return new Chart(cv, {
         type: 'line',
         data: { labels, datasets: [{ label: t('val_timeline_real'), data, borderColor: color, backgroundColor: toRgba(color, 0.12), borderWidth: 1.5, pointRadius: 0, tension: .25 }] },
-        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, title: { display: true, text: title_, color: '#DDE6F3' } }, scales: scales() }
+        options: { responsive: true, maintainAspectRatio: false, animation: false, onClick: clsChartClickHandler(res, hit => clsTurnByDataIndex(res, hit.index)), plugins: { legend: { display: false }, title: { display: true, text: title_, color: '#DDE6F3' } }, scales: scales() }
       });
     } catch (err) { console.error('[classifier chart] failed:', canvasId, err); return null; }
   };
@@ -230,7 +329,7 @@ function renderClassifierCharts(res, compDefs) {
             borderWidth: 2, pointRadius: 0, tension: 0.35, fill: false
           };
         }) },
-        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { labels: { color: '#8BA4C2', font: { size: 11 } } }, title: { display: true, text: t('val_timeline_components'), color: '#DDE6F3' } }, scales: scales() }
+        options: { responsive: true, maintainAspectRatio: false, animation: false, onClick: clsChartClickHandler(res, hit => clsTurnByDataIndex(res, hit.index)), plugins: { legend: { labels: { color: '#8BA4C2', font: { size: 11 } } }, title: { display: true, text: t('val_timeline_components'), color: '#DDE6F3' } }, scales: scales() }
       });
     } catch (err) { console.error('[classifier chart] failed: clsTimelineComponents', err); }
   }
@@ -238,7 +337,14 @@ function renderClassifierCharts(res, compDefs) {
   clsTimelineDamageChart = lineChart('clsTimelineDamage', series.map(p => p.damage), t('val_timeline_damage'), '#F59E0B');
   clsImpactChart = lineChart('clsImpactAnalyser', movingImpact(series), t('val_impact_analyser'), '#3B82F6');
   for (const d of (compDefs || [])) {
-    renderSmallComponentHistogram(d.canvas, c => { clsRowHistCharts.push(c); }, d.vals, null, d.label, undefined, d.color);
+    renderSmallComponentHistogram(d.canvas, c => { clsRowHistCharts.push(c); }, d.vals, null, d.label, undefined, d.color, {
+      onClick: clsChartClickHandler(res, (hit, chart) => {
+        const n = Number(chart.data && chart.data.labels ? chart.data.labels[hit.index] : hit.index);
+        const row = (res.rows || [])[d.rowIndex];
+        if (!row || !Array.isArray(row.hitsTimeline) || !Array.isArray(res.turnTrace)) return null;
+        return res.turnTrace.filter((_, i) => Math.round(row.hitsTimeline[i] || 0) === n);
+      })
+    });
   }
 }
 
@@ -262,7 +368,7 @@ $('btnClassify').addEventListener('click', () => {
   if (!sv || !lc) { $('clsStatus').textContent = t('cls_status_need_both'); return; }
   $('clsStatus').textContent = t('cls_status_running');
   try {
-    const res = classifyWithLocalChat(sv, lc);
+    const res = classifyWithLocalChat(sv, lc, { trace: true });
     lastClsResult = res;
     renderClassifier(res);
     $('clsStatus').textContent = t('cls_status_done');

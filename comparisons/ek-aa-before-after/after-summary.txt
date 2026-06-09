@@ -1,0 +1,5 @@
+EK night harpy: AA_turns=229 excluded=0/237 noAA=7
+EK bastion: AA_turns=198 excluded=0/208 noAA=7
+RP pack: AA_turns=145 excluded=2/147 noAA=0
+RP murcion boss: AA_turns=156 excluded=0/161 noAA=0
+ED uhax: AA_turns=71 excluded=0/107 noAA=0

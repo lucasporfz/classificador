@@ -1,0 +1,38 @@
+diff --git "a/C:\\Users\\Lucas\\Desktop\\classificador - Codex\\comparisons\\ek-aa-before-after\\before.txt" "b/C:\\Users\\Lucas\\Desktop\\classificador - Codex\\comparisons\\ek-aa-before-after\\after.txt"
+index 3632ffe..5a199a1 100644
+--- "a/C:\\Users\\Lucas\\Desktop\\classificador - Codex\\comparisons\\ek-aa-before-after\\before.txt"	
++++ "b/C:\\Users\\Lucas\\Desktop\\classificador - Codex\\comparisons\\ek-aa-before-after\\after.txt"	
+@@ -1,21 +1,21 @@
+ === EK night harpy ===
+ turnos hits danoBase danoEfet componente
+-   236   1.00    568    648 Auto ataque
+-    78   5.42   1529   1639 Fierce Berserk (exori gran)
+-    66   5.83    780    840 Berserk (exori)
+-    65   5.97    681    709 Groundshaker (exori mas)
+-    17   3.06   1627   1696 Executioner's Throw (exori amp kor)
++   229   1.00    573    654 Auto ataque
++    78   5.44   1526   1636 Fierce Berserk (exori gran)
++    66   5.85    779    838 Berserk (exori)
++    65   5.98    681    708 Groundshaker (exori mas)
++    17   3.24   1543   1607 Executioner's Throw (exori amp kor)
+      4   2.50   1114   1243 Front Sweep (exori min)
+-     3   1.00   1529   1529 Annihilation (exori gran ico)
++     3   1.33    895    895 Annihilation (exori gran ico)
+ excluidos 0/237
+ 
+ === EK bastion ===
+ turnos hits danoBase danoEfet componente
+-   205   1.00    629    704 Auto ataque
+-    68   6.43   1597   1780 Fierce Berserk (exori gran)
+-    64   6.63    792    854 Berserk (exori)
++   198   1.00    630    707 Auto ataque
++    68   6.47   1591   1772 Fierce Berserk (exori gran)
++    64   6.64    792    854 Berserk (exori)
+     58   6.48    715    794 Groundshaker (exori mas)
+-    16   3.00   1706   1706 Executioner's Throw (exori amp kor)
++    16   3.19   1440   1440 Executioner's Throw (exori amp kor)
+      2   1.00    304    304 Whirlwind Throw (exori hur)
+ excluidos 0/208
+ 
+warning: in the working copy of 'C:\Users\Lucas\Desktop\classificador - Codex\comparisons\ek-aa-before-after\before.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'C:\Users\Lucas\Desktop\classificador - Codex\comparisons\ek-aa-before-after\after.txt', LF will be replaced by CRLF the next time Git touches it

@@ -1,0 +1,45 @@
+=== EK night harpy ===
+turnos hits danoBase danoEfet componente
+   229   1.00    573    654 Auto ataque
+    78   5.44   1526   1636 Fierce Berserk (exori gran)
+    66   5.85    779    838 Berserk (exori)
+    65   5.98    681    708 Groundshaker (exori mas)
+    17   3.24   1543   1607 Executioner's Throw (exori amp kor)
+     4   2.50   1114   1243 Front Sweep (exori min)
+     3   1.33    895    895 Annihilation (exori gran ico)
+excluidos 0/237
+
+=== EK bastion ===
+turnos hits danoBase danoEfet componente
+   198   1.00    630    707 Auto ataque
+    68   6.47   1591   1772 Fierce Berserk (exori gran)
+    64   6.64    792    854 Berserk (exori)
+    58   6.48    715    794 Groundshaker (exori mas)
+    16   3.19   1440   1440 Executioner's Throw (exori amp kor)
+     2   1.00    304    304 Whirlwind Throw (exori hur)
+excluidos 0/208
+
+=== RP pack ===
+turnos hits danoBase danoEfet componente
+   145   6.77    543    638 Auto ataque
+    62   9.19    425    499 great fireball
+    74   8.84    649    792 Divine Caldera (exevo mas san)
+     6   7.83    865   1063 Divine Grenade (exevo tempo mas san)
+excluidos 2/147
+
+=== RP murcion boss ===
+turnos hits danoBase danoEfet componente
+   156   1.00   1006   1196 Auto ataque
+    56   1.00   1421   1654 Strong Ethereal Spear (exori gran con)
+    54   1.00    710    761 Divine Caldera (exevo mas san)
+    50   1.00    496    592 Divine Missile (exori san)
+     1   0.00      0      0 Divine Grenade (exevo tempo mas san)
+excluidos 0/161
+
+=== ED uhax ===
+turnos hits danoBase danoEfet componente
+    71   1.00    120    134 Auto ataque
+    84   8.42    946   1114 great fireball
+    13   8.77   1787   1950 Terra Burst (exevo ulus tera)
+     8   6.75   1645   1928 Terra Wave (exevo tera hur)
+excluidos 0/107

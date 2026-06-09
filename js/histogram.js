@@ -15,7 +15,7 @@ function histTotal(hist) {
   return total;
 }
 
-function renderSmallComponentHistogram(canvasId, assignChart, realValues, simHist, title, note, color = '#3B82F6') {
+function renderSmallComponentHistogram(canvasId, assignChart, realValues, simHist, title, note, color = '#3B82F6', extraOptions) {
   const canvas = $(canvasId);
   if (!canvas || typeof Chart === 'undefined') return;
   const toRgba = (hex, a) => {
@@ -68,6 +68,7 @@ function renderSmallComponentHistogram(canvasId, assignChart, realValues, simHis
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
+      ...(extraOptions || {}),
       plugins: {
         legend: { display: simTotal > 0, labels: { color: '#8BA4C2', font: { size: 10 }, boxWidth: 10 } },
         title: { display: true, text: title + ' · n=' + realTotal + (note ? ' · ' + note : ''), color: '#DDE6F3', font: { size: 12, weight: '500' } },
