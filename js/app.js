@@ -149,15 +149,20 @@ function clsEscapeHtml(v) {
   }[ch]));
 }
 
-function clsDetailComponentLabel(comp) {
-  return comp === 'arrow' ? 'auto ataque' : (comp || '');
+function clsDetailComponentLabel(hit, turn) {
+  const comp = hit && hit.comp;
+  if (comp === 'arrow') return 'auto ataque';
+  if (comp === 'spell') return turn && turn.spell ? clsSpellNameSafe(turn.spell) : 'spell';
+  if (comp === 'rune') return turn && turn.rune ? turn.rune : 'rune';
+  if (comp === 'grenade') return turn && turn.gren ? clsSpellNameSafe(turn.gren) : 'grenade';
+  return comp || '';
 }
 
 function clsDetailCritLabel(hit) {
-  const parts = [];
-  if (hit && hit.type === 'crit') parts.push('crítico');
-  if (hit && hit.onslaught) parts.push('Onslaught');
-  return parts.length ? parts.join(' + ') : '-';
+  if (!hit) return '-';
+  if (hit.onslaught) return (hit.realCrit || hit.lowBlow) ? 'Crítico e Onslaught' : 'Onslaught';
+  if (hit.type === 'crit') return hit.lowBlow ? 'crítico low blow' : 'crítico';
+  return '-';
 }
 
 function renderTurnDetail(turns, res, selectedIndex) {
@@ -222,7 +227,7 @@ function renderTurnDetail(turns, res, selectedIndex) {
             '<tr>' +
               '<td>' + clsEscapeHtml(clsFmtTurnTs(h.ts)) + '</td>' +
               '<td style="text-align:right">' + clsEscapeHtml(h.dmg) + '</td>' +
-              '<td>' + clsEscapeHtml(clsDetailComponentLabel(h.comp)) + '</td>' +
+              '<td>' + clsEscapeHtml(clsDetailComponentLabel(h, turn)) + '</td>' +
               '<td>' + clsEscapeHtml(clsDetailCritLabel(h)) + '</td>' +
               '<td>' + (h.ok ? 'sim' : '-') + '</td>' +
               '<td>' + clsEscapeHtml(h.mob || '') + '</td>' +

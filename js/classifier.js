@@ -337,8 +337,11 @@ function clsApplyEkPositionalAa(t, nonGren, power) {
     return;
   }
 
-  const candidateRatio = clsHitLeechRatio(aa);
-  const otherRatios = nonGren.slice(1).map(clsHitLeechRatio).filter(Number.isFinite);
+  const candidateRatio = aa.overkill ? null : clsHitLeechRatio(aa);
+  const otherRatios = nonGren.slice(1)
+    .filter(l => !l.overkill)
+    .map(clsHitLeechRatio)
+    .filter(Number.isFinite);
   if (candidateRatio != null && otherRatios.length) {
     const otherAvg = clsMean(otherRatios);
     if (otherAvg > 0 && candidateRatio >= EK_AA_LEECH_THRESHOLD * otherAvg) {
@@ -485,9 +488,8 @@ function clsHasRuneNear(runeUses, T) {
   return (runeUses || []).some(u => u.ts >= T - 1 && u.ts <= T + 1);
 }
 
-function clsHasPrecedingSpellCast(playerSpellCasts, T, windowSec) {
-  const w = Number.isFinite(windowSec) ? windowSec : 3;
-  return (playerSpellCasts || []).some(c => c.ts >= T - w && c.ts <= T);
+function clsHasCurrentSpellCast(playerSpellCasts, T) {
+  return (playerSpellCasts || []).some(c => c.ts >= T - 1 && c.ts <= T + 1);
 }
 
 function clsPromoteAllArrowSpellTurn(t) {
@@ -665,8 +667,8 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       const ls = t.rpComponentLines || [];
       if (ls.length < 10) continue;
       if (!ls.every(l => l.correctedComponent === 'arrow' && l.correctionReason === 'bands_all_arrow')) continue;
-      if (!clsHasPrecedingSpellCast(playerSpellCasts, t.ts, 3)) continue;
-      if (!playerGrenCasts.some(c => c.ts === t.ts)) continue;
+      if (!clsHasCurrentSpellCast(playerSpellCasts, t.ts)) continue;
+      if (playerGrenCasts.some(c => c.ts === t.ts)) continue;
       if (clsHasRuneNear(runeUses, t.ts)) continue;
       if ((t.rpGrenade || '') === 'explode') continue;
       clsPromoteAllArrowSpellTurn(t);
@@ -796,7 +798,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
         counts: r.counts,
         lines: (turns[r.idx - 1].rpComponentLines || []).map(l => ({
           mob: l.mob, dmg: l.dmg, base: l.revertedDmg, comp: l.correctedComponent, ok: !!l.overkill,
-          ts: l.ts, seq: l.seq || 0, type: l.type, onslaught: !!l.onslaught,
+          ts: l.ts, seq: l.seq || 0, type: l.type, lowBlow: !!l.lowBlow, realCrit: !!l.realCrit, onslaught: !!l.onslaught,
         })),
       });
     }
