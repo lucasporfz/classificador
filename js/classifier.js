@@ -786,6 +786,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     componentSeries.runeHitsPerTurn.push(r.counts.rune);
     if (r.counts.grenade > 0) componentSeries.grenadeHitsPerShot.push(r.counts.grenade);
     alignedTurns.push({
+      ts: r.ts,
       arrow: r.counts.arrow,
       spellText: sCast ? sCast.text : null, spellHits: r.counts.spell,
       runeName: rUse ? rUse.name : null, runeHits: r.counts.rune,
@@ -803,6 +804,34 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       });
     }
   }
+  const aaExpected = alignedTurns.length;
+  const aaHit = alignedTurns.filter(t => t.arrow > 0).length;
+  const aaLost = aaExpected - aaHit;
+  const spellRuneHit = alignedTurns.filter(t => t.spellHits > 0 || t.runeHits > 0).length;
+  const spellRuneLost = aaExpected - spellRuneHit;
+  const firstAlignedTs = aaExpected ? alignedTurns[0].ts : 0;
+  const lastAlignedTs = aaExpected ? alignedTurns[aaExpected - 1].ts : 0;
+  const classifiedSeconds = aaExpected > 1 ? Math.max(0, lastAlignedTs - firstAlignedTs) : (aaExpected ? 2 : 0);
+  const aaUptime = {
+    expected: aaExpected,
+    hit: aaHit,
+    lost: aaLost,
+    pct: aaExpected ? (aaHit / aaExpected) * 100 : 0,
+    perHour: classifiedSeconds ? aaHit / (classifiedSeconds / 3600) : 0,
+    classifiedSeconds,
+    firstTs: firstAlignedTs,
+    lastTs: lastAlignedTs,
+  };
+  const spellRuneUptime = {
+    expected: aaExpected,
+    hit: spellRuneHit,
+    lost: spellRuneLost,
+    pct: aaExpected ? (spellRuneHit / aaExpected) * 100 : 0,
+    perHour: classifiedSeconds ? spellRuneHit / (classifiedSeconds / 3600) : 0,
+    classifiedSeconds,
+    firstTs: firstAlignedTs,
+    lastTs: lastAlignedTs,
+  };
 
   // --- tabela única (ordem: arrow · runas · spells · granada) ---
   const grenLabel = text => clsSpellLabel(text);
@@ -851,7 +880,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
 
   return {
     data, player, damageSpells, grenadeSpells, ranked, rows,
-    totalTurns: turns.length, excludedTurns,
+    totalTurns: turns.length, excludedTurns, aaUptime, spellRuneUptime,
     spellTurnCount: spellTurns.length, grenadeTurnCount: grenadeTurns.length, runeTurnCount: runeTurns.length,
     temporalSeries, componentSeries,
     turnTrace: traceOn ? turnTrace : undefined,

@@ -261,6 +261,7 @@ function renderClassifier(res) {
     return;
   }
   const f2 = x => x.toFixed(2);
+  const f1 = x => x.toFixed(1);
   const tierLabel = (tier, mult) => tier.kind === 'tier_bonus'
     ? t('cls_tier_bonus') + (mult ? ' (×' + f2(mult) + ')' : '')
     : t('cls_tier_base');
@@ -278,6 +279,21 @@ function renderClassifier(res) {
   }).join('');
   const dmgSummary = res.damageSpells.map(clsSpellNameSafe)
     .concat((res.grenadeSpells || []).map(x => clsSpellNameSafe(x) + ' (' + t('cls_kind_grenade') + ')'));
+  const aa = res.aaUptime || { expected: 0, hit: 0, lost: 0, pct: 0, perHour: 0 };
+  const sr = res.spellRuneUptime || { expected: 0, hit: 0, lost: 0, pct: 0, perHour: 0 };
+  const aaMetricHtml =
+    '<section class="cls-metrics" aria-label="' + t('cls_h_aa_uptime') + '">' +
+      '<div class="cls-metric"><div class="cls-metric-label">' + t('cls_aa_lost') + '</div><div class="cls-metric-value">' + aa.lost + '</div></div>' +
+      '<div class="cls-metric"><div class="cls-metric-label">' + t('cls_aa_hit') + '</div><div class="cls-metric-value">' + aa.hit + ' / ' + aa.expected + '</div></div>' +
+      '<div class="cls-metric"><div class="cls-metric-label">' + t('cls_aa_pct') + '</div><div class="cls-metric-value">' + f1(aa.pct) + '%</div></div>' +
+      '<div class="cls-metric"><div class="cls-metric-label">' + t('cls_aa_per_hour') + '</div><div class="cls-metric-value">' + Math.round(aa.perHour) + '</div></div>' +
+    '</section>' +
+    '<section class="cls-metrics" aria-label="' + t('cls_h_spell_rune_uptime') + '">' +
+      '<div class="cls-metric"><div class="cls-metric-label">' + t('cls_spell_rune_lost') + '</div><div class="cls-metric-value">' + sr.lost + '</div></div>' +
+      '<div class="cls-metric"><div class="cls-metric-label">' + t('cls_spell_rune_hit') + '</div><div class="cls-metric-value">' + sr.hit + ' / ' + sr.expected + '</div></div>' +
+      '<div class="cls-metric"><div class="cls-metric-label">' + t('cls_spell_rune_pct') + '</div><div class="cls-metric-value">' + f1(sr.pct) + '%</div></div>' +
+      '<div class="cls-metric"><div class="cls-metric-label">' + t('cls_spell_rune_per_hour') + '</div><div class="cls-metric-value">' + Math.round(sr.perHour) + '</div></div>' +
+    '</section>';
 
   // gráficos do log (só dados observados, sem simulação) — um histograma de hits por
   // LINHA da rotação (cada spell/componente: AA, cada spell nominal, runa, granada).
@@ -309,6 +325,7 @@ function renderClassifier(res) {
     '<p style="font-size:12.5px;margin:6px 0 14px"><strong>' + t('cls_player') + ':</strong> ' +
       (res.player || '—') + ' &nbsp;·&nbsp; <strong>' + t('cls_dmg_spell') + ':</strong> ' +
       (dmgSummary.join(', ') || '—') + '</p>' +
+    aaMetricHtml +
     '<h3 class="cls-h">' + t('cls_h_rotation') + '</h3>' +
     '<table class="cls-table"><thead><tr><th>' + t('cls_th_comp') + '</th><th style="text-align:right">' + t('cls_th_turns') +
       '</th><th style="text-align:right">' + t('cls_th_hits') + '</th><th style="text-align:right">' + t('cls_th_dmg_base') +
