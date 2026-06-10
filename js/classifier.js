@@ -580,12 +580,20 @@ function clsRebuildRpTurnLinesWithoutGrenade(t) {
   const lines = t.rpComponentLines || [];
   if (!lines.length) return;
   const bands = rpClassifyTurnByBands(lines, null);
+  let arrowEnd = bands.arrowEnd;
+  let boundaryReason = bands.reason || 'chat_cleared_grenade_reband';
+  if (bands.reason === 'crit_two_holy_levels') {
+    arrowEnd = bands.spellEnd;
+    boundaryReason = 'chat_cleared_grenade_crit_boundary';
+  }
   for (let i = 0; i < lines.length; i++) {
-    const isArrow = i < bands.arrowEnd;
+    const isArrow = i < arrowEnd;
     lines[i].correctedComponent = isArrow ? 'arrow' : 'spell';
-    lines[i].correctionReason = bands.reason || 'chat_cleared_grenade_reband';
-    lines[i].boundaryReason = bands.reason || 'chat_cleared_grenade_reband';
+    lines[i].correctionReason = boundaryReason;
+    lines[i].boundaryReason = boundaryReason;
     lines[i].boundaryConfidence = 'strong';
+    lines[i].boundaryArrowEnd = arrowEnd;
+    lines[i].boundarySpellEnd = bands.spellEnd;
     lines[i].inferredElement = isArrow ? 'physical' : 'holy';
   }
   const corrected = { arrow: 0, spell: 0, rune: 0, grenade: 0 };

@@ -429,7 +429,7 @@ function rpClassifyTurnByBands(lines, mark) {
       else { sEnd = bandStart(n); if (sEnd <= c0 || !sustained(sEnd, n)) sEnd = n; }
       return { arrowEnd: c0, spellEnd: sEnd, reason: 'crit_arrow_then_spell_grenade' };
     }
-    if (c0 > 0) {
+    if (c0 > 0 && lines[c0].type !== 'crit') {
       const innerBandStart = bandStart(c0);
       if (innerBandStart < c0 && sustained(innerBandStart, c0) && isHolyBand(innerBandStart, c0)) {
         return { arrowEnd: innerBandStart, spellEnd: n, reason: 'crit_run_precrit_holy' };
