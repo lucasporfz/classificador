@@ -722,12 +722,29 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   if (dmgCandidates.length) {
     const known = dmgCandidates.filter(g => clsKnownType(g.text) === 'attack' || clsKnownType(g.text) === 'grenade');
     const pool = known.length ? known : dmgCandidates;
-    // O jogador (dono do server log) tem suas casts TURN-LOCKED (≈1 por turno de
-    // dano deste log); party-mates aparecem com overcast alto (castam mais do que
-    // cai neste log, ou em mobs que não são os do log). Prefere turn-locked
-    // (overcast<=OVERCAST), depois maior recall.
-    const lock = g => (g.overcast <= OVERCAST ? 1 : 0);
-    player = pool.slice().sort((a, b) => lock(b) - lock(a) || b.recall - a.recall || a.overcast - b.overcast)[0].speaker;
+    // Escolha agregada por speaker: uma spell isolada de outro jogador pode alinhar
+    // bem, mas o dono do server log tende a explicar mais turnos no conjunto.
+    const bySpeaker = new Map();
+    for (const g of pool) {
+      if (!bySpeaker.has(g.speaker)) bySpeaker.set(g.speaker, {
+        speaker: g.speaker, covered: 0, lockedCovered: 0, recall: 0, weightedOvercast: 0, casts: 0, kinds: 0
+      });
+      const s = bySpeaker.get(g.speaker);
+      const covered = g.covered || 0;
+      s.covered += covered;
+      s.lockedCovered += g.overcast <= OVERCAST ? covered : 0;
+      s.recall += g.recall || 0;
+      s.weightedOvercast += Number.isFinite(g.overcast) ? (g.overcast * Math.max(1, covered)) : 9999;
+      s.casts += Math.max(1, covered);
+      s.kinds++;
+    }
+    player = [...bySpeaker.values()].sort((a, b) =>
+      b.covered - a.covered ||
+      b.lockedCovered - a.lockedCovered ||
+      (a.weightedOvercast / a.casts) - (b.weightedOvercast / b.casts) ||
+      b.recall - a.recall ||
+      b.kinds - a.kinds
+    )[0].speaker;
   }
   const damageSpells = dmgCandidates.filter(g => g.speaker === player && g.kind === 'spell').map(g => g.text);
   const grenadeSpells = dmgCandidates.filter(g => g.speaker === player && g.kind === 'grenade').map(g => g.text);
