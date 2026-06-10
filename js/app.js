@@ -10,6 +10,7 @@ let clsRowHistCharts = [];
 let clsServerSessions = null;
 let clsLocalSessions  = null;
 let clsTurnDetailPosition = null;
+let clsChartFilterRowIndex = 'all';
 
 function clsClampTurnDetailPosition(panel, left, top) {
   const margin = 8;
@@ -222,6 +223,27 @@ function clsDetailCritLabel(hit) {
   return '-';
 }
 
+function clsRowLabel(row) {
+  return row && row.kind === 'arrow' ? t('cls_comp_arrow') : (row && row.label) || '';
+}
+
+function clsLineMatchesRow(hit, turn, row) {
+  if (!hit || !turn || !row) return false;
+  if (row.kind === 'arrow') return hit.comp === 'arrow';
+  if (row.kind === 'spell') return hit.comp === 'spell' && clsSpellNameSafe(turn.spell) === row.label;
+  if (row.kind === 'rune') return hit.comp === 'rune' && turn.rune === row.label;
+  if (row.kind === 'grenade') return hit.comp === 'grenade' && clsSpellNameSafe(turn.gren) === row.label;
+  return false;
+}
+
+function clsComponentDamageTimeline(res, row) {
+  const trace = Array.isArray(res && res.turnTrace) ? res.turnTrace : [];
+  return trace.map(turn => (turn.lines || []).reduce((sum, hit) => {
+    if (!clsLineMatchesRow(hit, turn, row) || hit.ok) return sum;
+    return sum + (Number(hit.dmg) || 0);
+  }, 0));
+}
+
 function renderTurnDetail(turns, res, selectedIndex) {
   const old = document.getElementById('clsTurnDetail');
   if (old) old.remove();
@@ -364,14 +386,33 @@ function renderClassifier(res) {
       canvas: 'clsHist' + i,
       rowIndex: r.rowIndex,
       vals: r.r.hitsPerTurn.filter(v => v > 0),
-      label: (r.r.kind === 'arrow' ? t('cls_comp_arrow') : r.r.label),
+      label: clsRowLabel(r.r),
       color: kindColor[r.r.kind] || '#22C55E',
     }));
+  if (clsChartFilterRowIndex !== 'all' && !compDefs.some(d => String(d.rowIndex) === String(clsChartFilterRowIndex))) {
+    clsChartFilterRowIndex = 'all';
+  }
   const hasSeries = (res.temporalSeries || []).length > 0;
+  const filterOptions = compDefs.map(d =>
+    '<option value="' + d.rowIndex + '"' + (String(clsChartFilterRowIndex) === String(d.rowIndex) ? ' selected' : '') + '>' +
+      clsEscapeHtml(d.label) +
+    '</option>'
+  ).join('');
+  const filterHtml = !hasSeries || !compDefs.length ? '' :
+    '<div class="cls-chart-filter">' +
+      '<label for="clsChartFilter">' + t('cls_chart_filter') + '</label>' +
+      '<select id="clsChartFilter">' +
+        '<option value="all"' + (clsChartFilterRowIndex === 'all' ? ' selected' : '') + '>' + t('cls_chart_filter_all') + '</option>' +
+        filterOptions +
+      '</select>' +
+    '</div>';
   const chartsHtml = !hasSeries ? '' : (
     '<h3 class="cls-h">' + t('cls_h_charts') + '</h3>' +
+    filterHtml +
     (compDefs.length ? '<div class="cls-hist-grid">' +
-      compDefs.map(d => '<div style="position:relative;height:220px"><canvas id="' + d.canvas + '"></canvas></div>').join('') +
+      compDefs
+        .filter(d => clsChartFilterRowIndex === 'all' || String(d.rowIndex) === String(clsChartFilterRowIndex))
+        .map(d => '<div style="position:relative;height:220px"><canvas id="' + d.canvas + '"></canvas></div>').join('') +
       '</div>' : '') +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineComponents"></canvas></div>' +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineHits"></canvas></div>' +
@@ -393,6 +434,13 @@ function renderClassifier(res) {
       t('cls_unmatched').replace('{u}', res.excludedTurns).replace('{n}', res.totalTurns) + '</p>' +
     chartsHtml;
   renderClassifierCharts(res, compDefs);
+  const chartFilter = $('clsChartFilter');
+  if (chartFilter) {
+    chartFilter.addEventListener('change', function() {
+      clsChartFilterRowIndex = this.value;
+      renderClassifier(res);
+    });
+  }
 }
 
 // Gráficos do classificador (só log observado, sem linha de simulação): componentes por
@@ -411,6 +459,14 @@ function renderClassifierCharts(res, compDefs) {
     x: { grid: { color: gridColor }, ticks: { color: '#8BA4C2', font: { size: 10 }, maxTicksLimit: 12 }, title: { display: true, text: t('val_axis_turn'), color: '#8BA4C2' } },
     y: { grid: { color: gridColor }, ticks: { color: '#8BA4C2', font: { size: 11 } }, beginAtZero: true }
   });
+  const selectedRow = clsChartFilterRowIndex === 'all' ? null : (res.rows || [])[Number(clsChartFilterRowIndex)];
+  const selectedHits = selectedRow && Array.isArray(selectedRow.hitsTimeline)
+    ? selectedRow.hitsTimeline
+    : series.map(p => p.mobsHit);
+  const selectedDamage = selectedRow
+    ? clsComponentDamageTimeline(res, selectedRow)
+    : series.map(p => p.damage);
+  const selectedSeries = series.map((p, i) => ({ relTime: p.relTime, damage: selectedDamage[i] || 0 }));
   const lineChart = (canvasId, data, title_, color) => {
     const cv = $(canvasId);
     if (!cv) return null;
@@ -426,7 +482,11 @@ function renderClassifierCharts(res, compDefs) {
   // observadas), não o set fixo do validador. Assim pega as spells de qualquer vocação e
   // não inventa runa/granada quando não há. Usa o hitsTimeline alinhado de cada linha.
   const compPalette = ['#F59E0B', '#22C55E', '#60A5FA', '#F87171', '#A78BFA', '#FBBF24', '#34D399', '#F472B6', '#38BDF8', '#FB923C', '#C084FC'];
-  const compRows = (res.rows || []).filter(r => Array.isArray(r.hitsTimeline) && r.hitsTimeline.some(v => v > 0));
+  const compRows = (res.rows || []).filter((r, rowIndex) =>
+    Array.isArray(r.hitsTimeline) &&
+    r.hitsTimeline.some(v => v > 0) &&
+    (clsChartFilterRowIndex === 'all' || String(rowIndex) === String(clsChartFilterRowIndex))
+  );
   const compCv = $('clsTimelineComponents');
   if (compCv && compRows.length) {
     try {
@@ -435,7 +495,7 @@ function renderClassifierCharts(res, compDefs) {
         data: { labels, datasets: compRows.map((r, idx) => {
           const color = compPalette[idx % compPalette.length];
           return {
-            label: r.kind === 'arrow' ? t('cls_comp_arrow') : r.label,
+            label: clsRowLabel(r),
             data: r.hitsTimeline,
             borderColor: color, backgroundColor: color,
             borderWidth: 2, pointRadius: 0, tension: 0.35, fill: false
@@ -445,10 +505,10 @@ function renderClassifierCharts(res, compDefs) {
       });
     } catch (err) { console.error('[classifier chart] failed: clsTimelineComponents', err); }
   }
-  clsTimelineHitsChart = lineChart('clsTimelineHits', series.map(p => p.mobsHit), t('val_timeline_hits'), '#3B82F6');
-  clsTimelineDamageChart = lineChart('clsTimelineDamage', series.map(p => p.damage), t('val_timeline_damage'), '#F59E0B');
-  clsImpactChart = lineChart('clsImpactAnalyser', movingImpact(series), t('val_impact_analyser'), '#3B82F6');
-  for (const d of (compDefs || [])) {
+  clsTimelineHitsChart = lineChart('clsTimelineHits', selectedHits, t('val_timeline_hits'), '#3B82F6');
+  clsTimelineDamageChart = lineChart('clsTimelineDamage', selectedDamage, t('val_timeline_damage'), '#F59E0B');
+  clsImpactChart = lineChart('clsImpactAnalyser', movingImpact(selectedSeries), t('val_impact_analyser'), '#3B82F6');
+  for (const d of (compDefs || []).filter(x => clsChartFilterRowIndex === 'all' || String(x.rowIndex) === String(clsChartFilterRowIndex))) {
     renderSmallComponentHistogram(d.canvas, c => { clsRowHistCharts.push(c); }, d.vals, null, d.label, undefined, d.color, {
       onClick: clsChartClickHandler(res, (hit, chart) => {
         const n = Number(chart.data && chart.data.labels ? chart.data.labels[hit.index] : hit.index);
@@ -482,6 +542,7 @@ $('btnClassify').addEventListener('click', () => {
   try {
     const res = classifyWithLocalChat(sv, lc, { trace: true });
     lastClsResult = res;
+    clsChartFilterRowIndex = 'all';
     renderClassifier(res);
     $('clsStatus').textContent = t('cls_status_done');
   } catch (err) {

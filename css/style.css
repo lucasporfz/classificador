@@ -91,6 +91,17 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
 .cls-metric-label { color: var(--text-muted); font-size: 11px; margin-bottom: 2px; }
 .cls-metric-value { color: var(--text); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
+.cls-chart-filter { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; }
+.cls-chart-filter label { color: var(--text-muted); font-size: 12px; }
+.cls-chart-filter select {
+  min-width: 210px;
+  background: var(--bg-surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
 .cls-hist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
 
 .cls-turn-detail {
