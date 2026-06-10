@@ -731,22 +731,32 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     const known = dmgCandidates.filter(g => clsKnownType(g.text) === 'attack' || clsKnownType(g.text) === 'grenade');
     const pool = known.length ? known : dmgCandidates;
     // Escolha agregada por speaker: uma spell isolada de outro jogador pode alinhar
-    // bem, mas o dono do server log tende a explicar mais turnos no conjunto.
+    // bem, mas casts sobrando demais sao sinal de party-mate no local chat.
     const bySpeaker = new Map();
     for (const g of pool) {
       if (!bySpeaker.has(g.speaker)) bySpeaker.set(g.speaker, {
-        speaker: g.speaker, covered: 0, lockedCovered: 0, recall: 0, weightedOvercast: 0, casts: 0, kinds: 0
+        speaker: g.speaker, covered: 0, lockedCovered: 0, recall: 0, weightedOvercast: 0, casts: 0, kinds: 0, cleanScore: 0
       });
       const s = bySpeaker.get(g.speaker);
       const covered = g.covered || 0;
+      const overcast = Number.isFinite(g.overcast) && g.overcast > 0 ? g.overcast : 9999;
       s.covered += covered;
       s.lockedCovered += g.overcast <= OVERCAST ? covered : 0;
       s.recall += g.recall || 0;
-      s.weightedOvercast += Number.isFinite(g.overcast) ? (g.overcast * Math.max(1, covered)) : 9999;
+      s.weightedOvercast += overcast * Math.max(1, covered);
       s.casts += Math.max(1, covered);
       s.kinds++;
+      s.cleanScore += covered / overcast;
     }
-    player = [...bySpeaker.values()].sort((a, b) =>
+    const speakers = [...bySpeaker.values()];
+    const maxCovered = Math.max(...speakers.map(s => s.covered || 0), 0);
+    const reliableClean = s => (
+      s.lockedCovered >= 10 && s.covered >= maxCovered * 0.45 && (s.lockedCovered / s.covered) >= 0.35
+        ? s.cleanScore
+        : 0
+    );
+    player = speakers.sort((a, b) =>
+      reliableClean(b) - reliableClean(a) ||
       b.covered - a.covered ||
       b.lockedCovered - a.lockedCovered ||
       (a.weightedOvercast / a.casts) - (b.weightedOvercast / b.casts) ||
