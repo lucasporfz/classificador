@@ -98,6 +98,38 @@ helper, define it in a file that loads before its callers.
   san`) must not be promoted to `spell` by `chat_spell_all_arrow_fallback`. The grenade cast
   is used to identify the later explode turn (~C+3); the cast turn itself may remain a valid
   `arrow`-only turn and must appear in `turnTrace`.
+- **RP low/high grenade marks are secondary to local chat.** The parser may mark a
+  low/high pair as `rpGrenade='cast'/'explode'` before local chat is known. In
+  `classifyWithLocalChat`, keep those marks only when a real `exevo tempo mas san` cast is
+  compatible with the marked turn(s). If chat contradicts the heuristic, clear the mark and
+  rebuild the turn classification before applying spell/rune fallbacks. This prevents false
+  `grenade_cast_arrow_only` turns such as `darklight e vemiath` `07/Jun/2026 22:18-22:24`
+  around `22:22:11`.
+- **RP chat fallback must not blindly turn all-arrow into all-spell.** When local chat proves
+  an RP attack spell but the band classifier returned `bands_all_arrow`, recover the missing
+  second component conservatively. Single-target RP spells (`exori gran con`, `exori san`,
+  `exori con`, `exori infir con`) are deterministic order `AA -> spell`: mark only the
+  last hit as `spell`, keep the prefix as `arrow`. AoE spell fallback (`exevo mas san`)
+  should first look for a consistent suffix by normalized holy damage and keep any prefix as
+  `arrow`; only promote the whole block when no reliable split exists.
+- **RP AoE all-spell turns can still contain a prefix AA.** If a pack turn is classified as
+  100% `spell`, local chat has the AoE spell, and the first non-overkill hit has a much
+  stronger leech/damage ratio than the following non-overkill spell block, restore that first
+  hit to `arrow`. This handles hard mixed turns such as `darklight e vemiath`
+  `07/Jun/2026 23:19-23:25` at `23:24:39`, where the first hit is AA and the suffix is
+  `Divine Caldera`.
+- **Observed damage classification and execution metrics are intentionally different.** The
+  rotation table/detail show observed damage components only. A server line like
+  `Using one of N great fireball runes...` can count as an executed spell/rune/grenade for
+  uptime metrics even if no rune damage is visible in that turn. Do not relabel the hits as
+  rune unless the damage/order evidence supports it. Example: `darklight e vemiath`
+  `04/Jun/2026 22:41-22:46` turn `22:45:34` has a GFB `Using` line after the offensive hits;
+  the hits stay `arrow`, but the spell/rune/grenade uptime counts the second component as
+  executed.
+- **Metric denominators must ignore partial edge turns when appropriate.** The first aligned
+  turn of a session can be a partial log slice. If it contains only AA damage and no visible
+  second component, do not count it as a lost `Spell/rune/granada` turn. Keep it in
+  `turnTrace` and AA metrics; exclude it only from the second-component uptime denominator.
 - **Chart drill-down is tied to aligned `turnTrace`.** Histogram bars map by row
   `hitsTimeline`; timeline/scatter points map by `dataIndex -> turnTrace[dataIndex]`.
   `renderTurnDetail(turns, res, selectedIndex)` shows one active turn at a time. For a
@@ -164,6 +196,20 @@ diretamente nas textareas sem passar pelo algoritmo de data.
 7. For UI drill-down changes, run syntax checks and test in the browser: chart click opens
    `.cls-turn-detail`, previous/next stays stable, spell/rune/grenade labels are names
    rather than raw component tokens, and Low Blow/Onslaught labels render correctly.
+8. For RP all-arrow/chat fallback changes, verify:
+   - `darklight rp` `04/Jun/2026 09:13-09:22`, turn `09:14:16`: `405` and `501` remain
+     `arrow`; the last hit `1067` becomes `Strong Ethereal Spear (exori gran con)`.
+   - `darklight e vemiath` `07/Jun/2026 23:19-23:25`, turn `23:22:28`: do not classify the
+     whole turn as spell; the high-leech prefix AA stays `arrow` and the suffix is
+     `Divine Caldera`.
+   - `darklight e vemiath` `07/Jun/2026 23:19-23:25`, turn `23:24:39`: first hit `819
+     darklight source` is `arrow`; the following hits are `Divine Caldera`.
+   - `murcion` remains visually stable; do not create fake pack-style AA/rune/spell splits.
+9. For second-component uptime changes, verify `darklight e vemiath` `04/Jun/2026
+   22:41-22:46`: the first partial turn `22:41:16` remains visible in drill-down as AA-only
+   but does not count as a lost `Spell/rune/granada`; turn `22:45:34` remains observed
+   `arrow` damage while its `Using ... great fireball runes` line counts as second-component
+   execution for the metric.
 
 ## Relationship to the original app
 

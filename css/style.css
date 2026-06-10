@@ -122,6 +122,12 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
   background: var(--bg-surface);
   margin-bottom: 8px;
   padding: 14px 0 8px;
+  cursor: move;
+  user-select: none;
+}
+
+.cls-turn-detail.is-dragging {
+  user-select: none;
 }
 
 .cls-turn-detail-head .cls-h {
@@ -134,6 +140,7 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+  cursor: auto;
 }
 
 .cls-turn-detail-nav button {
@@ -162,6 +169,7 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
   height: 28px;
   padding: 0;
   border: 1px solid var(--border);
+  cursor: pointer;
   border-radius: var(--r-sm);
   background: var(--bg-raised);
   color: var(--text);

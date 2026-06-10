@@ -9,6 +9,63 @@ let clsImpactChart = null;
 let clsRowHistCharts = [];
 let clsServerSessions = null;
 let clsLocalSessions  = null;
+let clsTurnDetailPosition = null;
+
+function clsClampTurnDetailPosition(panel, left, top) {
+  const margin = 8;
+  const maxLeft = Math.max(margin, window.innerWidth - panel.offsetWidth - margin);
+  const maxTop = Math.max(margin, window.innerHeight - panel.offsetHeight - margin);
+  return {
+    left: Math.min(Math.max(margin, left), maxLeft),
+    top: Math.min(Math.max(margin, top), maxTop)
+  };
+}
+
+function clsApplyTurnDetailPosition(panel) {
+  if (!clsTurnDetailPosition) return;
+  const pos = clsClampTurnDetailPosition(panel, clsTurnDetailPosition.left, clsTurnDetailPosition.top);
+  clsTurnDetailPosition = pos;
+  panel.style.left = pos.left + 'px';
+  panel.style.top = pos.top + 'px';
+  panel.style.transform = 'none';
+}
+
+function clsEnableTurnDetailDrag(panel) {
+  const head = panel.querySelector('.cls-turn-detail-head');
+  if (!head) return;
+  head.addEventListener('pointerdown', ev => {
+    if (ev.button !== 0) return;
+    if (ev.target.closest('button, a, input, select, textarea, .cls-turn-detail-nav')) return;
+    const rect = panel.getBoundingClientRect();
+    const startX = ev.clientX;
+    const startY = ev.clientY;
+    const startLeft = rect.left;
+    const startTop = rect.top;
+    panel.classList.add('is-dragging');
+    panel.style.transform = 'none';
+    panel.style.left = startLeft + 'px';
+    panel.style.top = startTop + 'px';
+    ev.preventDefault();
+
+    const move = moveEv => {
+      const pos = clsClampTurnDetailPosition(
+        panel,
+        startLeft + moveEv.clientX - startX,
+        startTop + moveEv.clientY - startY
+      );
+      clsTurnDetailPosition = pos;
+      panel.style.left = pos.left + 'px';
+      panel.style.top = pos.top + 'px';
+    };
+    const up = () => {
+      panel.classList.remove('is-dragging');
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  });
+}
 
 function clsSpellNameSafe(text) {
   return typeof clsSpellLabel === 'function' ? clsSpellLabel(text) : text;
@@ -238,6 +295,8 @@ function renderTurnDetail(turns, res, selectedIndex) {
   }
 
   document.body.appendChild(panel);
+  clsApplyTurnDetailPosition(panel);
+  clsEnableTurnDetailDrag(panel);
   panel.querySelector('.cls-turn-detail-close').addEventListener('click', close);
   const go = dir => {
     if (!canNav) return;

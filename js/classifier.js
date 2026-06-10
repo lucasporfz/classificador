@@ -197,6 +197,7 @@ const CLS_MAGIC_PREFIX = /^(exori|exevo|exura|exana|exeta|exiva|exomis|utevo|uta
 const CLS_CHAT_RE = /^(\d{2}):(\d{2}):(\d{2})\s+(.+?)(?:\s+\[(\d+)\])?:\s?(.*)$/;
 const CLS_RUNE_USE_RE = /Using one of \d+\s+(.+?)\s+runes?\b/i;
 const CLS_TS_RE = /^(\d{2}):(\d{2}):(\d{2})\b/;
+const CLS_RP_SINGLE_TARGET_ATTACKS = new Set(['exori gran con', 'exori san', 'exori con', 'exori infir con']);
 
 function clsMean(a) { return a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0; }
 function clsAgg(label, kind, turnsList) {
@@ -488,8 +489,14 @@ function clsHasRuneNear(runeUses, T) {
   return (runeUses || []).some(u => u.ts >= T - 1 && u.ts <= T + 1);
 }
 
-function clsHasCurrentSpellCast(playerSpellCasts, T) {
-  return (playerSpellCasts || []).some(c => c.ts >= T - 1 && c.ts <= T + 1);
+function clsCurrentSpellCast(playerSpellCasts, T) {
+  let best = null, bestDt = 99;
+  for (const c of (playerSpellCasts || [])) {
+    if (c.ts < T - 1 || c.ts > T + 1) continue;
+    const dt = Math.abs(c.ts - T);
+    if (dt < bestDt) { bestDt = dt; best = c; }
+  }
+  return best;
 }
 
 function clsPromoteAllArrowSpellTurn(t) {
@@ -498,6 +505,109 @@ function clsPromoteAllArrowSpellTurn(t) {
     l.correctionReason = 'chat_spell_all_arrow_fallback';
     l.boundaryReason = 'chat_spell_all_arrow_fallback';
   }
+}
+
+function clsPromoteAllArrowAoeSpellTurn(t) {
+  const lines = t.rpComponentLines || [];
+  const val = l => Number.isFinite(l.secondOriginal) ? l.secondOriginal
+    : (Number.isFinite(l.holyOriginal) ? l.holyOriginal : l.revertedDmg);
+  const medianOf = arr => {
+    const s = arr.slice().sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+  let split = -1;
+  for (let k = 1; k < lines.length; k++) {
+    const suffix = lines.slice(k).filter(l => !l.overkill).map(val).filter(Number.isFinite);
+    if (suffix.length < 2) continue;
+    const med = medianOf(suffix);
+    const lo = Math.min(...suffix), hi = Math.max(...suffix);
+    if (!(med > 0) || (hi - lo) / med > 0.08) continue;
+    const prefix = lines.slice(0, k).filter(l => !l.overkill).map(val).filter(Number.isFinite);
+    const outside = prefix.some(v => v < lo * 0.95 || v > hi * 1.05);
+    if (outside) { split = k; break; }
+  }
+  if (split < 0) {
+    clsPromoteAllArrowSpellTurn(t);
+    return true;
+  }
+  for (let i = 0; i < lines.length; i++) {
+    const isSpell = i >= split;
+    lines[i].correctedComponent = isSpell ? 'spell' : 'arrow';
+    lines[i].correctionReason = isSpell ? 'chat_spell_suffix_fallback' : 'chat_spell_prefix_arrow_fallback';
+    lines[i].boundaryReason = isSpell ? 'chat_spell_suffix_fallback' : 'chat_spell_prefix_arrow_fallback';
+    lines[i].inferredElement = isSpell ? 'holy' : 'physical';
+  }
+  return true;
+}
+
+function clsPromoteLastHitSpellTurn(t) {
+  const lines = t.rpComponentLines || [];
+  if (!lines.length) return false;
+  for (let i = 0; i < lines.length; i++) {
+    const isSpell = i === lines.length - 1;
+    lines[i].correctedComponent = isSpell ? 'spell' : 'arrow';
+    lines[i].correctionReason = isSpell ? 'chat_single_target_last_hit' : 'chat_single_target_arrow_prefix';
+    lines[i].boundaryReason = isSpell ? 'chat_single_target_last_hit' : 'chat_single_target_arrow_prefix';
+    lines[i].inferredElement = isSpell ? 'holy' : 'physical';
+  }
+  return true;
+}
+
+function clsRestoreRpAaByLeech(t) {
+  const lines = t.rpComponentLines || [];
+  if (lines.length < 3 || !lines.every(l => l.correctedComponent === 'spell')) return false;
+  const ratio = l => {
+    const totalLeech = (Number(l.lifeLeech) || 0) + (Number(l.manaLeech) || 0);
+    const dmg = Number(l.dmg) || 0;
+    return totalLeech > 0 && dmg > 0 ? totalLeech / dmg : null;
+  };
+  const firstRatio = !lines[0].overkill ? ratio(lines[0]) : null;
+  if (!Number.isFinite(firstRatio)) return false;
+  const otherRatios = lines.slice(1).filter(l => !l.overkill).map(ratio).filter(Number.isFinite);
+  if (otherRatios.length < 2) return false;
+  const avgOther = clsMean(otherRatios);
+  if (!(avgOther > 0) || firstRatio < avgOther * 1.5) return false;
+  lines[0].correctedComponent = 'arrow';
+  lines[0].correctionReason = 'leech_prefix_aa';
+  lines[0].boundaryReason = 'leech_prefix_aa';
+  lines[0].inferredElement = 'physical';
+  return true;
+}
+
+function clsRebuildRpTurnLinesWithoutGrenade(t) {
+  if (!t || typeof rpClassifyTurnByBands !== 'function') return;
+  const lines = t.rpComponentLines || [];
+  if (!lines.length) return;
+  const bands = rpClassifyTurnByBands(lines, null);
+  for (let i = 0; i < lines.length; i++) {
+    const isArrow = i < bands.arrowEnd;
+    lines[i].correctedComponent = isArrow ? 'arrow' : 'spell';
+    lines[i].correctionReason = bands.reason || 'chat_cleared_grenade_reband';
+    lines[i].boundaryReason = bands.reason || 'chat_cleared_grenade_reband';
+    lines[i].boundaryConfidence = 'strong';
+    lines[i].inferredElement = isArrow ? 'physical' : 'holy';
+  }
+  const corrected = { arrow: 0, spell: 0, rune: 0, grenade: 0 };
+  for (const line of lines) {
+    if (line.correctedComponent === 'arrow') corrected.arrow++;
+    else if (line.correctedComponent === 'grenade') corrected.grenade++;
+    else if (line.correctedComponent === 'rune') corrected.rune++;
+    else corrected.spell++;
+  }
+  t.components = corrected;
+}
+
+function clsHasGrenadeCastForMark(turns, turnIndex, playerGrenCasts) {
+  const t = turns[turnIndex];
+  if (!t) return false;
+  if ((t.rpGrenade || '') === 'cast') {
+    return (playerGrenCasts || []).some(c => c.ts >= t.ts - 1 && c.ts <= t.ts + 1);
+  }
+  if ((t.rpGrenade || '') === 'explode') {
+    return (playerGrenCasts || []).some(c => c.ts >= t.ts - 3 && c.ts <= t.ts - 1);
+  }
+  return true;
 }
 
 function clsGrenadeEvidenceScore(t, tr) {
@@ -640,6 +750,19 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   const RP_ATTACK = new Set(['exevo mas san', 'exori san', 'exori con', 'exori gran con',
     'exori infir con', 'exori dir san', 'exori dir moe', 'utori san', 'exevo tempo mas san']);
   const isRpRegime = damageSpells.concat(grenadeSpells).some(t => RP_ATTACK.has(t));
+  if (isRpRegime) {
+    let clearedGrenadeMark = false;
+    for (let i = 0; i < turns.length; i++) {
+      const mark = turns[i].rpGrenade || '';
+      if ((mark === 'cast' || mark === 'explode') && !clsHasGrenadeCastForMark(turns, i, playerGrenCasts)) {
+        turns[i].rpGrenade = null;
+        if (mark === 'explode') turns[i].rpGrenadeHeuristic = false;
+        clsRebuildRpTurnLinesWithoutGrenade(turns[i]);
+        clearedGrenadeMark = true;
+      }
+    }
+    if (clearedGrenadeMark) turnRecords = clsBuildTurnRecords(turns);
+  }
   if (data.distinctMobs === 1 || !isRpRegime) {
     // AA posicional p/ single-target (1 mob, sem banda) e p/ EK melee (golpe físico todo
     // turno, logado 1º); caster (druida/mage: spell exevo / runa) usa o AA por outlier.
@@ -665,16 +788,28 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     let promotedAllArrow = false;
     for (const t of turns) {
       const ls = t.rpComponentLines || [];
-      if (ls.length < 10) continue;
       if (!ls.every(l => l.correctedComponent === 'arrow' && l.correctionReason === 'bands_all_arrow')) continue;
-      if (!clsHasCurrentSpellCast(playerSpellCasts, t.ts)) continue;
+      const spellCast = clsCurrentSpellCast(playerSpellCasts, t.ts);
+      if (!spellCast) continue;
       if (playerGrenCasts.some(c => c.ts === t.ts)) continue;
       if (clsHasRuneNear(runeUses, t.ts)) continue;
       if ((t.rpGrenade || '') === 'explode') continue;
-      clsPromoteAllArrowSpellTurn(t);
-      promotedAllArrow = true;
+      if (CLS_RP_SINGLE_TARGET_ATTACKS.has(spellCast.text)) promotedAllArrow = clsPromoteLastHitSpellTurn(t) || promotedAllArrow;
+      else {
+        promotedAllArrow = clsPromoteAllArrowAoeSpellTurn(t) || promotedAllArrow;
+      }
     }
     if (promotedAllArrow) turnRecords = clsBuildTurnRecords(turns);
+    let restoredAaByLeech = false;
+    for (const t of turns) {
+      const spellCast = clsCurrentSpellCast(playerSpellCasts, t.ts);
+      if (!spellCast || CLS_RP_SINGLE_TARGET_ATTACKS.has(spellCast.text)) continue;
+      if (playerGrenCasts.some(c => c.ts === t.ts)) continue;
+      if (clsHasRuneNear(runeUses, t.ts)) continue;
+      if ((t.rpGrenade || '') === 'explode') continue;
+      restoredAaByLeech = clsRestoreRpAaByLeech(t) || restoredAaByLeech;
+    }
+    if (restoredAaByLeech) turnRecords = clsBuildTurnRecords(turns);
   }
 
   const nearestGren = G => {
@@ -759,6 +894,8 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   for (const r of turnRecords) {
     const sCast = r.counts.spell > 0 ? clsNearest(playerSpellCasts, r.spellTs) : null;
     const gCast = r.counts.grenade > 0 ? nearestGren(r.ts) : null;
+    const gTurnCast = playerGrenCasts.find(c => c.ts >= r.ts - 1 && c.ts <= r.ts + 1) || null;
+    const rTurnUse = runeUses.find(u => u.ts >= r.ts - 1 && u.ts <= r.ts + 1) || null;
     const rUse = r.counts.rune > 0 ? (runeUseByTurnIndex.get(r.idx - 1) || null) : null;
     const aligned = (r.counts.spell === 0 || sCast) && (r.counts.grenade === 0 || gCast) && (r.counts.rune === 0 || rUse);
     if (!aligned) { excludedTurns++; continue; }
@@ -786,11 +923,12 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     componentSeries.runeHitsPerTurn.push(r.counts.rune);
     if (r.counts.grenade > 0) componentSeries.grenadeHitsPerShot.push(r.counts.grenade);
     alignedTurns.push({
+      idx: r.idx,
       ts: r.ts,
       arrow: r.counts.arrow,
       spellText: sCast ? sCast.text : null, spellHits: r.counts.spell,
-      runeName: rUse ? rUse.name : null, runeHits: r.counts.rune,
-      grenText: gCast ? gCast.text : null, grenHits: r.counts.grenade,
+      runeName: rUse ? rUse.name : null, runeCastName: rTurnUse ? rTurnUse.name : null, runeHits: r.counts.rune,
+      grenText: gCast ? gCast.text : null, grenCastText: gTurnCast ? gTurnCast.text : null, grenHits: r.counts.grenade,
     });
     if (traceOn) {
       turnTrace.push({
@@ -807,8 +945,12 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   const aaExpected = alignedTurns.length;
   const aaHit = alignedTurns.filter(t => t.arrow > 0).length;
   const aaLost = aaExpected - aaHit;
-  const spellRuneHit = alignedTurns.filter(t => t.spellHits > 0 || t.runeHits > 0).length;
-  const spellRuneLost = aaExpected - spellRuneHit;
+  const hasVisibleSecondComponent = t => t.spellHits > 0 || t.runeHits > 0 || t.grenText || t.grenHits > 0;
+  const hasSecondComponent = t => hasVisibleSecondComponent(t) || t.runeCastName || t.grenCastText;
+  const spellRuneMetricTurns = alignedTurns.filter(t => t.idx !== 1 || hasVisibleSecondComponent(t));
+  const spellRuneExpected = spellRuneMetricTurns.length;
+  const spellRuneHit = spellRuneMetricTurns.filter(hasSecondComponent).length;
+  const spellRuneLost = spellRuneExpected - spellRuneHit;
   const firstAlignedTs = aaExpected ? alignedTurns[0].ts : 0;
   const lastAlignedTs = aaExpected ? alignedTurns[aaExpected - 1].ts : 0;
   const classifiedSeconds = aaExpected > 1 ? Math.max(0, lastAlignedTs - firstAlignedTs) : (aaExpected ? 2 : 0);
@@ -823,10 +965,10 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     lastTs: lastAlignedTs,
   };
   const spellRuneUptime = {
-    expected: aaExpected,
+    expected: spellRuneExpected,
     hit: spellRuneHit,
     lost: spellRuneLost,
-    pct: aaExpected ? (spellRuneHit / aaExpected) * 100 : 0,
+    pct: spellRuneExpected ? (spellRuneHit / spellRuneExpected) * 100 : 0,
     perHour: classifiedSeconds ? spellRuneHit / (classifiedSeconds / 3600) : 0,
     classifiedSeconds,
     firstTs: firstAlignedTs,
