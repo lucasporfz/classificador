@@ -91,15 +91,27 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
 .cls-metric-label { color: var(--text-muted); font-size: 11px; margin-bottom: 2px; }
 .cls-metric-value { color: var(--text); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-.cls-chart-filter { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; }
-.cls-chart-filter label { color: var(--text-muted); font-size: 12px; }
-.cls-chart-filter select {
-  min-width: 210px;
-  background: var(--bg-surface);
-  color: var(--text);
+.cls-component-chart-tools { display: flex; justify-content: flex-end; margin: 0 0 6px; }
+.cls-chart-metric {
+  display: inline-flex;
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 6px 8px;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+.cls-chart-metric button {
+  min-width: 54px;
+  padding: 6px 10px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.cls-chart-metric button:last-child { border-right: 0; }
+.cls-chart-metric button.active {
+  background: rgba(59, 130, 246, 0.18);
+  color: var(--text);
 }
 
 .cls-hist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }

@@ -950,10 +950,10 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     alignedTurns.push({
       idx: r.idx,
       ts: r.ts,
-      arrow: r.counts.arrow,
-      spellText: sCast ? sCast.text : null, spellHits: r.counts.spell,
-      runeName: rUse ? rUse.name : null, runeCastName: rTurnUse ? rTurnUse.name : null, runeHits: r.counts.rune,
-      grenText: gCast ? gCast.text : null, grenCastText: gTurnCast ? gTurnCast.text : null, grenHits: r.counts.grenade,
+      arrow: r.counts.arrow, arrowDamage: sumRaw('arrow'),
+      spellText: sCast ? sCast.text : null, spellHits: r.counts.spell, spellDamage: sumRaw('spell'),
+      runeName: rUse ? rUse.name : null, runeCastName: rTurnUse ? rTurnUse.name : null, runeHits: r.counts.rune, runeDamage: sumRaw('rune'),
+      grenText: gCast ? gCast.text : null, grenCastText: gTurnCast ? gTurnCast.text : null, grenHits: r.counts.grenade, grenDamage: sumRaw('grenade'),
     });
     if (traceOn) {
       turnTrace.push({
@@ -1006,16 +1006,19 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   if (arrowAligned.length) {
     const aRow = clsAgg('Auto ataque', 'arrow', arrowAligned);
     aRow.hitsTimeline = alignedTurns.map(a => a.arrow);
+    aRow.damageTimeline = alignedTurns.map(a => a.arrowDamage);
     rows.push(aRow);
   }
   for (const [name, list] of [...perRune.entries()].sort((a, b) => b[1].length - a[1].length)) {
     const rRow = clsAgg(name, 'rune', list);
     rRow.hitsTimeline = alignedTurns.map(a => a.runeName === name ? a.runeHits : 0);
+    rRow.damageTimeline = alignedTurns.map(a => a.runeName === name ? a.runeDamage : 0);
     rows.push(rRow);
   }
   for (const [text, list] of [...perSpell.entries()].sort((a, b) => b[1].length - a[1].length)) {
     const row = clsAgg(clsSpellLabel(text), 'spell', list);
     row.hitsTimeline = alignedTurns.map(a => a.spellText === text ? a.spellHits : 0);
+    row.damageTimeline = alignedTurns.map(a => a.spellText === text ? a.spellDamage : 0);
     const pt = perSpellTiers.get(text);
     if (pt && (pt.base.length || pt.bonus.length)) {
       row.tiers = [];
@@ -1036,6 +1039,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   for (const [text, list] of [...perGren.entries()].sort((a, b) => b[1].length - a[1].length)) {
     const gRow = clsAgg(grenLabel(text), 'grenade', list);
     gRow.hitsTimeline = alignedTurns.map(a => a.grenText === text ? a.grenHits : 0);
+    gRow.damageTimeline = alignedTurns.map(a => a.grenText === text ? a.grenDamage : 0);
     rows.push(gRow);
   }
   // granadas castadas que NÃO deram dano (erraram): mostra a linha com 0 hits / 0 dano.
