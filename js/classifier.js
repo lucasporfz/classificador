@@ -443,7 +443,7 @@ function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts
   for (const c of playerGrenCasts) {
     const hit = allLines
       .filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l))
-      .sort((a, b) => clsGrenadeDelayDistance(c, a.ts) - clsGrenadeDelayDistance(c, b.ts) || a.ts - b.ts || (a.seq || 0) - (b.seq || 0))[0];
+      .sort((a, b) => clsGrenadeDelayDistance(c, a.ts) - clsGrenadeDelayDistance(c, b.ts) || b.ts - a.ts || (a.seq || 0) - (b.seq || 0))[0];
     if (hit) grenSet.add(hit);
   }
   // Janela cast→turno: o cast PRECEDE os hits (uma spell não bate antes de ser lançada),
@@ -933,6 +933,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     );
     player = speakers.sort((a, b) =>
       reliableClean(b) - reliableClean(a) ||
+      b.cleanScore - a.cleanScore ||
       b.covered - a.covered ||
       b.lockedCovered - a.lockedCovered ||
       (a.weightedOvercast / a.casts) - (b.weightedOvercast / b.casts) ||
