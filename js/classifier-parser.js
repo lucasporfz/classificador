@@ -8,10 +8,9 @@
 //   correctRpComponentsByElement / rpClassifyTurnByBands (parser-rp-helpers.js).
 // Nada aqui altera o parser do validador.
 //
-// Globais usados (já carregados antes): mean, median (stats.js);
+// Globais usados (já carregados antes): mean (stats.js);
 // normalizeRuneName, getRuneElement, rpAmplificationDivisor,
 // correctRpComponentsByElement (parser-rp-helpers.js);
-// extractRpGrenadePeakResidual (inline em index novo.html — global em runtime).
 // ============================================================================
 
 function parseLogForClassifier(logText) {
@@ -126,21 +125,6 @@ function parseLogForClassifier(logText) {
   }
 
   const rawTurnHits = turns.map(t => t.filter(e => e.type === 'normal' || e.type === 'crit').length);
-  // marcas de granada cast→explode (mesmo detector low/high do parser)
-  const rpGrenadeMarks = new Array(rawTurnHits.length).fill(null);
-  if (rawTurnHits.length >= 12) {
-    const nonZero = rawTurnHits.filter(v => v > 0);
-    const center = nonZero.length ? median(nonZero) : 0;
-    for (let i = 0; i < rawTurnHits.length - 1; i++) {
-      if (rpGrenadeMarks[i] || rpGrenadeMarks[i + 1]) continue;
-      const low = rawTurnHits[i], high = rawTurnHits[i + 1];
-      if (center > 0 && low <= center * 0.75 && high >= center * 1.25 && high >= low * 1.8) { rpGrenadeMarks[i] = 'cast'; rpGrenadeMarks[i + 1] = 'explode'; i++; }
-    }
-  }
-  const rpPeak = (typeof extractRpGrenadePeakResidual === 'function')
-    ? extractRpGrenadePeakResidual(rawTurnHits.map((raw, idx) => ({ rawAttackHits: raw, rpGrenade: rpGrenadeMarks[idx] })))
-    : null;
-  const rpNormalRotationRaw = rpPeak ? Math.max(1, Math.round(rpPeak.normalP75Raw || rpPeak.normalMedianRaw || 0)) : 0;
 
   const turnStats = turns.map((t, idx) => {
     const rawAttackHits = rawTurnHits[idx];
@@ -148,9 +132,8 @@ function parseLogForClassifier(logText) {
       ts: t[0].ts,
       rawAttackHits,
       mobsHit: Math.max(0, rawAttackHits),
-      rpGrenade: rpGrenadeMarks[idx],
-      rpGrenadeHeuristic: rpGrenadeMarks[idx] === 'explode',
-      components: { arrow: 0, spell: 0, rune: 0, grenade: rpGrenadeMarks[idx] === 'explode' ? Math.max(0, Math.round(rawAttackHits - rpNormalRotationRaw)) : 0 },
+      rpGrenade: null,
+      components: { arrow: 0, spell: 0, rune: 0, grenade: 0 },
       normalHits: t.filter(e => e.type === 'normal').length,
       critHits: t.filter(e => e.type === 'crit').length,
     };
