@@ -35,20 +35,27 @@ helper, define it in a file that loads before its callers.
 - **`js/classifier-parser.js`** (`parseLogForClassifier`): log text → events → 2-second
   turns → `turnStats`. No min-length guard (reads single-kill bosses); article `A/An/The`
   optional. Reuses the shared RP classification helpers. Returns `distinctMobs` (boss = 1).
+  The parser also associates immediate post-hit leech lines (`You were healed for N
+  hitpoints.` and `You gained N mana.`) to the last eligible offensive player hit in the
+  same timestamp. Do not attach leech to potion/manual heals, charm-only/reflection events,
+  or unrelated later hits.
 - **`js/classifier.js`**: spell table `CLS_SPELLS` (every spell of all vocations), player
   auto-detection, server↔local-chat join by timestamp, and rotation assembly
   (`classifyWithLocalChat`). **Component split = mechanical, by order**: AA single-target
   first, then AoE (spell/rune); a pack RP (≥2 mobs) uses the band classifier instead.
   Strict alignment: a turn is analyzed only if every cast component matches 100%, else the
   whole turn is dropped. Damage columns: `revertedDmg` (crit/Onslaught/prey removed = base)
-  and raw `dmg` (effective), both excluding overkill.
+  and raw `dmg` (effective), both excluding overkill. With `{ trace: true }`, it returns
+  `turnTrace` for UI drill-down; each trace line carries `ts`, `seq`, `comp`, `type`,
+  `lowBlow`, `realCrit`, `onslaught`, and `ok` (overkill).
 - **`js/parser-rp-helpers.js`**: the validated RP band classifier (arrow/spell/rune/grenade
   by holy-damage signature). Holy damage is deterministic per mob+component; arrow is
   physical and varies — that separates them. Do not loosen these rules without re-validating
   against logs.
 - **`js/app.js`**: UI glue + Chart.js rendering (rotation table, per-component histograms,
   components/hits/damage per turn, Impact Analyser). No simulation line. Also owns the
-  **multi-session log picker** — see section below.
+  **multi-session log picker** — see section below. Chart drill-down uses `turnTrace`; chart
+  clicks open the non-modal `.cls-turn-detail` panel with previous/next navigation.
 - **`js/mob-element-mods.js`** / **`js/rp-grenade-peak.js`** / **`js/charts-helpers.js`**:
   data table + helpers extracted from the original monolithic app.
 
@@ -73,6 +80,74 @@ helper, define it in a file that loads before its callers.
   Do **not** revert it to the validator's hardcoded `['arrow','spell','rune','grenade']`
   reading `temporalSeries.components` — that lumps all spells into one line and invents
   absent components.
+- **EK AA classification is position-first, then diagnostics.** For EK/melee (`exori*`)
+  turns, the first non-grenade hit is the AA candidate. Crit/non-crit boundary is the first
+  confirmation signal. Leech is diagnostic/confirmation: compare `(lifeLeech + manaLeech) /
+  dmg` against other non-overkill hits only. Overkill damage is truncated and must never be
+  used in leech-ratio comparisons; if the candidate itself is overkill, keep the positional
+  decision and warn `ek_uncertain_leech`. A strong leech contradiction can still make the
+  turn `no AA`, but not when the contradiction is caused by overkill.
+- **Low Blow and Onslaught must remain distinguishable in trace/UI.** Parser events keep
+  `lowBlow`, `realCrit`, and `onslaught`. `low blow charm` is displayed as `crítico low
+  blow`; pure Onslaught (`due to your attack. (Onslaught)`) displays as `Onslaught`; a real
+  crit/Low Blow with Onslaught displays as `Crítico e Onslaught`. Do not collapse pure
+  Onslaught back to generic `crítico` just because normalization represents it as
+  `type: 'crit'`.
+- **RP all-arrow turns near grenade casts can be valid AA-area turns.** In RP packs, an
+  all-arrow turn at the exact timestamp of a grenade cast (for example `exevo tempo mas
+  san`) must not be promoted to `spell` by `chat_spell_all_arrow_fallback`. The grenade cast
+  is used to identify the later explode turn (~C+3); the cast turn itself may remain a valid
+  `arrow`-only turn and must appear in `turnTrace`.
+- **RP low/high grenade marks are secondary to local chat.** The parser may mark a
+  low/high pair as `rpGrenade='cast'/'explode'` before local chat is known. In
+  `classifyWithLocalChat`, keep those marks only when a real `exevo tempo mas san` cast is
+  compatible with the marked turn(s). If chat contradicts the heuristic, clear the mark and
+  rebuild the turn classification before applying spell/rune fallbacks. This prevents false
+  `grenade_cast_arrow_only` turns such as `darklight e vemiath` `07/Jun/2026 22:18-22:24`
+  around `22:22:11`.
+- **RP chat fallback must not blindly turn all-arrow into all-spell.** When local chat proves
+  an RP attack spell but the band classifier returned `bands_all_arrow`, recover the missing
+  second component conservatively. Single-target RP spells (`exori gran con`, `exori san`,
+  `exori con`, `exori infir con`) are deterministic order `AA -> spell`: mark only the
+  last hit as `spell`, keep the prefix as `arrow`. AoE spell fallback (`exevo mas san`)
+  should first look for a consistent suffix by normalized holy damage and keep any prefix as
+  `arrow`; only promote the whole block when no reliable split exists.
+- **RP AoE all-spell turns can still contain a prefix AA.** If a pack turn is classified as
+  100% `spell`, local chat has the AoE spell, and the first non-overkill hit has a much
+  stronger leech/damage ratio than the following non-overkill spell block, restore that first
+  hit to `arrow`. This handles hard mixed turns such as `darklight e vemiath`
+  `07/Jun/2026 23:19-23:25` at `23:24:39`, where the first hit is AA and the suffix is
+  `Divine Caldera`.
+- **Expose Weakness hits in the same component must not break band boundaries.** The debuff
+  `(increased damage by Expose Weakness)` adds +8% elemental pierce to the mob, changing its
+  effective `holyDmgMod` (e.g. sopping corpus 1.05 → 1.09). The band classifier
+  (`rpClassifyTurnByBands`) uses `ewAwareEq` in `bandStart` and `isHoly`: hits with and
+  without EW on the same mob are normalized via `ceil(ewHit × baseMod / ewMod)` and compared
+  with ±1 tolerance (accounting for `ceil` rounding). Without this, EW and non-EW hits of
+  the same grenade/spell look like different values and split the band at the wrong place.
+  Do not replace `ewAwareEq` with plain equality in these two functions.
+- **Observed damage classification and execution metrics are intentionally different.** The
+  rotation table/detail show observed damage components only. A server line like
+  `Using one of N great fireball runes...` can count as an executed spell/rune/grenade for
+  uptime metrics even if no rune damage is visible in that turn. Do not relabel the hits as
+  rune unless the damage/order evidence supports it. Example: `darklight e vemiath`
+  `04/Jun/2026 22:41-22:46` turn `22:45:34` has a GFB `Using` line after the offensive hits;
+  the hits stay `arrow`, but the spell/rune/grenade uptime counts the second component as
+  executed.
+- **Metric denominators must ignore partial edge turns when appropriate.** The first aligned
+  turn of a session can be a partial log slice. If it contains only AA damage and no visible
+  second component, do not count it as a lost `Spell/rune/granada` turn. Keep it in
+  `turnTrace` and AA metrics; exclude it only from the second-component uptime denominator.
+- **Chart drill-down is tied to aligned `turnTrace`.** Histogram bars map by row
+  `hitsTimeline`; timeline/scatter points map by `dataIndex -> turnTrace[dataIndex]`.
+  `renderTurnDetail(turns, res, selectedIndex)` shows one active turn at a time. For a
+  single clicked turn, previous/next walks the full `turnTrace`; for histogram multi-turn
+  selections, it walks that selected subset. The panel is centered with a sticky header so
+  navigation buttons do not jump as turn size changes.
+- **Drill-down labels are user-facing, not raw component tokens.** In the detail table,
+  `arrow` displays as `auto ataque`; `spell` displays the aligned spell label (for example
+  `Berserk (exori)`/`Divine Caldera (exevo mas san)`); `rune` displays the rune name; and
+  `grenade` displays the grenade/cast label when available.
 
 ## Multi-session log picker (js/app.js)
 
@@ -121,6 +196,28 @@ diretamente nas textareas sem passar pelo algoritmo de data.
    agree before accepting the change.
 4. The component split is mechanical (AA-first, then AoE by order) for single-target/EK and
    band-based for RP packs — a fix for one regime must not regress the other.
+5. For EK leech changes, verify `bastion` turn `15:20:27` keeps `517` as `arrow` and does
+   not use the `15` overkill hit to create `ek_leech_contradiction_no_aa`.
+6. For RP pack/grenade changes, verify the `darklight e vemiath` session saved
+   `Sun Jun 07 23:53:15/17 2026`: `23:28:34` appears in `turnTrace` as `AA 17`, and the
+   following `23:28:36` turn still carries the grenade explosion.
+7. For UI drill-down changes, run syntax checks and test in the browser: chart click opens
+   `.cls-turn-detail`, previous/next stays stable, spell/rune/grenade labels are names
+   rather than raw component tokens, and Low Blow/Onslaught labels render correctly.
+8. For RP all-arrow/chat fallback changes, verify:
+   - `darklight rp` `04/Jun/2026 09:13-09:22`, turn `09:14:16`: `405` and `501` remain
+     `arrow`; the last hit `1067` becomes `Strong Ethereal Spear (exori gran con)`.
+   - `darklight e vemiath` `07/Jun/2026 23:19-23:25`, turn `23:22:28`: do not classify the
+     whole turn as spell; the high-leech prefix AA stays `arrow` and the suffix is
+     `Divine Caldera`.
+   - `darklight e vemiath` `07/Jun/2026 23:19-23:25`, turn `23:24:39`: first hit `819
+     darklight source` is `arrow`; the following hits are `Divine Caldera`.
+   - `murcion` remains visually stable; do not create fake pack-style AA/rune/spell splits.
+9. For second-component uptime changes, verify `darklight e vemiath` `04/Jun/2026
+   22:41-22:46`: the first partial turn `22:41:16` remains visible in drill-down as AA-only
+   but does not count as a lost `Spell/rune/granada`; turn `22:45:34` remains observed
+   `arrow` damage while its `Using ... great fireball runes` line counts as second-component
+   execution for the metric.
 
 ## Relationship to the original app
 

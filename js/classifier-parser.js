@@ -67,14 +67,15 @@ function parseLogForClassifier(logText) {
     pendingLeechHit = null;
     if (isReflection && !hasCharm) { events.push({ ts, type: 'reflect', mob, dmg }); continue; }
     const isPreyEffective = isPrey || hasBountyTalisman;
+    const hasExposeWeakness = /Expose Weakness/i.test(suffix);
     if (hasCritCharm || hasOnslaught) {
-      const ev = { ts, type: 'crit', mob, dmg, isPrey: isPreyEffective, onslaught: hasOnslaught, lowBlow: hasCritCharm, realCrit: isCrit || hasCritCharm };
+      const ev = { ts, type: 'crit', mob, dmg, isPrey: isPreyEffective, onslaught: hasOnslaught, lowBlow: hasCritCharm, realCrit: isCrit || hasCritCharm, exposeWeakness: hasExposeWeakness };
       events.push(ev);
       if (!hasCritCharm) pendingLeechHit = ev;
       continue;
     }
     if (hasCharm) { events.push({ ts, type: 'charm', mob, dmg, isPassive: isReflection }); continue; }
-    const ev = { ts, type: isCrit ? 'crit' : 'normal', mob, dmg, isPrey: isPreyEffective, onslaught: false, lowBlow: false, realCrit: isCrit };
+    const ev = { ts, type: isCrit ? 'crit' : 'normal', mob, dmg, isPrey: isPreyEffective, onslaught: false, lowBlow: false, realCrit: isCrit, exposeWeakness: hasExposeWeakness };
     events.push(ev);
     pendingLeechHit = ev;
   }
