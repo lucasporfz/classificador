@@ -193,6 +193,56 @@ function clsSpellLabel(text) {
 }
 function clsKnownType(text) { return CLS_SPELLS[text] ? CLS_SPELLS[text].type : null; }
 
+const CLS_KNIGHT_ATTACKS = new Set(['exori', 'exori gran', 'exori mas', 'exori min',
+  'exori infir min', 'exori ico', 'exori gran ico', 'exori hur', 'exori amp kor',
+  'utori kor', 'exori ico scu', 'exori scu']);
+const CLS_PALADIN_ATTACKS = new Set(['exori san', 'exori con', 'exori infir con',
+  'exori gran con', 'exori dir moe', 'exori dir san', 'utori san', 'exevo mas san',
+  'exevo tempo mas san']);
+const CLS_SORCERER_ATTACKS = new Set(['exori vis', 'exori gran vis', 'exori max vis',
+  'exori amp vis', 'exori flam', 'exori gran flam', 'exori max flam', 'exori min flam',
+  'exori mort', 'exori infir vis', 'exevo vis lux', 'exevo gran vis lux', 'exevo vis hur',
+  'exevo flam hur', 'exevo gran flam hur', 'exevo gran mas flam', 'exevo gran mas vis',
+  'exevo max mort', 'exevo mort ora', 'utori mort', 'utori vis', 'utori flam']);
+const CLS_DRUID_ATTACKS = new Set(['exori frigo', 'exori gran frigo', 'exori max frigo',
+  'exori tera', 'exori gran tera', 'exori max tera', 'exori moe ico', 'exevo frigo hur',
+  'exevo gran frigo hur', 'exevo tera hur', 'exevo gran mas frigo', 'exevo gran mas tera',
+  'exevo ulus frigo', 'exevo ulus tera', 'exevo fur frigo', 'exevo fur tera',
+  'exevo infir frigo hur', 'exori infir tera', 'utori pox']);
+
+function clsSpellVocations(text) {
+  if (CLS_KNIGHT_ATTACKS.has(text)) return new Set(['knight']);
+  if (CLS_PALADIN_ATTACKS.has(text)) return new Set(['paladin']);
+  if (CLS_SORCERER_ATTACKS.has(text)) return new Set(['sorcerer']);
+  if (CLS_DRUID_ATTACKS.has(text)) return new Set(['druid']);
+  return new Set();
+}
+
+function clsPotionVocations(serverLogText) {
+  const counts = { knight: 0, mage: 0, paladin: 0 };
+  const re = /Using one of \d+ ([^.]+?)\.\.\./gi;
+  let m;
+  while ((m = re.exec(serverLogText))) {
+    const item = (m[1] || '').toLowerCase();
+    if (item === 'ultimate health potions' || item === 'supreme health potions') counts.knight++;
+    else if (item === 'ultimate mana potions') counts.mage++;
+    else if (item === 'ultimate spirit potions' || item === 'great spirit potions') counts.paladin++;
+  }
+  const max = Math.max(counts.knight, counts.mage, counts.paladin);
+  if (max < 3) return new Set();
+  if (counts.knight === max) return new Set(['knight']);
+  if (counts.paladin === max) return new Set(['paladin']);
+  return new Set(['sorcerer', 'druid']);
+}
+
+function clsVocationCompatible(text, allowed) {
+  if (!allowed || allowed.size === 0) return true;
+  const vocs = clsSpellVocations(text);
+  if (vocs.size === 0) return true;
+  for (const v of vocs) if (allowed.has(v)) return true;
+  return false;
+}
+
 const CLS_MAGIC_PREFIX = /^(exori|exevo|exura|exana|exeta|exiva|exomis|utevo|utamo|utani|utura|utito|utgran|adevo|adori|adana|adura|frigo|mort)\b/;
 const CLS_CHAT_RE = /^(\d{2}):(\d{2}):(\d{2})\s+(.+?)(?:\s+\[(\d+)\])?:\s?(.*)$/;
 const CLS_RUNE_USE_RE = /Using one of \d+\s+(.+?)\s+runes?\b/i;
@@ -729,7 +779,10 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   let player = null;
   if (dmgCandidates.length) {
     const known = dmgCandidates.filter(g => clsKnownType(g.text) === 'attack' || clsKnownType(g.text) === 'grenade');
-    const pool = known.length ? known : dmgCandidates;
+    const basePool = known.length ? known : dmgCandidates;
+    const potionVocations = clsPotionVocations(serverLogText);
+    const potionPool = basePool.filter(g => clsVocationCompatible(g.text, potionVocations));
+    const pool = potionPool.length ? potionPool : basePool;
     // Escolha agregada por speaker: uma spell isolada de outro jogador pode alinhar
     // bem, mas casts sobrando demais sao sinal de party-mate no local chat.
     const bySpeaker = new Map();
