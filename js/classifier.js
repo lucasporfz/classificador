@@ -672,24 +672,26 @@ function clsFindChatGrenadeTurnIndex(turns, turnRecords, cast) {
       if (!clsTurnHasHitAt(t, targetTs)) continue;
       const tr = turnRecords[i];
       const targetLines = ((t && t.rpComponentLines) || []).filter(l => l.ts === targetTs && l.correctedComponent !== 'rune');
+      const twoHoly = clsFindTwoHolyBlocksAtTimestamp((t && t.rpComponentLines) || [], targetTs);
       candidates.push({
         idx: i,
         targetTs,
         t,
         tr,
         score: clsGrenadeEvidenceScore(t, tr),
+        twoHolyScore: twoHoly ? twoHoly.score : 0,
         holyScore: clsHolyBlockScore(targetLines),
         dt: clsGrenadeDelayDistance(cast, targetTs),
       });
     }
   }
   if (!candidates.length) return null;
-  candidates.sort((a, b) => (b.score - a.score) || (b.holyScore - a.holyScore) || (a.dt - b.dt) || (a.targetTs - b.targetTs) || (a.t.ts - b.t.ts));
-  if (candidates[0].score >= 70 || candidates[0].holyScore > 0) return candidates[0];
+  candidates.sort((a, b) => (b.score - a.score) || (b.twoHolyScore - a.twoHolyScore) || (b.holyScore - a.holyScore) || (a.dt - b.dt) || (a.targetTs - b.targetTs) || (a.t.ts - b.t.ts));
+  if (candidates[0].score >= 70 || candidates[0].twoHolyScore > 0 || candidates[0].holyScore > 0) return candidates[0];
 
   const fallback = candidates
     .filter(c => c.tr && c.tr.counts && c.tr.counts.spell > 0 && c.tr.counts.grenade === 0)
-    .sort((a, b) => (b.holyScore - a.holyScore) || (a.dt - b.dt) || (a.targetTs - b.targetTs) || (a.t.ts - b.t.ts))[0];
+    .sort((a, b) => (b.twoHolyScore - a.twoHolyScore) || (b.holyScore - a.holyScore) || (a.dt - b.dt) || (a.targetTs - b.targetTs) || (a.t.ts - b.t.ts))[0];
   return fallback || null;
 }
 
@@ -710,6 +712,49 @@ function clsHolyBlockScore(lines) {
   const repeatedMob = [...mobs].some(m => clean.filter(l => l.mob === m).length >= 2);
   if (spread > 0.08 || mobs.size < 2 || !repeatedMob) return 0;
   return vals.length / Math.max(0.01, spread + 0.01);
+}
+
+function clsHolyLevel(lines) {
+  const vals = (lines || [])
+    .filter(l => !l.overkill)
+    .map(l => Number.isFinite(l.holyOriginal) ? l.holyOriginal : null)
+    .filter(Number.isFinite);
+  return vals.length ? clsMedianOf(vals) : 0;
+}
+
+function clsDistinctHolyLevels(left, right) {
+  const a = clsHolyLevel(left), b = clsHolyLevel(right);
+  if (!(a > 0) || !(b > 0)) return false;
+  const lo = Math.min(a, b), hi = Math.max(a, b);
+  return hi >= lo * 1.10 && (hi - lo) >= 60;
+}
+
+function clsFindTwoHolyBlocksAtTimestamp(lines, targetTs) {
+  const idxs = (lines || [])
+    .map((l, i) => ({ l, i }))
+    .filter(x => x.l.ts === targetTs && x.l.correctedComponent !== 'rune' && x.l.correctedComponent !== 'grenade');
+  if (idxs.length < 6) return null;
+  let best = null;
+  for (let start = 0; start <= idxs.length - 6; start++) {
+    for (let split = start + 3; split <= idxs.length - 3; split++) {
+      const left = idxs.slice(start, split).map(x => x.l);
+      const right = idxs.slice(split).map(x => x.l);
+      const leftScore = clsHolyBlockScore(left);
+      const rightScore = clsHolyBlockScore(right);
+      if (leftScore <= 0 || rightScore <= 0) continue;
+      if (!clsDistinctHolyLevels(left, right)) continue;
+      const score = leftScore + rightScore + start * 0.1;
+      if (!best || score > best.score) {
+        best = {
+          start: idxs[start].i,
+          split: idxs[split].i,
+          targetTs,
+          score,
+        };
+      }
+    }
+  }
+  return best;
 }
 
 function clsFindTimedHolySuffix(lines, ts) {
@@ -765,8 +810,26 @@ function clsApplyChatGrenadeAtTimestamp(t, targetTs) {
     .map((l, i) => ({ l, i }))
     .filter(x => x.l.ts === targetTs && x.l.correctedComponent !== 'rune');
   if (idxs.length < 3) return false;
-  if (clsHolyBlockScore(idxs.map(x => x.l)) <= 0) return false;
   let changed = false;
+  const split = clsFindTwoHolyBlocksAtTimestamp(lines, targetTs);
+  if (split) {
+    for (const x of idxs) {
+      let component = x.i < split.start ? 'arrow' : (x.i < split.split ? 'spell' : 'grenade');
+      if (x.l.correctedComponent === component) continue;
+      x.l.correctedComponent = component;
+      x.l.correctionReason = component === 'grenade' ? 'chat_grenade_second_holy_block'
+        : (component === 'spell' ? 'chat_grenade_first_holy_block' : 'chat_grenade_prefix_arrow');
+      x.l.boundaryReason = x.l.correctionReason;
+      x.l.inferredElement = component === 'arrow' ? 'physical' : 'holy';
+      changed = true;
+    }
+    if (changed) {
+      t.rpGrenade = 'explode';
+      clsRefreshTurnComponents(t);
+    }
+    return changed;
+  }
+  if (clsHolyBlockScore(idxs.map(x => x.l)) <= 0) return false;
   for (const x of idxs) {
     if (x.l.correctedComponent === 'grenade') continue;
     x.l.correctedComponent = 'grenade';
