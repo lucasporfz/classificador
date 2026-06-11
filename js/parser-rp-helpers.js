@@ -465,7 +465,17 @@ function rpClassifyTurnByBands(lines, mark) {
 
   const b1 = bandStart(n);
   // all-arrow escape: usa isHolyBand (holyConst) para detectar spell que acerta cada mob 1× (t34).
-  if (!sustained(b1, n) && !isHolyBand(b1, n)) return { arrowEnd: n, spellEnd: n, reason: 'bands_all_arrow' };
+  if (!sustained(b1, n) && !isHolyBand(b1, n)) {
+    // Grenade de 1 hit: b1 aponta para um único hit inconsistente no final (ex.: único hit de
+    // grenade para o mob). O early-escape seria prematuro se existir uma spell band antes.
+    if (b1 > 0) {
+      const b2c = bandStart(b1);
+      if (b2c > 0 && sustained(b2c, b1) && isHoly(b2c, b1)) {
+        return { arrowEnd: b2c, spellEnd: b1, reason: 'bands_arrow_spell_grenade_single' };
+      }
+    }
+    return { arrowEnd: n, spellEnd: n, reason: 'bands_all_arrow' };
+  }
   const b2 = b1 > 0 ? bandStart(b1) : 0;
 
   // Duas bandas holy empilhadas: spell [b2,b1) + granada [b1,n).
