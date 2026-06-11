@@ -15,7 +15,7 @@
 // tipo 'attack' entra sempre na tabela; 'heal'/'support' nunca. Incantação
 // desconhecida cai no heurístico data-driven (turn-locked).
 // Tabela COMPLETA de spells (tibia.com/library + TibiaWiki), TODAS as vocações.
-// tipo: 'attack' (spell de dano) · 'grenade' (Divine Grenade: explode ~3s após o
+// tipo: 'attack' (spell de dano) · 'grenade' (Divine Grenade: explode ~2.5–3.5s após o
 // cast) · 'heal'/'support' (nunca entram como dano). Incantações com alvo entre
 // aspas (exura sio "nome") são normalizadas removendo as aspas antes da consulta.
 const CLS_SPELLS = {
@@ -323,8 +323,8 @@ function clsSplitExecutionTiers(lines, elemKey) {
 }
 
 // Classificação MECÂNICA (não-RP / single-target) — regra do jogo: AA single-target +
-// poder AoE (spell/runa). Granada (Divine Grenade) explode EXATAMENTE 3s após o cast →
-// só conta se houver um hit no segundo C+3 (senão errou o alvo e deu 0 dano — não rouba
+// poder AoE (spell/runa). Granada (Divine Grenade) explode ~2.5–3.5s após o cast →
+// só conta se houver um hit entre C+2 e C+4 (senão errou o alvo e deu 0 dano — não rouba
 // o turno). O AA tem assinatura DIFERENTE por vocação, então `usePositional` decide:
 //   • usePositional=true (single-target OU EK melee): AA = hit[0] (mais cedo por ts/seq),
 //     SEMPRE presente. O golpe melee é logado ANTES da AoE e fere todo turno; a magnitude
@@ -436,12 +436,14 @@ function clsApplyEkPositionalAa(t, nonGren, power) {
 }
 
 function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts, usePositional, useEkAaDecision) {
-  // granada: marca 1 hit por cast, no exato C+3
+  // granada: marca 1 hit por cast entre C+2 e C+4, preferindo o centro C+3.
   const allLines = [];
   for (const t of turns) for (const l of (t.rpComponentLines || [])) allLines.push(l);
   const grenSet = new Set();
   for (const c of playerGrenCasts) {
-    const hit = allLines.find(l => l.ts === c.ts + 3 && !grenSet.has(l));
+    const hit = allLines
+      .filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l))
+      .sort((a, b) => clsGrenadeDelayDistance(c, a.ts) - clsGrenadeDelayDistance(c, b.ts) || a.ts - b.ts || (a.seq || 0) - (b.seq || 0))[0];
     if (hit) grenSet.add(hit);
   }
   // Janela cast→turno: o cast PRECEDE os hits (uma spell não bate antes de ser lançada),
@@ -654,23 +656,41 @@ function clsTurnHasHitAt(t, ts) {
   return ((t && t.rpComponentLines) || []).some(l => l.ts === ts);
 }
 
+function clsGrenadeTargetTimestamps(cast) {
+  return [cast.ts + 2, cast.ts + 3, cast.ts + 4];
+}
+
+function clsGrenadeDelayDistance(cast, targetTs) {
+  return Math.abs((targetTs - cast.ts) - 3);
+}
+
 function clsFindChatGrenadeTurnIndex(turns, turnRecords, cast) {
-  const targetTs = cast.ts + 3;
   const candidates = [];
   for (let i = 0; i < turns.length; i++) {
     const t = turns[i];
-    if (!clsTurnHasHitAt(t, targetTs)) continue;
-    const tr = turnRecords[i];
-    candidates.push({ idx: i, t, tr, score: clsGrenadeEvidenceScore(t, tr), dt: Math.abs(t.ts - targetTs) });
+    for (const targetTs of clsGrenadeTargetTimestamps(cast)) {
+      if (!clsTurnHasHitAt(t, targetTs)) continue;
+      const tr = turnRecords[i];
+      const targetLines = ((t && t.rpComponentLines) || []).filter(l => l.ts === targetTs && l.correctedComponent !== 'rune');
+      candidates.push({
+        idx: i,
+        targetTs,
+        t,
+        tr,
+        score: clsGrenadeEvidenceScore(t, tr),
+        holyScore: clsHolyBlockScore(targetLines),
+        dt: clsGrenadeDelayDistance(cast, targetTs),
+      });
+    }
   }
-  if (!candidates.length) return -1;
-  candidates.sort((a, b) => (b.score - a.score) || (a.dt - b.dt) || (a.t.ts - b.t.ts));
-  if (candidates[0].score >= 70) return candidates[0].idx;
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => (b.score - a.score) || (b.holyScore - a.holyScore) || (a.dt - b.dt) || (a.targetTs - b.targetTs) || (a.t.ts - b.t.ts));
+  if (candidates[0].score >= 70 || candidates[0].holyScore > 0) return candidates[0];
 
   const fallback = candidates
     .filter(c => c.tr && c.tr.counts && c.tr.counts.spell > 0 && c.tr.counts.grenade === 0)
-    .sort((a, b) => (a.dt - b.dt) || (a.t.ts - b.t.ts))[0];
-  return fallback ? fallback.idx : -1;
+    .sort((a, b) => (b.holyScore - a.holyScore) || (a.dt - b.dt) || (a.targetTs - b.targetTs) || (a.t.ts - b.t.ts))[0];
+  return fallback || null;
 }
 
 function clsMedianOf(arr) {
@@ -773,8 +793,8 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   const grenadeTurns = turnRecords.filter(r => r.counts.grenade > 0);
 
   // --- detecção das incantações (local chat) ---
-  // spell de dano: cast no turno [T-1,T+2] (offset 0). granada: cast 1-3s ANTES do
-  // turno de explosão (a granada estoura ~3s depois do cast). cura é spammada
+  // spell de dano: cast no turno [T-1,T+2] (offset 0). granada: cast 2-4s ANTES do
+  // turno de explosão (a granada estoura ~2.5–3.5s depois do cast). cura é spammada
   // (overcast alto); buff cobre poucos turnos (recall baixo).
   const chat = parseLocalChat(localChatText);
   const winLo = turns[0].ts - 3, winHi = turns[turns.length - 1].ts + 3;
@@ -862,7 +882,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
 
   // --- alinhamento ESTRITO + agregação (só turnos 100% alinhados entre os 2 logs) ---
   // Um turno só entra se TODOS os seus componentes de cast forem casados: spell e
-  // granada pelo local chat (granada estoura ~3s após o cast → janela [G-3,G-1]),
+  // granada pelo local chat (granada estoura ~2.5–3.5s após o cast → janela [G-4,G-2]),
   // runa pela linha "Using one of N … runes" do server log. Turno que não casar é
   // excluído INTEIRO (inclusive o arrow dele).
   const playerSpellCasts = casts.filter(c => c.speaker === player && damageSpells.includes(c.text));
@@ -929,22 +949,24 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   }
 
   const nearestGren = G => {
-    return playerGrenCasts.find(c => c.ts + 3 === G) || null;
+    return playerGrenCasts
+      .filter(c => G >= c.ts + 2 && G <= c.ts + 4)
+      .sort((a, b) => clsGrenadeDelayDistance(a, G) - clsGrenadeDelayDistance(b, G) || b.ts - a.ts)[0] || null;
   };
 
-  // Chat é PRIMÁRIO (quando isRpRegime): o cast no chat + c.ts+3 é determinístico.
-  // Granadas RP só podem explodir no timestamp exato G+3 do cast de chat.
+  // Chat é PRIMÁRIO (quando isRpRegime): a granada explode entre G+2 e G+4
+  // (delay real ~2.5–3.5s com timestamps inteiros no server log).
   if (isRpRegime && playerGrenCasts.length > 0) {
     let reclassified = false;
     for (const c of playerGrenCasts) {
-      const tIdx = clsFindChatGrenadeTurnIndex(turns, turnRecords, c);
-      if (tIdx < 0) continue;
-      const tGren = turns[tIdx];
-      const tr = turnRecords[tIdx];
+      const target = clsFindChatGrenadeTurnIndex(turns, turnRecords, c);
+      if (!target) continue;
+      const tGren = turns[target.idx];
+      const tr = turnRecords[target.idx];
       if ((tGren.rpGrenade || '') === 'explode' && tr && tr.counts.grenade > 0) continue;
       if (!tr || tr.counts.grenade > 0) continue;
       if (data.distinctMobs === 1) continue;
-      reclassified = clsApplyChatGrenadeAtTimestamp(tGren, c.ts + 3) || reclassified;
+      reclassified = clsApplyChatGrenadeAtTimestamp(tGren, target.targetTs) || reclassified;
     }
     if (reclassified) turnRecords = clsBuildTurnRecords(turns);
   }
