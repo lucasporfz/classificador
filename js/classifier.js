@@ -440,12 +440,29 @@ function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts
   // Para grenade que errou (murcion), todos os candidatos coincidem → nenhum hit marcado.
   const allLines = [];
   for (const t of turns) for (const l of (t.rpComponentLines || [])) allLines.push(l);
+  const lineToTurn = new Map();
+  for (const t of turns) for (const l of (t.rpComponentLines || [])) lineToTurn.set(l, t);
   const spellTsSet = new Set(playerSpellCasts.map(c => c.ts));
   const grenSet = new Set();
   for (const c of playerGrenCasts) {
-    const hit = allLines
+    // Primary: prefer hit closest to c+3 not at a spell-cast second.
+    let hit = allLines
       .filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l) && !spellTsSet.has(l.ts))
-      .sort((a, b) => Math.abs((a.ts - c.ts) - 4) - Math.abs((b.ts - c.ts) - 4) || (a.seq || 0) - (b.seq || 0))[0];
+      .sort((a, b) => clsGrenadeDelayDistance(c, a.ts) - clsGrenadeDelayDistance(c, b.ts) || (a.seq || 0) - (b.seq || 0))[0];
+    // Fallback: grenade explode coincides with a spell-cast second (all primary candidates
+    // blocked by spellTsSet). The turn has arrow+spell+grenade = 3 hits > 2 (arrow+spell).
+    // Grenade appears last in the log at the same second → pick highest seq among excess hits.
+    if (!hit) {
+      const blocked = allLines.filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l));
+      const withExcess = blocked.filter(l => {
+        const t = lineToTurn.get(l);
+        return t && (t.rpComponentLines || []).filter(l2 => !grenSet.has(l2)).length > 2;
+      });
+      if (withExcess.length > 0) {
+        withExcess.sort((a, b) => clsGrenadeDelayDistance(c, a.ts) - clsGrenadeDelayDistance(c, b.ts) || (b.seq || 0) - (a.seq || 0));
+        hit = withExcess[0];
+      }
+    }
     if (hit) grenSet.add(hit);
   }
   // Janela cast→turno: o cast PRECEDE os hits (uma spell não bate antes de ser lançada),
