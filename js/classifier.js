@@ -972,7 +972,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   if (data.distinctMobs === 1 || !isRpRegime) {
     // AA posicional p/ single-target (1 mob, sem banda) e p/ EK melee (golpe físico todo
     // turno, logado 1º); caster (druida/mage: spell exevo / runa) usa o AA por outlier.
-    const isMeleeVoc = !isRpRegime && damageSpells.some(t => /^exori\b/.test(t));
+    const isMeleeVoc = !isRpRegime && damageSpells.length > 0 && damageSpells.every(t => /^exori\b/.test(t));
     const usePositional = data.distinctMobs === 1 || isMeleeVoc;
     clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts, usePositional, isMeleeVoc);
     turnRecords = clsBuildTurnRecords(turns);

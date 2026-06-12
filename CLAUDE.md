@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Pergunta exploratória vs mudança de código
+
+- Se a pergunta é do tipo "explica esse turno/classificação/log" (não pede
+  mudança de código):
+  - Para achar um turno específico por timestamp: use
+    `node tools/find-turn.mjs` (não rode o oráculo completo, não use grep
+    no arquivo de log inteiro)
+  - Para dados de mob: use `node tools/mob-info.mjs` (não use eval em
+    mob-element-mods.js)
+  - NÃO siga o checklist da seção "How to validate a classifier change"
+    — esse checklist é só para mudanças de código.
+  - Arquivos em logs/ com mais de 1MB são logs de produção, não fixtures.
+    Nunca rode grep recursivo neles; sempre acesse via find-turn.mjs.
+
+- Se a pergunta pede mudança de código no classificador, siga o fluxo
+  normal de "How to validate a classifier change".
+
 ## What this is
 
 A single-page **Tibia log classifier**. It crosses a **server log** + a **local chat**

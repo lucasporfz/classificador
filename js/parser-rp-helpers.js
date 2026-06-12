@@ -387,12 +387,14 @@ function rpClassifyTurnByBands(lines, mark) {
     const agree = meds.filter(v => Math.abs(v - c) <= tol).length;
     return agree >= 2 && agree * 2 >= meds.length;
   }
-  // isHolyBand: per-mob dmg consistency + holyConst cross-mob.
-  // Usado para all-arrow escape e crit_run_precrit_holy (onde mobs estão em MOB_ELEMENT_MODS).
+  // isHolyBand: per-mob dmg consistency (EW-aware) + holyConst cross-mob.
+  // Para turno com 1 único tipo de mob, holyConst exige ≥2 tipos e falha; usa isHoly
+  // (revertedDmg + ewAwareEq, exige ≥2 hits no mesmo mob) como substituto.
   function isHolyBand(lo, hi) {
     const byMob = Object.create(null);
-    for (let i = lo; i < hi; i++) { if (isOK(i)) continue; const m = mobOf(i); (byMob[m] = byMob[m] || []).push(val(i)); }
-    for (const m in byMob) { const ds = byMob[m]; for (let k = 1; k < ds.length; k++) if (ds[k] !== ds[0]) return false; }
+    for (let i = lo; i < hi; i++) { if (isOK(i)) continue; const m = mobOf(i); (byMob[m] = byMob[m] || []).push({ v: val(i), hasEW: ewOf(i) }); }
+    for (const m in byMob) { const ds = byMob[m]; const ref = ds[0]; for (let k = 1; k < ds.length; k++) if (!ewAwareEq(ds[k].v, ds[k].hasEW, ref.v, ref.hasEW, m)) return false; }
+    if (Object.keys(byMob).length === 1) return isHoly(lo, hi);
     return holyConst(lo, hi);
   }
   // isHoly: consistência de revertedDmg por mob (crit-normalizado). Funciona com qualquer mob,
