@@ -436,34 +436,18 @@ function clsApplyEkPositionalAa(t, nonGren, power) {
 }
 
 function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts, usePositional, useEkAaDecision) {
-  // granada: hit no turno de explosão NÃO coincide com um cast de spell do jogador.
-  // Para grenade que errou (murcion), todos os candidatos coincidem → nenhum hit marcado.
+  // Rotação single-mob = arrow + spell + grenade → a grenade é o 3º hit em ordem
+  // cronológica na janela [c+2, c+4]. Se menos de 3 hits, pega o último.
   const allLines = [];
   for (const t of turns) for (const l of (t.rpComponentLines || [])) allLines.push(l);
-  const lineToTurn = new Map();
-  for (const t of turns) for (const l of (t.rpComponentLines || [])) lineToTurn.set(l, t);
   const spellTsSet = new Set(playerSpellCasts.map(c => c.ts));
   const grenSet = new Set();
   for (const c of playerGrenCasts) {
-    // Primary: prefer hit closest to c+3 not at a spell-cast second.
-    let hit = allLines
-      .filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l) && !spellTsSet.has(l.ts))
-      .sort((a, b) => clsGrenadeDelayDistance(c, a.ts) - clsGrenadeDelayDistance(c, b.ts) || (a.seq || 0) - (b.seq || 0))[0];
-    // Fallback: grenade explode coincides with a spell-cast second (all primary candidates
-    // blocked by spellTsSet). The turn has arrow+spell+grenade = 3 hits > 2 (arrow+spell).
-    // Grenade appears last in the log at the same second → pick highest seq among excess hits.
-    if (!hit) {
-      const blocked = allLines.filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l));
-      const withExcess = blocked.filter(l => {
-        const t = lineToTurn.get(l);
-        return t && (t.rpComponentLines || []).filter(l2 => !grenSet.has(l2)).length > 2;
-      });
-      if (withExcess.length > 0) {
-        withExcess.sort((a, b) => clsGrenadeDelayDistance(c, a.ts) - clsGrenadeDelayDistance(c, b.ts) || (b.seq || 0) - (a.seq || 0));
-        hit = withExcess[0];
-      }
-    }
-    if (hit) grenSet.add(hit);
+    const windowLines = allLines
+      .filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l))
+      .sort((a, b) => (a.ts - b.ts) || ((a.seq || 0) - (b.seq || 0)));
+    const idx = Math.min(2, windowLines.length - 1);
+    if (idx >= 0) grenSet.add(windowLines[idx]);
   }
   // Janela cast→turno: o cast PRECEDE os hits (uma spell não bate antes de ser lançada),
   // e o offset cast→hit observado é ~0. Logo [T-1, T+1] (só ±1 p/ skew de relógio). NÃO
