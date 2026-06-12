@@ -470,6 +470,7 @@ function renderClassifierCharts(res, compDefs) {
   // componentes por turno — uma linha por componente/spell REAL da rotação (das linhas
   // observadas), não o set fixo do validador. Assim pega as spells de qualquer vocação e
   // não inventa runa/granada quando não há. Usa o hitsTimeline alinhado de cada linha.
+  const compPalette = ['#F59E0B', '#22C55E', '#60A5FA', '#F87171', '#A78BFA', '#FBBF24', '#34D399', '#F472B6', '#38BDF8', '#FB923C', '#C084FC'];
   const compRows = (res.rows || []).filter((r, rowIndex) =>
     Array.isArray(r.hitsTimeline) &&
     r.hitsTimeline.some(v => v > 0)
