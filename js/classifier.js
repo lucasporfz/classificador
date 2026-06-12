@@ -436,14 +436,16 @@ function clsApplyEkPositionalAa(t, nonGren, power) {
 }
 
 function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts, usePositional, useEkAaDecision) {
-  // granada: marca 1 hit por cast entre C+2 e C+4, preferindo o centro C+3.
+  // granada: hit no turno de explosão NÃO coincide com um cast de spell do jogador.
+  // Para grenade que errou (murcion), todos os candidatos coincidem → nenhum hit marcado.
   const allLines = [];
   for (const t of turns) for (const l of (t.rpComponentLines || [])) allLines.push(l);
+  const spellTsSet = new Set(playerSpellCasts.map(c => c.ts));
   const grenSet = new Set();
   for (const c of playerGrenCasts) {
     const hit = allLines
-      .filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l))
-      .sort((a, b) => clsGrenadeDelayDistance(c, a.ts) - clsGrenadeDelayDistance(c, b.ts) || b.ts - a.ts || (a.seq || 0) - (b.seq || 0))[0];
+      .filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l) && !spellTsSet.has(l.ts))
+      .sort((a, b) => Math.abs((a.ts - c.ts) - 4) - Math.abs((b.ts - c.ts) - 4) || (a.seq || 0) - (b.seq || 0))[0];
     if (hit) grenSet.add(hit);
   }
   // Janela cast→turno: o cast PRECEDE os hits (uma spell não bate antes de ser lançada),
@@ -490,7 +492,11 @@ function clsReclassifyByOrder(turns, runeUses, playerSpellCasts, playerGrenCasts
       else nonGren.forEach((l, i) => { l.correctedComponent = (i === 0) ? 'arrow' : power; });
     } else {
       const clean = nonGren.filter(l => !l.overkill).slice().sort((a, b) => a.revertedDmg - b.revertedDmg);
-      const aa = (clean.length >= 2 && clean[0].revertedDmg <= AA_DEPTH * clean[1].revertedDmg) ? clean[0] : null;
+      let aa = (clean.length >= 2 && clean[0].revertedDmg <= AA_DEPTH * clean[1].revertedDmg) ? clean[0] : null;
+      if (!aa && clean.length >= 2) {
+        const nonSpell = nonGren.filter(l => !spellTsSet.has(l.ts) && !l.overkill);
+        if (nonSpell.length === 1) aa = nonSpell[0];
+      }
       nonGren.forEach(l => { l.correctedComponent = (l === aa) ? 'arrow' : power; });
     }
   }
