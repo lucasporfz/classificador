@@ -93,6 +93,16 @@ helper, define it in a file that loads before its callers.
   crit/Low Blow with Onslaught displays as `Crítico e Onslaught`. Do not collapse pure
   Onslaught back to generic `crítico` just because normalization represents it as
   `type: 'crit'`.
+- **Single-mob RP grenade is the 3rd hit (chronological) in [c+2, c+4].** In
+  `clsReclassifyByOrder` (`grenSet` detection), the grenade is identified as the hit at
+  index `min(2, n-1)` among all `rpComponentLines` sorted by `(ts, seq)` whose timestamp
+  falls in `[cast+2, cast+4]`. The rotation is arrow+spell+grenade (3 components), so the
+  3rd hit in the window is the explosion; any 4th+ hit belongs to the next rotation. Do not
+  use `spellTsSet` to filter candidates — after a spell cast the player has a 2s attack
+  cooldown, meaning a hit at `cast+1` can only be the grenade (not an arrow), and blocking
+  it by `spellTsSet` picks the wrong hit. For 2-hit windows (spell+grenade, no AA) the 2nd
+  hit is the grenade; for the murcion case (grenade missed, no hits in window), the window
+  is empty and no grenade is marked.
 - **RP all-arrow turns near grenade casts can be valid AA-area turns.** In RP packs, an
   all-arrow turn at the exact timestamp of a grenade cast (for example `exevo tempo mas
   san`) must not be promoted to `spell` by `chat_spell_all_arrow_fallback`. The grenade cast
@@ -201,6 +211,12 @@ diretamente nas textareas sem passar pelo algoritmo de data.
 6. For RP pack/grenade changes, verify the `darklight e vemiath` session saved
    `Sun Jun 07 23:53:15/17 2026`: `23:28:34` appears in `turnTrace` as `AA 17`, and the
    following `23:28:36` turn still carries the grenade explosion.
+   For single-mob grenade (`grenSet`) changes, run oracle on `bakra` session 6 and verify:
+   - `09:20:21` → AA 1, spell 1, grenade 1 (810 = grenade at c+3)
+   - `09:21:06` → AA 1, spell 1, grenade 1 (940 = grenade at c+3)
+   - `09:23:47` → AA 1, spell 1, grenade 1 (917 = grenade at c+4; 917 at :47 cannot be
+     arrow because exevo mas san was cast at :46, imposing a 2s attack cooldown)
+   - `bakra` session 7 `09:33:47` → AA 1, spell 1, grenade 1 (885 = grenade, not 677)
 7. For UI drill-down changes, run syntax checks and test in the browser: chart click opens
    `.cls-turn-detail`, previous/next stays stable, spell/rune/grenade labels are names
    rather than raw component tokens, and Low Blow/Onslaught labels render correctly.

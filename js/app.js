@@ -135,6 +135,13 @@ function clsBuildPairs(svSessions, lcSessions) {
   return pairs;
 }
 
+function clsApplySelectedPairs(sel, pairs) {
+  const selected = [...sel.selectedOptions].map(o => pairs[+o.value]);
+  if (!selected.length) return;
+  $('clsServerInput').value = selected.map(p => p.sv.text).join('\n');
+  $('clsLocalInput').value  = selected.map(p => p.lc.text).join('\n');
+}
+
 function clsUpdatePairPicker() {
   const sel = $('clsPairSelect');
   if (!clsServerSessions || !clsLocalSessions) { sel.style.display = 'none'; return; }
@@ -151,10 +158,16 @@ function clsUpdatePairPicker() {
     $('clsStatus').textContent = t('cls_status_no_pairs');
     return;
   }
-  const applyPair = p => { $('clsServerInput').value = p.sv.text; $('clsLocalInput').value = p.lc.text; };
-  applyPair(pairs[0]);
-  if (pairs.length === 1) { sel.style.display = 'none'; return; }
+  if (pairs.length === 1) {
+    $('clsServerInput').value = pairs[0].sv.text;
+    $('clsLocalInput').value  = pairs[0].lc.text;
+    sel.style.display = 'none';
+    return;
+  }
   sel.innerHTML = pairs.map((p, i) => `<option value="${i}">${p.label}</option>`).join('');
+  sel.size = Math.min(pairs.length, 6);
+  sel.options[0].selected = true;
+  clsApplySelectedPairs(sel, pairs);
   sel.style.display = '';
 }
 
@@ -361,7 +374,8 @@ function renderClassifier(res) {
 
   // gráficos do log (só dados observados, sem simulação) — um histograma de hits por
   // LINHA da rotação (cada spell/componente: AA, cada spell nominal, runa, granada).
-  const kindColor = { arrow: '#F59E0B', spell: '#22C55E', rune: '#60A5FA', grenade: '#F87171' };
+  // compPalette compartilhado com o gráfico de componentes por turno — índice i = mesma cor.
+  const compPalette = ['#F59E0B', '#22C55E', '#60A5FA', '#F87171', '#A78BFA', '#FBBF24', '#34D399', '#F472B6', '#38BDF8', '#FB923C', '#C084FC'];
   const compDefs = (res.rows || [])
     .map((r, rowIndex) => ({ r, rowIndex }))
     .filter(x => Array.isArray(x.r.hitsPerTurn) && x.r.hitsPerTurn.some(v => v > 0))
@@ -370,7 +384,7 @@ function renderClassifier(res) {
       rowIndex: r.rowIndex,
       vals: r.r.hitsPerTurn.filter(v => v > 0),
       label: clsRowLabel(r.r),
-      color: kindColor[r.r.kind] || '#22C55E',
+      color: compPalette[i % compPalette.length],
     }));
   const hasSeries = (res.temporalSeries || []).length > 0;
   const metricHtml = !hasSeries || !compDefs.length ? '' :
@@ -456,7 +470,6 @@ function renderClassifierCharts(res, compDefs) {
   // componentes por turno — uma linha por componente/spell REAL da rotação (das linhas
   // observadas), não o set fixo do validador. Assim pega as spells de qualquer vocação e
   // não inventa runa/granada quando não há. Usa o hitsTimeline alinhado de cada linha.
-  const compPalette = ['#F59E0B', '#22C55E', '#60A5FA', '#F87171', '#A78BFA', '#FBBF24', '#34D399', '#F472B6', '#38BDF8', '#FB923C', '#C084FC'];
   const compRows = (res.rows || []).filter((r, rowIndex) =>
     Array.isArray(r.hitsTimeline) &&
     r.hitsTimeline.some(v => v > 0)
@@ -509,9 +522,7 @@ $('btnClsLocalFile').addEventListener('click',  () => { $('clsLocalFileInput').v
 $('clsServerFileInput').addEventListener('change', () => clsLoadFile('clsServerFileInput', true));
 $('clsLocalFileInput').addEventListener('change',  () => clsLoadFile('clsLocalFileInput',  false));
 $('clsPairSelect').addEventListener('change', function() {
-  const p = this._pairs[+this.value];
-  $('clsServerInput').value = p.sv.text;
-  $('clsLocalInput').value  = p.lc.text;
+  clsApplySelectedPairs(this, this._pairs);
 });
 $('btnClassify').addEventListener('click', () => {
   const sv = $('clsServerInput').value.trim();
