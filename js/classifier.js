@@ -1042,6 +1042,44 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     if (reclassified) turnRecords = clsBuildTurnRecords(turns);
   }
 
+  // Granada single-mob DENTRO de pacote: o aplicador AoE (clsApplyChatGrenadeAtTimestamp)
+  // exige ≥2 mobs distintos / ≥6 linhas; turnos onde todos os hits caem num único mob (ex.:
+  // o boss de uma hunt mista) nunca recebem granada por ele. Aplica a MESMA regra posicional
+  // do path single-target (3º hit cronológico na janela [c+2,c+4], excluindo hits já
+  // reivindicados) e converte só ESSE hit de spell→grenade, preservando AA e a spell.
+  if (isRpRegime && data.distinctMobs !== 1 && playerGrenCasts.length > 0) {
+    const allLines = [], lineTurn = new Map();
+    for (const t of turns) for (const l of (t.rpComponentLines || [])) { allLines.push(l); lineTurn.set(l, t); }
+    const singleMob = t => new Set((t.rpComponentLines || []).map(l => l.mob).filter(Boolean)).size === 1;
+    const grenSet = new Set();
+    for (const c of playerGrenCasts) {
+      const win = allLines
+        .filter(l => l.ts >= c.ts + 2 && l.ts <= c.ts + 4 && !grenSet.has(l))
+        .sort((a, b) => (a.ts - b.ts) || ((a.seq || 0) - (b.seq || 0)));
+      const idx = Math.min(2, win.length - 1);
+      if (idx >= 0) grenSet.add(win[idx]);
+    }
+    const touched = new Set();
+    for (const l of grenSet) {
+      const t = lineTurn.get(l);
+      if (!t || !singleMob(t) || l.correctedComponent !== 'spell') continue;
+      // Só a rotação inequívoca AA + spell SINGLE-TARGET + granada: o turno tem 2 hits holy
+      // (a spell single-target + a granada), então o 3º hit é seguramente a granada. Quando a
+      // spell do turno é a Caldera AoE (exevo mas san), o único hit holy é a própria Caldera —
+      // não roubar p/ granada mesmo que a janela de um cast de granada se sobreponha.
+      const sc = clsCurrentSpellCast(playerSpellCasts, t.ts);
+      if (!sc || !CLS_RP_SINGLE_TARGET_ATTACKS.has(sc.text)) continue;
+      l.correctedComponent = 'grenade';
+      l.correctionReason = 'chat_grenade_single_mob_positional';
+      l.boundaryReason = 'chat_grenade_single_mob_positional';
+      l.inferredElement = 'holy';
+      t.rpGrenade = 'explode';
+      touched.add(t);
+    }
+    for (const t of touched) clsRefreshTurnComponents(t);
+    if (touched.size) turnRecords = clsBuildTurnRecords(turns);
+  }
+
   const perSpell = new Map(), perGren = new Map(), perRune = new Map();
   const perSpellTiers = new Map();  // spells de execução: {base:[...], bonus:[...]} por cast
   const arrowAligned = []; let excludedTurns = 0;
