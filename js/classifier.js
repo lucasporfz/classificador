@@ -1042,12 +1042,21 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     if (reclassified) turnRecords = clsBuildTurnRecords(turns);
   }
 
-  // Granada single-mob DENTRO de pacote: o aplicador AoE (clsApplyChatGrenadeAtTimestamp)
-  // exige ≥2 mobs distintos / ≥6 linhas; turnos onde todos os hits caem num único mob (ex.:
-  // o boss de uma hunt mista) nunca recebem granada por ele. Aplica a MESMA regra posicional
-  // do path single-target (3º hit cronológico na janela [c+2,c+4], excluindo hits já
-  // reivindicados) e converte só ESSE hit de spell→grenade, preservando AA e a spell.
+  // Granada de BOSS dentro de pacote: turnos de explosão num boss único nunca recebem granada
+  // — o aplicador AoE exige ≥2 mobs / ≥6 linhas. Mas num boss a ORDEM é SEMPRE AA → spell →
+  // granada, e como só existe 1 boss na tela, todo hit do turno é um componente DIFERENTE.
+  // Boss = nome logado SEM artigo ("Bakragore loses…"); mob genérico/pack vem com "A/An"
+  // ("A darklight source loses…") e pode ser vários. Fatia posicionalmente: a granada é o hit
+  // da janela [c+2,c+4] (e o último do turno), o 1º hit é o AA e o do meio é a spell.
   if (isRpRegime && data.distinctMobs !== 1 && playerGrenCasts.length > 0) {
+    const bossNames = new Set(), genericNames = new Set();
+    const bossRe = /^\d{2}:\d{2}:\d{2}\s+(?:(A|An|The)\s+)?([A-Za-z][A-Za-z\s'\-]+?)\s+loses\s+\d+\s+hitpoints\s+due to your\s+(?:critical attack|attack)\b/i;
+    for (const line of String(serverLogText || '').split(/\r?\n/)) {
+      const m = bossRe.exec(line); if (!m) continue;
+      const art = (m[1] || '').toLowerCase(), name = m[2].trim().toLowerCase();
+      if (art === 'a' || art === 'an') genericNames.add(name); else bossNames.add(name);
+    }
+    const isBoss = name => !!name && bossNames.has(name) && !genericNames.has(name);
     const allLines = [], lineTurn = new Map();
     for (const t of turns) for (const l of (t.rpComponentLines || [])) { allLines.push(l); lineTurn.set(l, t); }
     const singleMob = t => new Set((t.rpComponentLines || []).map(l => l.mob).filter(Boolean)).size === 1;
@@ -1062,17 +1071,21 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     const touched = new Set();
     for (const l of grenSet) {
       const t = lineTurn.get(l);
-      if (!t || !singleMob(t) || l.correctedComponent !== 'spell') continue;
-      // Só a rotação inequívoca AA + spell SINGLE-TARGET + granada: o turno tem 2 hits holy
-      // (a spell single-target + a granada), então o 3º hit é seguramente a granada. Quando a
-      // spell do turno é a Caldera AoE (exevo mas san), o único hit holy é a própria Caldera —
-      // não roubar p/ granada mesmo que a janela de um cast de granada se sobreponha.
-      const sc = clsCurrentSpellCast(playerSpellCasts, t.ts);
-      if (!sc || !CLS_RP_SINGLE_TARGET_ATTACKS.has(sc.text)) continue;
-      l.correctedComponent = 'grenade';
-      l.correctionReason = 'chat_grenade_single_mob_positional';
-      l.boundaryReason = 'chat_grenade_single_mob_positional';
-      l.inferredElement = 'holy';
+      if (!t || !singleMob(t)) continue;
+      // Só num BOSS (1 criatura, hits = componentes distintos): a granada é o ÚLTIMO hit
+      // (ordem AA→spell→granada) e o band classifier ainda não a marcou.
+      if (!isBoss(String((t.rpComponentLines[0] || {}).mob || '').toLowerCase())) continue;
+      const ordered = (t.rpComponentLines || []).slice().sort((a, b) => (a.ts - b.ts) || ((a.seq || 0) - (b.seq || 0)));
+      if (ordered[ordered.length - 1] !== l) continue;
+      if (ordered.some(x => x.correctedComponent === 'grenade')) continue;
+      const nonGren = ordered.filter(x => !grenSet.has(x));
+      for (const x of ordered) {
+        const comp = grenSet.has(x) ? 'grenade' : (x === nonGren[0] ? 'arrow' : 'spell');
+        x.correctedComponent = comp;
+        x.correctionReason = 'chat_grenade_single_mob_order';
+        x.boundaryReason = 'chat_grenade_single_mob_order';
+        x.inferredElement = comp === 'arrow' ? 'physical' : 'holy';
+      }
       t.rpGrenade = 'explode';
       touched.add(t);
     }
