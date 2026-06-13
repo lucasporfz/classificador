@@ -1076,7 +1076,55 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       // (ordem AA→spell→granada) e o band classifier ainda não a marcou.
       if (!isBoss(String((t.rpComponentLines[0] || {}).mob || '').toLowerCase())) continue;
       const ordered = (t.rpComponentLines || []).slice().sort((a, b) => (a.ts - b.ts) || ((a.seq || 0) - (b.seq || 0)));
-      if (ordered[ordered.length - 1] !== l) continue;
+      if (ordered[ordered.length - 1] !== l) {
+        // Granada chegou antes dos hits posteriores do turno atual (foi castada antes do
+        // spell desse turno). Pertence ao turno anterior como último hit da rotação.
+        const tIdx = turns.indexOf(t);
+        if (tIdx > 0) {
+          const prevTurn = turns[tIdx - 1];
+          prevTurn.rpComponentLines = prevTurn.rpComponentLines || [];
+          const prevLines = prevTurn.rpComponentLines;
+          const prevMob = new Set(prevLines.map(x => x.mob).filter(Boolean));
+          if (singleMob(prevTurn) && prevMob.has(l.mob) &&
+              isBoss(String((prevLines[0] || {}).mob || '').toLowerCase())) {
+            for (const x of prevLines) {
+              if (x.correctedComponent === 'grenade') {
+                x.correctedComponent = 'arrow'; x.correctionReason = null; x.boundaryReason = null;
+              }
+            }
+            t.rpComponentLines = t.rpComponentLines.filter(x => x !== l);
+            // O turno doador perde a granada; os hits restantes seguem a ordem single-mob
+            // AA→spell (1º cronológico = arrow, resto = spell). Sem isso eles mantêm a
+            // etiqueta antiga e o boss fica com 2 'spell' no mesmo turno — impossível.
+            const restOrdered = t.rpComponentLines.slice().sort((a, b) => (a.ts - b.ts) || ((a.seq || 0) - (b.seq || 0)));
+            restOrdered.forEach((x, i) => {
+              const comp = i === 0 ? 'arrow' : 'spell';
+              x.correctedComponent = comp;
+              x.correctionReason = 'chat_grenade_single_mob_order';
+              x.boundaryReason = 'chat_grenade_single_mob_order';
+              x.inferredElement = comp === 'arrow' ? 'physical' : 'holy';
+            });
+            t.rpGrenade = '';
+            touched.add(t);
+            prevLines.push(l);
+            lineTurn.set(l, prevTurn);
+            const prevOrdered = prevLines.slice().sort((a, b) => (a.ts - b.ts) || ((a.seq || 0) - (b.seq || 0)));
+            if (prevOrdered[prevOrdered.length - 1] === l && !prevOrdered.some(x => x.correctedComponent === 'grenade')) {
+              const nonGren = prevOrdered.filter(x => !grenSet.has(x));
+              for (const x of prevOrdered) {
+                const comp = grenSet.has(x) ? 'grenade' : (x === nonGren[0] ? 'arrow' : 'spell');
+                x.correctedComponent = comp;
+                x.correctionReason = 'chat_grenade_single_mob_order';
+                x.boundaryReason = 'chat_grenade_single_mob_order';
+                x.inferredElement = comp === 'arrow' ? 'physical' : 'holy';
+              }
+              prevTurn.rpGrenade = 'explode';
+              touched.add(prevTurn);
+            }
+          }
+        }
+        continue;
+      }
       if (ordered.some(x => x.correctedComponent === 'grenade')) continue;
       const nonGren = ordered.filter(x => !grenSet.has(x));
       for (const x of ordered) {
