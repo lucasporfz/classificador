@@ -671,7 +671,21 @@ function clsGrenadeDelayDistance(cast, targetTs) {
   return Math.abs((targetTs - cast.ts) - 3);
 }
 
-function clsFindChatGrenadeTurnIndex(turns, turnRecords, cast) {
+// Bloco holy uniforme rotulado como AA, na "sombra de cooldown" de um cast de spell
+// (exevo mas san 1-2s antes), só pode ser a explosão da granada: depois de um cast de
+// ataque o jogador fica 2s sem auto-ataque, então hits AoE holy nesse segundo não são AA.
+// Exige que NÃO haja runa nesse mesmo segundo: quando granada e runa caem juntas o bloco
+// holy uniforme se confunde com a própria runa (caso frágil 07/Jun ~22:22) e a decisão
+// fica com as heurísticas de banda/two-holy-block existentes.
+function clsAaCooldownGrenadeScore(t, targetTs, spellCastTss) {
+  if (!spellCastTss || !(spellCastTss.has(targetTs - 1) || spellCastTss.has(targetTs - 2))) return 0;
+  const atTs = ((t && t.rpComponentLines) || []).filter(l => l.ts === targetTs);
+  if (atTs.some(l => l.correctedComponent === 'rune')) return 0;
+  return clsHolyBlockScore(atTs.filter(l => l.correctedComponent === 'arrow'));
+}
+
+function clsFindChatGrenadeTurnIndex(turns, turnRecords, cast, playerSpellCasts) {
+  const spellCastTss = new Set((playerSpellCasts || []).map(c => c.ts));
   const candidates = [];
   for (let i = 0; i < turns.length; i++) {
     const t = turns[i];
@@ -685,6 +699,7 @@ function clsFindChatGrenadeTurnIndex(turns, turnRecords, cast) {
         targetTs,
         t,
         tr,
+        cooldownScore: clsAaCooldownGrenadeScore(t, targetTs, spellCastTss),
         score: clsGrenadeEvidenceScore(t, tr),
         twoHolyScore: twoHoly ? twoHoly.score : 0,
         holyScore: clsHolyBlockScore(targetLines),
@@ -693,7 +708,10 @@ function clsFindChatGrenadeTurnIndex(turns, turnRecords, cast) {
     }
   }
   if (!candidates.length) return null;
-  candidates.sort((a, b) => (b.score - a.score) || (b.twoHolyScore - a.twoHolyScore) || (b.holyScore - a.holyScore) || (a.dt - b.dt) || (a.targetTs - b.targetTs) || (a.t.ts - b.t.ts));
+  candidates.sort((a, b) => (b.cooldownScore - a.cooldownScore) || (b.score - a.score) || (b.twoHolyScore - a.twoHolyScore) || (b.holyScore - a.holyScore) || (a.dt - b.dt) || (a.targetTs - b.targetTs) || (a.t.ts - b.t.ts));
+  // Sombra de cooldown (AA impossível no segundo seguinte ao cast de spell) é o sinal
+  // mais forte e tem prioridade sobre o two-holy-block (que confunde AA→spell).
+  if (candidates[0].cooldownScore > 0) return candidates[0];
   if (candidates[0].score >= 70 || candidates[0].twoHolyScore > 0 || candidates[0].holyScore > 0) return candidates[0];
 
   const fallback = candidates
@@ -1030,7 +1048,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   if (isRpRegime && playerGrenCasts.length > 0) {
     let reclassified = false;
     for (const c of playerGrenCasts) {
-      const target = clsFindChatGrenadeTurnIndex(turns, turnRecords, c);
+      const target = clsFindChatGrenadeTurnIndex(turns, turnRecords, c, playerSpellCasts);
       if (!target) continue;
       const tGren = turns[target.idx];
       const tr = turnRecords[target.idx];
