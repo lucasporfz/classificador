@@ -161,10 +161,21 @@ helper, define it in a file that loads before its callers.
   `04/Jun/2026 22:41-22:46` turn `22:45:34` has a GFB `Using` line after the offensive hits;
   the hits stay `arrow`, but the spell/rune/grenade uptime counts the second component as
   executed.
-- **Metric denominators must ignore partial edge turns when appropriate.** The first aligned
-  turn of a session can be a partial log slice. If it contains only AA damage and no visible
-  second component, do not count it as a lost `Spell/rune/granada` turn. Keep it in
-  `turnTrace` and AA metrics; exclude it only from the second-component uptime denominator.
+- **Partial edge turns are visible but not counted.** The first turn of a session
+  (`r.idx === 1`) can be a partial log slice: the cast that produced its damage fell on the
+  other side of the session boundary. A turn is a partial edge when it is the first turn,
+  has no second component with visible damage (`spell/rune/grenade` counts all 0), **and**
+  has no rune-`Using` line or grenade cast within `[ts-1, ts+1]` (`!rTurnUse && !gTurnCast`).
+  Such a turn is flagged `partialEdge` on `alignedTurns`/`turnTrace`: it **stays visible** in
+  the drill-down and charts, but is excluded from the AA aggregate row, the AA uptime
+  (`aaExpected/aaHit`), and the second-component denominator. Example: `Hakka` `21:56:25` is
+  a lone `504` hit (a great fireball explosion whose `Using ... runes` line is in the prior
+  session block) — it must not count as `Auto ataque`. Counter-example: `darklight e vemiath`
+  `04/Jun/2026 22:41-22:46` turn `22:41:16` has a rune-`Using` line within ±1s, so it is
+  **not** a partial edge — it stays counted as AA (visible, AA-only, not a lost
+  `Spell/rune/granada`). Do not flag a first turn as edge when a rune/grenade execution line
+  is visible near it. `classifiedSeconds`/`firstTs`/`lastTs` span all aligned turns
+  (`totalAligned`), including edge turns.
 - **Chart drill-down is tied to aligned `turnTrace`.** Histogram bars map by row
   `hitsTimeline`; timeline/scatter points map by `dataIndex -> turnTrace[dataIndex]`.
   `renderTurnDetail(turns, res, selectedIndex)` shows one active turn at a time. For a

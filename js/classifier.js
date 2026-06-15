@@ -1200,7 +1200,15 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     const rUse = r.counts.rune > 0 ? (runeUseByTurnIndex.get(r.idx - 1) || null) : null;
     const aligned = (r.counts.spell === 0 || sCast) && (r.counts.grenade === 0 || gCast) && (r.counts.rune === 0 || rUse);
     if (!aligned) { excludedTurns++; continue; }
-    if (r.counts.arrow > 0) arrowAligned.push({ hits: r.counts.arrow, dmgs: r.dmgs.arrow });
+    // Partial edge turn: 1º turno da sessão cujo dano não pode ser atribuído a nenhum
+    // segundo componente (sem spell/runa/granada com dano, e sem linha de uso de runa ou
+    // cast de granada por perto). É um corte de borda — o cast que produziu o dano caiu do
+    // outro lado da fronteira de sessão. Fica visível no drill-down/gráficos, mas não conta
+    // como AA (nem entra no agregado/uptime de AA).
+    const partialEdge = r.idx === 1
+      && r.counts.spell === 0 && r.counts.rune === 0 && r.counts.grenade === 0
+      && !rTurnUse && !gTurnCast;
+    if (r.counts.arrow > 0 && !partialEdge) arrowAligned.push({ hits: r.counts.arrow, dmgs: r.dmgs.arrow });
     if (sCast) { if (!perSpell.has(sCast.text)) perSpell.set(sCast.text, []); perSpell.get(sCast.text).push({ hits: r.counts.spell, dmgs: r.dmgs.spell }); }
     if (sCast && CLS_EXECUTION_ELEMENT[sCast.text] && r.counts.spell > 0) {
       const spellLines = (turns[r.idx - 1].rpComponentLines || []).filter(l => l.correctedComponent === 'spell');
@@ -1226,6 +1234,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     alignedTurns.push({
       idx: r.idx,
       ts: r.ts,
+      partialEdge,
       arrow: r.counts.arrow, arrowDamage: sumRaw('arrow'),
       spellText: sCast ? sCast.text : null, spellHits: r.counts.spell, spellDamage: sumRaw('spell'),
       runeName: rUse ? rUse.name : null, runeCastName: rTurnUse ? rTurnUse.name : null, runeHits: r.counts.rune, runeDamage: sumRaw('rune'),
@@ -1233,7 +1242,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     });
     if (traceOn) {
       turnTrace.push({
-        idx: r.idx, ts: r.ts,
+        idx: r.idx, ts: r.ts, partialEdge,
         spell: sCast ? sCast.text : null, rune: rUse ? rUse.name : null, gren: gCast ? gCast.text : null,
         counts: r.counts,
         lines: (turns[r.idx - 1].rpComponentLines || []).map(l => ({
@@ -1243,8 +1252,10 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       });
     }
   }
-  const aaExpected = alignedTurns.length;
-  const aaHit = alignedTurns.filter(t => t.arrow > 0).length;
+  // Partial edge turns ficam visíveis em alignedTurns/turnTrace, mas não contam como AA.
+  const aaMetricTurns = alignedTurns.filter(t => !t.partialEdge);
+  const aaExpected = aaMetricTurns.length;
+  const aaHit = aaMetricTurns.filter(t => t.arrow > 0).length;
   const aaLost = aaExpected - aaHit;
   const hasVisibleSecondComponent = t => t.spellHits > 0 || t.runeHits > 0 || t.grenText || t.grenHits > 0;
   const hasSecondComponent = t => hasVisibleSecondComponent(t) || t.runeCastName || t.grenCastText;
@@ -1252,9 +1263,10 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   const spellRuneExpected = spellRuneMetricTurns.length;
   const spellRuneHit = spellRuneMetricTurns.filter(hasSecondComponent).length;
   const spellRuneLost = spellRuneExpected - spellRuneHit;
-  const firstAlignedTs = aaExpected ? alignedTurns[0].ts : 0;
-  const lastAlignedTs = aaExpected ? alignedTurns[aaExpected - 1].ts : 0;
-  const classifiedSeconds = aaExpected > 1 ? Math.max(0, lastAlignedTs - firstAlignedTs) : (aaExpected ? 2 : 0);
+  const totalAligned = alignedTurns.length;
+  const firstAlignedTs = totalAligned ? alignedTurns[0].ts : 0;
+  const lastAlignedTs = totalAligned ? alignedTurns[totalAligned - 1].ts : 0;
+  const classifiedSeconds = totalAligned > 1 ? Math.max(0, lastAlignedTs - firstAlignedTs) : (totalAligned ? 2 : 0);
   const aaUptime = {
     expected: aaExpected,
     hit: aaHit,
