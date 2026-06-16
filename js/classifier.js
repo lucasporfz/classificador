@@ -681,7 +681,12 @@ function clsAaCooldownGrenadeScore(t, targetTs, spellCastTss) {
   if (!spellCastTss || !(spellCastTss.has(targetTs - 1) || spellCastTss.has(targetTs - 2))) return 0;
   const atTs = ((t && t.rpComponentLines) || []).filter(l => l.ts === targetTs);
   if (atTs.some(l => l.correctedComponent === 'rune')) return 0;
-  return clsHolyBlockScore(atTs.filter(l => l.correctedComponent === 'arrow'));
+  // A certeza vem do COOLDOWN, não da uniformidade holy: houve cast de spell em
+  // targetTs-1/-2, então o jogador está 2s sem auto-ataque e qualquer hit 'arrow' nesse
+  // segundo é impossível como AA — é a explosão da granada. Antes isto exigia que os
+  // 'arrow' formassem um bloco holy uniforme (clsHolyBlockScore), e perdia o caso quando o
+  // pico de fogo é denso (spread holy > 8%). O sinal lógico não pode ficar refém do spread.
+  return atTs.filter(l => l.correctedComponent === 'arrow').length;
 }
 
 function clsFindChatGrenadeTurnIndex(turns, turnRecords, cast, playerSpellCasts) {
@@ -870,9 +875,189 @@ function clsApplyChatGrenadeAtTimestamp(t, targetTs) {
   return changed;
 }
 
+// Base holy real de um hit: revertedDmg (sem crit/onslaught/prey) ÷ mitigação do mob ÷ mod
+// elemental holy EW-aware (inclui o pierce do BM da sessão). É o espaço em que granada/Caldera
+// são determinísticas (todos os mobs colapsam no mesmo valor) e o AA físico vira ruído.
+function clsHolyBaseOf(l) {
+  const m = getMobElementMods(l && l.mob);
+  if (!m || !(m.holyDmgMod > 0)) return null;
+  const mit = m.mitigation > 0 ? (1 - m.mitigation / 100) : 1;
+  const rd = Number.isFinite(l.revertedDmg) ? l.revertedDmg : l.dmg;
+  const hb = rd / mit / rpPiercedMod(m.holyDmgMod, RP_BM_PIERCE + (l.exposeWeakness ? 0.08 : 0));
+  return hb > 0 ? hb : null;
+}
+
+// Nível de AA da sessão (mediana da base holy dos hits 'arrow'), referência para distinguir
+// granada (holy determinística, acima do AA) de um falso bloco no nível do próprio AA.
+// É o "sempre avalie o dano base": a granada só é granada se o dano destoar do AA.
+let CLS_AA_HOLY_REF = 0;
+// Folga mínima da granada sobre o AA mediano da sessão. Granadas reais ficam ≥1.18× (ex.: highwin2
+// 885 vs 726 = 1.22×); fakes "sombra de cooldown" ficam ~1.0× (no nível de AA). 1.12 separa os dois.
+// NÃO subir — a 1.30 rejeitava granada real quando o AA da sessão é alto.
+const CLS_GRENADE_AA_RATIO = 1.12;
+function clsComputeAaHolyRef(turns) {
+  const vals = [];
+  for (const t of (turns || [])) for (const l of (t.rpComponentLines || [])) {
+    if (l.correctedComponent !== 'arrow' || l.overkill) continue;
+    const hb = clsHolyBaseOf(l);
+    if (hb > 0) vals.push(hb);
+  }
+  CLS_AA_HOLY_REF = vals.length >= 5 ? clsMedianOf(vals) : 0;
+  return CLS_AA_HOLY_REF;
+}
+// Um nível holy é de granada se está distinta e acima de um nível de referência (Caldera ou AA):
+// ≥10% acima e gap ≥60 (folga de arredondamento). Granada > AA tem folga grande (≥30%).
+function clsLevelsDistinct(hi, lo, ratio = 1.10) {
+  return hi > 0 && lo > 0 && hi > lo && hi >= lo * ratio && (hi - lo) >= 60;
+}
+
+// Bloco holy DETERMINÍSTICO no segundo da explosão: normaliza cada hit (não-runa, não-overkill)
+// para a base holy real (clsHolyBaseOf) e devolve o cluster mais POPULOSO (empate → o mais
+// apertado) com ≥3 hits e ≥2 mobs. A granada é determinística: todos os mobs colapsam no mesmo
+// holy base. AA é físico e varia, ficando fora do cluster.
+// Retornos: null = nenhum cluster confiável (fallback antigo); Set vazio = cluster existe mas no
+// NÍVEL do AA (falso positivo, sem granada); Set não-vazio = explosão validada.
+function clsGrenadeHolyCluster(lines, targetTs) {
+  const withBase = [];
+  for (const l of (lines || [])) {
+    if (l.ts !== targetTs || l.correctedComponent === 'rune' || l.overkill) continue;
+    const hb = clsHolyBaseOf(l);
+    if (hb > 0) withBase.push({ l, hb });
+  }
+  if (withBase.length < 3) return null;
+  let best = null;
+  for (const center of withBase) {
+    const tol = Math.max(8, center.hb * 0.01);
+    const members = withBase.filter(x => Math.abs(x.hb - center.hb) <= tol);
+    if (members.length < 3 || new Set(members.map(x => x.l.mob)).size < 2) continue;
+    const vals = members.map(x => x.hb);
+    const spread = (Math.max(...vals) - Math.min(...vals)) / center.hb;
+    if (!best || members.length > best.count || (members.length === best.count && spread < best.spread)) {
+      best = { count: members.length, spread, members };
+    }
+  }
+  if (!best) {
+    // Sem cluster apertado: decide pelo nível geral. AA do turno novo (sombra de cooldown) é
+    // espalhado E no nível de AA → "sem granada" (Set vazio). Acima do AA → granada real sem
+    // cluster limpo (pico de fogo denso) → null mantém o flip-all legado.
+    const med = clsMedianOf(withBase.map(x => x.hb));
+    if (CLS_AA_HOLY_REF > 0 && !clsLevelsDistinct(med, CLS_AA_HOLY_REF, CLS_GRENADE_AA_RATIO)) return new Set();
+    return null;
+  }
+  const memberSet = new Set(best.members.map(x => x.l));
+  const clusterLevel = clsMedianOf(best.members.map(x => x.hb));
+  // Validação de NÍVEL (sempre avalia o dano base): a granada bate MUITO acima do AA.
+  // (a) Se há hits fora do cluster (AA do turno novo sobreposto), o cluster tem que destoar deles.
+  //     ex.: mk 05:46:16, 3 hits de AA ~660 batendo entre si vs granada real ~1000.
+  // (b) Mesmo sem hits fora, o cluster não pode estar no nível de AA da SESSÃO — senão é a
+  //     "sombra de cooldown" sobre um turno de AA (ex.: jaded 71989, hits ~290 = AA, não 840).
+  // Falha em qualquer uma → Set vazio = "sem granada neste turno".
+  const outside = withBase.filter(x => !memberSet.has(x.l)).map(x => x.hb);
+  if (outside.length && !clsLevelsDistinct(clusterLevel, clsMedianOf(outside))) return new Set();
+  if (CLS_AA_HOLY_REF > 0 && !clsLevelsDistinct(clusterLevel, CLS_AA_HOLY_REF, CLS_GRENADE_AA_RATIO)) return new Set();
+  return memberSet;
+}
+
+// Caldera + Granada no MESMO turno (ambas crit/holy), separadas por NÍVEL de dano base — não por
+// segundo. A Caldera e a granada são dois componentes holy determinísticos com bases distintas
+// (granada > Caldera). O detector por bloco num único ts não pega quando elas dividem o turno,
+// seja em segundos diferentes (Caldera no cast :S; granada em :G+3) seja no MESMO segundo (granada
+// em :G+2 com a Caldera). Para cada cast de granada, no turno da explosão (que ainda não tem
+// granada) agrupa os hits 'spell' por base holy; se há DOIS níveis distintos, o nível mais ALTO
+// (consistente, distinto do mais baixo = Caldera, e acima do AA da sessão) é a granada.
+// Ex.: jaded 19:59:47 (Caldera 749 + granada 840, segundos diferentes); vemiath 23:23:20
+// (Caldera 887 + granada 1123, mesmo segundo). "Sempre avalie o dano base": dois níveis ⇒ dois
+// componentes.
+function clsSplitGrenadeFromSpellByLevel(turns, playerGrenCasts) {
+  let changed = false;
+  const done = new Set();
+  for (const c of (playerGrenCasts || [])) {
+    let t = null;
+    for (const gts of clsGrenadeTargetTimestamps(c)) {
+      t = (turns || []).find(x => ((x.rpComponentLines) || []).some(l => l.ts === gts));
+      if (t) break;
+    }
+    if (!t || done.has(t)) continue;
+    const lines = t.rpComponentLines || [];
+    if (lines.some(l => l.correctedComponent === 'grenade')) continue; // já tem granada
+    const wb = lines
+      .filter(l => l.correctedComponent === 'spell' && !l.overkill)
+      .map(l => ({ l, hb: clsHolyBaseOf(l) }))
+      .filter(x => x.hb > 0);
+    if (wb.length < 5) continue;
+    // Cluster mais ALTO consistente (≥3 hits, ≥2 mobs) = candidato a granada.
+    let high = null;
+    for (const ctr of wb) {
+      const tol = Math.max(8, ctr.hb * 0.01);
+      const members = wb.filter(x => Math.abs(x.hb - ctr.hb) <= tol);
+      if (members.length < 3 || new Set(members.map(x => x.l.mob)).size < 2) continue;
+      const lvl = clsMedianOf(members.map(x => x.hb));
+      if (!high || lvl > high.lvl) high = { lvl, members };
+    }
+    if (!high) continue;
+    const highSet = new Set(high.members.map(x => x.l));
+    const low = wb.filter(x => !highSet.has(x.l)).map(x => x.hb);
+    if (low.length < 2) continue; // sem segundo nível = uma Caldera só, nada a separar
+    const hv = high.members.map(x => x.hb);
+    const spread = (Math.max(...hv) - Math.min(...hv)) / high.lvl;
+    const aboveAa = !(CLS_AA_HOLY_REF > 0) || clsLevelsDistinct(high.lvl, CLS_AA_HOLY_REF, CLS_GRENADE_AA_RATIO);
+    if (spread > 0.06 || !clsLevelsDistinct(high.lvl, clsMedianOf(low)) || !aboveAa) continue;
+    for (const x of high.members) {
+      rpSetLineComponent(x.l, 'grenade', 'chat_grenade_level_split', 'damage_local', 'holy');
+      x.l.boundaryReason = 'chat_grenade_level_split';
+      changed = true;
+    }
+    t.rpGrenade = 'explode';
+    clsRefreshTurnComponents(t);
+    done.add(t);
+  }
+  return changed;
+}
+
+// Aplica a granada na sombra de cooldown de AA. Houve cast de spell em targetTs-1/-2 e um cast de
+// granada cuja explosão cai em [cast+2,cast+4] = targetTs. NORMALMENTE a explosão ocupa o segundo
+// inteiro (bloco holy consistente). Mas quando a granada cai em g+4, esse segundo coincide com o
+// início de um turno novo (AA + runa): aí os hits NÃO formam um bloco consistente. Por isso só
+// vira granada o cluster holy determinístico (clsGrenadeHolyCluster); os hits inconsistentes
+// (AA físico) permanecem arrow. Set vazio = a granada já explodiu em outro turno e o detector
+// ancorou um g+4 fake (cluster no nível de AA): não marca nada. Sem cluster (null) mantém o
+// comportamento antigo (flipa todo arrow — explosão "limpa"). Overkill acompanha só quando há
+// granada de verdade (cluster não-vazio).
+function clsApplyAaCooldownGrenade(t, targetTs) {
+  const lines = (t && t.rpComponentLines) || [];
+  const cluster = clsGrenadeHolyCluster(lines, targetTs);
+  let changed = false;
+  for (const l of lines) {
+    if (l.ts !== targetTs || l.correctedComponent !== 'arrow') continue;
+    let isGren;
+    if (cluster === null) isGren = true;
+    else if (cluster.size === 0) isGren = false;
+    else isGren = cluster.has(l) || l.overkill;
+    if (!isGren) continue;
+    l.correctedComponent = 'grenade';
+    l.correctionReason = 'chat_grenade_aa_cooldown';
+    l.boundaryReason = 'chat_grenade_aa_cooldown';
+    l.inferredElement = 'holy';
+    changed = true;
+  }
+  if (changed) {
+    t.rpGrenade = 'explode';
+    clsRefreshTurnComponents(t);
+  }
+  return changed;
+}
+
 // Núcleo: cruza os dois logs e devolve a tabela única + diagnóstico de detecção.
 function classifyWithLocalChat(serverLogText, localChatText, opts) {
-  const { data, turns } = clsCaptureTurns(serverLogText);
+  // Detecção automática do perk BM (+4% pierce), constante da sessão: classifica 1× com BM=0,
+  // mede a coerência cross-mob dos casts holy e, se o BM explica os dados, re-parseia com +4%
+  // em holy/physical. Em pack (≥2 mobs) só; logs sem sinal ficam em BM=0 (caso comum).
+  rpSetBmPierce(0);
+  let { data, turns } = clsCaptureTurns(serverLogText);
+  if (turns.length && (data.distinctMobs || 0) > 1 && rpDetectBmPierce(turns) > 0) {
+    rpSetBmPierce(0.04);
+    ({ data, turns } = clsCaptureTurns(serverLogText));
+  }
   if (!turns.length) return { error: 'no_turns', data };
 
   let turnRecords = clsBuildTurnRecords(turns);
@@ -1043,6 +1228,10 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       .sort((a, b) => clsGrenadeDelayDistance(a, G) - clsGrenadeDelayDistance(b, G) || b.ts - a.ts)[0] || null;
   };
 
+  // Referência do nível de AA da sessão (base holy mediana dos hits 'arrow') — usada para rejeitar
+  // "granadas" no nível de AA. Calculada antes da detecção de granada por chat.
+  clsComputeAaHolyRef(turns);
+
   // Chat é PRIMÁRIO (quando isRpRegime): a granada explode entre G+2 e G+4
   // (delay real ~2.5–3.5s com timestamps inteiros no server log).
   if (isRpRegime && playerGrenCasts.length > 0) {
@@ -1055,8 +1244,11 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
       if ((tGren.rpGrenade || '') === 'explode' && tr && tr.counts.grenade > 0) continue;
       if (!tr || tr.counts.grenade > 0) continue;
       if (data.distinctMobs === 1) continue;
-      reclassified = clsApplyChatGrenadeAtTimestamp(tGren, target.targetTs) || reclassified;
+      if (target.cooldownScore > 0) reclassified = clsApplyAaCooldownGrenade(tGren, target.targetTs) || reclassified;
+      else reclassified = clsApplyChatGrenadeAtTimestamp(tGren, target.targetTs) || reclassified;
     }
+    // Caldera + granada no mesmo turno (ambas crit, segundos diferentes): separa por nível base.
+    if (clsSplitGrenadeFromSpellByLevel(turns, playerGrenCasts)) reclassified = true;
     if (reclassified) turnRecords = clsBuildTurnRecords(turns);
   }
 
@@ -1157,6 +1349,29 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     }
     for (const t of touched) clsRefreshTurnComponents(t);
     if (touched.size) turnRecords = clsBuildTurnRecords(turns);
+  }
+
+  // Rebaixa "spell" fantasma → AA: um cast de spell em S só pode gerar dano em [S-1, S+1].
+  // Se a banda rotulou hits como spell mas NÃO há cast de spell do jogador nessa janela física
+  // (ex.: turno de cast de granada, onde a banda separou AA de mob mod 1.0 como se fosse holy,
+  // e o único exevo mas san está em S+2 = turno seguinte), esses hits não são spell — são AA.
+  if (isRpRegime) {
+    let demoted = false;
+    for (const t of turns) {
+      const spellLines = (t.rpComponentLines || []).filter(l => l.correctedComponent === 'spell');
+      if (!spellLines.length) continue;
+      const minTs = Math.min(...spellLines.map(l => l.ts));
+      if (playerSpellCasts.some(c => c.ts >= minTs - 1 && c.ts <= minTs + 1)) continue;
+      for (const l of spellLines) {
+        l.correctedComponent = 'arrow';
+        l.correctionReason = 'no_spell_cast_in_window';
+        l.boundaryReason = 'no_spell_cast_in_window';
+        l.inferredElement = 'physical';
+      }
+      clsRefreshTurnComponents(t);
+      demoted = true;
+    }
+    if (demoted) turnRecords = clsBuildTurnRecords(turns);
   }
 
   const perSpell = new Map(), perGren = new Map(), perRune = new Map();

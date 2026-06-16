@@ -120,6 +120,58 @@ helper, define it in a file that loads before its callers.
   it by `spellTsSet` picks the wrong hit. For 2-hit windows (spell+grenade, no AA) the 2nd
   hit is the grenade; for the murcion case (grenade missed, no hits in window), the window
   is empty and no grenade is marked.
+- **The AA-cooldown grenade applier splits the explosion second by holy consistency.** When a
+  grenade lands at `g+4` (the last second of `[cast+2,cast+4]`), that second often coincides
+  with the start of a *new* turn (AA + rune). `clsApplyAaCooldownGrenade` must NOT flip every
+  `arrow` hit of the second to `grenade`. It computes `clsGrenadeHolyCluster`: each non-rune,
+  non-overkill hit is normalized to its real holy base (`revertedDmg ÷ mitigation ÷ EW-aware
+  elemental mod`), and the most populous tight cluster (≥3 hits, ≥2 mobs, tol `max(8,
+  base×0.01)`) is the deterministic explosion → `grenade`; the inconsistent hits (variable
+  physical AA of the new turn) stay `arrow`. Overkill hits in that second always follow the
+  grenade (truncated damage, no consistency to measure) — but only when a real grenade exists
+  (non-empty cluster). When no reliable cluster exists (a clean explosion second with no
+  overlapping AA), it falls back to flipping all arrows. Proof: `highwin 2` `08:25:18` splits
+  into 13 grenade (holy base ≈1028) + 13 AA + 15 rune, and `highwin` `08:47:16` into 10 grenade
+  (holy base ≈980) + 8 AA — the grenade base damage rises because the diluting AA hits leave
+  the grenade aggregate.
+- **A grenade cluster at AA damage level is a false `g+4` anchor and must be rejected.** A cast
+  explodes once; the detector can wrongly anchor a *second*, fake explosion at `g+4` (the
+  cooldown shadow) when the real explosion already happened at `g+2`/`g+3`. At `g+4` the second
+  then holds only the new turn's AA, which can coincidentally form a tight holy cluster at AA
+  level. `clsGrenadeHolyCluster` guards against this: when the cluster has hits outside it, the
+  cluster's holy level must be distinctly **above** the non-cluster (AA) level (`> aaLevel`,
+  `≥ aaLevel×1.10`, gap `≥ 60`); otherwise it returns an **empty set** (≠ `null`) meaning "no
+  grenade here", and `clsApplyAaCooldownGrenade` marks nothing. Proof: `mk` `05:46:16` — the
+  cast at `05:46:12` really explodes at `05:46:15` (holy ≈1000); the `05:46:16` `g+4` hits are
+  AA-level (≈640, session AA ≈662), so they stay `arrow` and the turn is rune-only. Same for
+  `vemiath` `22:20:30` (real explosion at `22:20:29`). Empty set ≠ `null`: `null` (no cluster
+  at all) keeps the legacy flip-all fallback; empty set explicitly suppresses the grenade.
+- **Grenade level is judged against the session AA reference — always evaluate base damage.**
+  `clsComputeAaHolyRef` is the median holy base of all `arrow` hits in the session (set into
+  `CLS_AA_HOLY_REF` before the chat-grenade pass). Any grenade block must be distinctly above it
+  by `CLS_GRENADE_AA_RATIO` (`clsLevelsDistinct(level, CLS_AA_HOLY_REF, 1.12)`). This catches the
+  cooldown-shadow fake even when its hits are **spread** (no tight cluster):
+  `clsGrenadeHolyCluster`'s no-cluster branch returns an empty set (not `null`) when the median
+  is at AA level, so flip-all does not invent a grenade. Proof: `jaded` `19:59:49` — spread AA
+  hits (≈209–341, holy ≈290 = session AA) stay `arrow` instead of becoming a fake grenade.
+  **Do not raise `CLS_GRENADE_AA_RATIO`:** real grenades can be only ~1.18× the *median* session
+  AA when that median is high (e.g. `highwin 2` grenade ≈885 vs AA ≈726 = 1.22×, and a clean
+  grenade at `08:27:59`); the old 1.30 wrongly rejected them and dumped the block into `arrow`.
+  Fakes sit at ~1.0×, so 1.12 separates them. A real grenade below the session-median AA but
+  above the *local* AA is still kept by the within-turn distinctness check, not this one.
+- **Caldera + grenade in the same turn split by base-damage LEVEL, not by second
+  (`clsSplitGrenadeFromSpellByLevel`).** A `exevo mas san` (Caldera) and a grenade exploding in
+  the same 2-second turn are two deterministic holy components with distinct bases (grenade >
+  Caldera), both possibly crit — the crit boundary and single-`ts` block detectors miss them.
+  They can share the turn in *different* seconds (Caldera at its cast, grenade at `cast+3`) OR
+  the **same** second (grenade at `cast+2` alongside the Caldera). So the split is purely by
+  level: for the grenade cast's explosion turn (no grenade yet), group the `spell` hits by holy
+  base (`clsHolyBaseOf`); if there are two distinct levels, the **highest consistent cluster**
+  (spread ≤6%, ≥3 hits, ≥2 mobs, `clsLevelsDistinct` above the lower level and above the session
+  AA by `CLS_GRENADE_AA_RATIO`) is the grenade. Do NOT split by second — that misses the
+  same-second case. Proofs: `jaded` `19:59:47` (Caldera 749 + grenade 840, different seconds);
+  `darklight e vemiath` `23:23:20` (Caldera 887 + grenade 1123, **same second** 84200 → 8 AA +
+  8 Caldera + 10 grenade). "Always evaluate base damage": two distinct levels ⇒ two components.
 - **RP all-arrow turns near grenade casts can be valid AA-area turns.** In RP packs, an
   all-arrow turn at the exact timestamp of a grenade cast (for example `exevo tempo mas
   san`) must not be promoted to `spell` by `chat_spell_all_arrow_fallback`. The grenade cast
@@ -149,10 +201,15 @@ helper, define it in a file that loads before its callers.
   `(increased damage by Expose Weakness)` adds +8% elemental pierce to the mob, changing its
   effective `holyDmgMod` (e.g. sopping corpus 1.05 → 1.09). The band classifier
   (`rpClassifyTurnByBands`) uses `ewAwareEq` in `bandStart` and `isHoly`: hits with and
-  without EW on the same mob are normalized via `ceil(ewHit × baseMod / ewMod)` and compared
-  with ±1 tolerance (accounting for `ceil` rounding). Without this, EW and non-EW hits of
-  the same grenade/spell look like different values and split the band at the wrong place.
-  Do not replace `ewAwareEq` with plain equality in these two functions.
+  without EW on the same mob are each normalized to the real holy base (divide by the mob's
+  mitigation and by the EW-aware elemental mod) and compared with a proportional tolerance
+  (`max(2, center × 0.004)`). The old `ceil(ewHit × baseMod / ewMod) ±1` left a rounding
+  residue that split bands one hit too early (e.g. darklight striker 947-EW vs 880 → 882 vs
+  880, 2 > 1, dropped the trailing Divine Caldera hits into the arrow band). Without EW-aware
+  normalization, EW and non-EW hits of the same grenade/spell look like different values and
+  split the band at the wrong place. Do not replace `ewAwareEq` with plain equality in these
+  two functions; keep the same-EW path exact (it is what distinguishes the spell vs grenade
+  holy levels).
 - **Observed damage classification and execution metrics are intentionally different.** The
   rotation table/detail show observed damage components only. A server line like
   `Using one of N great fireball runes...` can count as an executed spell/rune/grenade for

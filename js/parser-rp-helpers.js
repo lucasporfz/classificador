@@ -2,26 +2,41 @@ function getMobElementMods(name) {
   return MOB_ELEMENT_MODS[(name || '').toLowerCase().trim()] || null;
 }
 
-// Expose Weakness: +8% de elemental pierce. Se mod > 100%: metade do pierce.
-// Se mod ≤ 100%: sobe até 100% (full), depois metade do resto.
-function ewHolyMod(baseMod) {
-  const pierce = 0.08;
+// Pierce de elemento: sobe o mod do mob. Se mod > 100%: metade do pierce. Se mod ≤ 100%:
+// sobe até 100% (full), depois metade do resto. Modela Expose Weakness (8%) e o perk BM (4%),
+// que SOMAM quando ativos juntos (ex.: striker 0.90 com EW+BM = pierce 0.12 → 1.01).
+function rpPiercedMod(baseMod, pierce) {
+  if (!(pierce > 0)) return baseMod;
   if (baseMod >= 1) return baseMod + pierce / 2;
   const toHundred = 1 - baseMod;
   if (pierce <= toHundred) return baseMod + pierce;
   return 1 + (pierce - toHundred) / 2;
 }
-// Igualdade EW-aware: mesmo status EW → igualdade exata; status diferente → normaliza o
-// hit com EW para base sem EW e compara com tolerância ±1 (arredondamento de ceil).
+function ewHolyMod(baseMod) { return rpPiercedMod(baseMod, 0.08); }
+
+// Perk BM (+4% holy/physical pierce): constante da SESSÃO, detectado automaticamente
+// (rpDetectBmPierce). 0 = sem BM. Aplica-se só a holy e physical.
+let RP_BM_PIERCE = 0;
+function rpSetBmPierce(p) { RP_BM_PIERCE = p > 0 ? p : 0; }
+function rpBmForElement(elementKey) {
+  return (elementKey === 'holyDmgMod' || elementKey === 'physicalDmgMod') ? RP_BM_PIERCE : 0;
+}
+
+// Igualdade EW-aware: mesmo status EW → igualdade exata; status diferente → normaliza CADA hit
+// para a base holy real (divide pela mitigação do mob e pelo mod elemental EW-aware) e compara
+// com tolerância proporcional. Normalizar pela mitigação cancela entre hits do mesmo mob, mas
+// põe os dois no mesmo espaço da base holy determinística, evitando o resíduo de arredondamento
+// que o antigo `ceil(ewHit×base/ew) ±1` deixava (ex.: striker 947-EW vs 880 → 882 vs 880, 2 > 1,
+// quebrava a banda cedo demais). Os mods já incluem o pierce do BM da sessão (RP_BM_PIERCE).
 function ewAwareEq(v1, hasEW1, v2, hasEW2, mob) {
   if (hasEW1 === hasEW2) return v1 === v2;
   const mods = getMobElementMods(mob);
   if (!mods) return v1 === v2;
-  const base = mods.holyDmgMod || 1;
-  const ew = ewHolyMod(base);
-  const ewHit   = hasEW1 ? v1 : v2;
-  const noEWHit = hasEW1 ? v2 : v1;
-  return Math.abs(Math.ceil(ewHit * base / ew) - noEWHit) <= 1;
+  const t = mods.holyDmgMod || 1;
+  const mit = mods.mitigation > 0 ? (1 - mods.mitigation / 100) : 1;
+  const norm = (v, ew) => v / mit / rpPiercedMod(t, RP_BM_PIERCE + (ew ? 0.08 : 0));
+  const b1 = norm(v1, hasEW1), b2 = norm(v2, hasEW2);
+  return Math.abs(b1 - b2) <= Math.max(2, ((b1 + b2) / 2) * 0.004);
 }
 
 // Onslaught: proc de +60% fixo, ADITIVO sobre a base (não multiplica com o crit).
@@ -57,8 +72,50 @@ function normalizeSeenDamageForElement(ev, elementKey, critMultObserved, preyMul
   let dmg = ev.dmg || 0;
   dmg /= rpAmplificationDivisor(ev, critMultObserved);
   if (ev.isPrey && preyMult > 1) dmg /= preyMult;
-  const mod = mods[elementKey] || 1;
+  // Mitigação do mob: redução geral de dano (1 − mit%), determinística por mob. Sem isso, a
+  // normalização cruzada entre mobs com mitigações diferentes deixa resíduo e a banda holy
+  // fica menos uniforme. Cancela quando se compara hits do MESMO mob (mitigação igual).
+  if (mods.mitigation > 0) dmg /= (1 - mods.mitigation / 100);
+  // Mod elemental já com o pierce do perk BM (holy/physical) da sessão; BM=0 → mod da tabela.
+  const mod = rpPiercedMod(mods[elementKey] || 1, rpBmForElement(elementKey));
   return mod > 0 ? dmg / mod : dmg;
+}
+
+// Detecta o perk BM (+4% pierce) pela COERÊNCIA cross-mob: num mesmo cast holy (spell/granada),
+// dois mobs de mods DIFERENTES têm que dar a mesma base. O pierce do BM desloca um mob 0.90
+// (→0.94) diferente de um 1.00 (→1.02), então a base só fecha entre eles sob a hipótese certa.
+// Roda sobre a 1ª classificação (BM=0); retorna 0.04 se o BM explica claramente os casts, senão 0.
+// Não precisa de EW pareada nem isola flecha — usa só hits já rotulados holy, mesmo cast, mesmo
+// status de prey (cancela), sem crit (excluído). É grounded nos dados, não em flag manual.
+function rpDetectBmPierce(turnStats) {
+  const casts = new Map();
+  for (const st of (turnStats || [])) for (const l of (st.rpComponentLines || [])) {
+    if (l.correctedComponent !== 'spell' && l.correctedComponent !== 'grenade') continue;
+    if (l.overkill || l.realCrit || l.onslaught) continue;
+    const m = getMobElementMods(l.mob);
+    if (!m || !(m.holyDmgMod > 0)) continue;
+    const k = l.ts + '|' + l.correctedComponent + '|' + (l.isPrey ? 1 : 0);
+    if (!casts.has(k)) casts.set(k, []);
+    casts.get(k).push({ t: m.holyDmgMod, mit: m.mitigation || 0, dmg: l.dmg, ew: !!l.exposeWeakness });
+  }
+  const shift = t => t / rpPiercedMod(t, 0.04);
+  const discriminates = (a, b) => Math.abs(shift(a) - shift(b)) > 0.012;
+  function score(bm) {
+    let agree = 0, total = 0;
+    for (const hits of casts.values()) {
+      const bs = hits.map(h => ({ t: h.t, base: h.dmg / (1 - h.mit / 100) / rpPiercedMod(h.t, bm + (h.ew ? 0.08 : 0)) }));
+      for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
+        if (!discriminates(bs[i].t, bs[j].t)) continue;
+        total++;
+        if (Math.abs(bs[i].base - bs[j].base) <= 3) agree++;
+      }
+    }
+    return { agree, total };
+  }
+  const off = score(0), on = score(0.04);
+  // BM só com sinal forte: muitos pares discriminantes fechando sob BM e claramente melhor que sem.
+  if (on.agree >= 8 && on.agree > off.agree * 2 && on.agree > on.total * 0.5) return 0.04;
+  return 0;
 }
 
 function getOrderedRpOffensiveHits(turn) {
