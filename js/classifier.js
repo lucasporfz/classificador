@@ -1023,25 +1023,175 @@ function clsSplitGrenadeFromSpellByLevel(turns, playerGrenCasts) {
 // ancorou um g+4 fake (cluster no nível de AA): não marca nada. Sem cluster (null) mantém o
 // comportamento antigo (flipa todo arrow — explosão "limpa"). Overkill acompanha só quando há
 // granada de verdade (cluster não-vazio).
+// Os hits do segundo PROVAM ser AA (e não granada)? Granada = holy determinística (mesmo mob →
+// mesma base holy). AA físico (mesmo crit) VARIA por mob. Retorna true SÓ quando há prova de
+// variância: um mob com ≥2 hits não-overkill cuja base holy difere. Sem dado holy (mob fora da
+// tabela, ex.: bakra) ou hits consistentes ⇒ NÃO prova ⇒ false (mantém o flip-all legado). Evita
+// marcar um bloco de AA-crit como granada no shadow de c+4 (barrage 19:02:45: roaming dread
+// 916/939/912 variam → AA crit).
+function clsSecondLooksLikeAa(lines, targetTs) {
+  const byMob = new Map();
+  for (const l of (lines || [])) {
+    if (l.ts !== targetTs || l.correctedComponent !== 'arrow' || l.overkill) continue;
+    if (!(l.realCrit || l.onslaught)) continue; // só hits CRIT: granada crit reverte consistente;
+    const hb = clsHolyBaseOf(l);                  // AA crit reverte VARIANDO (crit + armadura RNG).
+    if (!(hb > 0)) continue;
+    if (!byMob.has(l.mob)) byMob.set(l.mob, []);
+    byMob.get(l.mob).push(hb);
+  }
+  for (const vals of byMob.values()) {
+    if (vals.length < 2) continue;
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    if (hi - lo > Math.max(8, ((lo + hi) / 2) * 0.01)) return true; // mesmo mob (crit) varia ⇒ AA
+  }
+  return false;
+}
+
 function clsApplyAaCooldownGrenade(t, targetTs) {
   const lines = (t && t.rpComponentLines) || [];
   const cluster = clsGrenadeHolyCluster(lines, targetTs);
-  let changed = false;
+  // Sem cluster (null): o legado flipa tudo (explosão limpa). MAS se os hits PROVAM ser AA (mesmo
+  // mob varia por mob), é o shadow de c+4 com AA-crit — NÃO marca. Mob fora da tabela não prova
+  // nada ⇒ mantém o flip-all legado (granada real do bakra preservada).
+  if (cluster === null && clsSecondLooksLikeAa(lines, targetTs)) return false;
+  const flipAll = (cluster === null);
+  const toFlip = [];
   for (const l of lines) {
     if (l.ts !== targetTs || l.correctedComponent !== 'arrow') continue;
     let isGren;
-    if (cluster === null) isGren = true;
+    if (flipAll) isGren = true;
     else if (cluster.size === 0) isGren = false;
     else isGren = cluster.has(l) || l.overkill;
-    if (!isGren) continue;
+    if (isGren) toFlip.push(l);
+  }
+  // Granada é um BLOCO, não um hit solto: só marca se houver ao menos 1 hit NÃO-overkill virando
+  // granada. O overkill ACOMPANHA a granada (dano truncado), mas não a CONSTITUI sozinho — senão
+  // um AA-crit-overkill solto vira granada no meio do bloco de AA (barrage 19:01:17, cyclursus 400),
+  // porque o cluster holy detectado era na verdade a Barrage (física, holy-consistente).
+  if (!toFlip.some(l => !l.overkill)) return false;
+  for (const l of toFlip) {
     l.correctedComponent = 'grenade';
     l.correctionReason = 'chat_grenade_aa_cooldown';
     l.boundaryReason = 'chat_grenade_aa_cooldown';
     l.inferredElement = 'holy';
-    changed = true;
   }
-  if (changed) {
-    t.rpGrenade = 'explode';
+  t.rpGrenade = 'explode';
+  clsRefreshTurnComponents(t);
+  return true;
+}
+
+// === MODELO UNIFICADO (Caminho A — EIXO 2-FÍSICO: AA × Ethereal Barrage) ==================
+// Separa o AA físico (diamond arrows, AoE) da spell física Ethereal Barrage (`exori dir moe`) —
+// dois componentes SEM assinatura elemental (ambos físicos, ambos variam por armadura). O
+// discriminador (doc §5) é o ORIGINAL implícito O após reverter a subtração de armadura:
+//   O ∈ [ pO + r/res , pO + R/res ],  pO = physicalOriginal (parser; já reverte crit/prey/mit/res),
+//   r = floor(armor/2), R = 2r−1, res = physicalDmgMod. Crit CANCELA na reversão (largura indep.).
+// Separa em ≤2 níveis pelo MAIOR salto de O onde os intervalos deixam de se sobrepor; AA = O
+// menor (sempre presente), Barrage = O maior (só com o cast). Sem salto distinto ⇒ tudo AA (Barrage
+// errou ou caiu na zona ambígua, doc §5). Validado em logs/barrage (tools/barrage-validate.mjs):
+// AA O≈719, Barrage O≈894, separação 1.24×, níveis estáveis. Gate por cast `exori dir moe`
+// (ausente nas demais fixtures ⇒ inerte ⇒ zero drift no baseline/gabarito).
+// Intervalo do original implícito O de um hit físico (doc §5): O ∈ [pO+r/res, pO+R/res].
+function clsBarrageOInterval(l) {
+  if (l.overkill) return null; // dano truncado: original não recuperável
+  const m = getMobElementMods(l.mob);
+  if (!m || !(l.physicalOriginal > 0)) return null;
+  const res = m.physicalDmgMod || 1, r = Math.floor((m.armor || 0) / 2), R = 2 * r - 1;
+  return [l.physicalOriginal + r / res, l.physicalOriginal + R / res];
+}
+
+// Mesmo-segundo: acha a FRONTEIRA de seq entre o bloco de AA e o de Barrage pela INTERSEÇÃO dos
+// intervalos de O (doc §5). Componentes são blocos CONTÍGUOS por seq (AA primeiro). Caminha na
+// ordem de seq acumulando a interseção dos intervalos de O do bloco AA; a fronteira é onde a
+// interseção QUEBRA (o hit não admite o O comum do AA — original diferente). Valida que o bloco
+// Barrage (resto) compartilha um O comum DISJUNTO do AA (2 originais distintos). Não é por média/
+// nível: é a sobreposição (ou não) dos intervalos — ex.: cyclursus O∈[872,918] (AA) vs O∈[818,864]
+// (Barrage) não se sobrepõem ⇒ componentes diferentes, mesmo com médias próximas.
+function clsBarrageSeqBoundary(phys) {
+  const ord = phys
+    .map(l => { const iv = clsBarrageOInterval(l); return iv ? { l, iv, o: (iv[0] + iv[1]) / 2 } : null; })
+    .filter(Boolean)
+    .sort((a, b) => (a.l.seq || 0) - (b.l.seq || 0));
+  if (ord.length < 4) return null;
+  let acc = ord[0].iv.slice(), k = -1;
+  for (let i = 1; i < ord.length; i++) {
+    const lo = Math.max(acc[0], ord[i].iv[0]), hi = Math.min(acc[1], ord[i].iv[1]);
+    if (lo <= hi) acc = [lo, hi];           // ainda admite um O comum → bloco AA continua
+    else { k = i; break; }                  // não admite o O comum do AA → começa o bloco Barrage
+  }
+  if (k < 2 || ord.length - k < 2) return null; // precisa de ≥2 hits de cada lado
+  // o bloco Barrage tem que estar num NÍVEL distinto do AA: sua MEDIANA de O fica fora da interseção
+  // do AA (a variância de armadura impede exigir interseção perfeita do Barrage; a mediana basta).
+  const restO = ord.slice(k).map(x => x.o).sort((a, b) => a - b);
+  const med = restO[Math.floor(restO.length / 2)];
+  if (med >= acc[0] - 8 && med <= acc[1] + 8) return null;
+  return ord[k].l.seq || 0;
+}
+
+// Fallback (quando o O não separa, níveis sobrepostos): a RAZÃO leech-de-vida/dano é ~constante
+// DENTRO de um componente (o leech depende de quantos mobs o AoE acertou) e SALTA entre componentes.
+// Acha a fronteira pelo ponto que MAXIMIZA a diferença das MEDIANAS de razão dos dois lados (mediana
+// é robusta a prey — que distorce 1 hit — e a procs parciais). Overkill (leech sobre dano cheio,
+// dano truncado) e leech 0 (HP/mana cheios → nada a curar) ficam de fora do cálculo da razão, mas
+// são rotulados pela POSIÇÃO de seq (bloco contíguo). Ex.: barrage 19:04:40, razão ~0.0955 (AA) salta
+// p/ ~0.120 (Barrage) em seq 2473 → AA 10 (2462-2472) + Barrage 9 (2473-2484).
+function clsBarrageLeechBoundary(phys) {
+  const ord = phys
+    .filter(l => !l.overkill && l.dmg > 0 && l.lifeLeech > 0)
+    .map(l => ({ seq: l.seq || 0, r: l.lifeLeech / l.dmg }))
+    .sort((a, b) => a.seq - b.seq);
+  if (ord.length < 4) return null;
+  const median = arr => { const s = arr.slice().sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
+  let best = null;
+  for (let k = 2; k <= ord.length - 2; k++) {
+    const d = Math.abs(median(ord.slice(0, k).map(x => x.r)) - median(ord.slice(k).map(x => x.r)));
+    if (!best || d > best.d) best = { d, seq: ord[k].seq };
+  }
+  // razões dos dois componentes têm que diferir (senão acertaram ~o mesmo nº de mobs → indistinguível)
+  if (!best || best.d < 0.02) return null;
+  return best.seq;
+}
+
+// EIXO 2-FÍSICO (Caminho A): separa AA × Ethereal Barrage. Gate: cast `exori dir moe` com hits
+// neste turno (a Barrage cai no ts do cast; isso já faz pular turnos de Caldera). Regra única:
+// componentes são BLOCOS CONTÍGUOS por seq, AA SEMPRE primeiro (logado antes), Barrage depois.
+// Acha a FRONTEIRA de seq e rotula tudo antes = AA, tudo a partir dela = Barrage:
+//   • multi-ts: a fronteira é o ts do cast (AA no(s) ts anterior(es), Barrage no ts do cast).
+//   • mesmo-segundo: a fronteira é o maior salto de nível de O (clsBarrageSeqBoundary).
+function clsApplyPhysicalBarrage(turns, playerSpellCasts) {
+  const dirCasts = (playerSpellCasts || []).filter(c => c.text === 'exori dir moe');
+  if (!dirCasts.length) return false;
+  let changed = false;
+  for (const t of turns) {
+    const lines = t.rpComponentLines || [];
+    if (!lines.length) continue;
+    const cast = dirCasts.find(c => lines.some(l => l.ts === c.ts));
+    if (!cast) continue;
+    const phys = lines.filter(l => l.correctedComponent === 'arrow' || l.correctedComponent === 'spell');
+    if (phys.length < 2) continue;
+    const before = phys.filter(l => l.ts < cast.ts && !l.overkill);
+    const atCast = phys.filter(l => l.ts === cast.ts && !l.overkill);
+    let boundarySeq;
+    if (before.length >= 1 && atCast.length >= 1) {
+      // timing: o Barrage começa no 1º hit do ts do cast (AA é o(s) segundo(s) anterior(es)).
+      boundarySeq = Math.min(...phys.filter(l => l.ts === cast.ts).map(l => l.seq || 0));
+    } else {
+      // mesmo segundo: 1º a fronteira por nível de O; se os níveis se sobrepõem (O não separa),
+      // fallback pela razão leech/dano (componentes que acertaram nº de mobs diferente).
+      boundarySeq = clsBarrageSeqBoundary(phys);
+      if (boundarySeq == null) boundarySeq = clsBarrageLeechBoundary(phys);
+      if (boundarySeq == null) continue;          // nem O nem leech separam → não mexe
+    }
+    for (const l of phys) {
+      const comp = (l.seq || 0) >= boundarySeq ? 'spell' : 'arrow'; // contíguo: AA antes, Barrage depois
+      if (l.correctedComponent !== comp) {
+        l.correctedComponent = comp;
+        l.correctionReason = 'physical_barrage';
+        l.boundaryReason = 'physical_barrage';
+        l.inferredElement = 'physical';
+        changed = true;
+      }
+    }
     clsRefreshTurnComponents(t);
   }
   return changed;
@@ -1172,6 +1322,27 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
   const RP_ATTACK = new Set(['exevo mas san', 'exori san', 'exori con', 'exori gran con',
     'exori infir con', 'exori dir san', 'exori dir moe', 'utori san', 'exevo tempo mas san']);
   const isRpRegime = damageSpells.concat(grenadeSpells).some(t => RP_ATTACK.has(t));
+  // Hook de captura (read-only, sem efeito na saída): o modelo unificado (2 fases) é
+  // desenvolvido offline contra dados reais. Aqui, ANTES dos passes de mutação de rótulo,
+  // exporta os inputs crus (hits + âncoras de cast/runa + regime) para o protótipo comparar
+  // seus rótulos com os do pipeline legado. Snapshot dos campos crus (não inclui
+  // correctedComponent, que os passes ainda vão alterar). Ativado só por opts.__captureInputs.
+  if (opts && Array.isArray(opts.__captureInputs)) {
+    const RAW = ['ts', 'seq', 'mob', 'dmg', 'seenDmg', 'revertedDmg', 'lifeLeech', 'manaLeech',
+      'type', 'lowBlow', 'realCrit', 'onslaught', 'isPrey', 'overkill', 'exposeWeakness',
+      'physicalOriginal', 'holyOriginal', 'fireOriginal', 'iceOriginal', 'energyOriginal',
+      'earthOriginal', 'deathOriginal', 'inferredElement'];
+    opts.__captureInputs.push({
+      turns: turns.map(t => ({
+        ts: t.ts,
+        lines: (t.rpComponentLines || []).map(l => { const o = {}; for (const k of RAW) o[k] = l[k]; return o; }),
+      })),
+      playerSpellCasts: playerSpellCasts.map(c => ({ ts: c.ts, text: c.text, speaker: c.speaker })),
+      playerGrenCasts: playerGrenCasts.map(c => ({ ts: c.ts, text: c.text, speaker: c.speaker })),
+      runeUses: runeUses.map(u => ({ ts: u.ts, name: u.name, element: u.element })),
+      isRpRegime, distinctMobs: data.distinctMobs,
+    });
+  }
   if (data.distinctMobs === 1 || !isRpRegime) {
     // AA posicional p/ single-target (1 mob, sem banda) e p/ EK melee (golpe físico todo
     // turno, logado 1º); caster (druida/mage: spell exevo / runa) usa o AA por outlier.
@@ -1221,6 +1392,10 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
     if (restoredAaByLeech) turnRecords = clsBuildTurnRecords(turns);
     if (clsApplyRpSpellTimingFromChat(turns, playerSpellCasts)) turnRecords = clsBuildTurnRecords(turns);
   }
+
+  // Eixo 2-físico (Caminho A): separa AA × Ethereal Barrage por nível de O (reversão de armadura).
+  // Gate por cast `exori dir moe` — inerte (zero drift) em qualquer log sem essa spell.
+  if (clsApplyPhysicalBarrage(turns, playerSpellCasts)) turnRecords = clsBuildTurnRecords(turns);
 
   const nearestGren = G => {
     return playerGrenCasts
@@ -1463,6 +1638,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
         lines: (turns[r.idx - 1].rpComponentLines || []).map(l => ({
           mob: l.mob, dmg: l.dmg, base: l.revertedDmg, comp: l.correctedComponent, ok: !!l.overkill,
           ts: l.ts, seq: l.seq || 0, type: l.type, lowBlow: !!l.lowBlow, realCrit: !!l.realCrit, onslaught: !!l.onslaught,
+          reason: l.correctionReason || null,
         })),
       });
     }
