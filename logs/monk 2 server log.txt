@@ -1,0 +1,1000 @@
+07:19:20 You gained 50 mana.
+07:19:20 A raubritter skirmisher loses 923 hitpoints due to your attack. 
+07:19:20 You were healed for 143 hitpoints.
+07:19:20 You gained 42 mana.
+07:19:20 A raubritter skirmisher loses 468 hitpoints due to your attack. 
+07:19:20 You were healed for 136 hitpoints.
+07:19:20 You gained 40 mana.
+07:19:20 You gained 20007 experience points (Animus mastery).
+07:19:20 Loot of a raubritter skirmisher: 8 platinum coins.
+07:19:20 A raubritter skirmisher loses 818 hitpoints due to your attack. 
+07:19:20 You were healed for 127 hitpoints.
+07:19:20 You gained 37 mana.
+07:19:20 A raubritter chastener loses 126 hitpoints due to your attack. (poison charm)
+07:19:20 You gained 22230 experience points (Animus mastery).
+07:19:20 Loot of a raubritter chastener: 7 platinum coins.
+07:19:20 You healed yourself for 225 hitpoints.
+07:19:20 You lose 218 hitpoints due to an attack by a raubritter marksman. 
+07:19:20 No loot. (2 corpses)
+07:19:20 You looted 800 gold.
+07:19:20 You looted 700 gold.
+07:19:20 You looted 4 corpses.
+07:19:20 You lose 184 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:20 You lose 301 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:21 No loot. (4 corpses)
+07:19:21 You looted nothing from 4 corpses.
+07:19:21 You lose 284 hitpoints due to an attack by a raubritter marksman. 
+07:19:21 You lose 305 hitpoints due to an attack by a raubritter marksman. 
+07:19:21 You lose 243 hitpoints due to an attack by a raubritter marksman. 
+07:19:21 You lose 262 hitpoints due to an attack by a raubritter marksman. 
+07:19:21 You lose 338 hitpoints due to an attack by a raubritter marksman. 
+07:19:22 You lose 21 hitpoints due to an attack by a raubritter marksman. 
+07:19:22 You lose 221 hitpoints due to an attack by a raubritter marksman. 
+07:19:22 A raubritter marksman loses 624 hitpoints due to your attack. 
+07:19:22 You were healed for 325 hitpoints.
+07:19:22 You gained 110 mana.
+07:19:22 You healed yourself for 845 hitpoints.
+07:19:22 You healed yourself for 635 hitpoints.
+07:19:22 A raubritter marksman loses 1560 hitpoints due to your attack. 
+07:19:22 You were healed for 264 hitpoints.
+07:19:22 You gained 105 mana.
+07:19:22 A raubritter skirmisher loses 1495 hitpoints due to your attack. 
+07:19:22 You were healed for 269 hitpoints.
+07:19:22 You gained 93 mana.
+07:19:22 A raubritter marksman loses 1026 hitpoints due to your attack. 
+07:19:22 You were healed for 264 hitpoints.
+07:19:22 You gained 105 mana.
+07:19:22 You gained 26749 experience points (active prey bonus, Animus mastery).
+07:19:22 Loot of a raubritter marksman: 6 platinum coins.
+07:19:22 A raubritter marksman loses 840 hitpoints due to your attack. 
+07:19:22 You were healed for 263 hitpoints.
+07:19:22 You gained 105 mana.
+07:19:22 You gained 26749 experience points (active prey bonus, Animus mastery).
+07:19:22 Loot of a raubritter marksman: 9 platinum coins.
+07:19:23 You lose 229 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:23 You lose 121 hitpoints due to an attack by a raubritter marksman. 
+07:19:23 You lose 237 hitpoints due to an attack by a raubritter marksman. 
+07:19:23 You lose 373 hitpoints due to an attack by a raubritter marksman. 
+07:19:23 No loot. (1 corpse)
+07:19:23 You looted 900 gold.
+07:19:23 You looted 600 gold.
+07:19:23 You looted 3 corpses.
+07:19:23 No loot. (3 corpses)
+07:19:23 You looted nothing from 3 corpses.
+07:19:24 Using one of 1706 ultimate spirit potions...
+07:19:24 You lose 133 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:24 No loot. (3 corpses)
+07:19:24 You looted nothing from 3 corpses.
+07:19:24 You gained 104 mana.
+07:19:24 You healed yourself for 473 hitpoints.
+07:19:24 You healed yourself for 858 hitpoints.
+07:19:24 You lose 227 hitpoints due to an attack by a raubritter marksman. 
+07:19:24 You lose 291 hitpoints due to an attack by a raubritter marksman. 
+07:19:24 You lose 348 hitpoints due to an attack by a raubritter marksman. 
+07:19:24 A raubritter marksman loses 976 hitpoints due to your attack. 
+07:19:24 You were healed for 166 hitpoints.
+07:19:24 You gained 56 mana.
+07:19:24 A raubritter skirmisher loses 617 hitpoints due to your attack. (enflame charm)
+07:19:24 A raubritter skirmisher loses 884 hitpoints due to your attack. 
+07:19:24 You were healed for 159 hitpoints.
+07:19:24 You gained 47 mana.
+07:19:24 A raubritter marksman loses 882 hitpoints due to your attack. 
+07:19:24 You were healed for 150 hitpoints.
+07:19:24 You gained 51 mana.
+07:19:24 A raubritter skirmisher loses 307 hitpoints due to your attack. 
+07:19:24 You were healed for 143 hitpoints.
+07:19:24 You gained 42 mana.
+07:19:24 You gained 20007 experience points (Animus mastery).
+07:19:24 Loot of a raubritter skirmisher: 5 platinum coins.
+07:19:24 You healed yourself for 219 hitpoints.
+07:19:25 You lose 305 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:25 You lose 166 hitpoints due to an attack by a raubritter marksman. 
+07:19:25 You lose 254 hitpoints due to an attack by a raubritter marksman. 
+07:19:25 No loot. (3 corpses)
+07:19:25 You looted 500 gold.
+07:19:25 You looted 4 corpses.
+07:19:25 No loot. (4 corpses)
+07:19:25 You looted nothing from 4 corpses.
+07:19:25 No loot. (5 corpses)
+07:19:25 You looted nothing from 5 corpses.
+07:19:25 No loot. (5 corpses)
+07:19:25 You looted nothing from 5 corpses.
+07:19:26 You healed yourself for 734 hitpoints.
+07:19:26 You lose 79 hitpoints due to an attack by a raubritter marksman. 
+07:19:26 You lose 245 hitpoints due to an attack by a raubritter marksman. 
+07:19:26 Using one of 1705 ultimate spirit potions...
+07:19:26 You gained 229 mana.
+07:19:26 You healed yourself for 352 hitpoints.
+07:19:26 A raubritter marksman loses 1007 hitpoints due to your attack. 
+07:19:26 You gained 171 mana.
+07:19:26 A raubritter marksman loses 595 hitpoints due to your attack. (wound charm)
+07:19:26 A raubritter marksman loses 906 hitpoints due to your attack. 
+07:19:26 You gained 64 mana.
+07:19:26 A raubritter skirmisher loses 863 hitpoints due to your attack. 
+07:19:26 You gained 56 mana.
+07:19:26 A raubritter marksman loses 900 hitpoints due to your attack. 
+07:19:26 You gained 64 mana.
+07:19:27 You lose 283 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:27 You lose 332 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:27 You lose 162 hitpoints due to an attack by a raubritter marksman. 
+07:19:27 You lose 267 hitpoints due to an attack by a raubritter marksman. 
+07:19:27 No loot. (3 corpses)
+07:19:27 You looted nothing from 3 corpses.
+07:19:27 No loot. (3 corpses)
+07:19:27 You looted nothing from 3 corpses.
+07:19:28 You lose 40 hitpoints due to an attack by a raubritter marksman. 
+07:19:28 You lose 254 hitpoints due to an attack by a raubritter marksman. 
+07:19:28 A raubritter marksman loses 608 hitpoints due to your attack. 
+07:19:28 You were healed for 317 hitpoints.
+07:19:28 You gained 108 mana.
+07:19:29 A raubritter marksman loses 884 hitpoints due to your attack. 
+07:19:29 You were healed for 264 hitpoints.
+07:19:29 You gained 90 mana.
+07:19:29 You gained 26749 experience points (active prey bonus, Animus mastery).
+07:19:29 Loot of a raubritter marksman: 7 platinum coins.
+07:19:29 A raubritter skirmisher loses 842 hitpoints due to your attack. 
+07:19:29 You were healed for 256 hitpoints.
+07:19:29 You gained 75 mana.
+07:19:29 You healed yourself for 208 hitpoints.
+07:19:29 You lose 351 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:29 You lose 393 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:29 You lose 291 hitpoints due to an attack by a raubritter marksman. 
+07:19:29 You looted 700 gold.
+07:19:30 You lose 198 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:31 A raubritter skirmisher loses 624 hitpoints due to your attack. 
+07:19:31 You were healed for 345 hitpoints.
+07:19:31 You gained 23 mana.
+07:19:31 You lose 332 hitpoints due to an attack by a raubritter marksman. 
+07:19:31 A raubritter skirmisher loses 711 hitpoints due to your attack. 
+07:19:31 You were healed for 393 hitpoints.
+07:19:31 You gained 110 mana.
+07:19:31 You healed yourself for 236 hitpoints.
+07:19:32 You lose 211 hitpoints due to an attack by a raubritter chastener. 
+07:19:32 You lose 254 hitpoints due to an attack by a raubritter marksman. 
+07:19:32 You lose 338 hitpoints due to an attack by a raubritter marksman. 
+07:19:32 Using one of 1704 ultimate spirit potions...
+07:19:32 You healed yourself for 463 hitpoints.
+07:19:32 You lose 156 hitpoints due to an attack by a raubritter chastener. 
+07:19:32 You lose 210 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:32 You lose 356 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:33 A raubritter chastener loses 813 hitpoints due to your attack. 
+07:19:33 You were healed for 423 hitpoints.
+07:19:33 A raubritter chastener loses 1072 hitpoints due to your attack. 
+07:19:33 You were healed for 182 hitpoints.
+07:19:33 You gained 56 mana.
+07:19:33 A raubritter chastener loses 1121 hitpoints due to your attack. 
+07:19:33 You were healed for 190 hitpoints.
+07:19:33 You gained 59 mana.
+07:19:33 A raubritter skirmisher loses 890 hitpoints due to your attack. 
+07:19:33 You were healed for 160 hitpoints.
+07:19:33 You gained 47 mana.
+07:19:33 A raubritter skirmisher loses 129 hitpoints due to your attack. 
+07:19:33 You were healed for 150 hitpoints.
+07:19:33 You gained 18 mana.
+07:19:33 You gained 20007 experience points (Animus mastery).
+07:19:33 Loot of a raubritter skirmisher: 8 platinum coins.
+07:19:34 You lose 334 hitpoints due to an attack by a raubritter marksman. 
+07:19:34 You lose 294 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:34 You lose 252 hitpoints due to an attack by a raubritter marksman. 
+07:19:34 You healed yourself for 939 hitpoints.
+07:19:34 You lose 218 hitpoints due to an attack by a raubritter chastener. 
+07:19:35 You lose 285 hitpoints due to an attack by a raubritter chastener. 
+07:19:35 You lose 160 hitpoints due to an attack by a raubritter chastener. 
+07:19:35 A raubritter chastener loses 550 hitpoints due to your attack. 
+07:19:35 You were healed for 286 hitpoints.
+07:19:35 You gained 88 mana.
+07:19:35 You lose 139 hitpoints due to an attack by a raubritter marksman. 
+07:19:35 You lose 385 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:35 You healed yourself for 618 hitpoints.
+07:19:35 A raubritter chastener loses 1523 hitpoints due to your attack. 
+07:19:35 You were healed for 222 hitpoints.
+07:19:35 You gained 69 mana.
+07:19:35 A raubritter marksman loses 1620 hitpoints due to your attack. 
+07:19:35 You were healed for 237 hitpoints.
+07:19:35 You gained 81 mana.
+07:19:35 A raubritter skirmisher loses 1554 hitpoints due to your attack. 
+07:19:35 You were healed for 241 hitpoints.
+07:19:35 You gained 70 mana.
+07:19:35 A raubritter chastener loses 547 hitpoints due to your attack. (poison charm)
+07:19:35 A raubritter chastener loses 1517 hitpoints due to your attack. 
+07:19:35 You were healed for 221 hitpoints.
+07:19:35 You gained 69 mana.
+07:19:35 A raubritter skirmisher loses 1412 hitpoints due to your attack. 
+07:19:35 You were healed for 132 hitpoints.
+07:19:35 You gained 64 mana.
+07:19:36 You lose 256 hitpoints due to an attack by a raubritter marksman. 
+07:19:36 A raubritter chastener loses 947 hitpoints due to your attack. 
+07:19:36 You were healed for 139 hitpoints.
+07:19:36 You gained 43 mana.
+07:19:36 A raubritter skirmisher loses 877 hitpoints due to your attack. 
+07:19:36 You were healed for 117 hitpoints.
+07:19:36 You gained 40 mana.
+07:19:36 A raubritter skirmisher loses 617 hitpoints due to your attack. (enflame charm)
+07:19:36 A raubritter skirmisher loses 874 hitpoints due to your attack. 
+07:19:36 You gained 40 mana.
+07:19:36 A raubritter chastener loses 934 hitpoints due to your attack. 
+07:19:36 You gained 42 mana.
+07:19:36 A raubritter marksman loses 916 hitpoints due to your attack. 
+07:19:36 You gained 46 mana.
+07:19:37 You lose 296 hitpoints due to an attack by a raubritter chastener. 
+07:19:37 You lose 250 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:37 You lose 313 hitpoints due to an attack by a raubritter marksman. 
+07:19:37 You lose 236 hitpoints due to an attack by a raubritter marksman. 
+07:19:37 You lose 87 hitpoints due to an attack by a raubritter chastener. 
+07:19:37 Using one of 1703 ultimate spirit potions...
+07:19:37 You gained 228 mana.
+07:19:37 You healed yourself for 530 hitpoints.
+07:19:37 A raubritter marksman loses 925 hitpoints due to your attack. 
+07:19:37 You were healed for 481 hitpoints.
+07:19:37 You gained 45 mana.
+07:19:37 You lose 224 hitpoints due to an attack by a raubritter chastener. 
+07:19:37 A raubritter skirmisher loses 880 hitpoints due to your attack. 
+07:19:37 You were healed for 158 hitpoints.
+07:19:37 You gained 46 mana.
+07:19:37 A raubritter chastener loses 945 hitpoints due to your attack. 
+07:19:37 You were healed for 160 hitpoints.
+07:19:37 You gained 50 mana.
+07:19:37 A raubritter marksman loses 913 hitpoints due to your attack. 
+07:19:37 You were healed for 77 hitpoints.
+07:19:37 You gained 53 mana.
+07:19:37 A raubritter chastener loses 950 hitpoints due to your attack. 
+07:19:37 You gained 50 mana.
+07:19:38 You lose 268 hitpoints due to an attack by a raubritter marksman. 
+07:19:38 You healed yourself for 268 hitpoints.
+07:19:38 Using one of 1702 ultimate spirit potions...
+07:19:38 You gained 171 mana.
+07:19:38 You lose 222 hitpoints due to an attack by a raubritter marksman. 
+07:19:39 You lose 216 hitpoints due to an attack by a raubritter marksman. 
+07:19:39 You lose 279 hitpoints due to an attack by a raubritter marksman. 
+07:19:39 You lose 349 hitpoints due to an attack by a raubritter marksman. 
+07:19:39 You healed yourself for 775 hitpoints.
+07:19:39 You lose 365 hitpoints due to an attack by a raubritter chastener. 
+07:19:39 A raubritter chastener loses 889 hitpoints due to your attack. 
+07:19:39 You were healed for 463 hitpoints.
+07:19:39 You gained 143 mana.
+07:19:39 You lose 285 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:39 A raubritter chastener loses 1042 hitpoints due to your attack. 
+07:19:39 You were healed for 152 hitpoints.
+07:19:39 You gained 47 mana.
+07:19:39 A raubritter skirmisher loses 904 hitpoints due to your attack. 
+07:19:39 You were healed for 140 hitpoints.
+07:19:39 You gained 41 mana.
+07:19:39 A raubritter marksman loses 911 hitpoints due to your attack. 
+07:19:39 You were healed for 133 hitpoints.
+07:19:39 You gained 46 mana.
+07:19:39 A raubritter skirmisher loses 815 hitpoints due to your attack. 
+07:19:39 You were healed for 53 hitpoints.
+07:19:39 You gained 37 mana.
+07:19:39 A raubritter chastener loses 833 hitpoints due to your attack. 
+07:19:39 You gained 38 mana.
+07:19:39 You lose 108 hitpoints due to an attack by a raubritter chastener. 
+07:19:39 You lose 255 hitpoints due to an attack by a raubritter chastener. 
+07:19:40 Using one of 1701 ultimate spirit potions...
+07:19:40 You gained 174 mana.
+07:19:40 You healed yourself for 363 hitpoints.
+07:19:40 You lose 221 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:40 You lose 252 hitpoints due to an attack by a raubritter marksman. 
+07:19:41 You lose 266 hitpoints due to an attack by a raubritter marksman. 
+07:19:41 You lose 156 hitpoints due to an attack by a raubritter marksman. 
+07:19:41 You lose 235 hitpoints due to an attack by a raubritter marksman. 
+07:19:41 You lose 215 hitpoints due to an attack by a raubritter chastener. 
+07:19:41 You lose 284 hitpoints due to an attack by a raubritter chastener. 
+07:19:41 You healed yourself for 789 hitpoints.
+07:19:41 A raubritter skirmisher loses 787 hitpoints due to your attack. 
+07:19:41 You were healed for 435 hitpoints.
+07:19:41 You gained 126 mana.
+07:19:41 A raubritter chastener loses 788 hitpoints due to your attack. 
+07:19:41 You were healed for 115 hitpoints.
+07:19:41 You gained 36 mana.
+07:19:41 A raubritter skirmisher loses 733 hitpoints due to your attack. 
+07:19:41 You were healed for 114 hitpoints.
+07:19:41 You gained 34 mana.
+07:19:41 A raubritter marksman loses 759 hitpoints due to your attack. 
+07:19:41 You were healed for 111 hitpoints.
+07:19:41 You gained 38 mana.
+07:19:41 A raubritter skirmisher loses 728 hitpoints due to your attack. 
+07:19:41 You were healed for 65 hitpoints.
+07:19:41 You gained 33 mana.
+07:19:41 A raubritter chastener loses 785 hitpoints due to your attack. 
+07:19:41 You gained 36 mana.
+07:19:42 You lose 148 hitpoints due to an attack by a raubritter chastener. 
+07:19:42 You lose 138 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:42 You lose 264 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:42 Using one of 1700 ultimate spirit potions...
+07:19:42 You gained 17 mana.
+07:19:42 You healed yourself for 489 hitpoints.
+07:19:42 Using one of 1699 ultimate spirit potions...
+07:19:43 You lose 259 hitpoints due to an attack by a raubritter marksman. 
+07:19:43 You lose 71 hitpoints due to an attack by a raubritter marksman. 
+07:19:43 You lose 234 hitpoints due to an attack by a raubritter marksman. 
+07:19:43 You healed yourself for 619 hitpoints.
+07:19:43 You lose 275 hitpoints due to an attack by a raubritter marksman. 
+07:19:43 Using one of 1699 ultimate spirit potions...
+07:19:43 You lose 124 hitpoints due to an attack by a raubritter chastener. 
+07:19:43 You lose 259 hitpoints due to an attack by a raubritter chastener. 
+07:19:43 You gained 173 mana.
+07:19:43 You healed yourself for 550 hitpoints.
+07:19:43 A raubritter skirmisher loses 690 hitpoints due to your attack. 
+07:19:43 You were healed for 108 hitpoints.
+07:19:43 You gained 37 mana.
+07:19:43 A raubritter skirmisher loses 965 hitpoints due to your attack. 
+07:19:43 You gained 39 mana.
+07:19:43 A raubritter skirmisher loses 919 hitpoints due to your attack. 
+07:19:43 You gained 37 mana.
+07:19:43 A raubritter marksman loses 1011 hitpoints due to your attack. 
+07:19:43 You gained 45 mana.
+07:19:43 A raubritter skirmisher loses 834 hitpoints due to your attack. 
+07:19:43 You gained 34 mana.
+07:19:43 A raubritter chastener loses 547 hitpoints due to your attack. (poison charm)
+07:19:43 A raubritter chastener loses 853 hitpoints due to your attack. 
+07:19:43 You gained 25 mana.
+07:19:43 A raubritter marksman loses 773 hitpoints due to your attack. 
+07:19:43 You lose 318 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:44 You lose 98 hitpoints due to an attack by a raubritter chastener. 
+07:19:44 You lose 267 hitpoints due to an attack by a raubritter chastener. 
+07:19:45 You lose 372 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:45 You healed yourself for 775 hitpoints.
+07:19:45 Using one of 1698 ultimate spirit potions...
+07:19:45 You lose 265 hitpoints due to an attack by a raubritter marksman. 
+07:19:45 You gained 153 mana.
+07:19:45 You healed yourself for 545 hitpoints.
+07:19:45 You lose 133 hitpoints due to an attack by a raubritter marksman. 
+07:19:45 You lose 196 hitpoints due to an attack by a raubritter chastener. 
+07:19:45 You lose 306 hitpoints due to an attack by a raubritter chastener. 
+07:19:45 You lose 219 hitpoints due to an attack by a raubritter chastener. 
+07:19:45 You lose 241 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:45 You lose 239 hitpoints due to an attack by a raubritter marksman. 
+07:19:45 A raubritter marksman loses 787 hitpoints due to your attack. 
+07:19:45 You were healed for 410 hitpoints.
+07:19:45 You gained 137 mana.
+07:19:46 You lose 202 hitpoints due to an attack by a raubritter chastener. 
+07:19:46 You lose 341 hitpoints due to an attack by a raubritter marksman. 
+07:19:46 You healed yourself for 613 hitpoints.
+07:19:46 A raubritter marksman loses 1568 hitpoints due to your attack. 
+07:19:46 You were healed for 229 hitpoints.
+07:19:46 You gained 91 mana.
+07:19:46 A raubritter chastener loses 1803 hitpoints due to your attack. 
+07:19:46 You were healed for 263 hitpoints.
+07:19:46 You gained 97 mana.
+07:19:46 A raubritter skirmisher loses 1508 hitpoints due to your attack. 
+07:19:46 You were healed for 234 hitpoints.
+07:19:46 You gained 7 mana.
+07:19:46 A raubritter chastener loses 1624 hitpoints due to your attack. 
+07:19:46 You were healed for 128 hitpoints.
+07:19:46 A raubritter skirmisher loses 1518 hitpoints due to your attack. 
+07:19:46 A raubritter skirmisher loses 1128 hitpoints due to your attack. 
+07:19:46 A raubritter chastener loses 1151 hitpoints due to your attack. 
+07:19:46 You gained 22230 experience points (Animus mastery).
+07:19:46 Loot of a raubritter chastener: 4 platinum coins.
+07:19:46 You lose 229 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:46 You lose 275 hitpoints due to an attack by a raubritter marksman. 
+07:19:46 You lose 180 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:47 You lose 196 hitpoints due to an attack by a raubritter chastener. 
+07:19:47 You healed yourself for 742 hitpoints.
+07:19:47 Using one of 1697 ultimate spirit potions...
+07:19:47 You gained 204 mana.
+07:19:47 You healed yourself for 132 hitpoints.
+07:19:47 You lose 385 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:47 You lose 140 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:48 You lose 131 hitpoints due to an attack by a raubritter chastener. 
+07:19:48 You lose 240 hitpoints due to an attack by a raubritter chastener. 
+07:19:48 You lose 264 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:48 You healed yourself for 781 hitpoints.
+07:19:48 A raubritter chastener loses 1226 hitpoints due to your attack. 
+07:19:48 You were healed for 379 hitpoints.
+07:19:48 You gained 197 mana.
+07:19:48 You lose 222 hitpoints due to an attack by a raubritter marksman. 
+07:19:48 You lose 233 hitpoints due to an attack by a raubritter marksman. 
+07:19:48 A raubritter chastener loses 1034 hitpoints due to your attack. 
+07:19:48 You were healed for 115 hitpoints.
+07:19:48 You gained 36 mana.
+07:19:48 A raubritter chastener loses 569 hitpoints due to your attack. 
+07:19:48 You were healed for 115 hitpoints.
+07:19:48 You gained 36 mana.
+07:19:48 You gained 22230 experience points (Animus mastery).
+07:19:48 Loot of a raubritter chastener: 8 platinum coins, a wand of cosmic energy, a small amethyst.
+07:19:48 A raubritter marksman loses 1009 hitpoints due to your attack. 
+07:19:48 You were healed for 112 hitpoints.
+07:19:48 You gained 38 mana.
+07:19:48 A raubritter chastener loses 1036 hitpoints due to your attack. 
+07:19:48 You were healed for 113 hitpoints.
+07:19:48 You gained 36 mana.
+07:19:48 A raubritter skirmisher loses 954 hitpoints due to your attack. 
+07:19:48 You gained 33 mana.
+07:19:48 A raubritter skirmisher loses 678 hitpoints due to your attack. (enflame charm)
+07:19:48 A raubritter skirmisher loses 1064 hitpoints due to your attack. 
+07:19:48 You gained 37 mana.
+07:19:48 A raubritter skirmisher loses 956 hitpoints due to your attack. 
+07:19:48 You gained 33 mana.
+07:19:48 A raubritter marksman loses 595 hitpoints due to your attack. (wound charm)
+07:19:48 A raubritter marksman loses 1009 hitpoints due to your attack. 
+07:19:48 You gained 38 mana.
+07:19:48 You lose 237 hitpoints due to an attack by a raubritter marksman. 
+07:19:48 You lose 265 hitpoints due to an attack by a raubritter marksman. 
+07:19:49 You lose 243 hitpoints due to an attack by a raubritter chastener. 
+07:19:49 You lose 306 hitpoints due to an attack by a raubritter chastener. 
+07:19:49 You lose 337 hitpoints due to an attack by a raubritter marksman. 
+07:19:49 You lose 278 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:49 You healed yourself for 803 hitpoints.
+07:19:49 Using one of 1696 ultimate spirit potions...
+07:19:49 You gained 183 mana.
+07:19:49 You healed yourself for 558 hitpoints.
+07:19:49 You lose 116 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:49 You lose 390 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:50 You lose 256 hitpoints due to an attack by a raubritter chastener. 
+07:19:50 You lose 265 hitpoints due to an attack by a raubritter chastener. 
+07:19:50 A raubritter chastener loses 872 hitpoints due to your attack. 
+07:19:50 You were healed for 454 hitpoints.
+07:19:50 You gained 55 mana.
+07:19:50 You lose 126 hitpoints due to an attack by a raubritter marksman. 
+07:19:50 A raubritter chastener loses 987 hitpoints due to your attack. 
+07:19:50 You were healed for 129 hitpoints.
+07:19:50 You gained 40 mana.
+07:19:50 A raubritter skirmisher loses 617 hitpoints due to your attack. (enflame charm)
+07:19:50 A raubritter skirmisher loses 868 hitpoints due to your attack. 
+07:19:50 You were healed for 120 hitpoints.
+07:19:50 You gained 35 mana.
+07:19:50 A raubritter marksman loses 849 hitpoints due to your attack. 
+07:19:50 You were healed for 111 hitpoints.
+07:19:50 You gained 38 mana.
+07:19:50 A raubritter skirmisher loses 777 hitpoints due to your attack. 
+07:19:50 You were healed for 108 hitpoints.
+07:19:50 You gained 32 mana.
+07:19:50 A raubritter skirmisher loses 730 hitpoints due to your attack. 
+07:19:50 You were healed for 101 hitpoints.
+07:19:50 You gained 30 mana.
+07:19:50 A raubritter marksman loses 808 hitpoints due to your attack. 
+07:19:50 You were healed for 106 hitpoints.
+07:19:50 You gained 5 mana.
+07:19:50 You healed yourself for 247 hitpoints.
+07:19:50 You lose 83 hitpoints due to an attack by a raubritter marksman. 
+07:19:50 You lose 231 hitpoints due to an attack by a raubritter marksman. 
+07:19:50 You lose 224 hitpoints due to an attack by a raubritter marksman. 
+07:19:50 You lose 165 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:50 You lose 434 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:50 You lose 261 hitpoints due to an attack by a raubritter marksman. 
+07:19:51 You lose 289 hitpoints due to an attack by a raubritter chastener. 
+07:19:51 You lose 282 hitpoints due to an attack by a raubritter marksman. 
+07:19:51 You lose 255 hitpoints due to an attack by a raubritter marksman. 
+07:19:51 You lose 222 hitpoints due to an attack by a raubritter marksman. 
+07:19:51 You healed yourself for 881 hitpoints.
+07:19:51 Using one of 1695 ultimate spirit potions...
+07:19:51 You gained 210 mana.
+07:19:51 You healed yourself for 446 hitpoints.
+07:19:51 Using one of 1694 ultimate spirit potions...
+07:19:52 You lose 82 hitpoints due to an attack by a raubritter marksman. 
+07:19:52 A raubritter skirmisher loses 678 hitpoints due to your attack. (enflame charm)
+07:19:52 A raubritter skirmisher loses 760 hitpoints due to your attack. 
+07:19:52 You were healed for 420 hitpoints.
+07:19:52 You lose 53 hitpoints due to an attack by a raubritter marksman. 
+07:19:52 You lose 265 hitpoints due to an attack by a raubritter marksman. 
+07:19:52 You lose 356 hitpoints due to an attack by a raubritter marksman. 
+07:19:52 A raubritter skirmisher loses 747 hitpoints due to your attack. 
+07:19:52 You were healed for 135 hitpoints.
+07:19:52 You gained 39 mana.
+07:19:52 A raubritter marksman loses 319 hitpoints due to your attack. 
+07:19:52 You were healed for 117 hitpoints.
+07:19:52 You gained 40 mana.
+07:19:52 You gained 26749 experience points (active prey bonus, Animus mastery).
+07:19:52 Loot of a raubritter marksman: 8 platinum coins.
+07:19:52 A raubritter marksman loses 702 hitpoints due to your attack. 
+07:19:52 You were healed for 119 hitpoints.
+07:19:52 You gained 31 mana.
+07:19:52 A raubritter skirmisher loses 670 hitpoints due to your attack. 
+07:19:52 You were healed for 121 hitpoints.
+07:19:52 You healed yourself for 208 hitpoints.
+07:19:52 You lose 284 hitpoints due to an attack by a raubritter marksman. 
+07:19:52 You lose 175 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:52 You lose 420 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:52 You lose 294 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:53 You lose 129 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:53 You healed yourself for 839 hitpoints.
+07:19:53 Using one of 1694 ultimate spirit potions...
+07:19:53 You gained 171 mana.
+07:19:53 You healed yourself for 564 hitpoints.
+07:19:53 You lose 176 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:53 You lose 281 hitpoints due to an attack by a raubritter marksman. 
+07:19:53 You lose 252 hitpoints due to an attack by a raubritter marksman. 
+07:19:53 You lose 222 hitpoints due to an attack by a raubritter marksman. 
+07:19:54 Using one of 1693 ultimate spirit potions...
+07:19:54 You gained 39 mana.
+07:19:54 You healed yourself for 497 hitpoints.
+07:19:54 You lose 148 hitpoints due to an attack by a raubritter marksman. 
+07:19:54 You lose 264 hitpoints due to an attack by a raubritter marksman. 
+07:19:54 A raubritter skirmisher loses 876 hitpoints due to your attack. 
+07:19:54 You were healed for 121 hitpoints.
+07:19:54 You gained 36 mana.
+07:19:54 A raubritter skirmisher loses 842 hitpoints due to your attack. 
+07:19:54 You were healed for 117 hitpoints.
+07:19:54 You gained 34 mana.
+07:19:54 A raubritter chastener loses 848 hitpoints due to your attack. 
+07:19:54 You were healed for 111 hitpoints.
+07:19:54 You gained 34 mana.
+07:19:54 A raubritter marksman loses 595 hitpoints due to your attack. (wound charm)
+07:19:54 A raubritter marksman loses 774 hitpoints due to your attack. 
+07:19:54 You were healed for 101 hitpoints.
+07:19:54 You gained 35 mana.
+07:19:54 A raubritter skirmisher loses 711 hitpoints due to your attack. 
+07:19:54 You were healed for 99 hitpoints.
+07:19:54 You gained 29 mana.
+07:19:54 A raubritter marksman loses 655 hitpoints due to your attack. (wound charm)
+07:19:54 A raubritter marksman loses 774 hitpoints due to your attack. 
+07:19:54 You were healed for 101 hitpoints.
+07:19:54 You gained 12 mana.
+07:19:54 You healed yourself for 230 hitpoints.
+07:19:54 You lose 274 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:54 You lose 334 hitpoints due to an attack by a raubritter chastener. 
+07:19:54 You lose 188 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:54 You lose 323 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:54 You lose 238 hitpoints due to an attack by a raubritter marksman. 
+07:19:55 You lose 158 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:55 You lose 368 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:55 You lose 350 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:55 You lose 279 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:55 You lose 193 hitpoints due to an attack by a raubritter marksman. 
+07:19:55 You lose 213 hitpoints due to an attack by a raubritter marksman. 
+07:19:55 You lose 327 hitpoints due to an attack by a raubritter marksman. 
+07:19:56 You lose 329 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:56 Using one of 1692 ultimate spirit potions...
+07:19:56 You lose 233 hitpoints due to an attack by a raubritter marksman. 
+07:19:56 You gained 80 mana.
+07:19:56 You healed yourself for 500 hitpoints.
+07:19:56 You healed yourself for 731 hitpoints.
+07:19:56 You lose 258 hitpoints due to an attack by a raubritter marksman. 
+07:19:56 You lose 107 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:56 You lose 286 hitpoints due to an attack by a raubritter marksman. 
+07:19:56 A raubritter marksman loses 450 hitpoints due to your attack. 
+07:19:56 You were healed for 533 hitpoints.
+07:19:56 You gained 181 mana.
+07:19:56 You gained 26749 experience points (active prey bonus, Animus mastery).
+07:19:56 Loot of a raubritter marksman: 11 platinum coins.
+07:19:56 You healed yourself for 618 hitpoints.
+07:19:56 A raubritter skirmisher loses 1413 hitpoints due to your attack. 
+07:19:56 You were healed for 166 hitpoints.
+07:19:56 You gained 49 mana.
+07:19:56 A raubritter marksman loses 655 hitpoints due to your attack. (wound charm)
+07:19:56 A raubritter marksman loses 1616 hitpoints due to your attack. 
+07:19:56 You were healed for 179 hitpoints.
+07:19:56 You gained 61 mana.
+07:19:56 A raubritter marksman loses 1468 hitpoints due to your attack. 
+07:19:56 You were healed for 163 hitpoints.
+07:19:56 You gained 56 mana.
+07:19:56 A raubritter skirmisher loses 1419 hitpoints due to your attack. 
+07:19:56 You were healed for 167 hitpoints.
+07:19:56 You gained 49 mana.
+07:19:56 A raubritter chastener loses 1527 hitpoints due to your attack. 
+07:19:56 You were healed for 169 hitpoints.
+07:19:56 You gained 53 mana.
+07:19:56 A raubritter skirmisher loses 1422 hitpoints due to your attack. 
+07:19:56 You were healed for 167 hitpoints.
+07:19:56 You gained 49 mana.
+07:19:56 A raubritter chastener loses 1515 hitpoints due to your attack. 
+07:19:56 You were healed for 168 hitpoints.
+07:19:56 You gained 52 mana.
+07:19:56 A raubritter skirmisher loses 678 hitpoints due to your attack. (enflame charm)
+07:19:56 A raubritter skirmisher loses 1561 hitpoints due to your attack. 
+07:19:56 You were healed for 184 hitpoints.
+07:19:56 You gained 54 mana.
+07:19:57 You lose 371 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:57 You lose 245 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:57 You lose 265 hitpoints due to an attack by a raubritter marksman. 
+07:19:57 You healed yourself for 936 hitpoints.
+07:19:58 You lose 195 hitpoints due to an attack by a raubritter marksman. 
+07:19:58 You lose 172 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:58 You lose 367 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:58 You lose 273 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:58 A raubritter marksman loses 906 hitpoints due to your attack. 
+07:19:58 You were healed for 189 hitpoints.
+07:19:58 You gained 64 mana.
+07:19:58 A raubritter marksman loses 907 hitpoints due to your attack. 
+07:19:58 You were healed for 189 hitpoints.
+07:19:58 You gained 64 mana.
+07:19:58 A raubritter marksman loses 595 hitpoints due to your attack. (wound charm)
+07:19:58 A raubritter marksman loses 907 hitpoints due to your attack. 
+07:19:58 You were healed for 189 hitpoints.
+07:19:58 You gained 64 mana.
+07:19:58 Using one of 1691 ultimate spirit potions...
+07:19:58 You lose 173 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:58 You gained 45 mana.
+07:19:58 You healed yourself for 516 hitpoints.
+07:19:58 A raubritter marksman loses 595 hitpoints due to your attack. (wound charm)
+07:19:58 A raubritter marksman loses 781 hitpoints due to your attack. 
+07:19:58 You were healed for 407 hitpoints.
+07:19:58 A raubritter skirmisher loses 1432 hitpoints due to your critical attack. 
+07:19:58 You were healed for 198 hitpoints.
+07:19:58 You gained 58 mana.
+07:19:58 A raubritter skirmisher loses 1448 hitpoints due to your critical attack. 
+07:19:58 You were healed for 200 hitpoints.
+07:19:58 You gained 58 mana.
+07:19:58 A raubritter skirmisher loses 1444 hitpoints due to your critical attack. 
+07:19:58 You were healed for 200 hitpoints.
+07:19:58 You gained 58 mana.
+07:19:58 A raubritter skirmisher loses 145 hitpoints due to your critical attack. 
+07:19:58 You were healed for 199 hitpoints.
+07:19:58 You gained 58 mana.
+07:19:58 You gained 20007 experience points (Animus mastery).
+07:19:58 Loot of a raubritter skirmisher: 8 platinum coins.
+07:19:58 A raubritter chastener loses 1555 hitpoints due to your critical attack. 
+07:19:58 You were healed for 203 hitpoints.
+07:19:58 You gained 63 mana.
+07:19:58 A raubritter marksman loses 1516 hitpoints due to your critical attack. 
+07:19:58 You were healed for 32 hitpoints.
+07:19:58 You gained 5 mana.
+07:19:59 You lose 126 hitpoints due to an attack by a raubritter marksman. 
+07:19:59 You lose 233 hitpoints due to an attack by a raubritter marksman. 
+07:19:59 You lose 377 hitpoints due to an attack by a raubritter marksman. 
+07:19:59 You lose 259 hitpoints due to an attack by a raubritter skirmisher. 
+07:19:59 You lose 271 hitpoints due to an attack by a raubritter chastener. 
+07:19:59 You healed yourself for 397 hitpoints.
+07:19:59 You lose 286 hitpoints due to an attack by a raubritter marksman. 
+07:19:59 You looted 1100 gold.
+07:19:59 You healed yourself for 745 hitpoints.
+07:19:59 You lose 265 hitpoints due to an attack by a raubritter marksman. 
+07:20:00 You lose 237 hitpoints due to an attack by a raubritter marksman. 
+07:20:00 You lose 259 hitpoints due to an attack by a raubritter marksman. 
+07:20:00 You lose 275 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:00 You lose 345 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:00 You lose 336 hitpoints due to an attack by a raubritter chastener. 
+07:20:00 You lose 245 hitpoints due to an attack by a raubritter chastener. 
+07:20:00 You lose 133 hitpoints due to an attack by a raubritter chastener. 
+07:20:00 You lose 309 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:00 Using one of 1690 ultimate spirit potions...
+07:20:00 You lose 335 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:00 You gained 234 mana.
+07:20:00 You healed yourself for 563 hitpoints.
+07:20:01 A raubritter marksman loses 2150 hitpoints due to your critical attack. 
+07:20:01 You were healed for 1118 hitpoints.
+07:20:01 You gained 379 mana.
+07:20:01 You lose 83 hitpoints due to an attack by a raubritter marksman. 
+07:20:01 You lose 275 hitpoints due to an attack by a raubritter marksman. 
+07:20:01 You lose 366 hitpoints due to an attack by a raubritter marksman. 
+07:20:01 You healed yourself for 624 hitpoints.
+07:20:01 A raubritter marksman loses 595 hitpoints due to your attack. (wound charm)
+07:20:01 A raubritter marksman loses 2370 hitpoints due to your critical attack. 
+07:20:01 You were healed for 401 hitpoints.
+07:20:01 You gained 159 mana.
+07:20:01 A raubritter marksman loses 2365 hitpoints due to your critical attack. 
+07:20:01 You were healed for 400 hitpoints.
+07:20:01 You gained 133 mana.
+07:20:01 A raubritter skirmisher loses 2184 hitpoints due to your critical attack. 
+07:20:01 You were healed for 410 hitpoints.
+07:20:01 You gained 20007 experience points (Animus mastery).
+07:20:01 Loot of a raubritter skirmisher: 8 platinum coins.
+07:20:01 A raubritter chastener loses 2440 hitpoints due to your critical attack. 
+07:20:01 You were healed for 357 hitpoints.
+07:20:01 A raubritter skirmisher loses 1691 hitpoints due to your critical attack. 
+07:20:01 A raubritter marksman loses 1754 hitpoints due to your critical attack. 
+07:20:01 A raubritter skirmisher loses 1696 hitpoints due to your critical attack. 
+07:20:01 A raubritter skirmisher loses 1706 hitpoints due to your critical attack. 
+07:20:01 You lose 265 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:01 You lose 218 hitpoints due to an attack by a raubritter marksman. 
+07:20:02 You lose 340 hitpoints due to an attack by a raubritter marksman. 
+07:20:02 You lose 231 hitpoints due to an attack by a raubritter marksman. 
+07:20:02 You lose 171 hitpoints due to an attack by a raubritter chastener. 
+07:20:02 You lose 330 hitpoints due to an attack by a raubritter chastener. 
+07:20:02 You lose 235 hitpoints due to an attack by a raubritter chastener. 
+07:20:02 You lose 256 hitpoints due to an attack by a raubritter marksman. 
+07:20:03 You lose 129 hitpoints due to an attack by a raubritter marksman. 
+07:20:03 You lose 241 hitpoints due to an attack by a raubritter marksman. 
+07:20:03 A raubritter skirmisher loses 600 hitpoints due to your attack. 
+07:20:03 You were healed for 332 hitpoints.
+07:20:03 You gained 96 mana.
+07:20:03 A raubritter skirmisher loses 892 hitpoints due to your attack. 
+07:20:03 You were healed for 99 hitpoints.
+07:20:03 You gained 29 mana.
+07:20:03 A raubritter skirmisher loses 894 hitpoints due to your attack. 
+07:20:03 You were healed for 99 hitpoints.
+07:20:03 You gained 29 mana.
+07:20:03 A raubritter marksman loses 930 hitpoints due to your attack. 
+07:20:03 You were healed for 97 hitpoints.
+07:20:03 You gained 33 mana.
+07:20:03 A raubritter marksman loses 840 hitpoints due to your attack. 
+07:20:03 You were healed for 96 hitpoints.
+07:20:03 You gained 33 mana.
+07:20:03 You gained 26749 experience points (active prey bonus, Animus mastery).
+07:20:03 Loot of a raubritter marksman: 7 platinum coins.
+07:20:03 A raubritter marksman loses 917 hitpoints due to your attack. 
+07:20:03 You were healed for 96 hitpoints.
+07:20:03 You gained 33 mana.
+07:20:03 A raubritter skirmisher loses 894 hitpoints due to your attack. 
+07:20:03 You were healed for 99 hitpoints.
+07:20:03 You gained 29 mana.
+07:20:03 A raubritter chastener loses 791 hitpoints due to your attack. 
+07:20:03 You were healed for 101 hitpoints.
+07:20:03 You gained 31 mana.
+07:20:03 You gained 22230 experience points (Animus mastery).
+07:20:03 Loot of a raubritter chastener: 10 platinum coins.
+07:20:03 A raubritter skirmisher loses 895 hitpoints due to your attack. 
+07:20:03 You were healed for 99 hitpoints.
+07:20:03 You gained 29 mana.
+07:20:03 A raubritter skirmisher loses 888 hitpoints due to your attack. 
+07:20:03 You were healed for 99 hitpoints.
+07:20:03 You gained 29 mana.
+07:20:03 You healed yourself for 208 hitpoints.
+07:20:03 You lose 191 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:03 You lose 338 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:03 You lose 182 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:03 You lose 206 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:03 You looted 1000 gold.
+07:20:03 You looted 700 gold.
+07:20:03 You looted 2 corpses.
+07:20:03 No loot. (1 corpse)
+07:20:04 You lose 371 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:04 No loot. (1 corpse)
+07:20:04 You healed yourself for 736 hitpoints.
+07:20:04 You lose 283 hitpoints due to an attack by a raubritter marksman. 
+07:20:04 Using one of 1689 ultimate spirit potions...
+07:20:04 You gained 244 mana.
+07:20:04 You healed yourself for 466 hitpoints.
+07:20:04 Using one of 1688 ultimate spirit potions...
+07:20:04 You lose 275 hitpoints due to an attack by a raubritter marksman. 
+07:20:05 A raubritter skirmisher loses 1444 hitpoints due to your critical attack. 
+07:20:05 You were healed for 200 hitpoints.
+07:20:05 You gained 58 mana.
+07:20:05 A raubritter skirmisher loses 1347 hitpoints due to your critical attack. 
+07:20:05 You were healed for 186 hitpoints.
+07:20:05 You gained 54 mana.
+07:20:05 A raubritter chastener loses 1380 hitpoints due to your critical attack. 
+07:20:05 You were healed for 180 hitpoints.
+07:20:05 You gained 56 mana.
+07:20:05 A raubritter marksman loses 1263 hitpoints due to your critical attack. 
+07:20:05 You were healed for 165 hitpoints.
+07:20:05 You gained 56 mana.
+07:20:05 A raubritter skirmisher loses 1138 hitpoints due to your critical attack. 
+07:20:05 You were healed for 158 hitpoints.
+07:20:05 You gained 46 mana.
+07:20:05 A raubritter skirmisher loses 1082 hitpoints due to your critical attack. 
+07:20:05 You were healed for 150 hitpoints.
+07:20:05 You gained 44 mana.
+07:20:05 You healed yourself for 203 hitpoints.
+07:20:05 You lose 201 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:05 You lose 330 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:05 You lose 225 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:05 You lose 178 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:05 You lose 235 hitpoints due to an attack by a raubritter marksman. 
+07:20:05 You lose 241 hitpoints due to an attack by a raubritter marksman. 
+07:20:05 No loot. (1 corpse)
+07:20:06 You healed yourself for 723 hitpoints.
+07:20:06 Using one of 1688 ultimate spirit potions...
+07:20:06 You gained 174 mana.
+07:20:06 You healed yourself for 430 hitpoints.
+07:20:06 Using one of 1687 ultimate spirit potions...
+07:20:06 You lose 318 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:06 You lose 204 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:06 You lose 251 hitpoints due to an attack by a raubritter chastener. 
+07:20:07 You healed yourself for 803 hitpoints.
+07:20:07 You lose 234 hitpoints due to an attack by a raubritter marksman. 
+07:20:07 A raubritter skirmisher loses 411 hitpoints due to your attack. 
+07:20:07 You were healed for 227 hitpoints.
+07:20:07 You gained 66 mana.
+07:20:07 You lose 160 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:07 You lose 265 hitpoints due to an attack by a raubritter marksman. 
+07:20:07 A raubritter skirmisher loses 717 hitpoints due to your attack. 
+07:20:07 You were healed for 111 hitpoints.
+07:20:07 You gained 33 mana.
+07:20:07 A raubritter skirmisher loses 710 hitpoints due to your attack. 
+07:20:07 You were healed for 110 hitpoints.
+07:20:07 You gained 32 mana.
+07:20:07 A raubritter skirmisher loses 721 hitpoints due to your attack. 
+07:20:07 You were healed for 112 hitpoints.
+07:20:07 You gained 33 mana.
+07:20:07 A raubritter skirmisher loses 713 hitpoints due to your attack. 
+07:20:07 You were healed for 111 hitpoints.
+07:20:07 You gained 33 mana.
+07:20:07 A raubritter skirmisher loses 727 hitpoints due to your attack. 
+07:20:07 You were healed for 113 hitpoints.
+07:20:07 You gained 33 mana.
+07:20:07 You healed yourself for 247 hitpoints.
+07:20:07 You lose 197 hitpoints due to an attack by a raubritter chastener. 
+07:20:07 You lose 342 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:07 You lose 268 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:07 You lose 253 hitpoints due to an attack by a raubritter marksman. 
+07:20:07 You lose 265 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:08 Using one of 1687 ultimate spirit potions...
+07:20:08 You gained 213 mana.
+07:20:08 You healed yourself for 420 hitpoints.
+07:20:08 You lose 224 hitpoints due to an attack by a raubritter marksman. 
+07:20:08 You lose 177 hitpoints due to an attack by a raubritter marksman. 
+07:20:08 Using one of 1686 ultimate spirit potions...
+07:20:08 You healed yourself for 795 hitpoints.
+07:20:09 You lose 330 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:09 A raubritter marksman loses 870 hitpoints due to your attack. 
+07:20:09 You were healed for 453 hitpoints.
+07:20:09 You gained 154 mana.
+07:20:09 A raubritter marksman loses 930 hitpoints due to your attack. 
+07:20:09 You were healed for 158 hitpoints.
+07:20:09 You gained 54 mana.
+07:20:09 A raubritter chastener loses 921 hitpoints due to your attack. 
+07:20:09 You were healed for 156 hitpoints.
+07:20:09 You gained 49 mana.
+07:20:09 A raubritter skirmisher loses 805 hitpoints due to your attack. 
+07:20:09 You were healed for 145 hitpoints.
+07:20:09 You gained 42 mana.
+07:20:09 A raubritter marksman loses 802 hitpoints due to your attack. 
+07:20:09 You were healed for 136 hitpoints.
+07:20:09 You gained 47 mana.
+07:20:09 You healed yourself for 29 hitpoints.
+07:20:09 You lose 174 hitpoints due to an attack by a raubritter chastener. 
+07:20:09 You lose 259 hitpoints due to an attack by a raubritter chastener. 
+07:20:09 You lose 242 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:09 You lose 387 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:09 You lose 241 hitpoints due to an attack by a raubritter marksman. 
+07:20:10 You looted 900 gold.
+07:20:10 You looted 800 gold.
+07:20:10 You looted 2 corpses.
+07:20:10 You lose 265 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:10 You lose 233 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:10 You lose 229 hitpoints due to an attack by a raubritter marksman. 
+07:20:10 You lose 217 hitpoints due to an attack by a raubritter marksman. 
+07:20:10 You healed yourself for 861 hitpoints.
+07:20:10 Using one of 1686 ultimate spirit potions...
+07:20:10 You lose 184 hitpoints due to an attack by a raubritter marksman. 
+07:20:10 You gained 232 mana.
+07:20:10 You healed yourself for 495 hitpoints.
+07:20:10 Using one of 1685 ultimate spirit potions...
+07:20:11 You lose 259 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:11 You gained 22 mana.
+07:20:11 You healed yourself for 504 hitpoints.
+07:20:11 You healed yourself for 795 hitpoints.
+07:20:11 A raubritter marksman loses 485 hitpoints due to your attack. 
+07:20:11 You were healed for 29 hitpoints.
+07:20:11 You gained 86 mana.
+07:20:11 You lose 264 hitpoints due to an attack by a raubritter chastener. 
+07:20:11 You lose 321 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:11 You lose 357 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:11 You lose 176 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:11 You lose 75 hitpoints due to an attack by a raubritter chastener. 
+07:20:11 You healed yourself for 596 hitpoints.
+07:20:11 A raubritter skirmisher loses 1542 hitpoints due to your attack. 
+07:20:11 You were healed for 213 hitpoints.
+07:20:11 You gained 74 mana.
+07:20:11 A raubritter skirmisher loses 1550 hitpoints due to your attack. 
+07:20:11 You were healed for 214 hitpoints.
+07:20:11 You gained 74 mana.
+07:20:11 A raubritter marksman loses 1610 hitpoints due to your attack. 
+07:20:11 You were healed for 170 hitpoints.
+07:20:11 You gained 83 mana.
+07:20:11 A raubritter marksman loses 1492 hitpoints due to your attack. 
+07:20:11 You gained 84 mana.
+07:20:11 You gained 26749 experience points (active prey bonus, Animus mastery).
+07:20:11 Loot of a raubritter marksman: 10 platinum coins.
+07:20:11 A raubritter skirmisher loses 1549 hitpoints due to your attack. 
+07:20:11 You gained 4 mana.
+07:20:11 A raubritter chastener loses 1668 hitpoints due to your attack. 
+07:20:11 A raubritter marksman loses 1198 hitpoints due to your attack. 
+07:20:11 A raubritter skirmisher loses 931 hitpoints due to your attack. 
+07:20:11 You gained 20007 experience points (Animus mastery).
+07:20:11 Loot of a raubritter skirmisher: 6 platinum coins.
+07:20:11 A raubritter skirmisher loses 1153 hitpoints due to your attack. 
+07:20:12 No loot. (2 corpses)
+07:20:12 You looted nothing from 2 corpses.
+07:20:12 You lose 152 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:12 You lose 361 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:12 You lose 294 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:12 You lose 383 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:12 No loot. (2 corpses)
+07:20:12 You looted nothing from 2 corpses.
+07:20:12 You lose 142 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:12 You lose 363 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:12 You lose 237 hitpoints due to an attack by a raubritter marksman. 
+07:20:12 You lose 222 hitpoints due to an attack by a raubritter marksman. 
+07:20:12 No loot. (2 corpses)
+07:20:12 You looted nothing from 2 corpses.
+07:20:13 Using one of 1684 ultimate spirit potions...
+07:20:13 You healed yourself for 549 hitpoints.
+07:20:13 You healed yourself for 728 hitpoints.
+07:20:13 You lose 200 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:13 You lose 61 hitpoints due to an attack by a raubritter chastener. 
+07:20:13 You lose 313 hitpoints due to an attack by a raubritter chastener. 
+07:20:13 A raubritter skirmisher loses 614 hitpoints due to your attack. 
+07:20:13 You were healed for 339 hitpoints.
+07:20:13 You gained 99 mana.
+07:20:13 A raubritter skirmisher loses 617 hitpoints due to your attack. (enflame charm)
+07:20:13 A raubritter skirmisher loses 466 hitpoints due to your attack. 
+07:20:13 You were healed for 134 hitpoints.
+07:20:13 You gained 39 mana.
+07:20:13 You gained 20007 experience points (Animus mastery).
+07:20:13 Loot of a raubritter skirmisher: 7 platinum coins.
+07:20:13 A raubritter marksman loses 679 hitpoints due to your attack. 
+07:20:13 You were healed for 133 hitpoints.
+07:20:13 You gained 46 mana.
+07:20:13 You gained 26749 experience points (active prey bonus, Animus mastery).
+07:20:13 Loot of a raubritter marksman: 6 platinum coins, a violet crystal shard.
+07:20:13 A raubritter skirmisher loses 247 hitpoints due to your attack. 
+07:20:13 You were healed for 135 hitpoints.
+07:20:13 You gained 40 mana.
+07:20:13 You gained 20007 experience points (Animus mastery).
+07:20:13 Loot of a raubritter skirmisher: 6 platinum coins.
+07:20:13 A raubritter chastener loses 397 hitpoints due to your attack. 
+07:20:13 You were healed for 138 hitpoints.
+07:20:13 You gained 43 mana.
+07:20:13 You gained 22230 experience points (Animus mastery).
+07:20:13 Loot of a raubritter chastener: 7 platinum coins.
+07:20:13 A raubritter skirmisher loses 875 hitpoints due to your attack. 
+07:20:13 You were healed for 136 hitpoints.
+07:20:13 You gained 40 mana.
+07:20:13 You healed yourself for 253 hitpoints.
+07:20:14 You lose 298 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:14 You lose 361 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:14 You lose 352 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:14 No loot. (2 corpses)
+07:20:14 You looted 700 gold.
+07:20:14 You looted 600 gold.
+07:20:14 You looted 700 gold.
+07:20:14 You looted 5 corpses.
+07:20:14 You lose 122 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:14 You lose 397 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:14 You lose 314 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:14 No loot. (5 corpses)
+07:20:14 You looted nothing from 5 corpses.
+07:20:14 No loot. (5 corpses)
+07:20:14 You looted nothing from 5 corpses.
+07:20:14 You lose 194 hitpoints due to an attack by a raubritter marksman. 
+07:20:14 You lose 263 hitpoints due to an attack by a raubritter marksman. 
+07:20:14 You lose 344 hitpoints due to an attack by a raubritter marksman. 
+07:20:14 No loot. (1 corpse)
+07:20:15 Using one of 1683 ultimate spirit potions...
+07:20:15 You gained 199 mana.
+07:20:15 You healed yourself for 466 hitpoints.
+07:20:15 A raubritter skirmisher loses 545 hitpoints due to your attack. 
+07:20:15 You were healed for 301 hitpoints.
+07:20:16 A raubritter skirmisher loses 617 hitpoints due to your attack. (enflame charm)
+07:20:16 A raubritter skirmisher loses 1024 hitpoints due to your attack. 
+07:20:16 You were healed for 227 hitpoints.
+07:20:16 You gained 66 mana.
+07:20:16 A raubritter marksman loses 1022 hitpoints due to your attack. 
+07:20:16 You were healed for 213 hitpoints.
+07:20:16 You gained 72 mana.
+07:20:16 A raubritter skirmisher loses 80 hitpoints due to your attack. 
+07:20:16 You were healed for 203 hitpoints.
+07:20:16 You gained 42 mana.
+07:20:16 You gained 20007 experience points (Animus mastery).
+07:20:16 Loot of a raubritter skirmisher: 6 platinum coins.
+07:20:16 You healed yourself for 225 hitpoints.
+07:20:16 You lose 206 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:16 You lose 284 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:16 You looted 600 gold.
+07:20:16 You lose 221 hitpoints due to an attack by a raubritter marksman. 
+07:20:16 You lose 239 hitpoints due to an attack by a raubritter marksman. 
+07:20:16 You lose 391 hitpoints due to an attack by a raubritter marksman. 
+07:20:16 No loot. (1 corpse)
+07:20:16 No loot. (1 corpse)
+07:20:17 You healed yourself for 828 hitpoints.
+07:20:18 A raubritter marksman loses 595 hitpoints due to your attack. (wound charm)
+07:20:18 A raubritter marksman loses 707 hitpoints due to your attack. 
+07:20:18 You were healed for 368 hitpoints.
+07:20:18 You gained 125 mana.
+07:20:18 You lose 144 hitpoints due to an attack by a raubritter skirmisher. 
+07:20:18 A raubritter skirmisher loses 177 hitpoints due to your attack. (enflame charm)
+07:20:18 You gained 20007 experience points (Animus mastery).
+07:20:18 Loot of a raubritter skirmisher: a cuirass plate, 6 platinum coins.
+07:20:18 A raubritter marksman loses 612 hitpoints due to your attack. 
+07:20:18 You were healed for 176 hitpoints.
+07:20:18 You gained 60 mana.
+07:20:18 You healed yourself for 230 hitpoints.
+07:20:18 You lose 160 hitpoints due to an attack by a raubritter marksman. 
+07:20:18 You lose 268 hitpoints due to an attack by a raubritter marksman. 
+07:20:18 You lose 334 hitpoints due to an attack by a raubritter marksman. 
+07:20:18 No loot. (1 corpse)
+07:20:18 You looted the complete 600 gold and 1 item.
+07:20:18 You looted 2 corpses.
+07:20:18 No loot. (2 corpses)
+07:20:18 You looted nothing from 2 corpses.
+07:20:19 No loot. (1 corpse)
+07:20:19 No loot. (1 corpse)
+07:20:19 No loot. (2 corpses)
+07:20:19 You looted nothing from 2 corpses.
+07:20:19 No loot. (2 corpses)
+07:20:19 You looted nothing from 2 corpses.
+07:20:20 No loot. (1 corpse)
+07:20:20 No loot. (1 corpse)
+07:20:20 A raubritter marksman loses 96 hitpoints due to your attack. 
+07:20:20 You were healed for 642 hitpoints.
+07:20:20 You gained 218 mana.
+07:20:20 You gained 26749 experience points (active prey bonus, Animus mastery).
+07:20:20 Loot of a raubritter marksman: 9 platinum coins.
+07:20:20 You healed yourself for 253 hitpoints.
+07:20:21 No loot. (1 corpse)
+07:20:21 You looted 900 gold.
+07:20:21 You looted 2 corpses.
+07:20:21 Using one of 2 squeezing gears of girlpower...

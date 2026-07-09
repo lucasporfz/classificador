@@ -1638,6 +1638,7 @@ function classifyWithLocalChat(serverLogText, localChatText, opts) {
         lines: (turns[r.idx - 1].rpComponentLines || []).map(l => ({
           mob: l.mob, dmg: l.dmg, base: l.revertedDmg, comp: l.correctedComponent, ok: !!l.overkill,
           ts: l.ts, seq: l.seq || 0, type: l.type, lowBlow: !!l.lowBlow, realCrit: !!l.realCrit, onslaught: !!l.onslaught,
+          exposeWeakness: !!l.exposeWeakness,
           reason: l.correctionReason || null,
         })),
       });

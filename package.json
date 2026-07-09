@@ -13,5 +13,8 @@
     "snapshot:local": "node scripts/model-snapshot.mjs --local",
     "git:ready": "node scripts/check-git-ready.mjs",
     "validate": "npm run check && npm test && npm run bench && npm run snapshot && npm run git:ready"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
   }
 }

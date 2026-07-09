@@ -1,0 +1,1000 @@
+11:54:35 You looted 3 corpses.
+11:54:35 No loot. (2 corpses)
+11:54:35 You looted nothing from 2 corpses.
+11:54:35 No loot. (3 corpses)
+11:54:35 You looted nothing from 3 corpses.
+11:54:36 Using one of 300 great mana potions...
+11:54:36 Using one of 300 great mana potions...
+11:54:36 Using one of 300 great mana potions...
+11:54:36 Using one of 300 great mana potions...
+11:54:36 You gained 242 mana.
+11:54:36 Using one of 299 great mana potions...
+11:54:36 Using one of 299 great mana potions...
+11:54:36 Using one of 299 great mana potions...
+11:54:36 Using one of 299 great mana potions...
+11:54:36 You healed yourself for 144 hitpoints.
+11:54:37 You lose 61 hitpoints due to an attack by an iks yapunac. 
+11:54:37 An iks yapunac loses 345 hitpoints due to your attack. 
+11:54:37 You were healed for 61 hitpoints.
+11:54:37 You gained 56 mana.
+11:54:37 You gained 5265 experience points.
+11:54:37 Loot of an iks yapunac: 8 platinum coins.
+11:54:37 You lose 213 hitpoints due to an attack by a mitmah seer. 
+11:54:37 A mitmah seer loses 714 hitpoints due to your attack. 
+11:54:37 You were healed for 213 hitpoints.
+11:54:37 You gained 115 mana.
+11:54:37 You lose 69 hitpoints due to an attack by a mitmah seer. 
+11:54:37 You lose 211 hitpoints due to an attack by a mitmah seer. 
+11:54:37 No loot. (2 corpses)
+11:54:37 You looted 800 gold.
+11:54:37 You looted 3 corpses.
+11:54:37 No loot. (3 corpses)
+11:54:37 You looted nothing from 3 corpses.
+11:54:37 No loot. (4 corpses)
+11:54:37 You looted nothing from 4 corpses.
+11:54:38 No loot. (5 corpses)
+11:54:38 You looted nothing from 5 corpses.
+11:54:38 Using one of 299 great mana potions...
+11:54:38 Using one of 299 great mana potions...
+11:54:38 Using one of 299 great mana potions...
+11:54:38 Using one of 299 great mana potions...
+11:54:38 You gained 178 mana.
+11:54:39 You lose 58 hitpoints due to an attack by a mitmah seer. 
+11:54:39 You lose 200 hitpoints due to an attack by a mitmah seer. 
+11:54:39 A mitmah seer loses 255 hitpoints due to your attack. 
+11:54:39 You were healed for 128 hitpoints.
+11:54:39 You gained 41 mana.
+11:54:39 You lose 216 hitpoints due to an attack by a mitmah seer. 
+11:54:39 A mitmah seer healed itself for 457 hitpoints.
+11:54:39 You lose 112 hitpoints due to an attack by a mitmah seer. 
+11:54:39 You healed yourself for 400 hitpoints.
+11:54:39 A mitmah seer loses 942 hitpoints due to your attack. 
+11:54:39 You were healed for 338 hitpoints.
+11:54:39 You gained 118 mana.
+11:54:39 You gained 11311 experience points (Animus mastery).
+11:54:39 Loot of a mitmah seer: nothing.
+11:54:39 A mitmah seer loses 1309 hitpoints due to your attack. 
+11:54:39 You gained 118 mana.
+11:54:39 You gained 11311 experience points (Animus mastery).
+11:54:39 Loot of a mitmah seer: 15 platinum coins, an opal.
+11:54:40 No loot. (5 corpses)
+11:54:40 You looted nothing from 5 corpses.
+11:54:41 Using one of 298 great mana potions...
+11:54:41 Using one of 298 great mana potions...
+11:54:41 Using one of 298 great mana potions...
+11:54:41 Using one of 298 great mana potions...
+11:54:41 You gained 207 mana.
+11:54:41 Using one of 297 great mana potions...
+11:54:41 Using one of 297 great mana potions...
+11:54:41 Using one of 297 great mana potions...
+11:54:41 Using one of 297 great mana potions...
+11:54:41 Using one of 297 great mana potions...
+11:54:41 Using one of 297 great mana potions...
+11:54:41 Using one of 297 great mana potions...
+11:54:41 Using one of 297 great mana potions...
+11:54:41 Using one of 297 great mana potions...
+11:54:41 Using one of 297 great mana potions...
+11:54:42 Using one of 297 great mana potions...
+11:54:42 Using one of 297 great mana potions...
+11:54:42 You lose 60 hitpoints due to an attack by a mitmah scout. 
+11:54:42 Using one of 297 great mana potions...
+11:54:42 Using one of 297 great mana potions...
+11:54:42 You gained 223 mana.
+11:54:42 A mitmah scout loses 312 hitpoints due to your attack. 
+11:54:42 You were healed for 60 hitpoints.
+11:54:42 You gained 50 mana.
+11:54:42 Using one of 296 great mana potions...
+11:54:42 Using one of 296 great mana potions...
+11:54:42 Using one of 296 great mana potions...
+11:54:42 Using one of 296 great mana potions...
+11:54:42 A mitmah scout loses 913 hitpoints due to your attack. 
+11:54:42 You gained 147 mana.
+11:54:43 Using one of 296 great mana potions...
+11:54:43 You lose 55 hitpoints due to an attack by a mitmah scout. 
+11:54:43 Using one of 296 great mana potions...
+11:54:43 Using one of 296 great mana potions...
+11:54:43 Using one of 296 great mana potions...
+11:54:43 You gained 177 mana.
+11:54:43 Using one of 295 great mana potions...
+11:54:43 Using one of 295 great mana potions...
+11:54:43 Using one of 295 great mana potions...
+11:54:43 Using one of 295 great mana potions...
+11:54:43 Using one of 295 great mana potions...
+11:54:43 Using one of 295 great mana potions...
+11:54:44 Using one of 295 great mana potions...
+11:54:44 Using one of 295 great mana potions...
+11:54:44 Using one of 295 great mana potions...
+11:54:44 Using one of 295 great mana potions...
+11:54:44 Using one of 295 great mana potions...
+11:54:44 Using one of 295 great mana potions...
+11:54:44 You lose 161 hitpoints due to an attack by a mitmah seer. 
+11:54:44 You lose 122 hitpoints due to an attack by a mitmah seer. 
+11:54:44 Using one of 295 great mana potions...
+11:54:44 Using one of 295 great mana potions...
+11:54:44 Using one of 295 great mana potions...
+11:54:44 Using one of 295 great mana potions...
+11:54:44 You gained 178 mana.
+11:54:44 A mitmah seer loses 580 hitpoints due to your attack. 
+11:54:44 You were healed for 290 hitpoints.
+11:54:44 You gained 93 mana.
+11:54:44 You lose 161 hitpoints due to an attack by a mitmah seer. 
+11:54:45 A mitmah seer loses 578 hitpoints due to your attack. 
+11:54:45 You were healed for 94 hitpoints.
+11:54:45 You gained 31 mana.
+11:54:45 A mitmah seer loses 548 hitpoints due to your attack. 
+11:54:45 You were healed for 90 hitpoints.
+11:54:45 You gained 29 mana.
+11:54:45 A mitmah scout loses 570 hitpoints due to your attack. 
+11:54:45 You were healed for 19 hitpoints.
+11:54:45 You gained 30 mana.
+11:54:45 A mitmah scout loses 540 hitpoints due to your attack. 
+11:54:45 You gained 29 mana.
+11:54:45 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:54:45 You lose 169 hitpoints due to an attack by a mitmah scout. 
+11:54:45 Using one of 294 great mana potions...
+11:54:45 Using one of 294 great mana potions...
+11:54:45 Using one of 294 great mana potions...
+11:54:45 Using one of 294 great mana potions...
+11:54:45 You gained 231 mana.
+11:54:46 Using one of 293 great mana potions...
+11:54:46 Using one of 293 great mana potions...
+11:54:46 Using one of 293 great mana potions...
+11:54:46 Using one of 293 great mana potions...
+11:54:46 You healed yourself for 342 hitpoints.
+11:54:46 Using one of 293 great mana potions...
+11:54:46 You lose 147 hitpoints due to an attack by a mitmah seer. 
+11:54:46 You lose 204 hitpoints due to an attack by a mitmah seer. 
+11:54:46 A mitmah seer healed itself for 443 hitpoints.
+11:54:46 Using one of 293 great mana potions...
+11:54:46 Using one of 293 great mana potions...
+11:54:46 Using one of 293 great mana potions...
+11:54:46 Using one of 792 ultimate spirit potions...
+11:54:46 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:54:46 You lose 162 hitpoints due to an attack by a mitmah scout. 
+11:54:46 You lose 184 hitpoints due to an attack by a mitmah seer. 
+11:54:46 Using one of 792 ultimate spirit potions...
+11:54:46 You gained 217 mana.
+11:54:46 You healed yourself for 508 hitpoints.
+11:54:47 A mitmah seer loses 1253 hitpoints due to your critical attack. (low blow charm)
+11:54:47 You were healed for 362 hitpoints.
+11:54:47 You gained 201 mana.
+11:54:47 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:54:47 You lose 153 hitpoints due to an attack by a mitmah scout. 
+11:54:47 A mitmah seer loses 490 hitpoints due to your attack. 
+11:54:47 You were healed for 98 hitpoints.
+11:54:47 You gained 32 mana.
+11:54:47 A mitmah scout loses 537 hitpoints due to your attack. 
+11:54:47 You were healed for 108 hitpoints.
+11:54:47 You gained 35 mana.
+11:54:47 A mitmah seer loses 490 hitpoints due to your attack. 
+11:54:47 You were healed for 98 hitpoints.
+11:54:47 You gained 32 mana.
+11:54:47 You healed yourself for 22 hitpoints.
+11:54:47 You lose 216 hitpoints due to an attack by a mitmah seer. 
+11:54:47 Using one of 293 great mana potions...
+11:54:47 You lose 183 hitpoints due to an attack by a mitmah seer. 
+11:54:47 Using one of 293 great mana potions...
+11:54:47 Using one of 293 great mana potions...
+11:54:47 Using one of 293 great mana potions...
+11:54:47 Using one of 982 great spirit potions...
+11:54:47 You lose 99 hitpoints due to an attack by a mitmah seer. 
+11:54:47 You gained 139 mana.
+11:54:47 You healed yourself for 334 hitpoints.
+11:54:48 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:54:48 You lose 144 hitpoints due to an attack by a mitmah scout. 
+11:54:48 You healed yourself for 475 hitpoints.
+11:54:48 You lose 172 hitpoints due to an attack by a mitmah seer. 
+11:54:48 You lose 187 hitpoints due to an attack by a mitmah seer. 
+11:54:48 Using one of 981 great spirit potions...
+11:54:48 Using one of 293 great mana potions...
+11:54:48 Using one of 293 great mana potions...
+11:54:48 Using one of 293 great mana potions...
+11:54:48 Using one of 293 great mana potions...
+11:54:48 Using one of 791 ultimate spirit potions...
+11:54:48 You lose 260 hitpoints due to an attack by a mitmah seer. 
+11:54:48 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:54:49 Using one of 791 ultimate spirit potions...
+11:54:49 You gained 243 mana.
+11:54:49 You healed yourself for 441 hitpoints.
+11:54:49 You lose 186 hitpoints due to an attack by an iks yapunac. 
+11:54:49 You lose 182 hitpoints due to an attack by a mitmah scout. 
+11:54:49 You lose 144 hitpoints due to an attack by a mitmah scout. 
+11:54:49 You lose 156 hitpoints due to an attack by a mitmah scout. 
+11:54:49 A mitmah seer loses 1056 hitpoints due to your critical attack. 
+11:54:49 You were healed for 132 hitpoints.
+11:54:49 You gained 43 mana.
+11:54:49 An iks yapunac loses 860 hitpoints due to your critical attack. 
+11:54:49 You were healed for 108 hitpoints.
+11:54:49 You gained 35 mana.
+11:54:49 A mitmah seer loses 951 hitpoints due to your critical attack. 
+11:54:49 You were healed for 119 hitpoints.
+11:54:49 You gained 39 mana.
+11:54:49 A mitmah seer loses 903 hitpoints due to your critical attack. 
+11:54:49 You were healed for 113 hitpoints.
+11:54:49 You gained 37 mana.
+11:54:49 A mitmah scout loses 939 hitpoints due to your critical attack. 
+11:54:49 You were healed for 118 hitpoints.
+11:54:49 You gained 38 mana.
+11:54:49 A mitmah seer loses 813 hitpoints due to your critical attack. 
+11:54:49 You were healed for 102 hitpoints.
+11:54:49 You gained 33 mana.
+11:54:49 You healed yourself for 157 hitpoints.
+11:54:49 You healed yourself for 189 hitpoints.
+11:54:49 Using one of 293 great mana potions...
+11:54:49 Using one of 981 great spirit potions...
+11:54:49 Using one of 293 great mana potions...
+11:54:49 Using one of 293 great mana potions...
+11:54:49 You lose 5 hitpoints due to an attack by a mitmah seer. 
+11:54:49 You lose 227 hitpoints due to an attack by a mitmah seer. 
+11:54:49 Using one of 790 ultimate spirit potions...
+11:54:49 You lose 161 hitpoints due to an attack by a mitmah seer. 
+11:54:49 You lose 100 hitpoints due to an attack by a mitmah scout. 
+11:54:50 You gained 245 mana.
+11:54:50 You healed yourself for 493 hitpoints.
+11:54:50 You lose 231 hitpoints due to an attack by a mitmah seer. 
+11:54:50 You lose 224 hitpoints due to an attack by a mitmah seer. 
+11:54:50 Using one of 293 great mana potions...
+11:54:50 Using one of 981 great spirit potions...
+11:54:50 Using one of 293 great mana potions...
+11:54:50 Using one of 293 great mana potions...
+11:54:50 You healed yourself for 455 hitpoints.
+11:54:50 You lose 111 hitpoints due to an attack by a mitmah seer. 
+11:54:50 You lose 226 hitpoints due to an attack by a mitmah seer. 
+11:54:50 A mitmah seer healed itself for 466 hitpoints.
+11:54:51 You lose 207 hitpoints due to an attack by an iks yapunac. 
+11:54:51 You lose 135 hitpoints due to an attack by an iks yapunac. 
+11:54:51 You lose 245 hitpoints due to an attack by a mitmah scout. 
+11:54:51 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:54:51 You lose 160 hitpoints due to an attack by a mitmah scout. 
+11:54:51 An iks yapunac loses 327 hitpoints due to your attack. 
+11:54:51 You were healed for 164 hitpoints.
+11:54:51 You gained 53 mana.
+11:54:51 You healed yourself for 380 hitpoints.
+11:54:51 A mitmah seer loses 1329 hitpoints due to your attack. 
+11:54:51 You were healed for 187 hitpoints.
+11:54:51 You gained 71 mana.
+11:54:51 A mitmah scout loses 1455 hitpoints due to your attack. 
+11:54:51 You were healed for 204 hitpoints.
+11:54:51 You gained 78 mana.
+11:54:51 A mitmah scout loses 1455 hitpoints due to your attack. 
+11:54:51 You were healed for 204 hitpoints.
+11:54:51 You gained 78 mana.
+11:54:51 A mitmah seer loses 1329 hitpoints due to your attack. 
+11:54:51 You were healed for 118 hitpoints.
+11:54:51 You gained 71 mana.
+11:54:51 An iks yapunac loses 1139 hitpoints due to your attack. 
+11:54:51 You gained 61 mana.
+11:54:51 You lose 177 hitpoints due to an attack by a mitmah seer. 
+11:54:51 You lose 199 hitpoints due to an attack by a mitmah seer. 
+11:54:51 You lose 228 hitpoints due to an attack by a mitmah seer. 
+11:54:51 No loot. (3 corpses)
+11:54:51 You looted 600 gold.
+11:54:51 You looted 4 corpses.
+11:54:51 You lose 110 hitpoints due to an attack by a mitmah scout. 
+11:54:51 You lose 230 hitpoints due to an attack by a mitmah scout. 
+11:54:51 You lose 159 hitpoints due to an attack by a mitmah scout. 
+11:54:52 You healed yourself for 675 hitpoints.
+11:54:52 No loot. (4 corpses)
+11:54:52 You looted nothing from 4 corpses.
+11:54:52 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:54:52 A mitmah seer healed itself for 358 hitpoints.
+11:54:52 You lose 240 hitpoints due to an attack by a mitmah scout. 
+11:54:52 You lose 152 hitpoints due to an attack by a mitmah scout. 
+11:54:52 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:54:52 You lose 137 hitpoints due to an attack by a mitmah seer. 
+11:54:52 You lose 222 hitpoints due to an attack by a mitmah seer. 
+11:54:53 You lose 287 hitpoints due to an attack by an iks yapunac. 
+11:54:53 A mitmah seer loses 587 hitpoints due to your attack. 
+11:54:53 You were healed for 294 hitpoints.
+11:54:53 You gained 94 mana.
+11:54:53 A mitmah seer loses 1076 hitpoints due to your critical attack. 
+11:54:53 You were healed for 243 hitpoints.
+11:54:53 You gained 78 mana.
+11:54:53 You gained 11311 experience points (Animus mastery).
+11:54:53 Loot of a mitmah seer: nothing.
+11:54:53 A mitmah seer loses 1153 hitpoints due to your critical attack. 
+11:54:53 You were healed for 231 hitpoints.
+11:54:53 You gained 74 mana.
+11:54:53 A mitmah seer loses 1094 hitpoints due to your critical attack. 
+11:54:53 You were healed for 219 hitpoints.
+11:54:53 You gained 71 mana.
+11:54:53 You healed yourself for 137 hitpoints.
+11:54:53 You looted none of the dropped items. (9 corpses)
+11:54:53 You looted nothing from 9 corpses.
+11:54:54 You looted none of the dropped items. (8 corpses)
+11:54:54 You looted nothing from 8 corpses.
+11:54:54 You looted none of the dropped items. (8 corpses)
+11:54:54 You looted nothing from 8 corpses.
+11:54:54 You lose 156 hitpoints due to an attack by a mitmah scout. 
+11:54:54 You lose 143 hitpoints due to an attack by a mitmah scout. 
+11:54:54 You healed yourself for 781 hitpoints.
+11:54:54 You lose 172 hitpoints due to an attack by a mitmah seer. 
+11:54:55 You looted none of the dropped items. (9 corpses)
+11:54:55 You only looted some of the dropped items.
+11:54:55 You looted 10 corpses.
+11:54:55 You lose 209 hitpoints due to an attack by a mitmah scout. 
+11:54:55 You lose 125 hitpoints due to an attack by an iks yapunac. 
+11:54:55 You lose 109 hitpoints due to an attack by an iks yapunac. 
+11:54:55 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:54:55 You lose 160 hitpoints due to an attack by a mitmah scout. 
+11:54:55 Using one of 789 ultimate spirit potions...
+11:54:55 You gained 246 mana.
+11:54:55 You healed yourself for 576 hitpoints.
+11:54:55 You lose 200 hitpoints due to an attack by a mitmah seer. 
+11:54:55 A mitmah seer loses 1479 hitpoints due to your critical attack. 
+11:54:55 You were healed for 740 hitpoints.
+11:54:55 You gained 237 mana.
+11:54:55 You lose 117 hitpoints due to an attack by a mitmah seer. 
+11:54:55 A mitmah seer loses 872 hitpoints due to your attack. 
+11:54:55 You were healed for 123 hitpoints.
+11:54:55 You gained 40 mana.
+11:54:55 A mitmah scout loses 956 hitpoints due to your attack. 
+11:54:55 You were healed for 64 hitpoints.
+11:54:55 You gained 43 mana.
+11:54:55 An iks yapunac loses 748 hitpoints due to your attack. 
+11:54:55 You gained 34 mana.
+11:54:55 A mitmah scout loses 202 hitpoints due to your attack. (zap charm)
+11:54:55 A mitmah scout loses 956 hitpoints due to your attack. 
+11:54:55 You gained 43 mana.
+11:54:55 A mitmah scout loses 956 hitpoints due to your attack. 
+11:54:55 You gained 43 mana.
+11:54:56 You lose 178 hitpoints due to an attack by a mitmah seer. 
+11:54:56 You lose 201 hitpoints due to an attack by a mitmah seer. 
+11:54:56 You looted none of the dropped items. (10 corpses)
+11:54:56 You looted nothing from 10 corpses.
+11:54:56 You lose 162 hitpoints due to an attack by a mitmah scout. 
+11:54:56 You healed yourself for 535 hitpoints.
+11:54:56 Using one of 981 great spirit potions...
+11:54:56 You gained 159 mana.
+11:54:56 You lose 165 hitpoints due to an attack by a mitmah scout. 
+11:54:56 You lose 152 hitpoints due to an attack by a mitmah seer. 
+11:54:56 You lose 212 hitpoints due to an attack by a mitmah seer. 
+11:54:57 Using one of 293 great mana potions...
+11:54:57 Using one of 293 great mana potions...
+11:54:57 You lose 132 hitpoints due to an attack by an iks yapunac. 
+11:54:57 Using one of 293 great mana potions...
+11:54:57 Using one of 293 great mana potions...
+11:54:57 You healed yourself for 661 hitpoints.
+11:54:57 You lose 220 hitpoints due to an attack by a mitmah seer. 
+11:54:57 You lose 207 hitpoints due to an attack by a mitmah seer. 
+11:54:57 You lose 145 hitpoints due to an attack by a mitmah scout. 
+11:54:57 A mitmah seer loses 1190 hitpoints due to your critical attack. (low blow charm)
+11:54:57 You were healed for 572 hitpoints.
+11:54:57 You gained 191 mana.
+11:54:57 Using one of 788 ultimate spirit potions...
+11:54:57 You gained 227 mana.
+11:54:58 A mitmah seer loses 764 hitpoints due to your attack. 
+11:54:58 You gained 31 mana.
+11:54:58 A mitmah seer loses 725 hitpoints due to your attack. 
+11:54:58 You gained 29 mana.
+11:54:58 A mitmah scout loses 753 hitpoints due to your attack. 
+11:54:58 You gained 31 mana.
+11:54:58 A mitmah scout loses 388 hitpoints due to your attack. 
+11:54:58 You gained 29 mana.
+11:54:58 You gained 7267 experience points.
+11:54:58 Loot of a mitmah scout: 7 platinum coins, a giant shimmering pearl.
+11:54:58 An iks yapunac loses 51 hitpoints due to your attack. 
+11:54:58 You gained 22 mana.
+11:54:58 You gained 5265 experience points.
+11:54:58 Loot of an iks yapunac: a yapunac dagger.
+11:54:58 A mitmah seer loses 588 hitpoints due to your attack. 
+11:54:58 You gained 24 mana.
+11:54:58 You lose 327 hitpoints due to an attack by a mitmah seer. 
+11:54:58 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:54:58 You lose 171 hitpoints due to an attack by a mitmah scout. 
+11:54:58 Using one of 293 great mana potions...
+11:54:58 Using one of 293 great mana potions...
+11:54:58 Using one of 293 great mana potions...
+11:54:58 Using one of 293 great mana potions...
+11:54:58 Using one of 980 great spirit potions...
+11:54:58 Using one of 980 great spirit potions...
+11:54:58 You lose 181 hitpoints due to an attack by a mitmah seer. 
+11:54:58 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:54:58 A mitmah seer healed itself for 467 hitpoints.
+11:54:58 You gained 157 mana.
+11:54:58 You healed yourself for 323 hitpoints.
+11:54:59 Using one of 293 great mana potions...
+11:54:59 You healed yourself for 604 hitpoints.
+11:54:59 Using one of 787 ultimate spirit potions...
+11:54:59 You lose 149 hitpoints due to an attack by a mitmah seer. 
+11:54:59 You lose 226 hitpoints due to an attack by a mitmah seer. 
+11:55:00 A mitmah scout loses 452 hitpoints due to your attack. 
+11:55:00 You were healed for 274 hitpoints.
+11:55:00 You gained 88 mana.
+11:55:00 You gained 7267 experience points.
+11:55:00 Loot of a mitmah scout: 4 platinum coins, a brown crystal splinter.
+11:55:00 You lose 206 hitpoints due to an attack by a mitmah seer. 
+11:55:00 You lose 214 hitpoints due to an attack by a mitmah seer. 
+11:55:00 You lose 177 hitpoints due to an attack by a mitmah seer. 
+11:55:00 A mitmah seer loses 587 hitpoints due to your attack. 
+11:55:00 You were healed for 118 hitpoints.
+11:55:00 You gained 38 mana.
+11:55:00 A mitmah seer loses 378 hitpoints due to your attack. 
+11:55:00 You were healed for 118 hitpoints.
+11:55:00 You gained 38 mana.
+11:55:00 You gained 11311 experience points (Animus mastery).
+11:55:00 Loot of a mitmah seer: 9 platinum coins, 3 strong health potions.
+11:55:00 A mitmah seer loses 587 hitpoints due to your attack. 
+11:55:00 You were healed for 118 hitpoints.
+11:55:00 You gained 38 mana.
+11:55:00 You healed yourself for 112 hitpoints.
+11:55:00 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:55:00 You lose 149 hitpoints due to an attack by a mitmah scout. 
+11:55:00 No loot. (5 corpses)
+11:55:00 You looted the complete 400 gold and 1 item.
+11:55:00 You looted the complete 900 gold but none of the dropped items.
+11:55:00 You looted 7 corpses.
+11:55:00 No loot. (3 corpses)
+11:55:00 You looted nothing from 3 corpses.
+11:55:00 You healed yourself for 614 hitpoints.
+11:55:00 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:55:00 You lose 113 hitpoints due to an attack by a mitmah seer. 
+11:55:00 You lose 199 hitpoints due to an attack by a mitmah seer. 
+11:55:00 Using one of 979 great spirit potions...
+11:55:00 You lose 255 hitpoints due to an attack by a mitmah seer. 
+11:55:00 You gained 147 mana.
+11:55:00 You healed yourself for 289 hitpoints.
+11:55:00 You lose 344 hitpoints due to an attack by a mitmah seer. 
+11:55:01 You lose 244 hitpoints due to an attack by a mitmah seer. 
+11:55:01 A mitmah seer healed itself for 500 hitpoints.
+11:55:01 You lose 163 hitpoints due to an attack by a mitmah scout. 
+11:55:02 No loot. (3 corpses)
+11:55:02 You looted nothing from 3 corpses.
+11:55:02 You lose 89 hitpoints due to an attack by a mitmah scout. 
+11:55:02 A mitmah seer loses 1514 hitpoints due to your critical attack. 
+11:55:02 You were healed for 757 hitpoints.
+11:55:02 You gained 243 mana.
+11:55:02 You healed yourself for 385 hitpoints.
+11:55:02 A mitmah seer loses 1095 hitpoints due to your attack. 
+11:55:02 You were healed for 154 hitpoints.
+11:55:02 You gained 50 mana.
+11:55:02 A mitmah seer loses 1095 hitpoints due to your attack. 
+11:55:02 You were healed for 84 hitpoints.
+11:55:02 You gained 50 mana.
+11:55:02 A mitmah scout loses 1200 hitpoints due to your attack. 
+11:55:02 You gained 54 mana.
+11:55:02 A mitmah seer loses 1026 hitpoints due to your attack. 
+11:55:02 You gained 50 mana.
+11:55:02 You gained 11311 experience points (Animus mastery).
+11:55:02 Loot of a mitmah seer: 12 platinum coins.
+11:55:02 A mitmah seer loses 329 hitpoints due to your attack. 
+11:55:02 You gained 50 mana.
+11:55:02 You gained 11311 experience points (Animus mastery).
+11:55:02 Loot of a mitmah seer: 15 platinum coins.
+11:55:02 You lose 93 hitpoints due to an attack by a mitmah seer. 
+11:55:02 You lose 191 hitpoints due to an attack by a mitmah seer. 
+11:55:03 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:55:03 You lose 176 hitpoints due to an attack by a mitmah seer. 
+11:55:03 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:55:03 You lose 160 hitpoints due to an attack by a mitmah scout. 
+11:55:04 You lose 209 hitpoints due to an attack by a mitmah scout. 
+11:55:04 You lose 166 hitpoints due to an attack by a mitmah scout. 
+11:55:04 A mitmah seer loses 548 hitpoints due to your attack. 
+11:55:04 You were healed for 151 hitpoints.
+11:55:04 You gained 49 mana.
+11:55:04 A mitmah scout loses 600 hitpoints due to your attack. 
+11:55:04 You were healed for 165 hitpoints.
+11:55:04 You gained 53 mana.
+11:55:04 You healed yourself for 657 hitpoints.
+11:55:04 A mitmah seer loses 811 hitpoints due to your attack. 
+11:55:04 You were healed for 132 hitpoints.
+11:55:04 You gained 43 mana.
+11:55:04 A mitmah scout loses 461 hitpoints due to your attack. 
+11:55:04 You were healed for 145 hitpoints.
+11:55:04 You gained 47 mana.
+11:55:04 You gained 7267 experience points.
+11:55:04 Loot of a mitmah scout: a platinum coin.
+11:55:04 A mitmah seer loses 811 hitpoints due to your attack. 
+11:55:04 You were healed for 104 hitpoints.
+11:55:04 You gained 43 mana.
+11:55:04 A mitmah scout loses 888 hitpoints due to your attack. 
+11:55:04 You gained 47 mana.
+11:55:04 You lose 23 hitpoints due to an attack by a mitmah seer. 
+11:55:04 You lose 193 hitpoints due to an attack by a mitmah seer. 
+11:55:04 No loot. (1 corpse)
+11:55:04 You looted 1200 gold.
+11:55:04 You looted 100 gold.
+11:55:04 You looted 3 corpses.
+11:55:05 No loot. (1 corpse)
+11:55:05 You looted the complete 600 gold and 1 item.
+11:55:05 You looted 2 corpses.
+11:55:05 You healed yourself for 216 hitpoints.
+11:55:06 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:55:06 You lose 149 hitpoints due to an attack by a mitmah scout. 
+11:55:06 You lose 148 hitpoints due to an attack by a mitmah scout. 
+11:55:06 You lose 10 hitpoints due to an attack by a mitmah seer. 
+11:55:06 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:55:07 You healed yourself for 385 hitpoints.
+11:55:07 A mitmah seer loses 673 hitpoints due to your critical attack. 
+11:55:07 You were healed for 287 hitpoints.
+11:55:07 You gained 208 mana.
+11:55:07 You gained 11311 experience points (Animus mastery).
+11:55:07 Loot of a mitmah seer: nothing.
+11:55:07 A mitmah seer loses 652 hitpoints due to your critical attack. 
+11:55:07 You gained 208 mana.
+11:55:07 You gained 11311 experience points (Animus mastery).
+11:55:07 Loot of a mitmah seer: a red gem.
+11:55:07 A mitmah scout loses 202 hitpoints due to your attack. (zap charm)
+11:55:07 A mitmah scout loses 1633 hitpoints due to your critical attack. 
+11:55:07 You gained 311 mana.
+11:55:07 No loot. (2 corpses)
+11:55:07 You looted 1 item.
+11:55:07 You looted 3 corpses.
+11:55:07 No loot. (1 corpse)
+11:55:08 You lose 168 hitpoints due to an attack by a mitmah scout. 
+11:55:08 You lose 157 hitpoints due to an attack by a mitmah scout. 
+11:55:08 No loot. (1 corpse)
+11:55:09 You lose 40 hitpoints due to an attack by a mitmah scout. 
+11:55:09 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:55:09 You lose 149 hitpoints due to an attack by a mitmah scout. 
+11:55:10 A mitmah scout loses 442 hitpoints due to your attack. 
+11:55:10 You were healed for 221 hitpoints.
+11:55:10 You gained 71 mana.
+11:55:10 A mitmah scout loses 673 hitpoints due to your attack. 
+11:55:10 You were healed for 337 hitpoints.
+11:55:10 You gained 108 mana.
+11:55:10 You healed yourself for 129 hitpoints.
+11:55:10 No loot. (2 corpses)
+11:55:10 You looted nothing from 2 corpses.
+11:55:10 No loot. (2 corpses)
+11:55:10 You looted nothing from 2 corpses.
+11:55:10 You lose 151 hitpoints due to an attack by a mitmah scout. 
+11:55:11 You healed yourself for 151 hitpoints.
+11:55:11 Using one of 293 great mana potions...
+11:55:11 Using one of 293 great mana potions...
+11:55:11 Using one of 293 great mana potions...
+11:55:11 Using one of 293 great mana potions...
+11:55:11 You gained 241 mana.
+11:55:11 You lose 46 hitpoints due to an attack by a mitmah scout. 
+11:55:11 You lose 157 hitpoints due to an attack by a mitmah scout. 
+11:55:12 You healed yourself for 197 hitpoints.
+11:55:12 A mitmah scout loses 309 hitpoints due to your attack. 
+11:55:12 You gained 50 mana.
+11:55:12 A mitmah scout loses 1504 hitpoints due to your critical attack. 
+11:55:12 You gained 133 mana.
+11:55:12 A mitmah scout loses 1504 hitpoints due to your critical attack. 
+11:55:12 You gained 133 mana.
+11:55:12 You lose 193 hitpoints due to an attack by a mitmah scout. 
+11:55:12 No loot. (2 corpses)
+11:55:12 You looted the complete 800 gold and all dropped items.
+11:55:12 You looted 3 corpses.
+11:55:13 No loot. (1 corpse)
+11:55:13 No loot. (1 corpse)
+11:55:13 You looted 1100 gold.
+11:55:13 You looted 2 corpses.
+11:55:13 You lose 121 hitpoints due to an attack by a mitmah seer. 
+11:55:13 No loot. (5 corpses)
+11:55:13 You looted nothing from 5 corpses.
+11:55:13 You lose 160 hitpoints due to an attack by a mitmah scout. 
+11:55:14 Using one of 787 ultimate spirit potions...
+11:55:14 You lose 211 hitpoints due to an attack by a mitmah seer. 
+11:55:14 You gained 170 mana.
+11:55:14 You healed yourself for 437 hitpoints.
+11:55:14 A mitmah seer loses 514 hitpoints due to your attack. 
+11:55:14 You were healed for 248 hitpoints.
+11:55:14 You gained 83 mana.
+11:55:14 You lose 172 hitpoints due to an attack by a mitmah seer. 
+11:55:14 A mitmah seer loses 592 hitpoints due to your attack. 
+11:55:14 You were healed for 83 hitpoints.
+11:55:14 You gained 27 mana.
+11:55:14 A mitmah seer loses 562 hitpoints due to your attack. 
+11:55:14 You were healed for 79 hitpoints.
+11:55:14 You gained 26 mana.
+11:55:14 A mitmah scout loses 584 hitpoints due to your attack. 
+11:55:14 You were healed for 10 hitpoints.
+11:55:14 You gained 27 mana.
+11:55:14 A mitmah scout loses 555 hitpoints due to your attack. 
+11:55:14 You gained 25 mana.
+11:55:14 A mitmah scout loses 527 hitpoints due to your attack. 
+11:55:14 You gained 24 mana.
+11:55:14 You lose 194 hitpoints due to an attack by a mitmah scout. 
+11:55:14 You lose 239 hitpoints due to an attack by a mitmah scout. 
+11:55:14 You lose 153 hitpoints due to an attack by a mitmah scout. 
+11:55:15 No loot. (2 corpses)
+11:55:15 You looted nothing from 2 corpses.
+11:55:15 No loot. (2 corpses)
+11:55:15 You looted nothing from 2 corpses.
+11:55:15 You healed yourself for 586 hitpoints.
+11:55:15 A mitmah seer healed itself for 339 hitpoints.
+11:55:16 No loot. (1 corpse)
+11:55:16 Using one of 978 great spirit potions...
+11:55:16 You lose 162 hitpoints due to an attack by a mitmah scout. 
+11:55:16 You gained 150 mana.
+11:55:16 You healed yourself for 162 hitpoints.
+11:55:16 Using one of 786 ultimate spirit potions...
+11:55:16 You lose 289 hitpoints due to an attack by a mitmah seer. 
+11:55:16 You lose 112 hitpoints due to an attack by a mitmah seer. 
+11:55:16 You lose 200 hitpoints due to an attack by a mitmah seer. 
+11:55:16 You lose 149 hitpoints due to an attack by a mitmah scout. 
+11:55:16 A mitmah seer loses 621 hitpoints due to your attack. 
+11:55:16 You were healed for 125 hitpoints.
+11:55:16 You gained 40 mana.
+11:55:16 A mitmah scout loses 680 hitpoints due to your attack. 
+11:55:16 You were healed for 136 hitpoints.
+11:55:16 You gained 44 mana.
+11:55:16 A mitmah seer loses 621 hitpoints due to your attack. 
+11:55:16 You were healed for 125 hitpoints.
+11:55:16 You gained 40 mana.
+11:55:16 You healed yourself for 132 hitpoints.
+11:55:16 You lose 266 hitpoints due to an attack by a mitmah seer. 
+11:55:17 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:55:17 You lose 149 hitpoints due to an attack by a mitmah scout. 
+11:55:17 No loot. (1 corpse)
+11:55:17 You healed yourself for 766 hitpoints.
+11:55:17 Using one of 977 great spirit potions...
+11:55:17 You gained 154 mana.
+11:55:17 You healed yourself for 54 hitpoints.
+11:55:17 No loot. (1 corpse)
+11:55:17 You lose 146 hitpoints due to an attack by a mitmah scout. 
+11:55:18 You healed yourself for 146 hitpoints.
+11:55:18 You lose 148 hitpoints due to an attack by a mitmah scout. 
+11:55:18 You lose 26 hitpoints due to an attack by a mitmah seer. 
+11:55:18 A mitmah seer healed itself for 302 hitpoints.
+11:55:18 You lose 126 hitpoints due to an attack by a mitmah seer. 
+11:55:18 You lose 213 hitpoints due to an attack by a mitmah seer. 
+11:55:18 A mitmah seer healed itself for 375 hitpoints.
+11:55:18 You healed yourself for 375 hitpoints.
+11:55:18 A mitmah seer loses 1277 hitpoints due to your attack. 
+11:55:18 You were healed for 138 hitpoints.
+11:55:18 You gained 69 mana.
+11:55:18 A mitmah seer loses 1277 hitpoints due to your attack. 
+11:55:18 You gained 69 mana.
+11:55:18 A mitmah seer loses 1277 hitpoints due to your attack. 
+11:55:18 You gained 69 mana.
+11:55:18 A mitmah scout loses 90 hitpoints due to your attack. 
+11:55:18 You gained 75 mana.
+11:55:18 You gained 7267 experience points.
+11:55:18 Loot of a mitmah scout: 6 platinum coins.
+11:55:18 A mitmah scout loses 1172 hitpoints due to your attack. 
+11:55:18 You gained 75 mana.
+11:55:18 You gained 7267 experience points.
+11:55:18 Loot of a mitmah scout: 10 platinum coins, a prismatic quartz.
+11:55:18 A mitmah scout loses 202 hitpoints due to your attack. (zap charm)
+11:55:18 A mitmah scout loses 255 hitpoints due to your attack. 
+11:55:18 You gained 200 mana.
+11:55:18 You gained 7267 experience points.
+11:55:18 Loot of a mitmah scout: nothing.
+11:55:18 You lose 150 hitpoints due to an attack by a mitmah seer. 
+11:55:18 You lose 229 hitpoints due to an attack by a mitmah seer. 
+11:55:19 No loot. (1 corpse)
+11:55:19 You looted the complete 1000 gold and 1 item.
+11:55:19 You looted 2 corpses.
+11:55:19 No loot. (2 corpses)
+11:55:19 You looted nothing from 2 corpses.
+11:55:19 No loot. (2 corpses)
+11:55:19 You looted nothing from 2 corpses.
+11:55:19 No loot. (3 corpses)
+11:55:19 You looted nothing from 3 corpses.
+11:55:20 No loot. (3 corpses)
+11:55:20 You looted nothing from 3 corpses.
+11:55:20 No loot. (1 corpse)
+11:55:20 You lose 181 hitpoints due to an attack by a mitmah seer. 
+11:55:20 You lose 225 hitpoints due to an attack by a mitmah seer. 
+11:55:20 A mitmah seer healed itself for 435 hitpoints.
+11:55:21 A mitmah seer loses 313 hitpoints due to your attack. 
+11:55:21 You were healed for 157 hitpoints.
+11:55:21 You gained 51 mana.
+11:55:21 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:55:21 You lose 238 hitpoints due to an attack by a mitmah seer. 
+11:55:21 A mitmah seer loses 865 hitpoints due to your attack. 
+11:55:21 You were healed for 174 hitpoints.
+11:55:21 You gained 56 mana.
+11:55:21 A mitmah seer loses 821 hitpoints due to your attack. 
+11:55:21 You were healed for 165 hitpoints.
+11:55:21 You gained 53 mana.
+11:55:21 A mitmah seer loses 779 hitpoints due to your attack. 
+11:55:21 You were healed for 156 hitpoints.
+11:55:21 You gained 50 mana.
+11:55:21 You healed yourself for 127 hitpoints.
+11:55:21 No loot. (1 corpse)
+11:55:21 You lose 117 hitpoints due to an attack by an iks yapunac. 
+11:55:21 You lose 273 hitpoints due to an attack by an iks yapunac. 
+11:55:22 Using one of 786 ultimate spirit potions...
+11:55:22 You gained 193 mana.
+11:55:22 You healed yourself for 547 hitpoints.
+11:55:23 You lose 192 hitpoints due to an attack by a mitmah seer. 
+11:55:23 You lose 127 hitpoints due to an attack by a mitmah seer. 
+11:55:23 You lose 170 hitpoints due to an attack by a mitmah seer. 
+11:55:23 A mitmah seer loses 830 hitpoints due to your attack. 
+11:55:23 You were healed for 135 hitpoints.
+11:55:23 You gained 44 mana.
+11:55:23 An iks yapunac loses 712 hitpoints due to your attack. 
+11:55:23 You were healed for 116 hitpoints.
+11:55:23 You gained 38 mana.
+11:55:23 A mitmah seer loses 830 hitpoints due to your attack. 
+11:55:23 You were healed for 135 hitpoints.
+11:55:23 You gained 44 mana.
+11:55:23 A mitmah seer loses 830 hitpoints due to your attack. 
+11:55:23 You were healed for 135 hitpoints.
+11:55:23 You gained 44 mana.
+11:55:23 You healed yourself for 157 hitpoints.
+11:55:23 No loot. (1 corpse)
+11:55:23 You looted 1 item.
+11:55:23 You looted 2 corpses.
+11:55:23 No loot. (2 corpses)
+11:55:23 You looted nothing from 2 corpses.
+11:55:23 No loot. (2 corpses)
+11:55:23 You looted nothing from 2 corpses.
+11:55:24 You lose 239 hitpoints due to an attack by an iks yapunac. 
+11:55:24 No loot. (2 corpses)
+11:55:24 You looted 1 item.
+11:55:24 You looted 3 corpses.
+11:55:24 No loot. (1 corpse)
+11:55:24 You looted the complete 300 gold and 1 item.
+11:55:24 You looted 2 corpses.
+11:55:25 You lose 153 hitpoints due to an attack by a mitmah seer. 
+11:55:25 A mitmah scout loses 910 hitpoints due to your attack. 
+11:55:25 You were healed for 455 hitpoints.
+11:55:25 You gained 146 mana.
+11:55:25 You healed yourself for 15 hitpoints.
+11:55:25 You lose 163 hitpoints due to an attack by a mitmah scout. 
+11:55:25 You lose 264 hitpoints due to an attack by a mitmah scout. 
+11:55:25 No loot. (1 corpse)
+11:55:26 No loot. (1 corpse)
+11:55:26 No loot. (1 corpse)
+11:55:26 No loot. (1 corpse)
+11:55:26 You lose 263 hitpoints due to an attack by an iks yapunac. 
+11:55:27 You lose 161 hitpoints due to an attack by a mitmah scout. 
+11:55:27 Using one of 785 ultimate spirit potions...
+11:55:27 You gained 187 mana.
+11:55:27 You healed yourself for 519 hitpoints.
+11:55:27 A mitmah seer healed itself for 408 hitpoints.
+11:55:27 You healed yourself for 332 hitpoints.
+11:55:27 An iks yapunac loses 387 hitpoints due to your attack. 
+11:55:27 You gained 62 mana.
+11:55:27 You lose 233 hitpoints due to an attack by a mitmah seer. 
+11:55:27 You lose 185 hitpoints due to an attack by a mitmah scout. 
+11:55:27 You lose 153 hitpoints due to an attack by a mitmah scout. 
+11:55:27 A mitmah seer loses 962 hitpoints due to your critical attack. (low blow charm)
+11:55:27 You were healed for 204 hitpoints.
+11:55:27 You gained 66 mana.
+11:55:27 You gained 11311 experience points (Animus mastery).
+11:55:27 Loot of a mitmah seer: 6 platinum coins.
+11:55:27 A mitmah seer loses 1020 hitpoints due to your critical attack. (low blow charm)
+11:55:27 You were healed for 204 hitpoints.
+11:55:27 You gained 66 mana.
+11:55:27 An iks yapunac loses 539 hitpoints due to your attack. 
+11:55:27 You were healed for 108 hitpoints.
+11:55:27 You gained 35 mana.
+11:55:27 You healed yourself for 55 hitpoints.
+11:55:28 No loot. (1 corpse)
+11:55:29 You lose 117 hitpoints due to an attack by an iks yapunac. 
+11:55:29 You lose 183 hitpoints due to an attack by an iks yapunac. 
+11:55:29 You lose 40 hitpoints due to an attack by a mitmah seer. 
+11:55:29 You lose 226 hitpoints due to an attack by a mitmah seer. 
+11:55:29 Using one of 784 ultimate spirit potions...
+11:55:29 You gained 183 mana.
+11:55:29 You healed yourself for 481 hitpoints.
+11:55:29 You healed yourself for 85 hitpoints.
+11:55:29 You lose 200 hitpoints due to an attack by a mitmah seer. 
+11:55:30 An iks yapunac loses 301 hitpoints due to your attack. 
+11:55:30 You were healed for 151 hitpoints.
+11:55:30 You gained 49 mana.
+11:55:30 An iks yapunac loses 1027 hitpoints due to your critical attack. 
+11:55:30 You were healed for 49 hitpoints.
+11:55:30 You gained 47 mana.
+11:55:30 A mitmah scout loses 1248 hitpoints due to your critical attack. 
+11:55:30 You gained 56 mana.
+11:55:30 An iks yapunac loses 926 hitpoints due to your critical attack. 
+11:55:30 You gained 42 mana.
+11:55:30 A mitmah seer loses 1026 hitpoints due to your critical attack. 
+11:55:30 You gained 47 mana.
+11:55:30 A mitmah seer loses 672 hitpoints due to your critical attack. 
+11:55:30 You gained 44 mana.
+11:55:30 You gained 11311 experience points (Animus mastery).
+11:55:30 Loot of a mitmah seer: 14 platinum coins.
+11:55:30 No loot. (6 corpses)
+11:55:30 You looted 1400 gold.
+11:55:30 You looted 7 corpses.
+11:55:30 You lose 169 hitpoints due to an attack by a mitmah seer. 
+11:55:30 You lose 142 hitpoints due to an attack by a mitmah scout. 
+11:55:31 You lose 74 hitpoints due to an attack by a mitmah scout. 
+11:55:31 You lose 176 hitpoints due to an attack by an iks yapunac. 
+11:55:31 Using one of 783 ultimate spirit potions...
+11:55:31 You gained 155 mana.
+11:55:31 You healed yourself for 434 hitpoints.
+11:55:31 You lose 222 hitpoints due to an attack by a mitmah seer. 
+11:55:31 You lose 135 hitpoints due to an attack by an iks yapunac. 
+11:55:31 You lose 160 hitpoints due to an attack by a mitmah scout. 
+11:55:32 A mitmah seer loses 809 hitpoints due to your attack. 
+11:55:32 You were healed for 405 hitpoints.
+11:55:32 You gained 130 mana.
+11:55:32 You lose 193 hitpoints due to an attack by a mitmah seer. 
+11:55:32 You healed yourself for 400 hitpoints.
+11:55:32 A mitmah seer loses 1175 hitpoints due to your attack. 
+11:55:32 You were healed for 26 hitpoints.
+11:55:32 You gained 43 mana.
+11:55:32 A mitmah scout loses 1287 hitpoints due to your attack. 
+11:55:32 You gained 48 mana.
+11:55:32 A mitmah seer loses 1175 hitpoints due to your attack. 
+11:55:32 You gained 43 mana.
+11:55:32 A mitmah seer loses 1056 hitpoints due to your attack. 
+11:55:32 You gained 43 mana.
+11:55:32 You gained 11311 experience points (Animus mastery).
+11:55:32 Loot of a mitmah seer: nothing.
+11:55:32 A mitmah seer loses 1175 hitpoints due to your attack. 
+11:55:32 You gained 43 mana.
+11:55:32 An iks yapunac loses 1008 hitpoints due to your attack. 
+11:55:32 You gained 38 mana.
+11:55:32 A mitmah scout loses 1287 hitpoints due to your attack. 
+11:55:32 You gained 48 mana.
+11:55:32 You lose 85 hitpoints due to an attack by a mitmah seer. 
+11:55:32 You lose 211 hitpoints due to an attack by a mitmah seer. 
+11:55:32 You healed yourself for 296 hitpoints.
+11:55:33 You lose 67 hitpoints due to an attack by a mitmah scout. 
+11:55:33 You lose 173 hitpoints due to an attack by a mitmah scout. 
+11:55:33 You lose 143 hitpoints due to an attack by a mitmah scout. 
+11:55:33 You lose 288 hitpoints due to an attack by an iks yapunac. 
+11:55:33 You lose 195 hitpoints due to an attack by a mitmah seer. 
+11:55:33 No loot. (9 corpses)
+11:55:33 You looted nothing from 9 corpses.
+11:55:33 You lose 265 hitpoints due to an attack by an iks yapunac. 
+11:55:33 You lose 215 hitpoints due to an attack by a mitmah seer. 
+11:55:33 A mitmah seer healed itself for 326 hitpoints.
+11:55:33 You healed yourself for 705 hitpoints.
+11:55:34 A mitmah scout loses 495 hitpoints due to your attack. 
+11:55:34 You were healed for 74 hitpoints.
+11:55:34 You gained 24 mana.
+11:55:34 You gained 7267 experience points.
+11:55:34 Loot of a mitmah scout: broken Mitmah necklace, 3 platinum coins.
+11:55:34 A mitmah seer loses 588 hitpoints due to your attack. 
+11:55:34 You were healed for 68 hitpoints.
+11:55:34 You gained 22 mana.
+11:55:34 A mitmah seer loses 588 hitpoints due to your attack. 
+11:55:34 You were healed for 68 hitpoints.
+11:55:34 You gained 22 mana.
+11:55:34 A mitmah scout loses 644 hitpoints due to your attack. 
+11:55:34 You were healed for 74 hitpoints.
+11:55:34 You gained 24 mana.
+11:55:34 A mitmah seer loses 588 hitpoints due to your attack. 
+11:55:34 You were healed for 68 hitpoints.
+11:55:34 You gained 22 mana.
+11:55:34 An iks yapunac loses 504 hitpoints due to your attack. 
+11:55:34 You were healed for 58 hitpoints.
+11:55:34 You gained 19 mana.
+11:55:34 An iks yapunac loses 504 hitpoints due to your attack. 
+11:55:34 You were healed for 58 hitpoints.
+11:55:34 You gained 19 mana.
+11:55:34 You lose 234 hitpoints due to an attack by a mitmah scout. 
+11:55:34 You lose 151 hitpoints due to an attack by a mitmah scout. 
+11:55:34 Using one of 782 ultimate spirit potions...
+11:55:34 You gained 182 mana.
+11:55:34 You healed yourself for 491 hitpoints.
+11:55:34 An iks yapunac loses 57 hitpoints due to your attack. 
+11:55:34 You were healed for 67 hitpoints.
+11:55:34 You gained 38 mana.
+11:55:34 You gained 5265 experience points.
+11:55:34 Loot of an iks yapunac: a great health potion, a platinum coin.
+11:55:34 You lose 139 hitpoints due to an attack by a mitmah seer. 
+11:55:34 A mitmah seer loses 767 hitpoints due to your attack. 
+11:55:34 You were healed for 125 hitpoints.
+11:55:34 You gained 40 mana.
+11:55:34 A mitmah seer loses 767 hitpoints due to your attack. 
+11:55:34 You were healed for 14 hitpoints.
+11:55:34 You gained 40 mana.
+11:55:34 A mitmah scout loses 840 hitpoints due to your attack. 
+11:55:34 You gained 44 mana.
+11:55:34 A mitmah seer loses 767 hitpoints due to your attack. 
+11:55:34 You gained 40 mana.
+11:55:34 No loot. (9 corpses)
+11:55:34 You looted the complete 100 gold and 1 item.
+11:55:34 You looted the complete 300 gold and 1 item.
+11:55:34 You looted 11 corpses.
+11:55:35 No loot. (9 corpses)
+11:55:35 You looted nothing from 9 corpses.
+11:55:35 You lose 47 hitpoints due to an attack by a mitmah scout. 
+11:55:35 You looted none of the dropped items. (9 corpses)
+11:55:35 You looted nothing from 9 corpses.
+11:55:36 You lose 206 hitpoints due to an attack by a mitmah seer. 
+11:55:36 A mitmah seer healed itself for 322 hitpoints.
+11:55:36 You lose 153 hitpoints due to an attack by a mitmah seer. 
+11:55:36 You lose 144 hitpoints due to an attack by a mitmah seer. 
+11:55:36 You lose 221 hitpoints due to an attack by a mitmah seer. 
+11:55:36 A mitmah seer loses 385 hitpoints due to your attack. 
+11:55:36 You were healed for 193 hitpoints.
+11:55:36 You gained 62 mana.
+11:55:36 A mitmah seer loses 686 hitpoints due to your attack. 
+11:55:36 You were healed for 97 hitpoints.
+11:55:36 You gained 31 mana.
+11:55:36 A mitmah seer loses 652 hitpoints due to your attack. 
+11:55:36 You were healed for 92 hitpoints.
+11:55:36 You gained 30 mana.
+11:55:36 A mitmah scout loses 202 hitpoints due to your attack. (zap charm)
+11:55:36 A mitmah scout loses 678 hitpoints due to your attack. 
+11:55:36 You were healed for 95 hitpoints.
+11:55:36 You gained 31 mana.
+11:55:36 A mitmah seer loses 587 hitpoints due to your attack. 
+11:55:36 You were healed for 83 hitpoints.
+11:55:36 You gained 27 mana.
+11:55:36 An iks yapunac loses 285 hitpoints due to your attack. 
+11:55:36 You were healed for 67 hitpoints.
+11:55:36 You gained 22 mana.
+11:55:36 You gained 5265 experience points.
+11:55:36 Loot of an iks yapunac: 9 platinum coins, a ritual tooth.
+11:55:36 You healed yourself for 127 hitpoints.
+11:55:36 You looted none of the dropped items. (5 corpses)
+11:55:36 You looted the complete 500 gold and 1 item.
+11:55:36 You looted 6 corpses.
+11:55:37 You lose 145 hitpoints due to an attack by a mitmah scout. 
+11:55:37 No loot. (3 corpses)
+11:55:37 You looted nothing from 3 corpses.
+11:55:37 No loot. (3 corpses)
+11:55:37 You looted nothing from 3 corpses.
+11:55:37 You lose 224 hitpoints due to an attack by a mitmah seer. 
+11:55:38 You healed yourself for 380 hitpoints.
+11:55:38 You lose 105 hitpoints due to an attack by a mitmah scout. 
+11:55:38 Using one of 976 great spirit potions...
+11:55:38 You lose 190 hitpoints due to an attack by a mitmah seer. 
+11:55:38 You lose 205 hitpoints due to an attack by a mitmah seer. 
+11:55:38 You lose 95 hitpoints due to an attack by a mitmah seer. 
+11:55:38 You gained 155 mana.
+11:55:38 You healed yourself for 272 hitpoints.
+11:55:38 Using one of 781 ultimate spirit potions...
+11:55:38 You lose 63 hitpoints due to an attack by a mitmah seer. 
+11:55:38 You lose 221 hitpoints due to an attack by a mitmah seer. 
+11:55:38 A mitmah seer healed itself for 398 hitpoints.
+11:55:38 A mitmah seer loses 379 hitpoints due to your attack. 
+11:55:38 You were healed for 190 hitpoints.
+11:55:38 You gained 61 mana.
+11:55:38 A mitmah scout loses 289 hitpoints due to your attack. 
+11:55:38 You were healed for 101 hitpoints.
+11:55:38 You gained 33 mana.
+11:55:38 You gained 7267 experience points.
+11:55:38 Loot of a mitmah scout: gold-brocaded cloth, a green crystal splinter.
+11:55:38 A mitmah seer loses 460 hitpoints due to your attack. 
+11:55:38 You were healed for 92 hitpoints.
+11:55:38 You gained 30 mana.
+11:55:38 A mitmah seer loses 460 hitpoints due to your attack. 
+11:55:38 You were healed for 92 hitpoints.
+11:55:38 You gained 30 mana.
+11:55:38 You healed yourself for 112 hitpoints.
+11:55:38 You lose 149 hitpoints due to an attack by a mitmah seer. 
+11:55:39 Using one of 975 great spirit potions...
+11:55:39 You gained 178 mana.
+11:55:39 You healed yourself for 169 hitpoints.
+11:55:39 No loot. (3 corpses)
+11:55:39 You looted all items.
+11:55:39 You looted 4 corpses.
+11:55:39 No loot. (4 corpses)
+11:55:39 You looted nothing from 4 corpses.
+11:55:39 Using one of 974 great spirit potions...
+11:55:40 You lose 253 hitpoints due to an attack by a mitmah seer. 
+11:55:40 You lose 191 hitpoints due to an attack by a mitmah seer. 
+11:55:40 A mitmah seer healed itself for 416 hitpoints.
+11:55:40 You lose 53 hitpoints due to an attack by a mitmah seer. 
+11:55:40 A mitmah seer loses 563 hitpoints due to your attack. 
+11:55:40 You were healed for 113 hitpoints.
+11:55:40 You gained 37 mana.
+11:55:40 A mitmah seer loses 477 hitpoints due to your attack. 
+11:55:40 You were healed for 107 hitpoints.
+11:55:40 You gained 35 mana.
+11:55:40 You gained 11311 experience points (Animus mastery).
+11:55:40 Loot of a mitmah seer: nothing.
+11:55:40 A mitmah seer loses 148 hitpoints due to your attack. 
+11:55:40 You were healed for 102 hitpoints.
+11:55:40 You gained 33 mana.
+11:55:40 You gained 11311 experience points (Animus mastery).
+11:55:40 Loot of a mitmah seer: 7 platinum coins.
+11:55:40 You healed yourself for 127 hitpoints.
+11:55:41 You healed yourself for 48 hitpoints.
+11:55:41 No loot. (5 corpses)
+11:55:41 You looted 700 gold.
+11:55:41 You looted 6 corpses.
+11:55:41 No loot. (6 corpses)
+11:55:41 You looted nothing from 6 corpses.
+11:55:41 No loot. (6 corpses)
+11:55:41 You looted nothing from 6 corpses.
+11:55:41 Using one of 974 great spirit potions...
+11:55:42 You gained 155 mana.
+11:55:42 You lose 147 hitpoints due to an attack by a mitmah seer. 
+11:55:42 You healed yourself for 147 hitpoints.
+11:55:42 A mitmah seer loses 1100 hitpoints due to your critical attack. 
+11:55:42 You gained 387 mana.
+11:55:42 You gained 11311 experience points (Animus mastery).
+11:55:42 Loot of a mitmah seer: a crystal of the Mitmah, a great mana potion.
+11:55:44 Screenshot for event Hotkey has been saved to location 'C:\Users\felip\AppData\Local\Tibia\packages\Tibia\screenshots'.
+11:55:48 Using one of 293 great mana potions...
+11:55:48 You gained 207 mana.
+11:55:48 Using one of 292 great mana potions...
+11:55:48 Using one of 292 great mana potions...
+11:55:49 You gained 190 mana.

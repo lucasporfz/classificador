@@ -11,6 +11,8 @@ let clsServerSessions = null;
 let clsLocalSessions  = null;
 let clsTurnDetailPosition = null;
 let clsComponentChartMetric = 'hits';
+let clsRotationDamageMetric = 'hit';
+let clsGravSanDamageMetric = 'hit';
 
 function clsClampTurnDetailPosition(panel, left, top) {
   const margin = 8;
@@ -222,6 +224,12 @@ function clsEscapeHtml(v) {
 
 function clsDetailComponentLabel(hit, turn) {
   const comp = hit && hit.comp;
+  if (String(comp || '').indexOf('unresolved_component_') === 0 || (hit && hit.component === 'unresolved')) {
+    const id = String(comp || 'unresolved_component_1').replace(/^unresolved_component_/, '') || '1';
+    const rawReason = (hit && (hit.reason || hit.experimentalReason)) || (turn && turn.unifiedReason) || 'missing_mechanical_resolution';
+    const reason = /^(mechanical_|missing_)/.test(String(rawReason)) ? rawReason : 'missing_mechanical_resolution:' + rawReason;
+    return 'Componente não resolvido ' + id + ' (' + reason + ')';
+  }
   if (comp === 'arrow') return 'auto ataque';
   if (comp === 'spell') return turn && turn.spell ? clsSpellNameSafe(turn.spell) : 'spell';
   if (comp === 'rune') return turn && turn.rune ? turn.rune : 'rune';
@@ -296,7 +304,7 @@ function renderTurnDetail(turns, res, selectedIndex) {
           ', rune ' + (counts.rune || 0) + ', grenade ' + (counts.grenade || 0) +
         '</p>' +
         '<table class="cls-table cls-turn-detail-table"><thead><tr>' +
-          '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>Overkill</th><th>Mob alvo</th>' +
+          '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>EW</th><th>Overkill</th><th>Mob alvo</th>' +
         '</tr></thead><tbody>' +
           hits.map(h =>
             '<tr>' +
@@ -304,6 +312,7 @@ function renderTurnDetail(turns, res, selectedIndex) {
               '<td style="text-align:right">' + clsEscapeHtml(h.dmg) + '</td>' +
               '<td>' + clsEscapeHtml(clsDetailComponentLabel(h, turn)) + '</td>' +
               '<td>' + clsEscapeHtml(clsDetailCritLabel(h)) + '</td>' +
+              '<td>' + (h.exposeWeakness ? 'sim' : '-') + '</td>' +
               '<td>' + (h.ok ? 'sim' : '-') + '</td>' +
               '<td>' + clsEscapeHtml(h.mob || '') + '</td>' +
             '</tr>'
@@ -342,18 +351,46 @@ function renderClassifier(res) {
   const tierLabel = (tier, mult) => tier.kind === 'tier_bonus'
     ? t('cls_tier_bonus') + (mult ? ' (×' + f2(mult) + ')' : '')
     : t('cls_tier_base');
+  const rowDmgFor = metric => (row, field) => {
+    const cap = field === 'base' ? 'Base' : 'Eff';
+    if (metric === 'turn') {
+      const perTurn = row['dmg' + cap + 'PerTurn'];
+      if (Number.isFinite(+perTurn)) return Math.round(+perTurn);
+      return field === 'base' ? row.dmgBase : row.dmgEff;
+    }
+    const perHit = row['dmg' + cap + 'PerHit'];
+    if (Number.isFinite(+perHit)) return Math.round(+perHit);
+    const value = field === 'base' ? row.dmgBase : row.dmgEff;
+    return row.hitsMean > 0 ? Math.round(value / row.hitsMean) : 0;
+  };
+  const rowDmg = rowDmgFor(clsRotationDamageMetric);
+  const gravSanRowDmg = rowDmgFor(clsGravSanDamageMetric);
+  const dmgModeSuffix = clsRotationDamageMetric === 'turn' ? t('cls_metric_turn_suffix') : t('cls_metric_hit_suffix');
+  const gravSanDmgModeSuffix = clsGravSanDamageMetric === 'turn' ? t('cls_metric_turn_suffix') : t('cls_metric_hit_suffix');
   const rowsHtml = res.rows.map(r => {
     const main = '<tr><td>' + (r.kind === 'arrow' ? t('cls_comp_arrow') : r.label) + '</td><td style="text-align:right">' + r.turns +
-      '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td><td style="text-align:right">' + r.dmgBase +
-      '</td><td style="text-align:right">' + r.dmgEff + '</td></tr>';
+      '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td><td style="text-align:right">' + rowDmg(r, 'base') +
+      '</td><td style="text-align:right">' + rowDmg(r, 'eff') + '</td></tr>';
     if (!r.tiers || !r.tiers.length) return main;
-    const sub = r.tiers.map(tier =>
-      '<tr style="color:var(--text-muted);font-size:12px"><td style="padding-left:22px">└ ' + tierLabel(tier, r.bonusMult) +
-      '</td><td></td><td style="text-align:right">' + f2(tier.hitsMean) +
-      '</td><td style="text-align:right">' + tier.dmgBase + '</td><td style="text-align:right">' + tier.dmgEff + '</td></tr>'
-    ).join('');
+    const sub = r.tiers.map(tier => {
+      // "Dano médio sem crítico" pools non-crit hits across many different casts (Terra
+      // Burst's underlying damage roll varies cast to cast), which can misleadingly show the
+      // no-bonus tier averaging higher than the bonus tier even when the resolved bonus is
+      // real. Suppress it for these two tiers specifically; "Dano médio com crítico" pools
+      // raw shown damage (not cast-roll-sensitive in the same way) and already shows the
+      // expected order.
+      const tierBaseCell = (tier.kind === 'tier_base' || tier.kind === 'tier_bonus') ? '—' : rowDmg(tier, 'base');
+      return '<tr style="color:var(--text-muted);font-size:12px"><td style="padding-left:22px">└ ' + tierLabel(tier, r.bonusMult) +
+        '</td><td></td><td style="text-align:right">' + f2(tier.hitsMean) +
+        '</td><td style="text-align:right">' + tierBaseCell + '</td><td style="text-align:right">' + rowDmg(tier, 'eff') + '</td></tr>';
+    }).join('');
     return main + sub;
   }).join('');
+  const gravSanRowsHtml = (res.gravSanRows || []).map(r =>
+    '<tr><td>' + (r.kind === 'arrow' ? t('cls_comp_arrow') : r.label) + '</td><td style="text-align:right">' + r.turns +
+      '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td><td style="text-align:right">' + gravSanRowDmg(r, 'base') +
+      '</td><td style="text-align:right">' + gravSanRowDmg(r, 'eff') + '</td></tr>'
+  ).join('');
   const dmgSummary = res.damageSpells.map(clsSpellNameSafe)
     .concat((res.grenadeSpells || []).map(x => clsSpellNameSafe(x) + ' (' + t('cls_kind_grenade') + ')'));
   const aa = res.aaUptime || { expected: 0, hit: 0, lost: 0, pct: 0, perHour: 0 };
@@ -387,6 +424,36 @@ function renderClassifier(res) {
       color: compPalette[i % compPalette.length],
     }));
   const hasSeries = (res.temporalSeries || []).length > 0;
+  const rotationMetricHtml =
+    '<div class="cls-component-chart-tools">' +
+      '<div class="cls-chart-metric cls-rotation-damage-metric" role="group" aria-label="' + t('cls_rotation_damage_metric') + '">' +
+        '<button type="button" data-rotation-damage="hit" class="' + (clsRotationDamageMetric === 'hit' ? 'active' : '') + '">' + t('cls_metric_hits') + '</button>' +
+        '<button type="button" data-rotation-damage="turn" class="' + (clsRotationDamageMetric === 'turn' ? 'active' : '') + '">' + t('cls_metric_turn') + '</button>' +
+      '</div>' +
+    '</div>';
+  const gravSanComponentTotal = res.gravSanComponentCount || 0;
+  const gravSanComponentUsed = res.gravSanComponentsUsed || 0;
+  const gravSanComponentPct = gravSanComponentTotal > 0 ? Math.round((gravSanComponentUsed / gravSanComponentTotal) * 100) : 0;
+  const gravSanCastsHtml = gravSanComponentTotal > 0 ?
+    '<p style="font-size:11.5px;color:var(--text-muted);margin:2px 0 8px">' +
+      t('cls_gravsan_components').replace('{used}', gravSanComponentUsed).replace('{total}', gravSanComponentTotal).replace('{pct}', gravSanComponentPct) +
+    '</p>' : '';
+  const gravSanMetricHtml =
+    '<div class="cls-component-chart-tools">' +
+      '<div class="cls-chart-metric cls-gravsan-damage-metric" role="group" aria-label="' + t('cls_rotation_damage_metric') + '">' +
+        '<button type="button" data-gravsan-damage="hit" class="' + (clsGravSanDamageMetric === 'hit' ? 'active' : '') + '">' + t('cls_metric_hits') + '</button>' +
+        '<button type="button" data-gravsan-damage="turn" class="' + (clsGravSanDamageMetric === 'turn' ? 'active' : '') + '">' + t('cls_metric_turn') + '</button>' +
+      '</div>' +
+    '</div>';
+  const gravSanTableHtml = gravSanComponentTotal <= 0 ? '' :
+    '<h3 class="cls-h">' + t('cls_h_gravsan_rotation') + '</h3>' +
+    gravSanCastsHtml +
+    (!(res.gravSanRows || []).length ?
+      '<p style="font-size:12.5px;color:var(--text-muted)">' + t('cls_gravsan_no_rows') + '</p>' :
+      gravSanMetricHtml +
+      '<table class="cls-table"><thead><tr><th>' + t('cls_th_comp') + '</th><th style="text-align:right">' + t('cls_th_turns') +
+        '</th><th style="text-align:right">' + t('cls_th_hits') + '</th><th style="text-align:right">' + t('cls_th_dmg_base') + gravSanDmgModeSuffix +
+        '</th><th style="text-align:right">' + t('cls_th_dmg_eff') + gravSanDmgModeSuffix + '</th></tr></thead><tbody>' + gravSanRowsHtml + '</tbody></table>');
   const metricHtml = !hasSeries || !compDefs.length ? '' :
     '<div class="cls-component-chart-tools">' +
       '<div class="cls-chart-metric" role="group" aria-label="' + t('cls_component_chart_metric') + '">' +
@@ -414,11 +481,13 @@ function renderClassifier(res) {
       (dmgSummary.join(', ') || '—') + '</p>' +
     aaMetricHtml +
     '<h3 class="cls-h">' + t('cls_h_rotation') + '</h3>' +
+    rotationMetricHtml +
     '<table class="cls-table"><thead><tr><th>' + t('cls_th_comp') + '</th><th style="text-align:right">' + t('cls_th_turns') +
-      '</th><th style="text-align:right">' + t('cls_th_hits') + '</th><th style="text-align:right">' + t('cls_th_dmg_base') +
-      '</th><th style="text-align:right">' + t('cls_th_dmg_eff') + '</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+      '</th><th style="text-align:right">' + t('cls_th_hits') + '</th><th style="text-align:right">' + t('cls_th_dmg_base') + dmgModeSuffix +
+      '</th><th style="text-align:right">' + t('cls_th_dmg_eff') + dmgModeSuffix + '</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
     '<p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0">' +
       t('cls_unmatched').replace('{u}', res.excludedTurns).replace('{n}', res.totalTurns) + '</p>' +
+    gravSanTableHtml +
     chartsHtml;
   renderClassifierCharts(res, compDefs);
   document.querySelectorAll('.cls-chart-metric button').forEach(btn => {
@@ -426,6 +495,22 @@ function renderClassifier(res) {
       const metric = this.getAttribute('data-metric');
       if (metric !== 'hits' && metric !== 'damage') return;
       clsComponentChartMetric = metric;
+      renderClassifier(res);
+    });
+  });
+  document.querySelectorAll('.cls-rotation-damage-metric button').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const metric = this.getAttribute('data-rotation-damage');
+      if (metric !== 'hit' && metric !== 'turn') return;
+      clsRotationDamageMetric = metric;
+      renderClassifier(res);
+    });
+  });
+  document.querySelectorAll('.cls-gravsan-damage-metric button').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const metric = this.getAttribute('data-gravsan-damage');
+      if (metric !== 'hit' && metric !== 'turn') return;
+      clsGravSanDamageMetric = metric;
       renderClassifier(res);
     });
   });
@@ -515,6 +600,7 @@ function renderClassifierCharts(res, compDefs) {
 
 // re-renderiza ao trocar de idioma se já houver resultado
 let lastClsResult = null;
+function setLastClassifierResult(res) { lastClsResult = res; }
 function onLangChange() { if (lastClsResult) renderClassifier(lastClsResult); }
 
 // ---- wiring ----
