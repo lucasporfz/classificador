@@ -1,0 +1,569 @@
+/*
+ * unified-turn-resolution.js
+ *
+ * Camada de turn-resolution do UnifiedClassificationEngine: dado um turno e o contexto
+ * (setup ja inferido, casts/runas proximos), gera os candidatos de particao possiveis,
+ * valida cada um (unified-validation.js) e escolhe o vencedor -- ou marca o turno como
+ * unresolved/partial-edge. aggregateRows soma os turnos resolvidos em linhas por
+ * componente/spell pra tabela final.
+ *
+ * Exporta globalThis.UnifiedTurnResolution (+ module.exports quando disponivel).
+ * Carregado depois de unified-validation.js e antes de unified-classification-engine.js.
+ */
+(function(root) {
+  'use strict';
+
+  const {
+    physicalOriginalInterval,
+    elementalOriginalCandidates,
+    normalizeName,
+    isMainHit,
+    isTerraBurstAction,
+    mean,
+    ELEMENTS,
+    SINGLE_TARGET_AA_VOCATIONS,
+    BONUS_TIER_ACTIONS,
+  } = root.UnifiedFormulas;
+
+  const {
+    actionsNearTurn,
+    nearestSpellCastForTurn,
+    nearestRuneUseForTurn,
+    detectCharmKilledZeroAction,
+    makeVirtualZeroHit,
+    finalizeManualTurn,
+    leechPartitionScore,
+    hasStrongTimestampAaSpellBoundary,
+    shouldForceA1ByLeech,
+    firstHitSharesExactOriginalWithRest,
+    isSingleTargetAction,
+    validateElementalBlock,
+    validatePhysicalBlock,
+    validateLeechBlockOfficialRates,
+    possibleShapes,
+    segmentations,
+    candidateFromShape,
+    grenadeCandidateWindowInvalid,
+    validateCandidate,
+    promotePhysicalAxisSingleBlockByLeech,
+    allSpellManaLeechHomogeneous,
+    compareValidated,
+    validateTerraBurstBonusBlock,
+    actionLabel,
+  } = root.UnifiedValidation;
+  function enrichHitEvidence(hit, context) {
+    const physical = physicalOriginalInterval(hit, context);
+    const elemental = {};
+    for (const el of ELEMENTS) {
+      if (el === 'physical') continue;
+      elemental[el] = elementalOriginalCandidates(hit, el, context);
+    }
+    hit.evidence = { physical, elemental };
+    return hit;
+  }
+
+  function resolveSingleTargetAaVocationTurn(turn, facts, context) {
+    if (!context || !SINGLE_TARGET_AA_VOCATIONS.has(context.vocation)) return null;
+    const actions = turn.actions || actionsNearTurn(turn, facts);
+    // generalize-single-target-aa-resolver-to-runes: a ação concreta do turno é
+    // buscada primeiro em spellCasts (incantação); só na ausência de spell cast
+    // compatível o resolver recorre a runeUses. Nenhum fixture das 4 vocações
+    // expõe as duas simultaneamente (T-006/M-019 já impedem spell e runa
+    // coexistirem no mesmo turno), mas a prioridade é defensiva.
+    const spell = nearestSpellCastForTurn(turn, actions, context.vocation);
+    const rune = spell ? null : nearestRuneUseForTurn(turn, actions);
+    const action = spell || rune;
+    if (!action) return null;
+    const actionComp = spell ? 'spell' : 'rune';
+    const hits = turn.hits || [];
+    if (!hits.length) return null;
+
+    // Mecânica rara: charm/proc entra antes do dano do hit que o ativou. Se a
+    // ação concreta existe, mas o dano principal dela é zero e não aparece como
+    // linha normal. Representamos como componente virtual de dano 0.
+    if (hits.length === 1) {
+      const zero = detectCharmKilledZeroAction(turn, action, facts);
+      if (zero && action.ts >= hits[0].ts && action.ts <= hits[0].ts + 1) {
+        const virtual = makeVirtualZeroHit(turn, action, zero);
+        return finalizeManualTurn(turn, [
+          { comp: 'arrow', hits: [hits[0]], reason: 'ek_single_visible_aa_before_zero_damage_spell' },
+          { comp: actionComp, action, hits: [virtual], reason: 'zero_damage_spell_charm_killed_target_before_hit' },
+        ], 'ek_zero_damage_spell_by_charm', context);
+      }
+      return null;
+    }
+
+    // Candidatos principais: todos os hits como componente único, ou AA
+    // posicional no primeiro hit + componente no sufixo. Antes de aceitar S(k),
+    // o Unified precisa comparar S(k) contra A1+S(k-1) pela cardinalidade de leech.
+    const allSpell = [{ comp: actionComp, hits: hits.slice(), action }];
+    const split = [
+      { comp: 'arrow', hits: [hits[0]] },
+      { comp: actionComp, hits: hits.slice(1), action },
+    ];
+    const allScore = leechPartitionScore(allSpell, context);
+    const splitScore = leechPartitionScore(split, context);
+    const strongTimestampBoundary = hasStrongTimestampAaSpellBoundary(hits, action);
+    const forceA1 = shouldForceA1ByLeech(hits, context);
+
+    let chosen = split;
+    let reason = 'ek_positional_aa_first_hit';
+
+    if (strongTimestampBoundary) {
+      chosen = split;
+      reason = 'ek_timestamp_boundary_aa_then_spell';
+    } else if (forceA1.force) {
+      chosen = split;
+      reason = 'ek_a1_forced_by_leech_cardinality_' + forceA1.reason;
+    } else if (allSpellManaLeechHomogeneous(hits)) {
+      chosen = allSpell;
+      reason = 'ek_all_spell_mana_leech_homogeneous_N_equals_k_no_a1_signature';
+    } else {
+      const allHasEvidence = allScore.usable >= 2;
+      const splitHasEvidence = splitScore.usable >= 2;
+      if (allHasEvidence && !forceA1.force && (allScore.bad < splitScore.bad || (allScore.bad === 0 && splitScore.bad > 0))) {
+        chosen = allSpell;
+        reason = 'ek_all_spell_validated_by_leech_cardinality';
+      } else if (allHasEvidence && splitHasEvidence && allScore.bad === 0 && splitScore.bad === 0 && allScore.clean > splitScore.clean + 1) {
+        chosen = allSpell;
+        reason = 'ek_all_spell_stronger_leech_cardinality';
+      } else if (splitHasEvidence && splitScore.bad < allScore.bad) {
+        chosen = split;
+        reason = 'ek_positional_aa_confirmed_by_leech_cardinality';
+      }
+    }
+
+    // H-005/S-004a: a ordem AA→componente é desempate em ambiguidade genuína, não
+    // um veto que sobreponha evidência positiva. Se o candidato a AA (primeiro hit)
+    // tem o MESMO mob, MESMO estado de modificadores (EW/prey/crit/Low
+    // Blow/Onslaught) e MESMO dano de algum hit que ficaria no bloco do sufixo,
+    // esses dois hits são mecanicamente o mesmo componente determinístico
+    // (S-004a): não há evidência positiva de AA (nem separação de timing, nem
+    // crit-state distinto, nem dano original distinto, nem salto de leech — H-005),
+    // então o split é rejeitado independentemente do que a cardinalidade por leech
+    // sozinha sugerir (o "AA" isolado sempre parece leech-limpo em N=1 pelo
+    // capped-low de D-023, o que por si só nunca é evidência positiva).
+    if (chosen === split && firstHitSharesExactOriginalWithRest(hits)) {
+      chosen = allSpell;
+      reason = 'h005_same_mob_state_exact_match_blocks_aa_split';
+    }
+
+    // M-033: runa single-target (Sudden Death, Icicle, Holy Missile) recebe no
+    // máximo um hit por turno, igual a uma spell single-stage. O corte por
+    // posição+leech decide ONDE a fronteira cai, não autoriza violar essa
+    // cardinalidade — se o bloco escolhido a viola, este resolver recua (null)
+    // e deixa o caminho genérico (que já tem essa checagem) decidir.
+    const actionBlock = chosen.find(def => def.comp === actionComp);
+    if (actionBlock && isSingleTargetAction(actionComp, action) && actionBlock.hits.length > 1) {
+      return null;
+    }
+
+    const defs = chosen.map(def => {
+      const block = { comp: def.comp, hits: def.hits.slice(), action: def.action || null };
+      let deterministic;
+      if (def.comp === actionComp) {
+        // Elemental AoE action spells with the target-life bonus (druid Terra/Ice
+        // Burst) must run elemental validation here so validateTerraBurstBonusBlock
+        // sets the per-hit bonus flags that the rotation table splits into tiers.
+        // Physical AoE spells (EK exori mas/gran) keep the non-hard-gated shortcut.
+        if (isTerraBurstAction(block.action)) {
+          const action = block.action || {};
+          const words = normalizeName(action.words || action.spell || action.name || '');
+          const label = normalizeName(action.profile && action.profile.label || '');
+          const entry = BONUS_TIER_ACTIONS[words] || Object.values(BONUS_TIER_ACTIONS).find(a => a.label === label);
+          const el = entry ? entry.element : (action.profile && action.profile.element) || 'unknown';
+          deterministic = validateElementalBlock(block, el, context);
+        } else {
+          deterministic = { ok: true, reason: 'ek_physical_spell_not_hard_gated_by_intersection' };
+        }
+      } else {
+        deterministic = validatePhysicalBlock(block);
+      }
+      return Object.assign({}, def, {
+        deterministic,
+        leech: validateLeechBlockOfficialRates(block, context),
+        reason,
+      });
+    });
+    return finalizeManualTurn(turn, defs, reason, context);
+  }
+
+  function resolveTurn(turn, facts, context) {
+    turn.actions = actionsNearTurn(turn, facts, context);
+    turn.hits.forEach(h => enrichHitEvidence(h, context));
+
+    const singleTargetAaTurn = resolveSingleTargetAaVocationTurn(turn, facts, context);
+    if (singleTargetAaTurn) return singleTargetAaTurn;
+
+    const candidates = [];
+    const rejected = [];
+    for (const shape of possibleShapes(turn.actions)) {
+      const hasGrenade = shape.indexOf('grenade') !== -1;
+      for (const cuts of segmentations(turn.hits.length, shape.length)) {
+        const cand = candidateFromShape(turn, shape, cuts);
+        // Poda comportamentalmente neutra: um corte de granada fora da janela de
+        // explosão válida seria rejeitado por validateCandidate de qualquer forma.
+        if (hasGrenade && grenadeCandidateWindowInvalid(cand, turn.actions)) continue;
+        const val = validateCandidate(cand, turn, turn.actions, context);
+        if (val.ok) candidates.push(val);
+        else if (!(context && context.grenadeAssignmentOnly)) rejected.push(val);
+      }
+    }
+
+    if (!candidates.length) {
+      if (isPartialEdgeMissingEvidence(turn, rejected, context)) return partialEdgeMissingEvidenceTurn(turn, rejected);
+      return unresolvedTurn(turn, rejected, 'no_valid_partition');
+    }
+    candidates.sort(compareValidated);
+    promotePhysicalAxisSingleBlockByLeech(candidates);
+    const best = candidates[0];
+    const second = candidates[1] || null;
+
+    // Ambiguidade crítica: duas partições empatadas nos eixos fortes mas diferentes em shape/cortes.
+    if (second && best.score.timestampSplitPenalty === second.score.timestampSplitPenalty &&
+        best.score.mechanicalOrder === second.score.mechanicalOrder &&
+        best.score.timing === second.score.timing &&
+        best.score.deterministicHits === second.score.deterministicHits &&
+        best.score.leechFits === second.score.leechFits &&
+        best.score.leechContradictions === second.score.leechContradictions &&
+        best.score.actionRecencyPenalty === second.score.actionRecencyPenalty &&
+        best.score.virtualZeroHits === second.score.virtualZeroHits &&
+        best.score.unknownHits === second.score.unknownHits &&
+        best.score.cappedLowHits === second.score.cappedLowHits &&
+        best.score.components === second.score.components &&
+        (best.candidate.shape.join('>') !== second.candidate.shape.join('>') || best.candidate.cuts.join(',') !== second.candidate.cuts.join(','))) {
+      const bracketWinner = sameMobLeechBracketWinner(turn, best, second);
+      if (bracketWinner) {
+        if (context && context.consolidatedGrenadeCasts) {
+          for (const b of bracketWinner.candidate.components) {
+            if (b.comp === 'grenade' && b.action) context.consolidatedGrenadeCasts.add(b.action);
+          }
+        }
+        return finalizeTurn(turn, bracketWinner, rejected.concat([best, second].filter(c => c !== bracketWinner)), context);
+      }
+      return unresolvedTurn(turn, rejected.concat([best, second]), 'ambiguous_equal_best_partitions');
+    }
+
+    // M-024/M-025: registra o cast de granada que explodiu neste turno para que
+    // actionsNearTurn não o ofereça a turnos posteriores da janela [c+2,c+4].
+    if (context && context.consolidatedGrenadeCasts) {
+      for (const b of best.candidate.components) {
+        if (b.comp === 'grenade' && b.action) context.consolidatedGrenadeCasts.add(b.action);
+      }
+    }
+
+    return finalizeTurn(turn, best, rejected, context);
+  }
+
+  function turnHasEligibleGrenadeCast(turn, facts) {
+    const casts = facts && facts.local && facts.local.grenadeCasts || [];
+    if (!casts.length || !turn || !turn.hits || !turn.hits.length) return false;
+    const firstTs = Math.min(...turn.hits.map(h => h.ts));
+    const lastTs = Math.max(...turn.hits.map(h => h.ts));
+    return casts.some(c => {
+      const impactLo = c.ts + 2, impactHi = c.ts + 4;
+      return lastTs >= impactLo && firstTs <= impactHi;
+    });
+  }
+
+  function buildGrenadeCastAssignments(turns, facts, context) {
+    const savedConsumed = context && context.consolidatedGrenadeCasts;
+    const savedPreassigned = context && context.preassignedGrenadeCasts;
+    if (context) {
+      context.consolidatedGrenadeCasts = null;
+      context.preassignedGrenadeCasts = null;
+      context.grenadeAssignmentOnly = true;
+    }
+    const bestByCast = new Map();
+    try {
+      for (const turn of turns || []) {
+        if (!turnHasEligibleGrenadeCast(turn, facts)) continue;
+        const t = resolveTurn(turn, facts, context);
+        if (!t || t.status !== 'resolved') continue;
+        for (const b of t.components || []) {
+          if (!b || b.comp !== 'grenade' || !b.action) continue;
+          const det = b.deterministic || {};
+          const leech = b.leech || {};
+          const score = {
+            turnTs: t.ts,
+            hitCount: (b.hits || []).filter(isMainHit).length,
+            deterministicHits: det.known || 0,
+            leechFits: leech.ok && leech.fits ? leech.fits.filter(x => x.fit && x.fit.usable).length : 0,
+            leechContradictions: leech.consensus ? (leech.consensus.failedCount || 0) : 0,
+          };
+          const prev = bestByCast.get(b.action);
+          if (!prev
+            || score.hitCount > prev.hitCount
+            || (score.hitCount === prev.hitCount && score.deterministicHits > prev.deterministicHits)
+            || (score.hitCount === prev.hitCount && score.deterministicHits === prev.deterministicHits && score.leechFits > prev.leechFits)
+            || (score.hitCount === prev.hitCount && score.deterministicHits === prev.deterministicHits && score.leechFits === prev.leechFits && score.leechContradictions < prev.leechContradictions)) {
+            bestByCast.set(b.action, score);
+          }
+        }
+      }
+    } finally {
+      if (context) {
+        context.consolidatedGrenadeCasts = savedConsumed;
+        context.preassignedGrenadeCasts = savedPreassigned;
+        delete context.grenadeAssignmentOnly;
+      }
+    }
+    const assigned = new Map();
+    for (const [cast, score] of bestByCast) assigned.set(cast, score.turnTs);
+    return assigned;
+  }
+
+  // openspec/changes/leech-bracket-ambiguous-partition-tiebreak: quando `best` e
+  // `second` empatam em TODAS as chaves de compareValidated e diferem por exatamente
+  // um hit num shape de 2 componentes, o hit que muda de lado costuma ser overkill
+  // (dano exibido truncado, sem razão leech/dano confiável) — mas o valor ABSOLUTO de
+  // leech dele continua válido (não foi capado por HP/mana cheios). Busca a instância
+  // do MESMO mob mais próxima antes e depois desse hit no turno (âncoras — podem ser
+  // overkill também, só a razão leech/dano é que é inválida em overkill, não o valor)
+  // e decide pelo lado cuja âncora está mais perto do leech do hit em disputa, em
+  // TODOS os canais disponíveis (vida e/ou mana) sem contradição entre eles. Sem
+  // âncora dos dois lados, ou com canais discordando, não decide (mantém
+  // ambiguous_equal_best_partitions). Caso-prova: mazzerinbarrage 23:47:17.
+  function sameMobLeechBracketWinner(turn, best, second) {
+    if (!best || !second) return null;
+    const shapeA = best.candidate.shape, shapeB = second.candidate.shape;
+    if (shapeA.length !== 2 || shapeB.length !== 2 || shapeA.join('>') !== shapeB.join('>')) return null;
+    const cutA = best.candidate.cuts[0], cutB = second.candidate.cuts[0];
+    if (Math.abs(cutA - cutB) !== 1) return null;
+    const lo = Math.min(cutA, cutB), hi = Math.max(cutA, cutB);
+    const hits = turn.hits || [];
+    const d = hits[lo];
+    if (!d || !isMainHit(d)) return null;
+
+    const channels = ['lifeLeech', 'manaLeech'];
+    const dVals = {};
+    for (const ch of channels) { const v = +d[ch] || 0; if (v > 0) dVals[ch] = v; }
+    if (!Object.keys(dVals).length) return null;
+
+    const mob = normalizeName(d.mob);
+    const ew = !!d.exposeWeakness;
+    function findAnchor(list) {
+      let fallback = null;
+      for (const h of list) {
+        if (!h || !isMainHit(h)) continue;
+        if (normalizeName(h.mob) !== mob) continue;
+        if (!((+h.lifeLeech || 0) > 0) && !((+h.manaLeech || 0) > 0)) continue;
+        if (!!h.exposeWeakness === ew) return h;
+        if (!fallback) fallback = h;
+      }
+      return fallback;
+    }
+    const afterCandidate = cutA === lo ? best : second;
+    const beforeCandidate = cutA === lo ? second : best;
+    function voteToCandidate(voteBefore, voteAfter) {
+      if (voteBefore === 0 && voteAfter === 0) return null;
+      if (voteBefore > 0 && voteAfter > 0) return null;
+      return voteAfter > 0 ? afterCandidate : beforeCandidate;
+    }
+
+    const anchorBefore = findAnchor(hits.slice(0, lo).slice().reverse());
+    const anchorAfter = findAnchor(hits.slice(hi));
+    if (anchorBefore && anchorAfter) {
+      let voteBefore = 0, voteAfter = 0;
+      for (const ch of channels) {
+        const dv = dVals[ch];
+        if (!(dv > 0)) continue;
+        const bv = +anchorBefore[ch] || 0, av = +anchorAfter[ch] || 0;
+        if (!(bv > 0) || !(av > 0)) continue;
+        const db = Math.abs(dv - bv), da = Math.abs(dv - av);
+        if (db < da) voteBefore++;
+        else if (da < db) voteAfter++;
+      }
+      return voteToCandidate(voteBefore, voteAfter);
+    }
+
+    // S-020a: se a ancora same-mob falta em um dos lados, compara o hit em
+    // disputa com os nucleos estaveis dos dois componentes sem usar razao leech/dano.
+    const beforeCore = hits.slice(0, lo).filter(h => h && isMainHit(h));
+    const afterCore = hits.slice(hi).filter(h => h && isMainHit(h));
+    let voteBefore = 0, voteAfter = 0;
+    for (const ch of channels) {
+      const dv = dVals[ch];
+      if (!(dv > 0)) continue;
+      const beforeVals = beforeCore.map(h => +h[ch] || 0).filter(v => v > 0);
+      const afterVals = afterCore.map(h => +h[ch] || 0).filter(v => v > 0);
+      if (!beforeVals.length || !afterVals.length) continue;
+      const db = Math.min(...beforeVals.map(v => Math.abs(dv - v)));
+      const da = Math.min(...afterVals.map(v => Math.abs(dv - v)));
+      if (db === da) return null;
+      if (db < da) voteBefore++;
+      else voteAfter++;
+    }
+    return voteToCandidate(voteBefore, voteAfter);
+  }
+
+
+  function finalizeTurn(turn, validated, rejected, context) {
+    const keepRejected = context && context.options && context.options.includeResolvedRejected;
+    const components = [];
+    let componentId = 1;
+    for (const b of validated.candidate.components) {
+      const label = actionLabel(b.comp, b.action);
+      const unresolved = (b.comp !== 'arrow' && !label) ? true : false;
+      const id = unresolved ? 'unresolved_component_' + componentId : b.comp + '_' + componentId;
+      for (const h of b.hits) {
+        h.componentId = id;
+        h.component = unresolved ? 'unresolved' : b.comp;
+        h.actionLabel = unresolved ? ('Componente não resolvido ' + componentId) : label;
+      }
+      // Terra Burst/Ice Burst hits are enriched once, up front (`enrichHitEvidence`), before
+      // any partition/bonus decision exists, always assuming multiplier 1. Now that the
+      // winning block's per-hit bonus decision is known (`h.terraBurstBonusActive`/
+      // `terraBurstBonusMultiplier`, set by validateTerraBurstBonusBlock), re-derive the
+      // block's real element evidence with the real multiplier so "com bônus" hits aren't
+      // left reverted as if the bonus never applied.
+      if (b.comp === 'spell' && isTerraBurstAction(b.action)) {
+        const bWords = normalizeName(b.action.words || b.action.spell || b.action.name || '');
+        const bonusEntry = BONUS_TIER_ACTIONS[bWords] ||
+          Object.values(BONUS_TIER_ACTIONS).find(a => a.label === normalizeName(b.action.profile && b.action.profile.label || ''));
+        const bonusElement = bonusEntry && bonusEntry.element;
+        if (bonusElement) {
+          for (const h of b.hits) {
+            if (!h.evidence || !h.evidence.elemental) continue;
+            h.evidence.elemental[bonusElement] = elementalOriginalCandidates(h, bonusElement, context, {
+              terraBurstBonusMultiplier: h.terraBurstBonusMultiplier || 1,
+            });
+          }
+        }
+      }
+      components.push({
+        id,
+        index: componentId,
+        comp: unresolved ? 'unresolved' : b.comp,
+        action: b.action || null,
+        actionLabel: unresolved ? ('Componente não resolvido ' + componentId) : label,
+        hits: b.hits,
+        deterministic: b.deterministic,
+        leech: b.leech,
+        gravSanActive: b.gravSanActive,
+        gravSanTested: b.gravSanTested,
+        gravSanModeCandidates: b.gravSanModeCandidates,
+      });
+      componentId++;
+    }
+    return {
+      id: turn.id,
+      idx: turn.idx,
+      ts: turn.ts,
+      clock: turn.clock,
+      partialEdge: !!turn.partialEdge,
+      status: 'resolved',
+      components,
+      hits: turn.hits,
+      chosen: validated.score,
+      rejectedCount: rejected.length,
+      rejected: keepRejected ? rejected : [],
+    };
+  }
+
+  function unresolvedTurn(turn, rejected, reason) {
+    const components = [{
+      id: 'unresolved_component_1',
+      index: 1,
+      comp: 'unresolved',
+      actionLabel: 'Componente não resolvido 1',
+      hits: turn.hits,
+      reason,
+    }];
+    for (const h of turn.hits) {
+      h.componentId = 'unresolved_component_1';
+      h.component = 'unresolved';
+      h.actionLabel = 'Componente não resolvido 1';
+    }
+    return { id: turn.id, idx: turn.idx, ts: turn.ts, clock: turn.clock, partialEdge: !!turn.partialEdge, status: 'unresolved', reason, components, hits: turn.hits, rejected };
+  }
+
+  function hasConcreteOffensiveAction(actions) {
+    return !!(actions && (
+      (actions.spellCasts && actions.spellCasts.length) ||
+      (actions.runeUses && actions.runeUses.length) ||
+      (actions.grenadeCasts && actions.grenadeCasts.length)
+    ));
+  }
+
+  function isPartialEdgeMissingEvidence(turn, rejected, context) {
+    if (!turn || !turn.partialEdge) return false;
+    if (hasConcreteOffensiveAction(turn.actions)) return false;
+    if (!turn.hits || turn.hits.length <= 1) return false;
+    const vocation = normalizeName(context && context.vocation || '');
+    if (!['knight', 'druid', 'sorcerer', 'monk'].includes(vocation)) return false;
+    const rejectedList = rejected || [];
+    if (!rejectedList.length) return false;
+    const allowedReasons = new Set(['multiple_arrow_hits_not_allowed', 'physical_intersection_empty']);
+    return rejectedList.every(val => {
+      const cand = val && val.candidate;
+      if (!cand || cand.shape.join('>') !== 'arrow' || cand.cuts.join(',') !== String(turn.hits.length)) return false;
+      const reasons = (val.violations || []).map(v => v && v.reason).filter(Boolean);
+      if (!reasons.includes('multiple_arrow_hits_not_allowed')) return false;
+      return reasons.every(r => allowedReasons.has(r));
+    });
+  }
+
+  function partialEdgeMissingEvidenceTurn(turn, rejected) {
+    const reason = 'partial_edge_missing_evidence';
+    const result = unresolvedTurn(turn, rejected, reason);
+    result.partialEdgeMissingEvidence = true;
+    result.status = 'unresolved';
+    for (const c of result.components || []) {
+      c.reason = reason;
+      c.partialEdgeMissingEvidence = true;
+    }
+    for (const h of result.hits || []) h.partialEdgeMissingEvidence = true;
+    return result;
+  }
+
+  function aggregateRows(resolvedTurns) {
+    const map = new Map();
+    for (const t of resolvedTurns || []) {
+      // Turnos na borda do arquivo podem estar incompletos porque o Server Log
+      // começou ou terminou no meio de um turno. Mantemos disponíveis para abrir,
+      // mas não entram nas médias por componente.
+      if (t && t.partialEdge) continue;
+      for (const c of t.components || []) {
+        if (c.comp === 'unresolved') continue;
+        const key = c.comp + '|' + c.actionLabel;
+        if (!map.has(key)) map.set(key, { label: c.actionLabel, kind: c.comp, turns: 0, hits: [], dmgBase: [], dmgEff: [] });
+        const row = map.get(key);
+        row.turns++;
+        row.hits.push(c.hits.length);
+        for (const h of c.hits) if (h.countsAsHit !== false && (!h.overkill || c.hits.every(x => x.overkill))) {
+          row.dmgEff.push(h.dmg);
+          // Base atual: usa menor candidato/interseção disponível; métrica só informativa.
+          if (c.comp === 'arrow' && h.evidence && h.evidence.physical && h.evidence.physical.interval) row.dmgBase.push(Math.round((h.evidence.physical.interval[0] + h.evidence.physical.interval[1]) / 2));
+          else row.dmgBase.push(h.dmg);
+        }
+      }
+    }
+    return Array.from(map.values()).map(r => ({
+      label: r.label,
+      kind: r.kind,
+      turns: r.turns,
+      hitsMean: mean(r.hits),
+      dmgBase: Math.round(mean(r.dmgBase)),
+      dmgEff: Math.round(mean(r.dmgEff)),
+      hitsPerTurn: r.hits,
+    }));
+  }
+  const API = {
+    enrichHitEvidence,
+    resolveSingleTargetAaVocationTurn,
+    resolveTurn,
+    turnHasEligibleGrenadeCast,
+    buildGrenadeCastAssignments,
+    sameMobLeechBracketWinner,
+    finalizeTurn,
+    unresolvedTurn,
+    hasConcreteOffensiveAction,
+    isPartialEdgeMissingEvidence,
+    partialEdgeMissingEvidenceTurn,
+    aggregateRows,
+  };
+
+  root.UnifiedTurnResolution = API;
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+})(typeof globalThis !== 'undefined' ? globalThis : window);
