@@ -42,6 +42,8 @@
     validateLeechBlockOfficialRates,
     possibleShapes,
     segmentations,
+    guidedCutPositions,
+    cutsFromPositions,
     candidateFromShape,
     grenadeCandidateWindowInvalid,
     validateCandidate,
@@ -50,7 +52,13 @@
     compareValidated,
     validateTerraBurstBonusBlock,
     actionLabel,
+    effectiveLifeLeech,
+    effectiveManaLeech,
   } = root.UnifiedValidation;
+
+  const {
+    expectedLeech,
+  } = root.UnifiedSetupInference;
   function enrichHitEvidence(hit, context) {
     const physical = physicalOriginalInterval(hit, context);
     const elemental = {};
@@ -195,20 +203,61 @@
     const singleTargetAaTurn = resolveSingleTargetAaVocationTurn(turn, facts, context);
     if (singleTargetAaTurn) return singleTargetAaTurn;
 
-    const candidates = [];
-    const rejected = [];
-    for (const shape of possibleShapes(turn.actions)) {
-      const hasGrenade = shape.indexOf('grenade') !== -1;
-      for (const cuts of segmentations(turn.hits.length, shape.length)) {
-        const cand = candidateFromShape(turn, shape, cuts);
-        // Poda comportamentalmente neutra: um corte de granada fora da janela de
-        // explosão válida seria rejeitado por validateCandidate de qualquer forma.
-        if (hasGrenade && grenadeCandidateWindowInvalid(cand, turn.actions)) continue;
-        const val = validateCandidate(cand, turn, turn.actions, context);
-        if (val.ok) candidates.push(val);
-        else if (!(context && context.grenadeAssignmentOnly)) rejected.push(val);
+    let candidates = [];
+    let rejected = [];
+    // Busca guiada por sinal (openspec/changes/optimize-rp-pack-turn-resolution): pra
+    // turnos grandes, testa primeiro só os cortes perto de rupturas de sinal
+    // (guidedCutPositions). Rede de segurança POR TURNO: se NENHUM shape produzir
+    // candidato válido com os cortes guiados, refaz o turno inteiro com a enumeração
+    // completa (segmentations), descartando tudo da rodada guiada — assim, um turno que
+    // acabe `unresolved` tem exatamente o mesmo `rejected` (conteúdo e ordem) do caminho
+    // sem otimização, e isPartialEdgeMissingEvidence/unresolvedTurn veem o mesmo
+    // diagnóstico. O fallback NÃO é por shape: um shape sem partição válida é o caso
+    // comum e legítimo (a maioria dos shapes não descreve o turno) — reenumerar cada um
+    // custaria guiada+completa quase sempre e inverteria o ganho. Pra turnos resolvidos,
+    // `rejected` pode ser menor (mesmo precedente da poda de granada abaixo);
+    // best/second não dependem da ordem de enumeração porque compareValidated tem
+    // desempate total (shapeKey/cutKey).
+    // `valCache` remove o pagamento duplo do fallback: validateCandidate é
+    // determinístico dentro do turno (nada do contexto muda entre as duas passadas —
+    // consolidatedGrenadeCasts só é mutado após a escolha do vencedor), então a
+    // passada completa reusa o `val` dos cortes já testados na guiada, preservando a
+    // ordem/conteúdo exatos do `rejected` sem revalidar.
+    const valCache = new Map();
+    const runShapes = useGuided => {
+      const outCandidates = [];
+      const outRejected = [];
+      for (const shape of possibleShapes(turn.actions)) {
+        const hasGrenade = shape.indexOf('grenade') !== -1;
+        const cutsList = useGuided
+          ? cutsFromPositions(useGuided, turn.hits.length, shape.length)
+          : segmentations(turn.hits.length, shape.length);
+        const shapeKey = shape.join('>');
+        for (const cuts of cutsList) {
+          const cacheKey = shapeKey + '|' + cuts.join(',');
+          let val = valCache.get(cacheKey);
+          if (val === undefined) {
+            const cand = candidateFromShape(turn, shape, cuts);
+            // Poda comportamentalmente neutra: um corte de granada fora da janela de
+            // explosão válida seria rejeitado por validateCandidate de qualquer forma.
+            if (hasGrenade && grenadeCandidateWindowInvalid(cand, turn.actions)) { valCache.set(cacheKey, null); continue; }
+            val = validateCandidate(cand, turn, turn.actions, context);
+            valCache.set(cacheKey, val);
+          } else if (val === null) {
+            continue; // já podado pela janela de granada na passada anterior
+          }
+          if (val.ok) outCandidates.push(val);
+          else if (!(context && context.grenadeAssignmentOnly)) outRejected.push(val);
+        }
       }
-    }
+      return { candidates: outCandidates, rejected: outRejected };
+    };
+    const guidedPositions = guidedCutPositions(turn.hits, turn.actions);
+    let usedGuided = !!guidedPositions;
+    let pass = runShapes(guidedPositions || null);
+    if (usedGuided && !pass.candidates.length) { pass = runShapes(null); usedGuided = false; }
+    candidates = pass.candidates;
+    rejected = pass.rejected;
 
     if (!candidates.length) {
       if (isPartialEdgeMissingEvidence(turn, rejected, context)) return partialEdgeMissingEvidenceTurn(turn, rejected);
@@ -216,6 +265,21 @@
     }
     candidates.sort(compareValidated);
     promotePhysicalAxisSingleBlockByLeech(candidates);
+    // Rede de segurança 2 (leech-cardinalidade): uma fronteira pode ser visível SÓ pela
+    // cardinalidade de leech dependente de N — invisível pros 5 sinais pré-validação
+    // (ex.: barrage S0 19:03:02, corte@8 limpo com leech ratio saltando só ~6% entre
+    // vizinhos de mobs diferentes; o corte@7 sobrevivente tinha lc=1/cl=7). Se o melhor
+    // candidato guiado carrega contradição de leech ou capped-low, a enumeração completa
+    // pode conter um candidato LIMPO que os sinais não propuseram — refaz o turno
+    // (barato: valCache reusa as validações da passada guiada). Em pass-1 (sem
+    // leechSetup) lc/cl são sempre 0, então isto nunca dispara lá.
+    if (usedGuided && ((candidates[0].score.leechContradictions || 0) > 0 || (candidates[0].score.cappedLowHits || 0) > 0)) {
+      pass = runShapes(null);
+      candidates = pass.candidates;
+      rejected = pass.rejected;
+      candidates.sort(compareValidated);
+      promotePhysicalAxisSingleBlockByLeech(candidates);
+    }
     const best = candidates[0];
     const second = candidates[1] || null;
 
@@ -266,6 +330,67 @@
     });
   }
 
+  // openspec/changes/fix-grenade-cast-turn-assignment: um componente pequeno (< 3 hits
+  // principais elegíveis, piso de H-003 que isenta blocos pequenos da prova de
+  // cardinalidade) é "resíduo" quando o leech observado bate melhor com a hipótese de
+  // estar fundido num componente contíguo do mesmo turno (N = próprio + vizinho) do que
+  // com a hipótese de ser um componente sozinho (N = próprio) -- teste comparativo por
+  // distância absoluta em todos os canais disponíveis, mesmo método já normativo em
+  // S-020/S-020a (sameMobLeechBracketWinner), sem limiar numérico novo. `leech.ok`
+  // isolado não serve: uma hipótese de N pequeno sempre prevê leech maior, então o
+  // observado sempre aparenta "capped-low" (D-025/S-014e) e nunca "contraditório" só
+  // olhando essa hipótese sozinha.
+  function componentIsResidue(components, index, setup) {
+    const comp = components[index];
+    if (!comp) return false;
+    const mainHits = (comp.hits || []).filter(h => isMainHit(h) && !h.overkill);
+    const k = mainHits.length;
+    if (!k || k >= 3) return false;
+    if (!setup || (!(setup.lifeBase > 0) && !(setup.manaBase > 0))) return false;
+    const neighbors = [components[index - 1], components[index + 1]].filter(Boolean);
+    for (const neighbor of neighbors) {
+      const n = k + (neighbor.hits || []).filter(isMainHit).length;
+      if (n <= k) continue;
+      let anyChannel = false;
+      let allCloserToFolded = true;
+      for (const hit of mainHits) {
+        const life = +hit.lifeLeech || 0, mana = +hit.manaLeech || 0;
+        const lifeRate = effectiveLifeLeech(hit, setup), manaRate = effectiveManaLeech(hit, setup);
+        let hitHasChannel = false, hitAgrees = true;
+        if (life > 0 && lifeRate > 0) {
+          const expAlone = expectedLeech(hit.dmg, lifeRate, k);
+          const expFolded = expectedLeech(hit.dmg, lifeRate, n);
+          if (expAlone != null && expFolded != null) {
+            hitHasChannel = true;
+            if (!(Math.abs(life - expFolded) < Math.abs(life - expAlone))) hitAgrees = false;
+          }
+        }
+        if (mana > 0 && manaRate > 0) {
+          const expAlone = expectedLeech(hit.dmg, manaRate, k);
+          const expFolded = expectedLeech(hit.dmg, manaRate, n);
+          if (expAlone != null && expFolded != null) {
+            hitHasChannel = true;
+            if (!(Math.abs(mana - expFolded) < Math.abs(mana - expAlone))) hitAgrees = false;
+          }
+        }
+        if (!hitHasChannel) continue;
+        anyChannel = true;
+        if (!hitAgrees) { allCloserToFolded = false; break; }
+      }
+      if (anyChannel && allCloserToFolded) return true;
+    }
+    return false;
+  }
+
+  function turnCandidateHasResidue(t, context) {
+    const components = (t && t.components) || [];
+    const setup = context && context.leechSetup;
+    for (let i = 0; i < components.length; i++) {
+      if (componentIsResidue(components, i, setup)) return true;
+    }
+    return false;
+  }
+
   function buildGrenadeCastAssignments(turns, facts, context) {
     const savedConsumed = context && context.consolidatedGrenadeCasts;
     const savedPreassigned = context && context.preassignedGrenadeCasts;
@@ -280,24 +405,34 @@
         if (!turnHasEligibleGrenadeCast(turn, facts)) continue;
         const t = resolveTurn(turn, facts, context);
         if (!t || t.status !== 'resolved') continue;
+        const hasResidue = turnCandidateHasResidue(t, context);
         for (const b of t.components || []) {
           if (!b || b.comp !== 'grenade' || !b.action) continue;
           const det = b.deterministic || {};
           const leech = b.leech || {};
           const score = {
             turnTs: t.ts,
+            hasResidue,
             hitCount: (b.hits || []).filter(isMainHit).length,
             deterministicHits: det.known || 0,
             leechFits: leech.ok && leech.fits ? leech.fits.filter(x => x.fit && x.fit.usable).length : 0,
             leechContradictions: leech.consensus ? (leech.consensus.failedCount || 0) : 0,
           };
           const prev = bestByCast.get(b.action);
-          if (!prev
-            || score.hitCount > prev.hitCount
-            || (score.hitCount === prev.hitCount && score.deterministicHits > prev.deterministicHits)
-            || (score.hitCount === prev.hitCount && score.deterministicHits === prev.deterministicHits && score.leechFits > prev.leechFits)
-            || (score.hitCount === prev.hitCount && score.deterministicHits === prev.deterministicHits && score.leechFits === prev.leechFits && score.leechContradictions < prev.leechContradictions)) {
-            bestByCast.set(b.action, score);
+          if (!prev) { bestByCast.set(b.action, score); continue; }
+          if (score.hasResidue !== prev.hasResidue) {
+            // Candidato sem resíduo vence, independente de hitCount/deterministicHits:
+            // uma partição que não deixa hit inexplicado é evidência mais forte que
+            // contagem de hits do bloco granada.
+            if (!score.hasResidue) bestByCast.set(b.action, score);
+            continue;
+          }
+          // D1 empatou (nenhum candidato tem resíduo, ou mais de um tem): NÃO cai pra
+          // hitCount/deterministicHits/leechFits/leechContradictions -- isso
+          // reintroduziria o mesmo desempate arbitrário que este change corrige. Marca
+          // o cast como ambíguo em vez de escolher um vencedor por contagem de hits.
+          if (prev.turnTs !== score.turnTs) {
+            bestByCast.set(b.action, Object.assign({}, prev, { ambiguous: true }));
           }
         }
       }
@@ -309,7 +444,10 @@
       }
     }
     const assigned = new Map();
-    for (const [cast, score] of bestByCast) assigned.set(cast, score.turnTs);
+    // `null` é sentinela pra cast ambíguo: `actionsNearTurn` só oferece o cast ao turno
+    // em `preassigned.get(c) === turn.ts`, e nenhum turn.ts real é `null`, então isso
+    // exclui o cast de TODOS os turnos candidatos em vez de escolher um vencedor.
+    for (const [cast, score] of bestByCast) assigned.set(cast, score.ambiguous ? null : score.turnTs);
     return assigned;
   }
 

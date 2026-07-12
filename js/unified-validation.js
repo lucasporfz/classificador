@@ -173,6 +173,151 @@
     return out;
   }
 
+  // Busca guiada por sinal (só-desempenho — openspec/changes/optimize-rp-pack-turn-resolution).
+  // Em vez de validar TODA posição de corte (segmentations = C(n-1,k-1); um turno RP-pack
+  // de 38 hits gera 666 cortes por shape k=3), propõe só as posições perto de uma ruptura
+  // detectável em 5 sinais deriváveis dos hits, ANTES do validateCandidate caro. A busca
+  // guiada nunca decide sozinha: se um shape não produzir nenhum candidato válido com os
+  // cortes propostos, resolveTurn reescala pra enumeração completa daquele shape (rede de
+  // segurança D3 do design). Cobertura validada: 0 falso-negativo em ~250 pares turno/shape
+  // dos fixtures `server log rp` e `darklight rp`.
+  const GUIDED_MIN_HITS = 6;          // abaixo disso segmentations já é barato; busca guiada nem roda
+  const GUIDED_MAG_TOLERANCE = 0.15;  // ruptura de magnitude mesmo-mob: >15% de variação
+  const GUIDED_LEECH_TOLERANCE = 0.25;// ruptura da razão (vida+mana)/dano entre vizinhos
+  const GUIDED_DETERMINISM_TOLERANCE = 0.01; // par mesmo-mob "idêntico" (holy determinístico)
+  const GUIDED_SLACK = 1;             // folga ±1 em volta de cada posição sinalizada
+
+  function guidedCritStateOf(h) {
+    if (h.overkill) return 'overkill'; // dano truncado — não comparável
+    return (h.type === 'crit' ? 'c' : 'n') + (h.lowBlow ? 'L' : '') + (h.onslaught ? 'O' : '');
+  }
+
+  function guidedLeechRatioOf(h) {
+    if (h.overkill) return null; // leech sobre dano truncado não é confiável
+    const total = (+h.lifeLeech || 0) + (+h.manaLeech || 0);
+    if (!(h.dmg > 0) || !(total > 0)) return null;
+    return total / h.dmg;
+  }
+
+  // Retorna as posições de corte candidatas (1..n-1, ordenadas) para o turno, ou null
+  // quando o turno é pequeno demais pra busca guiada valer a pena (usa segmentations
+  // direto). As posições independem de k — resolveTurn combina (k-1) delas por shape.
+  function guidedCutPositions(hits, actions) {
+    const n = hits.length;
+    if (n < GUIDED_MIN_HITS) return null;
+    const positions = new Set();
+    const mark = pos => { if (pos >= 1 && pos <= n - 1) positions.add(pos); };
+
+    // Sinais 1 (magnitude mesmo-mob), 2 (estado de crit) e 3 (razão de leech).
+    // Magnitude compara cada hit ao ANTERIOR DO MESMO MOB: dano físico varia por
+    // armadura/mitigação entre mobs mesmo dentro do mesmo componente — comparar
+    // vizinhos de array cegamente marcaria toda troca de mob como ruptura (ruído).
+    // Crit e leech comparam vizinhos de array: crit rola uniforme por ataque entre
+    // os alvos da AoE, e a taxa de leech é a mesma entre mobs do mesmo componente.
+    const lastSeenByMob = new Map();
+    for (let i = 0; i < n; i++) {
+      const cur = hits[i];
+      const mob = normalizeName(cur.mob);
+      const prevSameMob = lastSeenByMob.get(mob);
+      if (i >= 1) {
+        if (prevSameMob && !prevSameMob.overkill && !cur.overkill) {
+          const ma = +prevSameMob.dmg, mb = +cur.dmg;
+          if (ma > 0 && mb > 0 && Math.max(ma, mb) / Math.min(ma, mb) - 1 > GUIDED_MAG_TOLERANCE) mark(i);
+        }
+        const a = hits[i - 1];
+        const ca = guidedCritStateOf(a), cb = guidedCritStateOf(cur);
+        if (ca !== cb && ca !== 'overkill' && cb !== 'overkill') mark(i);
+        const la = guidedLeechRatioOf(a), lb = guidedLeechRatioOf(cur);
+        if (la != null && lb != null) {
+          const base = Math.max(la, lb);
+          if (base > 0 && Math.abs(la - lb) / base > GUIDED_LEECH_TOLERANCE) mark(i);
+        }
+      }
+      lastSeenByMob.set(mob, cur);
+    }
+
+    // Sinal 4 (timing de ação concreta): um cast/Using só explica hits DEPOIS dele na
+    // ordem do log (seq) — marca a posição onde os hits cruzam o seq de cada ação.
+    // Resolve empates exatos dos sinais 1-3 (dois componentes com dano/leech iguais).
+    const casts = []
+      .concat(actions && actions.spellCasts || [], actions && actions.runeUses || [], actions && actions.grenadeCasts || []);
+    for (const cast of casts) {
+      const castSeq = +cast.seq || 0;
+      if (!(castSeq > 0)) continue;
+      for (let i = 0; i < n; i++) {
+        if ((+hits[i].seq || 0) > castSeq) { mark(i); break; }
+      }
+    }
+
+    // Sinal 5 (início de trecho determinístico mesmo-mob): AA físico varia por mob
+    // (rolagem de armadura); spell/runa/granada holy é determinístico (mesmo dano pro
+    // mesmo mob+estado). Um par consecutivo do MESMO mob com dano ~idêntico marca a
+    // fronteira no índice do hit ANTERIOR (ele já pertence ao trecho determinístico,
+    // confirmado retroativamente pela repetição). Dispara em TODA repetição, não só na
+    // primeira: o motor aceita várias posições de corte empatadas dentro do mesmo
+    // trecho determinístico (ex.: `server log rp` 19:49:57, cortes 12..17 todos
+    // válidos), e disparar só uma vez perde exatamente essas posições.
+    const lastByMobDet = new Map();
+    for (let i = 0; i < n; i++) {
+      const cur = hits[i];
+      if (cur.overkill) continue; // overkill não conta como par nem quebra o trecho
+      const mob = normalizeName(cur.mob);
+      const prev = lastByMobDet.get(mob);
+      if (prev) {
+        const ma = +prev.dmg, mb = +cur.dmg;
+        if (ma > 0 && mb > 0 && Math.max(ma, mb) / Math.min(ma, mb) - 1 <= GUIDED_DETERMINISM_TOLERANCE) mark(prev.idx);
+      }
+      lastByMobDet.set(mob, { idx: i, dmg: cur.dmg, overkill: cur.overkill });
+    }
+
+    // Overkill deixa a posição sem NENHUM sinal confiável (dano truncado exclui o hit
+    // das comparações de magnitude/leech/determinismo). Posições adjacentes a um hit
+    // overkill viram candidatas por padrão — não é "há fronteira aqui", é "não sabemos
+    // se há, então não descartamos" (ex.: `server log rp` 19:49:23, a fronteira real
+    // AA→spell é um hit overkill invisível pros sinais 1-3).
+    for (let i = 0; i < n; i++) {
+      if (!hits[i].overkill) continue;
+      mark(i);
+      mark(i + 1);
+    }
+
+    // Posições de borda são mecanicamente especiais no domínio e ficam SEMPRE
+    // candidatas: corte em 1 = prefixo AA de exatamente 1 hit antes da AoE (regra
+    // posicional do AA — ex.: bakra S4 33550, AA 631 indistinguível da Caldera
+    // 626-739 com EW por magnitude/leech/crit, e o vencedor real é a=1 por desempate
+    // lexicográfico de cutKey); corte em n-1 = spell/runa single-target como último
+    // hit (ordem determinística AA→spell, M-006/M-033 — ex.: bakra S4 33734, Strong
+    // Ethereal Spear engolido pelo all-arrow sem esta posição).
+    mark(1);
+    mark(n - 1);
+
+    // Folga ±GUIDED_SLACK em volta de cada posição sinalizada (fronteiras same-second
+    // podem cair um hit antes/depois da ruptura visível).
+    const withSlack = new Set();
+    for (const p of positions) {
+      for (let d = -GUIDED_SLACK; d <= GUIDED_SLACK; d++) {
+        const q = p + d;
+        if (q >= 1 && q <= n - 1) withSlack.add(q);
+      }
+    }
+    return [...withSlack].sort((a, b) => a - b);
+  }
+
+  // Combina (k-1) posições candidatas em cortes completos (terminados em n), na MESMA
+  // ordem lexicográfica de segmentations — compareValidated tem desempate total
+  // (shapeKey/cutKey), então a ordem não muda o vencedor, mas manter a ordem torna a
+  // equivalência com o caminho completo trivial de auditar.
+  function cutsFromPositions(positions, n, k) {
+    if (k <= 1) return [[n]];
+    const need = k - 1;
+    const out = [];
+    (function rec(start, acc) {
+      if (acc.length === need) { out.push(acc.concat(n)); return; }
+      for (let i = start; i <= positions.length - (need - acc.length); i++) rec(i + 1, acc.concat(positions[i]));
+    })(0, []);
+    return out;
+  }
+
   function candidateFromShape(turn, shape, cuts) {
     let start = 0;
     const components = [];
@@ -1907,6 +2052,8 @@
     actionsNearTurn,
     possibleShapes,
     segmentations,
+    guidedCutPositions,
+    cutsFromPositions,
     candidateFromShape,
     grenadeCandidateWindowInvalid,
     chooseActionForComponent,
