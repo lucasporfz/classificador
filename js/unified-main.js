@@ -159,6 +159,30 @@
     }
   }
 
+  // Death Echo (exevo mort ora) and Spiritual Outburst (exori gran mas nia, M-016e) are the
+  // two known multi-stage casts: an initial full-power blast followed by a delayed echo. The
+  // engine already tags each hit's stage (h.multiStageStage = 'primary' | 'echo'); overkill
+  // hits of the initial blast are excluded from that proof by buildTurns and never get
+  // tagged, so anything that isn't explicitly 'echo' (including untagged hits) is treated as
+  // the first explosion — the same conservative default Terra Burst uses for unproven
+  // overkill.
+  const MULTI_STAGE_ACTIONS = ['exevo mort ora', 'exori gran mas nia'];
+
+  function applyDeathEchoTiers(row, context) {
+    if (row.kind !== 'spell' || !row._allHits.length || MULTI_STAGE_ACTIONS.indexOf(row._allHits[0].action) === -1) return;
+    const echoHits = row._allHits.filter(l => l.multiStageStage === 'echo');
+    const primaryHits = row._allHits.filter(l => l.multiStageStage !== 'echo');
+    if (!primaryHits.length || !echoHits.length) return;
+    const tierPrimary = buildTerraBurstTier('tier_primary', primaryHits, row.turns, context);
+    const tierEcho = buildTerraBurstTier('tier_echo', echoHits, row.turns, context);
+    // M-016e: Spiritual Outburst's delayed stage resolves to one of three candidate power
+    // tiers (Stage 1/2/3); Death Echo's hits never carry multiStageTierStage, so this stays
+    // undefined for it and the UI falls back to the plain "delayed blast" label.
+    const echoTierStages = Array.from(new Set(echoHits.map(l => l.multiStageTierStage).filter(v => v != null)));
+    if (echoTierStages.length === 1) tierEcho.stage = echoTierStages[0];
+    row.tiers = [tierPrimary, tierEcho];
+  }
+
   function buildCounts() {
     return { arrow: 0, spell: 0, rune: 0, grenade: 0, unresolved: 0 };
   }
@@ -267,7 +291,7 @@
       row.dmgEffPerHit = totalHits > 0 ? Math.round(totalEff / totalHits) : 0;
       row.dmgBase = row.dmgBasePerTurn;
       row.dmgEff = row.dmgEffPerTurn;
-      if (withTiers) applyTerraBurstTiers(row, context);
+      if (withTiers) { applyTerraBurstTiers(row, context); applyDeathEchoTiers(row, context); }
       delete row._hits; delete row._base; delete row._baseHits; delete row._eff; delete row._allHits; delete row.key;
       return row;
     }).sort((a, b) => (rank[a.kind] || 9) - (rank[b.kind] || 9) || String(a.label).localeCompare(String(b.label)));
@@ -315,7 +339,8 @@
     // "spell/rune/granada perdida" só porque a explosão pertence a outro turno já contado.
     const grenadeCastTimestamps = ((unified.facts && unified.facts.local && unified.facts.local.grenadeCasts) || [])
       .map(c => +c.ts).filter(Number.isFinite);
-    const turns = unified.turns || [];
+    const rawTurns = unified.turns || [];
+    const turns = rawTurns.filter(turn => !(turn && turn.partialEdgeMissingEvidence));
     const turnTrace = turns.map((turn, index) => {
       const lines = [];
       const counts = buildCounts();
@@ -359,6 +384,8 @@
             exposeWeakness: !!h.exposeWeakness,
             terraBurstBonusActive: h.terraBurstBonusActive === undefined ? null : h.terraBurstBonusActive,
             terraBurstBonusLevel: (component.deterministic && component.deterministic.terraBurstBonusLevel) || null,
+            multiStageStage: h.multiStageStage || null,
+            multiStageTierStage: h.multiStageTierStage != null ? h.multiStageTierStage : null,
             gravSanActive: component.gravSanActive === undefined ? null : component.gravSanActive,
             gravSanTested: !!component.gravSanTested,
             reason,
@@ -377,6 +404,7 @@
         ts: turnTs,
         clock: turn.clock || clockOf(turn.ts),
         partialEdge: !!turn.partialEdge,
+        partialEdgeMissingEvidence: !!turn.partialEdgeMissingEvidence,
         counts,
         damage,
         mobsHit: lines.length,
@@ -445,7 +473,7 @@
       temporalSeries,
       aaUptime: mkMetric(aaExpected, aaHit),
       spellRuneUptime: mkMetric(srExpected, srHit),
-      excludedTurns: turnTrace.filter(t => t.partialEdge).length,
+      excludedTurns: rawTurns.filter(t => t && (t.partialEdge || t.partialEdgeMissingEvidence)).length,
       totalTurns: turnTrace.length,
       unifiedVisual: true,
       unifiedSource: unified,

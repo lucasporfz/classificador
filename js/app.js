@@ -348,9 +348,20 @@ function renderClassifier(res) {
   }
   const f2 = x => x.toFixed(2);
   const f1 = x => x.toFixed(1);
-  const tierLabel = (tier, mult) => tier.kind === 'tier_bonus'
-    ? t('cls_tier_bonus') + (mult ? ' (×' + f2(mult) + ')' : '')
-    : t('cls_tier_base');
+  const tierLabel = (tier, mult) => {
+    if (tier.kind === 'tier_primary') return t('cls_tier_death_echo_primary');
+    if (tier.kind === 'tier_echo') {
+      // M-016e: Spiritual Outburst's delayed stage resolves to one of three candidate
+      // power tiers; Death Echo's echo never carries a resolved stage, so it keeps the
+      // plain label.
+      return tier.stage != null
+        ? t('cls_tier_death_echo_echo') + ' (' + t('cls_tier_stage_' + tier.stage) + ')'
+        : t('cls_tier_death_echo_echo');
+    }
+    return tier.kind === 'tier_bonus'
+      ? t('cls_tier_bonus') + (mult ? ' (×' + f2(mult) + ')' : '')
+      : t('cls_tier_base');
+  };
   const rowDmgFor = metric => (row, field) => {
     const cap = field === 'base' ? 'Base' : 'Eff';
     if (metric === 'turn') {
@@ -379,7 +390,7 @@ function renderClassifier(res) {
       // real. Suppress it for these two tiers specifically; "Dano médio com crítico" pools
       // raw shown damage (not cast-roll-sensitive in the same way) and already shows the
       // expected order.
-      const tierBaseCell = (tier.kind === 'tier_base' || tier.kind === 'tier_bonus') ? '—' : rowDmg(tier, 'base');
+      const tierBaseCell = (tier.kind === 'tier_base' || tier.kind === 'tier_bonus' || tier.kind === 'tier_primary' || tier.kind === 'tier_echo') ? '—' : rowDmg(tier, 'base');
       return '<tr style="color:var(--text-muted);font-size:12px"><td style="padding-left:22px">└ ' + tierLabel(tier, r.bonusMult) +
         '</td><td></td><td style="text-align:right">' + f2(tier.hitsMean) +
         '</td><td style="text-align:right">' + tierBaseCell + '</td><td style="text-align:right">' + rowDmg(tier, 'eff') + '</td></tr>';

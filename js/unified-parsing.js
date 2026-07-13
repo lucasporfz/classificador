@@ -340,48 +340,67 @@
       const profile = cast.profile;
       const stages = profile.multiStage;
       const delayed = stages && stages.delayed;
-      if (!delayed || !(delayed.delayAfterPrimaryTerminal >= 1) || !(delayed.powerDenominator > 0)) continue;
+      const delays = delayed && Array.isArray(delayed.delays) ? delayed.delays.filter(d => d >= 1) : null;
+      const tiers = delayed && Array.isArray(delayed.tiers) ? delayed.tiers.filter(tier => tier && tier.denominator > 0) : null;
+      if (!delayed || !delays || !delays.length || !tiers || !tiers.length) continue;
       const primaryWindow = [cast.ts - 1, cast.ts]
         .flatMap(ts => hitsByTs.get(ts) || [])
         .filter(h => !delayedByHit.has(h.id) && !h.overkill);
       if (!primaryWindow.length) continue;
       const primaryTerminal = Math.max(...primaryWindow.map(h => h.ts));
-      const echoTs = primaryTerminal + delayed.delayAfterPrimaryTerminal;
-      const echoBlock = (hitsByTs.get(echoTs) || []).filter(h => !delayedByHit.has(h.id));
-      const echoCandidates = echoBlock.filter(h => !h.overkill);
-      if (!echoCandidates.length) continue;
+      // M-016d/M-016e: delays candidatos são tentados em ordem; o primeiro
+      // segundo com pelo menos um hit não-overkill do jogador é o único
+      // avaliado -- o motor não cai para um delay maior só porque a prova de
+      // potência falhar nesse segundo (evidência insuficiente permanece não
+      // resolvida, não vira uma busca ampla).
+      let echoTs = null, echoBlock = null, echoCandidates = null;
+      for (const delayCandidate of delays) {
+        const ts = primaryTerminal + delayCandidate;
+        const block = (hitsByTs.get(ts) || []).filter(h => !delayedByHit.has(h.id));
+        const candidates = block.filter(h => !h.overkill);
+        if (candidates.length) { echoTs = ts; echoBlock = block; echoCandidates = candidates; break; }
+      }
+      if (echoTs == null) continue;
       // Esta prova é pré-formação e não deve povoar o cache global de reversão
       // usado por todas as partições da sessão (logs longos têm muitos casts).
       const stageContext = Object.assign({}, context || {}, { _revCache: new Map() });
       const primaryEvidence = new Map(primaryWindow.map(h => [h.id, elementalOriginalCandidates(h, profile.element, stageContext)]));
       const echoEvidence = new Map(echoCandidates.map(h => [h.id, elementalOriginalCandidates(h, profile.element, stageContext)]));
-      const matchedPrimary = new Set();
-      const matchedEcho = [];
-      for (const echoHit of echoCandidates) {
-        const e = echoEvidence.get(echoHit.id);
-        if (!e || !e.known || !e.originals.length) continue;
-        const primaryHit = primaryWindow.find(p => {
-          if (elementalStateKey(p) !== elementalStateKey(echoHit)) return false;
-          const pe = primaryEvidence.get(p.id);
-          if (!pe || !pe.known || !pe.originals.length) return false;
-          return pe.originals.some(po => e.originals.some(eo => {
-            const lo = Math.floor(po * delayed.powerNumerator / delayed.powerDenominator);
-            const hi = Math.ceil(po * delayed.powerNumerator / delayed.powerDenominator);
-            // Reusa a tolerância intermediária já normativa do pipeline D-010a;
-            // não introduz epsilon próprio da spell. Ex.: 820 -> 409 reverte
-            // para O 772 -> 385, um vizinho discreto do O esperado 386.
-            return Math.abs(eo - lo) <= ELEMENTAL_INTERMEDIATE_TOLERANCE ||
-              Math.abs(eo - hi) <= ELEMENTAL_INTERMEDIATE_TOLERANCE;
-          }));
-        });
-        if (!primaryHit) continue;
-        matchedPrimary.add(primaryHit);
-        matchedEcho.push(echoHit);
+      // M-016e: tenta cada fração candidata em ordem; o bloco inteiro precisa
+      // fechar sob a MESMA fração (sem mistura de tiers no mesmo estágio) --
+      // a primeira fração que fechar todos os hits comparáveis vence.
+      let winningTier = null, matchedPrimary = null, matchedEcho = null;
+      for (const tier of tiers) {
+        const mp = new Set();
+        const me = [];
+        for (const echoHit of echoCandidates) {
+          const e = echoEvidence.get(echoHit.id);
+          if (!e || !e.known || !e.originals.length) continue;
+          const primaryHit = primaryWindow.find(p => {
+            if (elementalStateKey(p) !== elementalStateKey(echoHit)) return false;
+            const pe = primaryEvidence.get(p.id);
+            if (!pe || !pe.known || !pe.originals.length) return false;
+            return pe.originals.some(po => e.originals.some(eo => {
+              const lo = Math.floor(po * tier.numerator / tier.denominator);
+              const hi = Math.ceil(po * tier.numerator / tier.denominator);
+              // Reusa a tolerância intermediária já normativa do pipeline D-010a;
+              // não introduz epsilon próprio da spell. Ex.: 820 -> 409 reverte
+              // para O 772 -> 385, um vizinho discreto do O esperado 386.
+              return Math.abs(eo - lo) <= ELEMENTAL_INTERMEDIATE_TOLERANCE ||
+                Math.abs(eo - hi) <= ELEMENTAL_INTERMEDIATE_TOLERANCE;
+            }));
+          });
+          if (!primaryHit) continue;
+          mp.add(primaryHit);
+          me.push(echoHit);
+        }
+        // A queda de um par isolado não prova uma explosão de área inteira.
+        // Todos os hits não-overkill comparáveis do timestamp precisam fechar
+        // contra o blast primário sob a mesma fração; overkills podem
+        // acompanhar, mas nunca servem de prova.
+        if (me.length && me.length === echoCandidates.length) { winningTier = tier; matchedPrimary = mp; matchedEcho = me; break; }
       }
-      // A queda de um par isolado não prova uma explosão de área inteira. Todos
-      // os hits não-overkill comparáveis do timestamp precisam fechar contra o
-      // blast primário; overkills podem acompanhar, mas nunca servem de prova.
-      if (!matchedEcho.length || matchedEcho.length !== echoCandidates.length) continue;
+      if (!winningTier) continue;
       // Uma vez que pares comparáveis provam timing + potência, a explosão de
       // área inteira no mesmo timestamp é o estágio atrasado. Isso preserva hits
       // cujo original não é calculável e overkills, sem usá-los como prova.
@@ -393,6 +412,7 @@
       for (const h of consolidatedEcho) {
         h.multiStageStage = delayed.id;
         h.multiStageCastTs = cast.ts;
+        if (winningTier.stage != null) h.multiStageTierStage = winningTier.stage;
         delayedByHit.set(h.id, cast);
       }
       assignments.push({ cast, primaryHits: Array.from(matchedPrimary), delayedHits: consolidatedEcho });
@@ -429,7 +449,136 @@
     }
     if (turns.length) turns[0].partialEdge = true;
     return turns;
-  }
+  }
+
+  const LEECH_RATIO_CLUSTER_TOLERANCE = 0.15;
+  const TIER_MAGNITUDE_TOLERANCE = 0.2;
+
+  function leechRatiosForHit(h) {
+    const dmg = +h.dmg || 0;
+    const life = +h.lifeLeech || 0;
+    const mana = +h.manaLeech || 0;
+    if (!(dmg > 0) || (!(life > 0) && !(mana > 0))) return null;
+    return { life: life > 0 ? life / dmg : null, mana: mana > 0 ? mana / dmg : null };
+  }
+
+  function leechRatiosClose(a, b) {
+    if (a == null || b == null) return true;
+    if (a === 0 && b === 0) return true;
+    const denom = Math.max(a, b);
+    return denom > 0 && Math.abs(a - b) / denom <= LEECH_RATIO_CLUSTER_TOLERANCE;
+  }
+
+  function clusterHitsByLeechRatio(hits) {
+    const withRatio = hits.map(h => ({ h, ratio: leechRatiosForHit(h) })).filter(x => x.ratio);
+    const clusters = [];
+    for (const item of withRatio) {
+      const target = clusters.find(c => leechRatiosClose(c.life, item.ratio.life) && leechRatiosClose(c.mana, item.ratio.mana));
+      if (target) {
+        target.members.push(item.h);
+        if (target.life == null) target.life = item.ratio.life;
+        if (target.mana == null) target.mana = item.ratio.mana;
+      } else {
+        clusters.push({ members: [item.h], life: item.ratio.life, mana: item.ratio.mana });
+      }
+    }
+    return clusters;
+  }
+
+  // M-016e: quando buildTurns não consegue provar o estágio atrasado porque o
+  // segundo candidato mistura hits de um cast concreto diferente (ex.: Greater
+  // Flurry of Blows aterrissando no mesmo segundo do echo de Spiritual Outburst),
+  // a reversão elemental de dano bruto não é confiável -- a arma/elemento variam
+  // por jogador e por hit, e um componente físico misturado torna o dano não
+  // determinístico (roll de armadura). Depois que o leech setup real é inferido
+  // (2ª passada), a razão vida/dano e mana/dano observada é o sinal independente
+  // de arma/armadura: um estágio atrasado real forma um cluster interno
+  // consistente (D-019 já usa a mesma ideia para separar AA de spell dentro de um
+  // turno); a magnitude bruta do cluster contra as frações candidatas do perfil só
+  // escolhe o rótulo de tier, nunca decide se o cluster pertence ao estágio.
+  // Só corrige casts que a 1ª passada deixou sem estágio atrasado consolidado;
+  // nunca reabre um cast já consumido (M-015/T-004/N-007/N-008).
+  function reconsolidateMultiStageWithLeech(turns, spellCasts, context) {
+    const setup = context && context.leechSetup;
+    if (!setup || (!(setup.lifeBase > 0) && !(setup.manaBase > 0))) return;
+    const casts = (spellCasts || []).filter(c => c && c.profile && c.profile.multiStage).slice().sort((a, b) => a.ts - b.ts);
+    if (!casts.length) return;
+    const consumedCastTs = new Set();
+    for (const t of turns) for (const h of t.hits) if (h.multiStageStage && h.multiStageCastTs != null) consumedCastTs.add(h.multiStageCastTs);
+
+    for (const cast of casts) {
+      if (consumedCastTs.has(cast.ts)) continue;
+      const profile = cast.profile;
+      const stages = profile.multiStage;
+      const delayed = stages && stages.delayed;
+      const delays = delayed && Array.isArray(delayed.delays) ? delayed.delays.filter(d => d >= 1) : null;
+      const tiers = delayed && Array.isArray(delayed.tiers) ? delayed.tiers.filter(tier => tier && tier.denominator > 0) : null;
+      if (!delayed || !delays || !delays.length || !tiers || !tiers.length) continue;
+
+      const originTurn = turns.find(t => t.hits.some(h => h.ts === cast.ts || h.ts === cast.ts - 1));
+      if (!originTurn) continue;
+      const primaryWindow = originTurn.hits.filter(h => (h.ts === cast.ts || h.ts === cast.ts - 1) && isMainHit(h) && !h.overkill && !h.multiStageStage);
+      if (!primaryWindow.length) continue;
+      const primaryTerminal = Math.max(...primaryWindow.map(h => h.ts));
+      const primaryAvg = primaryWindow.reduce((s, h) => s + (+h.dmg || 0), 0) / primaryWindow.length;
+      if (!(primaryAvg > 0)) continue;
+
+      // M-016d/M-016e: mesmo gate guloso de buildTurns -- o primeiro delay
+      // candidato com pelo menos um hit não-overkill é o único avaliado; não
+      // cai para o próximo delay só porque a prova de cluster falhar nesse
+      // segundo. O estágio atrasado pode cair no MESMO turno mecânico do
+      // blast inicial (ex.: :35→:36, gap<2 -- nada precisa ser movido, só
+      // marcado) ou num turno independente diferente (ex.: :56→:58).
+      let echoTs = null, targetTurn = null, block = null;
+      for (const delayCandidate of delays) {
+        const ts = primaryTerminal + delayCandidate;
+        const t = turns.find(tt => tt.hits.some(h => h.ts === ts));
+        if (!t) continue;
+        const b = t.hits.filter(h => h.ts === ts && isMainHit(h) && !h.overkill && !h.multiStageStage);
+        if (b.length) { echoTs = ts; targetTurn = t; block = b; break; }
+      }
+      if (echoTs == null) continue;
+      // A queda de um par isolado não prova uma explosão de área inteira.
+      if (block.length < 2) continue;
+      const clusters = clusterHitsByLeechRatio(block).filter(c => c.members.length >= 2);
+      if (!clusters.length) continue;
+      let best = null;
+      for (const cluster of clusters) {
+        const clusterAvg = cluster.members.reduce((s, h) => s + (+h.dmg || 0), 0) / cluster.members.length;
+        if (!(clusterAvg > 0)) continue;
+        const ratio = clusterAvg / primaryAvg;
+        let nearestTier = null, nearestDiff = Infinity;
+        for (const tier of tiers) {
+          const frac = tier.numerator / tier.denominator;
+          const diff = Math.abs(ratio - frac) / frac;
+          if (diff < nearestDiff) { nearestDiff = diff; nearestTier = tier; }
+        }
+        if (nearestTier && nearestDiff <= TIER_MAGNITUDE_TOLERANCE && (!best || cluster.members.length > best.cluster.members.length)) {
+          best = { cluster, tier: nearestTier };
+        }
+      }
+      if (!best) continue;
+      for (const h of best.cluster.members) {
+        h.multiStageStage = delayed.id;
+        h.multiStageCastTs = cast.ts;
+        if (best.tier.stage != null) h.multiStageTierStage = best.tier.stage;
+      }
+      for (const h of primaryWindow) {
+        h.multiStageStage = stages.primary.id;
+        h.multiStageCastTs = cast.ts;
+      }
+      if (targetTurn !== originTurn) {
+        targetTurn.hits = targetTurn.hits.filter(h => best.cluster.members.indexOf(h) === -1);
+        originTurn.hits.push(...best.cluster.members);
+        originTurn.hits.sort((a, b) => (a.ts - b.ts) || ((a.seq || 0) - (b.seq || 0)));
+      }
+      consumedCastTs.add(cast.ts);
+    }
+    // M-001/T-002: se um turno perder todos os hits para o estágio atrasado
+    // originário, ele deixa de existir como ciclo independente.
+    for (let i = turns.length - 1; i >= 0; i--) if (!turns[i].hits.length) turns.splice(i, 1);
+  }
+
   const API = {
     normalizeRuneName,
     runeProfile,
@@ -440,6 +589,7 @@
     inferSelectedSpeakerBySelfHealing,
     parseLocalChat,
     buildTurns,
+    reconsolidateMultiStageWithLeech,
   };
 
   root.UnifiedParsing = API;

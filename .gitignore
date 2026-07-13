@@ -2,6 +2,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 .claude/
+.agents/
+skills-lock.json
 .codex/
 .codex-tmp/
 .codex-ssh/
@@ -25,3 +27,4 @@ tests/
 agents/
 openspec/
 reports/
+turnos-afetados-fix-grenade.txt

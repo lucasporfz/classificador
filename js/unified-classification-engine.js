@@ -126,6 +126,7 @@
     inferSelectedSpeakerBySelfHealing,
     parseLocalChat,
     buildTurns,
+    reconsolidateMultiStageWithLeech,
   } = root.UnifiedParsing;
 
   const {
@@ -652,6 +653,10 @@
       goldLeechObservations = collectGoldLeechObservations(resolvedWithoutLeech, context);
       const charmCandidates = detectCharmCandidateMobsFromColocatedTurns(resolvedWithoutLeech, context);
       context.leechSetup = inferLeechSetupFromGoldObservations(goldLeechObservations, context, charmCandidates);
+      // M-016e: só depois do leech real (não o bootstrap) é que o cluster
+      // vida/mana-por-dano é confiável para corrigir um estágio atrasado que a
+      // 1ª passada (sem leech) não conseguiu provar por reversão elemental.
+      reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
       context.consolidatedGrenadeCasts = new Set();
       resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
@@ -660,6 +665,7 @@
       context.consolidatedGrenadeCasts = new Set();
       const pass1 = turns.map(t => resolveTurn(t, facts, context));
       refineCritByComponent(pass1);
+      reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
       context.consolidatedGrenadeCasts = new Set();
       resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
@@ -763,6 +769,7 @@
     inferCritByComponent,
     inferBmPierceFromCrossMobEvidence,
     buildTurns,
+    reconsolidateMultiStageWithLeech,
     buildContext,
     resolveTurn,
     formulas: {

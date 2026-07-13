@@ -355,6 +355,18 @@
 
   function chooseActionForComponent(comp, hits, actions) {
     if (comp === 'spell') {
+      // M-016e: um estágio atrasado consolidado carrega o ts do cast originário
+      // (multiStageCastTs) mesmo depois de mover hits para o turno de origem. A
+      // heurística de "cast mais próximo do centro do bloco" quebra quando o
+      // bloco atravessa turno e um cast concreto diferente e legítimo (ex.:
+      // Greater Flurry of Blows em :58) fica geometricamente mais perto do
+      // centro deslocado do que o cast originário -- preferir o cast originário
+      // quando todos os hits do componente concordam nele.
+      const stageCastTs = sortedUnique(hits.map(h => h.multiStageCastTs).filter(ts => ts != null));
+      if (stageCastTs.length === 1) {
+        const originCast = actions.spellCasts.find(a => a.ts === stageCastTs[0]);
+        if (originCast) return originCast;
+      }
       const centerTs = Math.round(mean(hits.map(h => h.ts)));
       const sorted = actions.spellCasts.slice().sort((a, b) => Math.abs(a.ts - centerTs) - Math.abs(b.ts - centerTs) || b.ts - a.ts);
       return sorted[0] || null;
@@ -1434,13 +1446,25 @@
   function nearestSpellCastForTurn(turn, actions, vocation) {
     const hits = turn.hits || [];
     if (!hits.length) return null;
-    const center = Math.round(mean(hits.map(h => h.ts)));
     const candidates = (actions.spellCasts || []).filter(c => {
       if (!c || !c.profile || c.profile.type !== 'attack') return false;
       if (vocation && c.profile.vocation && c.profile.vocation !== vocation) return false;
       return true;
-    }).sort((a, b) => Math.abs(a.ts - center) - Math.abs(b.ts - center) || b.ts - a.ts);
-    return candidates[0] || null;
+    });
+    // M-016e: mesma exceção de chooseActionForComponent -- quando um estágio
+    // atrasado consolidado carrega o ts do cast originário (multiStageCastTs), a
+    // proximidade ao centro do turno quebra se um cast concreto diferente e
+    // legítimo (ex.: Greater Flurry of Blows) ficar mais perto do centro
+    // deslocado do bloco cruzado. Preferir o cast originário quando os hits do
+    // turno concordam nele.
+    const stageCastTs = sortedUnique(hits.map(h => h.multiStageCastTs).filter(ts => ts != null));
+    if (stageCastTs.length === 1) {
+      const originCast = candidates.find(c => c.ts === stageCastTs[0]);
+      if (originCast) return originCast;
+    }
+    const center = Math.round(mean(hits.map(h => h.ts)));
+    const sorted = candidates.slice().sort((a, b) => Math.abs(a.ts - center) - Math.abs(b.ts - center) || b.ts - a.ts);
+    return sorted[0] || null;
   }
 
   // generalize-single-target-aa-resolver-to-runes: mesmo critério de proximidade

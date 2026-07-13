@@ -97,9 +97,12 @@
     'exevo max mort': { label: 'Great Death Beam', type: 'attack', element: 'death', topology: 'area', vocation: 'sorcerer' },
     'exevo mort ora': {
       label: 'Death Echo', type: 'attack', element: 'death', topology: 'area', vocation: 'sorcerer',
+      // M-016d: um único delay candidato (1s) e uma única fração candidata (1/2) -- mesmo
+      // comportamento observável de sempre, agora expresso no schema geral de listas
+      // candidatas (M-016d/M-016e) compartilhado com Spiritual Outburst.
       multiStage: {
         primary: { id: 'primary', powerNumerator: 1, powerDenominator: 1 },
-        delayed: { id: 'echo', delayAfterPrimaryTerminal: 1, powerNumerator: 1, powerDenominator: 2 },
+        delayed: { id: 'echo', delays: [1], tiers: [{ numerator: 1, denominator: 2 }] },
       },
     },
     'utori mort': { label: 'Curse', type: 'attack', element: 'death', topology: 'single', vocation: 'sorcerer' },
@@ -147,7 +150,29 @@
     'exori infir nia': { label: 'Tiger Clash', type: 'attack', element: 'physical', topology: 'single', vocation: 'monk' },
     'exori gran nia': { label: 'Devastating Knockout', type: 'attack', element: 'physical', topology: 'single', vocation: 'monk' },
     'exori mas nia': { label: 'Sweeping Takedown', type: 'attack', element: 'physical', topology: 'area', vocation: 'monk' },
-    'exori gran mas nia': { label: 'Spiritual Outburst', type: 'attack', element: 'holy', topology: 'area', vocation: 'monk' },
+    // M-016e: segunda spell multiestágio conhecida (após Death Echo, M-016d).
+    // Blast inicial de potência integral + estágio atrasado com delay candidato
+    // 1s ou 2s após o término do blast inicial (tentados em ordem, gulosamente
+    // -- monk 2 07:19:35 fecha em +1, 07:19:56/07:19:58 só fecha em +2) e
+    // potência candidata Stage 1 (3/8) / Stage 2 (1/2) / Stage 3 (5/8), inferida
+    // só pela transformação discreta do dano observado -- sem sinal externo.
+    // Stage 1/2 não têm evidência de log real nesta mudança (ver
+    // docs/CLASSIFICATION_RULES.md, risco residual).
+    'exori gran mas nia': {
+      label: 'Spiritual Outburst', type: 'attack', element: 'holy', topology: 'area', vocation: 'monk',
+      multiStage: {
+        primary: { id: 'primary', powerNumerator: 1, powerDenominator: 1 },
+        delayed: {
+          id: 'echo',
+          delays: [1, 2],
+          tiers: [
+            { stage: 1, numerator: 3, denominator: 8 },
+            { stage: 2, numerator: 1, denominator: 2 },
+            { stage: 3, numerator: 5, denominator: 8 },
+          ],
+        },
+      },
+    },
   };
 
   const SUPPORT_OR_HEAL_RE = /^(exura|exana|utani|utana|utamo|utito|uteta|utevo|exeta|exiva|exani|adura|adana|adevo)\b/;
@@ -792,31 +817,31 @@
     if (hit.damageReflection || hit.woundCharm || hit.overpowerCharm) return false;
     if (hit.type !== 'normal' && hit.type !== 'crit') return false;
     return true;
-  }
-  function gravSanHitInWindow(context, hitOrTs) {
-    const setup = context && context.gravSanSetup;
-    const ts = typeof hitOrTs === 'object' && hitOrTs ? +hitOrTs.ts : +hitOrTs;
-    if (!setup || !(setup.bonus > 0) || !Number.isFinite(ts)) return false;
-    return (setup.windows || []).some(w => ts >= w.start && ts <= w.end);
-  }
+  }
+  function gravSanHitInWindow(context, hitOrTs) {
+    const setup = context && context.gravSanSetup;
+    const ts = typeof hitOrTs === 'object' && hitOrTs ? +hitOrTs.ts : +hitOrTs;
+    if (!setup || !(setup.bonus > 0) || !Number.isFinite(ts)) return false;
+    return (setup.windows || []).some(w => ts >= w.start && ts <= w.end);
+  }
 
-  function gravSanMultiplierAtTs(context, ts, hit) {
-    const setup = context && context.gravSanSetup;
-    if (!setup || !(setup.bonus > 0) || !Number.isFinite(+ts)) return 1;
-    const inWindow = gravSanHitInWindow(context, hit || ts);
-    if (!inWindow) return 1;
-
-    // V18: nível do buff é global do log, mas aplicação é por ataque/componente.
-    // context.gravSanHitOverride contém decisões temporárias durante a validação
-    // de um candidato: hit.id => true/false. Sem override, mantemos o comportamento
-    // histórico como ativo dentro da janela.
-    const overrides = context && context.gravSanHitOverride;
-    const id = hit && hit.id;
-    if (overrides && id != null && Object.prototype.hasOwnProperty.call(overrides, id)) {
-      return overrides[id] ? (1 + setup.bonus) : 1;
-    }
-    return 1 + setup.bonus;
-  }
+  function gravSanMultiplierAtTs(context, ts, hit) {
+    const setup = context && context.gravSanSetup;
+    if (!setup || !(setup.bonus > 0) || !Number.isFinite(+ts)) return 1;
+    const inWindow = gravSanHitInWindow(context, hit || ts);
+    if (!inWindow) return 1;
+
+    // V18: nível do buff é global do log, mas aplicação é por ataque/componente.
+    // context.gravSanHitOverride contém decisões temporárias durante a validação
+    // de um candidato: hit.id => true/false. Sem override, mantemos o comportamento
+    // histórico como ativo dentro da janela.
+    const overrides = context && context.gravSanHitOverride;
+    const id = hit && hit.id;
+    if (overrides && id != null && Object.prototype.hasOwnProperty.call(overrides, id)) {
+      return overrides[id] ? (1 + setup.bonus) : 1;
+    }
+    return 1 + setup.bonus;
+  }
 
   const API = {
     gravSanHitInWindow,
