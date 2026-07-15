@@ -1,4 +1,4 @@
-/*
+﻿/*
  * unified-formulas.js
  *
  * Camada de formulas do UnifiedClassificationEngine: constantes de engine (tabelas de
@@ -28,9 +28,9 @@
   const IGNORED_RUNE_RE = /\b(wall|bomb|field)\b/i;
   const IGNORED_SPELL_RE = /^adori\b/i;
 
-  // M-031/M-032 (docs/CLASSIFICATION_RULES.md): estas 4 vocações têm AA
+  // M-031/M-032 (docs/CLASSIFICATION_RULES.md): estas 4 vocaÃ§Ãµes tÃªm AA
   // exclusivamente single-target e cardinalidade zero-ou-um hit de AA por
-  // turno — RP é a única vocação com AA de área e fica fora deste conjunto.
+  // turno â€” RP Ã© a Ãºnica vocaÃ§Ã£o com AA de Ã¡rea e fica fora deste conjunto.
   const SINGLE_TARGET_AA_VOCATIONS = new Set(['knight', 'sorcerer', 'druid', 'monk']);
 
   const RUNE_PROFILES = {
@@ -45,8 +45,8 @@
     'explosion': { element: 'physical', topology: 'area', label: 'Explosion' },
   };
 
-  // Perfis de spells suficientes para a classificação mecânica. Spells desconhecidas
-  // podem nomear componente como ação concreta, mas ficam sem eixo elemental determinístico.
+  // Perfis de spells suficientes para a classificaÃ§Ã£o mecÃ¢nica. Spells desconhecidas
+  // podem nomear componente como aÃ§Ã£o concreta, mas ficam sem eixo elemental determinÃ­stico.
   const SPELL_PROFILES = {
     // Paladin
     'exori san': { label: 'Divine Missile', type: 'attack', element: 'holy', topology: 'single', vocation: 'paladin' },
@@ -97,12 +97,13 @@
     'exevo max mort': { label: 'Great Death Beam', type: 'attack', element: 'death', topology: 'area', vocation: 'sorcerer' },
     'exevo mort ora': {
       label: 'Death Echo', type: 'attack', element: 'death', topology: 'area', vocation: 'sorcerer',
-      // M-016d: um único delay candidato (1s) e uma única fração candidata (1/2) -- mesmo
-      // comportamento observável de sempre, agora expresso no schema geral de listas
-      // candidatas (M-016d/M-016e) compartilhado com Spiritual Outburst.
+      // M-016d: delays candidatos 1s/2s em ordem gulosa (sÃ³ tenta +2 quando +1
+      // nÃ£o tem candidatos), e uma Ãºnica fraÃ§Ã£o candidata (1/2) -- mesmo schema
+      // declarativo compartilhado com Spiritual Outburst.
       multiStage: {
+        confirmation: 'elemental',
         primary: { id: 'primary', powerNumerator: 1, powerDenominator: 1 },
-        delayed: { id: 'echo', delays: [1], tiers: [{ numerator: 1, denominator: 2 }] },
+        delayed: { id: 'echo', delays: [1, 2], tiers: [{ numerator: 1, denominator: 2 }] },
       },
     },
     'utori mort': { label: 'Curse', type: 'attack', element: 'death', topology: 'single', vocation: 'sorcerer' },
@@ -139,10 +140,10 @@
     'exori amp pug': { label: 'Mystic Repulse', type: 'attack', element: 'physical', topology: 'single', vocation: 'monk' },
     'exori infir amp pug': { label: 'Lesser Mystic Repulse', type: 'attack', element: 'physical', topology: 'single', vocation: 'monk' },
     // Sem nome oficial confirmado (ausente da tabela legada js/classifier.js
-    // também) — `label` deliberadamente omitido para não inventar um nome de
-    // spell; a exibição cai no fallback de texto (idêntico ao comportamento
-    // antes deste registro). element/topology/vocation são confirmados pelo
-    // dano observado em logs/serverlog6..9.txt: sempre físico, sempre atingindo
+    // tambÃ©m) â€” `label` deliberadamente omitido para nÃ£o inventar um nome de
+    // spell; a exibiÃ§Ã£o cai no fallback de texto (idÃªntico ao comportamento
+    // antes deste registro). element/topology/vocation sÃ£o confirmados pelo
+    // dano observado em logs/serverlog6..9.txt: sempre fÃ­sico, sempre atingindo
     // 3+ mobs no mesmo turno.
     'exori mas amp pug': { type: 'attack', element: 'physical', topology: 'area', vocation: 'monk' },
     'exori med pug': { label: 'Chained Penance', type: 'attack', element: 'holy', topology: 'area', vocation: 'monk' },
@@ -150,17 +151,18 @@
     'exori infir nia': { label: 'Tiger Clash', type: 'attack', element: 'physical', topology: 'single', vocation: 'monk' },
     'exori gran nia': { label: 'Devastating Knockout', type: 'attack', element: 'physical', topology: 'single', vocation: 'monk' },
     'exori mas nia': { label: 'Sweeping Takedown', type: 'attack', element: 'physical', topology: 'area', vocation: 'monk' },
-    // M-016e: segunda spell multiestágio conhecida (após Death Echo, M-016d).
-    // Blast inicial de potência integral + estágio atrasado com delay candidato
-    // 1s ou 2s após o término do blast inicial (tentados em ordem, gulosamente
-    // -- monk 2 07:19:35 fecha em +1, 07:19:56/07:19:58 só fecha em +2) e
-    // potência candidata Stage 1 (3/8) / Stage 2 (1/2) / Stage 3 (5/8), inferida
-    // só pela transformação discreta do dano observado -- sem sinal externo.
-    // Stage 1/2 não têm evidência de log real nesta mudança (ver
+    // M-016e: segunda spell multiestÃ¡gio conhecida (apÃ³s Death Echo, M-016d).
+    // Blast inicial de potÃªncia integral + estÃ¡gio atrasado com delay candidato
+    // 1s ou 2s apÃ³s o tÃ©rmino do blast inicial (tentados em ordem, gulosamente
+    // -- monk 2 07:19:35 fecha em +1, 07:19:56/07:19:58 sÃ³ fecha em +2) e
+    // potÃªncia candidata Stage 1 (3/8) / Stage 2 (1/2) / Stage 3 (5/8), inferida
+    // sÃ³ pela transformaÃ§Ã£o discreta do dano observado -- sem sinal externo.
+    // Stage 1/2 nÃ£o tÃªm evidÃªncia de log real nesta mudanÃ§a (ver
     // docs/CLASSIFICATION_RULES.md, risco residual).
     'exori gran mas nia': {
       label: 'Spiritual Outburst', type: 'attack', element: 'holy', topology: 'area', vocation: 'monk',
       multiStage: {
+        confirmation: 'leech_cluster',
         primary: { id: 'primary', powerNumerator: 1, powerDenominator: 1 },
         delayed: {
           id: 'echo',
@@ -180,15 +182,15 @@
 
   // D-020 documenta 3 tiers reais de imbuement (Basic/Intricate/Powerful); restrito aqui a
   // Powerful-only por premissa confirmada sobre os personagens deste projeto (nunca usam
-  // imbuement Basic/Intricate de leech) — não é reinterpretação da mecânica de jogo. Ver
+  // imbuement Basic/Intricate de leech) â€” nÃ£o Ã© reinterpretaÃ§Ã£o da mecÃ¢nica de jogo. Ver
   // docs/CLASSIFICATION_RULES.md, adendo de D-020, e
   // openspec/changes/fix-leech-charm-detection-turn-local-signal/design.md (D4).
   const LIFE_IMBUEMENT_SLOTS = [0, 0.25];
   const MANA_IMBUEMENT_SLOTS = [0, 0.08];
-  // D-020: Conviction Perk (Wheel of Destiny) e perk de arma empilham até um teto de
-  // stacks cada — não são uma escolha binária 0/1. LIFE_CONVICTION/MANA_CONVICTION e
-  // LIFE_WEAPON_PERK/MANA_WEAPON_PERK já são a lista de TODOS os totais possíveis
-  // (0..maxStacks × valor por stack), para somar junto com os slots de imbuement.
+  // D-020: Conviction Perk (Wheel of Destiny) e perk de arma empilham atÃ© um teto de
+  // stacks cada â€” nÃ£o sÃ£o uma escolha binÃ¡ria 0/1. LIFE_CONVICTION/MANA_CONVICTION e
+  // LIFE_WEAPON_PERK/MANA_WEAPON_PERK jÃ¡ sÃ£o a lista de TODOS os totais possÃ­veis
+  // (0..maxStacks Ã— valor por stack), para somar junto com os slots de imbuement.
   const LIFE_CONVICTION = stackTotals(0.0075, 4);
   const MANA_CONVICTION = stackTotals(0.0025, 4);
   const LIFE_WEAPON_PERK = stackTotals(0.01, 10);
@@ -200,39 +202,39 @@
   const WEAPON_LEECH_BONUS = 0.005;
   const MAX_WEAPON_LEECH_BONUSES = 10;
 
-  // V13: bônus de leech por spell/perk de Wheel of Destiny.
-  // Diferente dos minor charms, estes bônus pertencem à ação concreta, não ao mob.
-  // Cada entrada é testada como hipótese discreta: sem bônus (0) ou com o bônus listado.
+  // V13: bÃ´nus de leech por spell/perk de Wheel of Destiny.
+  // Diferente dos minor charms, estes bÃ´nus pertencem Ã  aÃ§Ã£o concreta, nÃ£o ao mob.
+  // Cada entrada Ã© testada como hipÃ³tese discreta: sem bÃ´nus (0) ou com o bÃ´nus listado.
   const SPELL_LEECH_BONUS_CANDIDATES = {
     'exori dir moe': { label: 'Ethereal Barrage', life: [0, 0.10], mana: [0] },
     'exevo tera hur': { label: 'Terra Wave', life: [0, 0.10], mana: [0] },
     'exori scu': { label: 'Shield Slam', life: [0, 0.15], mana: [0] },
   };
 
-  // V15/V18: utevo grav san tem o nível de bônus inferido no nível do log,
-  // mas a aplicação do bônus é testada por componente/ataque. O tapete dura 5s,
-  // porém o personagem só mantém o bônus enquanto está sobre ele; portanto, hits
+  // V15/V18: utevo grav san tem o nÃ­vel de bÃ´nus inferido no nÃ­vel do log,
+  // mas a aplicaÃ§Ã£o do bÃ´nus Ã© testada por componente/ataque. O tapete dura 5s,
+  // porÃ©m o personagem sÃ³ mantÃ©m o bÃ´nus enquanto estÃ¡ sobre ele; portanto, hits
   // dentro da janela podem ser testados como com ou sem o multiplicador.
   const GRAV_SAN_INCANTATION = 'utevo grav san';
   const GRAV_SAN_DURATION_SECONDS = 5;
   const GRAV_SAN_BONUS_CANDIDATES = [0.08, 0.10, 0.12];
 
-  // O crítico é inferido POR-COMPONENTE por buckets crit/não-crit (mean/mean), não por
+  // O crÃ­tico Ã© inferido POR-COMPONENTE por buckets crit/nÃ£o-crit (mean/mean), nÃ£o por
   // uma grade de candidatos global. `criticalMultiplierForHit` aplica o crit do componente
-  // do bloco em reversão; a inferência está em inferCritByComponent (+ bootstrap
-  // inferCoarseGlobalCrit). Amostras mínimas de cada lado para um bucket (componente,mob):
+  // do bloco em reversÃ£o; a inferÃªncia estÃ¡ em inferCritByComponent (+ bootstrap
+  // inferCoarseGlobalCrit). Amostras mÃ­nimas de cada lado para um bucket (componente,mob):
   const CRIT_BUCKET_MIN_SAMPLES = 6;
 
-  // Teto plausível do multiplicador de crítico (build). Usado só para limitar o BOOTSTRAP
-  // grosso do pass-1; os multiplicadores finais por-componente vêm dos buckets.
+  // Teto plausÃ­vel do multiplicador de crÃ­tico (build). Usado sÃ³ para limitar o BOOTSTRAP
+  // grosso do pass-1; os multiplicadores finais por-componente vÃªm dos buckets.
   const CRIT_BOOTSTRAP_MAX = 1.9;
 
-  // Etapa 2 da inferência de crítico: os multiplicadores reais do build vêm de um conjunto
+  // Etapa 2 da inferÃªncia de crÃ­tico: os multiplicadores reais do build vÃªm de um conjunto
   // discreto e conhecido. A etapa 1 (buckets mean(crit)/mean(noncrit) por componente/mob,
-  // inferCritByComponent) não muda — só o valor final por-componente é ajustado ("snap")
-  // para o candidato mais próximo desta tabela, absorvendo o ruído da estimativa por
-  // amostra pequena. Não se aplica ao bootstrap grosso do pass-1 (CRIT_BOOTSTRAP_MAX/
-  // inferCoarseGlobalCrit), que serve só para rotular hits antes do refinamento.
+  // inferCritByComponent) nÃ£o muda â€” sÃ³ o valor final por-componente Ã© ajustado ("snap")
+  // para o candidato mais prÃ³ximo desta tabela, absorvendo o ruÃ­do da estimativa por
+  // amostra pequena. NÃ£o se aplica ao bootstrap grosso do pass-1 (CRIT_BOOTSTRAP_MAX/
+  // inferCoarseGlobalCrit), que serve sÃ³ para rotular hits antes do refinamento.
   const CRIT_MULTIPLIER_CANDIDATES = [1.5, 1.54, 1.62, 1.70, 1.72, 1.80, 1.82, 1.92, 2.00, 2.40];
   function snapCritMultiplier(value) {
     if (!(value > 0)) return value;
@@ -244,17 +246,17 @@
     return best;
   }
 
-  // "Transcendence was triggered." é um bônus de dano crítico: todo hit crítico com
-  // ts ∈ [T, T+7] (T = timestamp do gatilho) ganha +15 pontos percentuais no multiplicador
-  // de crítico já resolvido (por-componente, já com snap aplicado). Aditivo, não
-  // multiplicativo — 2.00 vira 2.15, não 2.00×1.15.
+  // "Transcendence was triggered." Ã© um bÃ´nus de dano crÃ­tico: todo hit crÃ­tico com
+  // ts âˆˆ [T, T+7] (T = timestamp do gatilho) ganha +15 pontos percentuais no multiplicador
+  // de crÃ­tico jÃ¡ resolvido (por-componente, jÃ¡ com snap aplicado). Aditivo, nÃ£o
+  // multiplicativo â€” 2.00 vira 2.15, nÃ£o 2.00Ã—1.15.
   const TRANSCENDENCE_WINDOW_SECONDS = 7;
   const TRANSCENDENCE_CRIT_BONUS = 0.15;
 
-  // Onslaught: +60% fixo sobre o dano, ADITIVO com o crítico (não multiplicativo).
-  // Num hit SEM crítico o bônus vira um fator conhecido (÷1.6 recupera a base); num hit
-  // COM crítico ele soma ao multiplicador (critMult + 0.6), inseparável sem conhecer o
-  // crítico-base — por isso a inferência de crítico EXCLUI onslaught+crit dos buckets.
+  // Onslaught: +60% fixo sobre o dano, ADITIVO com o crÃ­tico (nÃ£o multiplicativo).
+  // Num hit SEM crÃ­tico o bÃ´nus vira um fator conhecido (Ã·1.6 recupera a base); num hit
+  // COM crÃ­tico ele soma ao multiplicador (critMult + 0.6), inseparÃ¡vel sem conhecer o
+  // crÃ­tico-base â€” por isso a inferÃªncia de crÃ­tico EXCLUI onslaught+crit dos buckets.
   const ONSLAUGHT_DAMAGE_MULTIPLIER = 1.6;
   function isTranscendenceActiveAt(context, ts) {
     const windows = context && context.transcendenceWindows;
@@ -263,32 +265,32 @@
     return false;
   }
 
-  // V19: Perfect Shot adiciona +20 de dano no valor pré-mitigação do AA.
-  // Modelagem atual: aplica depois do crítico e antes da mitigação; se logs
-  // futuros mostrarem que o crítico também multiplica o +20, este ponto fica
+  // V19: Perfect Shot adiciona +20 de dano no valor prÃ©-mitigaÃ§Ã£o do AA.
+  // Modelagem atual: aplica depois do crÃ­tico e antes da mitigaÃ§Ã£o; se logs
+  // futuros mostrarem que o crÃ­tico tambÃ©m multiplica o +20, este ponto fica
   // isolado para ajuste.
   const PERFECT_SHOT_PREMIT_BONUS = 20;
 
-  // V20: tolerâncias pequenas para absorver erro de inferência/amostragem.
+  // V20: tolerÃ¢ncias pequenas para absorver erro de inferÃªncia/amostragem.
   // Leech pode ficar 1-3 pontos fora por base inferida ligeiramente alta/baixa
-  // (ex.: 16.25% inferido vs 16% real). A tolerância intermediária elemental
-  // age antes de desfazer mitigação, quando FLOOR/CEIL pula um valor inteiro.
+  // (ex.: 16.25% inferido vs 16% real). A tolerÃ¢ncia intermediÃ¡ria elemental
+  // age antes de desfazer mitigaÃ§Ã£o, quando FLOOR/CEIL pula um valor inteiro.
   const LEECH_VALUE_TOLERANCE_SMALL_BLOCK = 3;
   const LEECH_VALUE_TOLERANCE_LARGE_BLOCK = 1;
   const LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX = 5;
   const ELEMENTAL_INTERMEDIATE_TOLERANCE = 1;
-  // Tolerância CROSS-HIT (entre hits do mesmo bloco candidato) na interseção
-  // física de `validatePhysicalBlock`/`intersectIntervals` — independente da
-  // tolerância POR-HIT acima (que já se aplica igual a physicalOriginalInterval
-  // e elementalOriginalCandidates). Uma tentativa anterior de tolerância cega
+  // TolerÃ¢ncia CROSS-HIT (entre hits do mesmo bloco candidato) na interseÃ§Ã£o
+  // fÃ­sica de `validatePhysicalBlock`/`intersectIntervals` â€” independente da
+  // tolerÃ¢ncia POR-HIT acima (que jÃ¡ se aplica igual a physicalOriginalInterval
+  // e elementalOriginalCandidates). Uma tentativa anterior de tolerÃ¢ncia cega
   // aqui foi implementada, medida e REVOGADA (openspec/changes/
-  // fix-physical-intersection-reset-bug) porque magnitude de gap sozinha não
-  // distingue ruído (gap 42 medido em turno sem quebra real) de quebra
-  // genuína (gap 4 em mazzerinbarrage 23:48:21, bloodjaw). Este valor só é
-  // válido porque foi validado empiricamente contra esse mesmo caso-prova e
-  // contra todos os fixtures do Eixo 2-físico (openspec/changes/
-  // add-physical-intersection-tolerance) — não subir sem repetir essa
-  // validação.
+  // fix-physical-intersection-reset-bug) porque magnitude de gap sozinha nÃ£o
+  // distingue ruÃ­do (gap 42 medido em turno sem quebra real) de quebra
+  // genuÃ­na (gap 4 em mazzerinbarrage 23:48:21, bloodjaw). Este valor sÃ³ Ã©
+  // vÃ¡lido porque foi validado empiricamente contra esse mesmo caso-prova e
+  // contra todos os fixtures do Eixo 2-fÃ­sico (openspec/changes/
+  // add-physical-intersection-tolerance) â€” nÃ£o subir sem repetir essa
+  // validaÃ§Ã£o.
   const PHYSICAL_INTERSECTION_TOLERANCE = 4;
   const ELEMENTAL_CLUSTER_MIN_TOLERANCE = 8;
   const ELEMENTAL_CLUSTER_MAX_TOLERANCE = 12;
@@ -296,9 +298,9 @@
   const TERRA_BURST_BONUS_LEVELS = [1.20, 1.40, 1.60];
 
   function leechValueToleranceForN(n, expectedValue) {
-    // V20: em blocos pequenos (A1/S2 etc.) poucos pontos de diferença podem ser
-    // só erro da base inferida (16.25% vs 16%). Em blocos de área grandes, manter
-    // ±1 preserva a cardinalidade e evita Ns vizinhos virarem falsos positivos.
+    // V20: em blocos pequenos (A1/S2 etc.) poucos pontos de diferenÃ§a podem ser
+    // sÃ³ erro da base inferida (16.25% vs 16%). Em blocos de Ã¡rea grandes, manter
+    // Â±1 preserva a cardinalidade e evita Ns vizinhos virarem falsos positivos.
     if (n <= 3) {
       const adaptive = Number.isFinite(+expectedValue) ? Math.ceil(+expectedValue * 0.01) : 0;
       return Math.min(LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX, Math.max(LEECH_VALUE_TOLERANCE_SMALL_BLOCK, adaptive));
@@ -311,9 +313,9 @@
   }
 
   function stackTotals(perStack, maxStacks) {
-    // D-020: Conviction Perk e perk de arma empilham (até `maxStacks` vezes) — a
-    // lista retornada já é TODOS os totais possíveis (0..maxStacks × perStack), não
-    // uma escolha binária de "tem ou não tem".
+    // D-020: Conviction Perk e perk de arma empilham (atÃ© `maxStacks` vezes) â€” a
+    // lista retornada jÃ¡ Ã© TODOS os totais possÃ­veis (0..maxStacks Ã— perStack), nÃ£o
+    // uma escolha binÃ¡ria de "tem ou nÃ£o tem".
     const out = [];
     for (let k = 0; k <= (maxStacks || 0); k++) out.push(Math.round(k * perStack * 1e6) / 1e6);
     return out;
@@ -321,11 +323,11 @@
 
   function buildLeechBaseCandidates(slots, maxSlots, extraLists) {
     // D-020: o personagem pode ter mais de uma fonte de leech no set. Para EK/RP
-    // com arma + item/fonte adicional, dois Powerful Life/Mana Leech são plausíveis.
-    // Ainda não aceitamos percentual livre: só somas discretas de fontes oficiais.
-    // `slots` (imbuement) combina até `maxSlots` vezes com repetição; cada lista em
-    // `extraLists` (Conviction Perk, perk de arma, ...) já traz todos os seus totais
-    // possíveis e é somada uma vez (não repetida) via produto cartesiano.
+    // com arma + item/fonte adicional, dois Powerful Life/Mana Leech sÃ£o plausÃ­veis.
+    // Ainda nÃ£o aceitamos percentual livre: sÃ³ somas discretas de fontes oficiais.
+    // `slots` (imbuement) combina atÃ© `maxSlots` vezes com repetiÃ§Ã£o; cada lista em
+    // `extraLists` (Conviction Perk, perk de arma, ...) jÃ¡ traz todos os seus totais
+    // possÃ­veis e Ã© somada uma vez (nÃ£o repetida) via produto cartesiano.
     const sums = [0];
     const slotList = Array.from(slots || [0]);
     for (let n = 0; n < (maxSlots || 1); n++) {
@@ -529,15 +531,15 @@
 
   function criticalMultiplierForHit(hit, context) {
     if (!hit) return 1;
-    // Onslaught é +60% fixo sobre o dano, ADITIVO com o crítico (D-009a): num hit
-    // SEM crítico o bônus é o fator conhecido 1.6 (não depende de critSetup); num
-    // hit COM crítico ele soma ao multiplicador de crítico do componente.
+    // Onslaught Ã© +60% fixo sobre o dano, ADITIVO com o crÃ­tico (D-009a): num hit
+    // SEM crÃ­tico o bÃ´nus Ã© o fator conhecido 1.6 (nÃ£o depende de critSetup); num
+    // hit COM crÃ­tico ele soma ao multiplicador de crÃ­tico do componente.
     if (!hit.realCrit) return hit.onslaught ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1;
     const setup = context && context.critSetup;
     if (!setup) return hit.onslaught ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1;
-    // Preferência: crítico do componente do bloco em validação (transiente
-    // `_activeCritKey`, setado por validate*Block); depois a chave já colada no hit;
-    // depois o fallback (global grosso da porção); por fim 1.
+    // PreferÃªncia: crÃ­tico do componente do bloco em validaÃ§Ã£o (transiente
+    // `_activeCritKey`, setado por validate*Block); depois a chave jÃ¡ colada no hit;
+    // depois o fallback (global grosso da porÃ§Ã£o); por fim 1.
     const key = (context && context._activeCritKey) || (hit && hit._compKey) || null;
     const by = setup.byComponent;
     let base = null;
@@ -546,8 +548,8 @@
     else if (setup.multiplier > 1) base = setup.multiplier;
     if (base == null) base = hit.onslaught ? 1 : null;
     if (base == null) return 1;
-    // Transcendence: bônus ADITIVO de +15pp no multiplicador já resolvido (não
-    // multiplicativo) para hits críticos dentro da janela [T, T+7] do gatilho.
+    // Transcendence: bÃ´nus ADITIVO de +15pp no multiplicador jÃ¡ resolvido (nÃ£o
+    // multiplicativo) para hits crÃ­ticos dentro da janela [T, T+7] do gatilho.
     let mult = isTranscendenceActiveAt(context, hit.ts) ? base + TRANSCENDENCE_CRIT_BONUS : base;
     if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);
     return mult;
@@ -564,8 +566,8 @@
       if (!out.some(x => x.key === key)) out.push({ key, iv: [lo, hi] });
     };
     // Modelo principal: C = FLOOR(preMitigationDamage * critMultiplier).
-    // CEIL fica como hipótese conservadora porque alguns multiplicadores finais
-    // observados no client já exigiram dupla hipótese de arredondamento.
+    // CEIL fica como hipÃ³tese conservadora porque alguns multiplicadores finais
+    // observados no client jÃ¡ exigiram dupla hipÃ³tese de arredondamento.
     add(invFloor(value, crit));
     add(invCeil(value, crit));
     return out.map(x => x.iv).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
@@ -573,7 +575,7 @@
 
   function postMultiplier(hit, context) {
     // Prey/Bounty Talisman e utevo grav san ampliam o dano final exibido.
-    // Para reconstrução determinística, eles entram como multiplicadores pós-mit.
+    // Para reconstruÃ§Ã£o determinÃ­stica, eles entram como multiplicadores pÃ³s-mit.
     let m = 1;
     if (hit && hit.isPrey) m *= 1.25;
     m *= gravSanMultiplierAtTs(context, hit && hit.ts, hit);
@@ -591,7 +593,7 @@
     };
     add(invFloor(displayDamage, post));
     // V15: active prey/grav podem aparecer com arredondamento por CEIL em alguns
-    // pontos do client. A inversão aceita FLOOR e CEIL como hipóteses discretas.
+    // pontos do client. A inversÃ£o aceita FLOOR e CEIL como hipÃ³teses discretas.
     add(invCeil(displayDamage, post));
     return out.map(x => x.iv).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   }
@@ -627,6 +629,22 @@
     return Object.values(BONUS_TIER_ACTIONS).some(a => a.label === label);
   }
 
+  // Executioner's Throw (`exori amp kor`, EK, fÃ­sico de Ã¡rea) tem um bÃ´nus de dano
+  // condicional por vida do alvo (execute): binÃ¡rio por-hit, multiplicador fixo por
+  // personagem em EXECUTIONER_BONUS_LEVELS (+100/+125/+150% = Ã—2.0/Ã—2.25/Ã—2.5). Ao
+  // contrÃ¡rio do Terra Burst, o tier NÃƒO se resolve por reversÃ£o (dano fÃ­sico com arma
+  // possivelmente 0% fÃ­sico nÃ£o reverte); o detector usa leech por-canal por-turno
+  // (detectExecutionerTiers) e o dano dos hits limpos sÃ³ pina o multiplicador.
+  const EXECUTIONER_BONUS_LEVELS = [2.0, 2.25, 2.5];
+
+  function isExecutionerThrowAction(action) {
+    if (!action) return false;
+    const words = normalizeName(action.words || action.text || action.spell || action.name || '');
+    if (words === 'exori amp kor') return true;
+    const label = normalizeName(action.profile && action.profile.label || action.label || '');
+    return label === "executioner's throw" || label === 'executioners throw';
+  }
+
   function isTerraBurstBlock(block, element) {
     if (!block || block.comp !== 'spell' || !isTerraBurstAction(block.action)) return false;
     const action = block.action;
@@ -640,8 +658,8 @@
     let p = 0;
     if (hit && hit.exposeWeakness) p += 0.08;
     // D-010c (docs/CLASSIFICATION_RULES.md): "active elemental amplification" no
-    // sufixo da linha de dano é um fato observado do hit, +0.16 de pierce antes de
-    // effectiveMod. Aplica-se tanto aos eixos elementais quanto ao físico.
+    // sufixo da linha de dano Ã© um fato observado do hit, +0.16 de pierce antes de
+    // effectiveMod. Aplica-se tanto aos eixos elementais quanto ao fÃ­sico.
     if (hit && hit.elementalAmplification) p += 0.16;
     if ((element === 'holy' || element === 'physical') && context && context.bmPierce) p += context.bmPierce;
     return p;
@@ -663,10 +681,10 @@
   function getMobMods(mob, context) {
     const name = normalizeName(mob);
     if (!name) return null;
-    // Quando o adapter passa explicitamente a tabela pós-cutoff, ela é a fonte
-    // primária. Muitos pares exportados não trazem data na linha do Server Log;
-    // nesse caso sessionDateKey fica null, mas não devemos cair para tabela antiga
-    // ou ausência de tabela. getMobMods custom só é fallback.
+    // Quando o adapter passa explicitamente a tabela pÃ³s-cutoff, ela Ã© a fonte
+    // primÃ¡ria. Muitos pares exportados nÃ£o trazem data na linha do Server Log;
+    // nesse caso sessionDateKey fica null, mas nÃ£o devemos cair para tabela antiga
+    // ou ausÃªncia de tabela. getMobMods custom sÃ³ Ã© fallback.
     if (context && context.mobModsPost && (context.sessionDateKey == null || context.sessionDateKey >= CUTOFF_KEY)) {
       return context.mobModsPost[name] || null;
     }
@@ -687,10 +705,10 @@
     const post = postMultiplier(hit, context);
     const terraBurstBonusMultiplier = options && options.terraBurstBonusMultiplier > 1 ? +options.terraBurstBonusMultiplier : 1;
     const crit = criticalMultiplierForHit(hit, context);
-    // Memoização (só-desempenho): a reversão de um hit depende apenas destes
-    // escalares resolvidos — mod/mit/post/crit já dobram gravSan/crit/pierce/BM/mob —
-    // e NÃO da partição candidata. O mesmo hit é revertido em centenas de partições;
-    // o valor é lido apenas (read-only), então é seguro compartilhar por referência.
+    // MemoizaÃ§Ã£o (sÃ³-desempenho): a reversÃ£o de um hit depende apenas destes
+    // escalares resolvidos â€” mod/mit/post/crit jÃ¡ dobram gravSan/crit/pierce/BM/mob â€”
+    // e NÃƒO da partiÃ§Ã£o candidata. O mesmo hit Ã© revertido em centenas de partiÃ§Ãµes;
+    // o valor Ã© lido apenas (read-only), entÃ£o Ã© seguro compartilhar por referÃªncia.
     const revCache = context && (context._revCache || (context._revCache = new Map()));
     const cacheKey = revCache && ('E|' + element + '|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + terraBurstBonusMultiplier);
     if (revCache && revCache.has(cacheKey)) return revCache.get(cacheKey);
@@ -712,11 +730,11 @@
                   const preCritIntervals = inverseCriticalMultiplierIntervals(tb, crit);
                   for (const preCritIv of preCritIntervals) {
                     for (let e = preCritIv[0]; e <= preCritIv[1]; e++) {
-                      // V-caso mazzerinbarrage 03:42:26: a tolerância intermediária também
-                      // cobre a etapa final da cadeia (a inversão do mod elemental), não só
+                      // V-caso mazzerinbarrage 03:42:26: a tolerÃ¢ncia intermediÃ¡ria tambÃ©m
+                      // cobre a etapa final da cadeia (a inversÃ£o do mod elemental), nÃ£o sÃ³
                       // a etapa inicial (`aa`). Um gap de arredondamento pode existir
                       // especificamente aqui mesmo quando todas as etapas anteriores (mit,
-                      // crítico) têm solução exata e única — perturbar só `aa` nunca alcança
+                      // crÃ­tico) tÃªm soluÃ§Ã£o exata e Ãºnica â€” perturbar sÃ³ `aa` nunca alcanÃ§a
                       // esse gap. Ver design.md de extend-elemental-intermediate-tolerance-to-mod-inversion.
                       for (let ee = Math.max(1, e - t); ee <= e + t; ee++) {
                         const oIv = invCeil(ee, mod);
@@ -758,19 +776,19 @@
     const armorHigh = Math.max(Math.floor(armorEff / 2) * 2 - 1, 0);
     const crit = criticalMultiplierForHit(hit, context);
     const perfectShotBonus = hit && hit.perfectShot ? PERFECT_SHOT_PREMIT_BONUS : 0;
-    // Memoização (só-desempenho): mesma justificativa de elementalOriginalCandidates —
-    // a reversão física depende só destes escalares resolvidos, não da partição.
+    // MemoizaÃ§Ã£o (sÃ³-desempenho): mesma justificativa de elementalOriginalCandidates â€”
+    // a reversÃ£o fÃ­sica depende sÃ³ destes escalares resolvidos, nÃ£o da partiÃ§Ã£o.
     const revCache = context && (context._revCache || (context._revCache = new Map()));
     const cacheKey = revCache && ('P|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + perfectShotBonus + '|' + armorLow + '|' + armorHigh);
     if (revCache && revCache.has(cacheKey)) return revCache.get(cacheKey);
     const postIntervals = inversePostMultiplierIntervals(+hit.dmg, post);
     if (!postIntervals.length) { const r = { known: true, interval: null, reason: 'invalid_post_multiplier' }; if (revCache) revCache.set(cacheKey, r); return r; }
-    // Onslaught soma +0.6 a um crítico já INFERIDO (mean/mean, não exato). Nesse
-    // multiplicador combinado, um dano específico pode cair num "buraco" do
+    // Onslaught soma +0.6 a um crÃ­tico jÃ¡ INFERIDO (mean/mean, nÃ£o exato). Nesse
+    // multiplicador combinado, um dano especÃ­fico pode cair num "buraco" do
     // reticulado discreto (FLOOR/CEIL vazios) mesmo sendo um hit real do mesmo
-    // bloco — mesmo risco que a reversão elemental já tolera via
-    // ELEMENTAL_INTERMEDIATE_TOLERANCE (D-010a). Tenta exato primeiro; só se vazio,
-    // relaxa ±1 no valor pré-crítico.
+    // bloco â€” mesmo risco que a reversÃ£o elemental jÃ¡ tolera via
+    // ELEMENTAL_INTERMEDIATE_TOLERANCE (D-010a). Tenta exato primeiro; sÃ³ se vazio,
+    // relaxa Â±1 no valor prÃ©-crÃ­tico.
     const collectPhysical = (tolerance) => {
       let lo = Infinity, hi = -Infinity;
       for (const bIv of postIntervals) {
@@ -778,8 +796,8 @@
           const cIv = invFloor(b, mit);
           if (!cIv) continue;
           for (let c = cIv[0]; c <= cIv[1]; c++) {
-            // Perfect Shot entra como +20 pré-mitigação. Para reconstruir o
-            // original físico, removemos esse bônus antes de desfazer o crítico.
+            // Perfect Shot entra como +20 prÃ©-mitigaÃ§Ã£o. Para reconstruir o
+            // original fÃ­sico, removemos esse bÃ´nus antes de desfazer o crÃ­tico.
             const prePerfect = c - perfectShotBonus;
             if (prePerfect < 0) continue;
             const t = Math.max(0, tolerance || 0);
@@ -831,10 +849,10 @@
     const inWindow = gravSanHitInWindow(context, hit || ts);
     if (!inWindow) return 1;
 
-    // V18: nível do buff é global do log, mas aplicação é por ataque/componente.
-    // context.gravSanHitOverride contém decisões temporárias durante a validação
+    // V18: nÃ­vel do buff Ã© global do log, mas aplicaÃ§Ã£o Ã© por ataque/componente.
+    // context.gravSanHitOverride contÃ©m decisÃµes temporÃ¡rias durante a validaÃ§Ã£o
     // de um candidato: hit.id => true/false. Sem override, mantemos o comportamento
-    // histórico como ativo dentro da janela.
+    // histÃ³rico como ativo dentro da janela.
     const overrides = context && context.gravSanHitOverride;
     const id = hit && hit.id;
     if (overrides && id != null && Object.prototype.hasOwnProperty.call(overrides, id)) {
@@ -925,6 +943,8 @@
     BONUS_TIER_ACTIONS,
     isTerraBurstAction,
     isTerraBurstBlock,
+    EXECUTIONER_BONUS_LEVELS,
+    isExecutionerThrowAction,
     pierceForElement,
     explicitBmPierceOption,
     distinctMainMobCount,

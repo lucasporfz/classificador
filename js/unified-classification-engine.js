@@ -1,18 +1,18 @@
-/*
+﻿/*
  * unified-classification-engine.js
  *
- * Núcleo único e isolado de classificação mecânica para logs de Tibia.
- * Objetivo: substituir a pilha histórica parser → bandas → passes especiais → experimental
- * por um fluxo normativo único, auditável e orientado por docs/CLASSIFICATION_RULES.md.
+ * NÃºcleo Ãºnico e isolado de classificaÃ§Ã£o mecÃ¢nica para logs de Tibia.
+ * Objetivo: substituir a pilha histÃ³rica parser â†’ bandas â†’ passes especiais â†’ experimental
+ * por um fluxo normativo Ãºnico, auditÃ¡vel e orientado por docs/CLASSIFICATION_RULES.md.
  *
- * Este arquivo NÃO altera UI/produção por conta própria. Ele exporta:
+ * Este arquivo NÃƒO altera UI/produÃ§Ã£o por conta prÃ³pria. Ele exporta:
  *   - globalThis.UnifiedClassificationEngine
- *   - module.exports, quando disponível
+ *   - module.exports, quando disponÃ­vel
  *
  * API principal:
  *   const result = UnifiedClassificationEngine.classifyUnified(serverLog, localChat, options)
  *
- * Options úteis:
+ * Options Ãºteis:
  *   getMobMods(mob, ctx)              // fonte externa de mods
  *   mobModsPre, mobModsPost           // mapas opcionais de mods por regime
  *   vocation                          // 'paladin'|'knight'|'sorcerer'|'druid'|'monk'|null
@@ -105,6 +105,8 @@
     BONUS_TIER_ACTIONS,
     isTerraBurstAction,
     isTerraBurstBlock,
+    EXECUTIONER_BONUS_LEVELS,
+    isExecutionerThrowAction,
     pierceForElement,
     explicitBmPierceOption,
     distinctMainMobCount,
@@ -266,34 +268,34 @@
 
 
 
-  // S-004a/D-010a: chave de "mesmo mob no mesmo estado de modificadores" — mesmo mob +
-  // mesmas condições que afetam o dano (EW, prey, amplification, tipo de hit, crit,
-  // Low Blow, Onslaught) implica mesma rolagem/reversão exata. Compartilhada entre a
+  // S-004a/D-010a: chave de "mesmo mob no mesmo estado de modificadores" â€” mesmo mob +
+  // mesmas condiÃ§Ãµes que afetam o dano (EW, prey, amplification, tipo de hit, crit,
+  // Low Blow, Onslaught) implica mesma rolagem/reversÃ£o exata. Compartilhada entre a
   // homogeneidade intra-bloco (validateElementalBlock) e o override por dano final do
-  // M-031 (validateCandidate), que usa a mesma noção entre dois blocos diferentes.
-  // NÃO renomear para `hitStateKey` — esse nome já existe (mais adiante no arquivo,
+  // M-031 (validateCandidate), que usa a mesma noÃ§Ã£o entre dois blocos diferentes.
+  // NÃƒO renomear para `hitStateKey` â€” esse nome jÃ¡ existe (mais adiante no arquivo,
   // H-005/S-004a) com um conjunto de campos mais estreito (sem amplification/type);
-  // declarações de função com o mesmo nome no mesmo escopo colidem por hoisting.
+  // declaraÃ§Ãµes de funÃ§Ã£o com o mesmo nome no mesmo escopo colidem por hoisting.
 
 
 
-  // Fórmula normativa do pierce conforme calculadora/regras revisadas.
+  // FÃ³rmula normativa do pierce conforme calculadora/regras revisadas.
 
-  // Análogo, para intervalos contínuos, do `intersectSets(sets, tolerance)`
-  // do eixo elemental: aceita um par de intervalos que não se tocam
-  // exatamente, desde que a lacuna não passe de `tolerance`. Usada SÓ por
-  // `intersectIntervals` (o acumulador de `validatePhysicalBlock`) — não
-  // substitui `intersectInterval`, cujos outros usos (ex.: interseção de 2
-  // canais de leech) fazem uma única chamada isolada e não devem ganhar
+  // AnÃ¡logo, para intervalos contÃ­nuos, do `intersectSets(sets, tolerance)`
+  // do eixo elemental: aceita um par de intervalos que nÃ£o se tocam
+  // exatamente, desde que a lacuna nÃ£o passe de `tolerance`. Usada SÃ“ por
+  // `intersectIntervals` (o acumulador de `validatePhysicalBlock`) â€” nÃ£o
+  // substitui `intersectInterval`, cujos outros usos (ex.: interseÃ§Ã£o de 2
+  // canais de leech) fazem uma Ãºnica chamada isolada e nÃ£o devem ganhar
   // folga nenhuma.
 
 
 
 
-  // Chave de crítico do bloco: o crítico é POR-COMPONENTE (build). AA/físico → 'physical';
-  // spell/rune/grenade → prefixado pela incantation/nome, para que dois spells do mesmo
-  // elemento (Caldera vs granada) possam ter críticos distintos. A MESMA função rotula os
-  // hits para a inferência (pass-1) e escolhe o multiplicador na reversão (pass-2).
+  // Chave de crÃ­tico do bloco: o crÃ­tico Ã© POR-COMPONENTE (build). AA/fÃ­sico â†’ 'physical';
+  // spell/rune/grenade â†’ prefixado pela incantation/nome, para que dois spells do mesmo
+  // elemento (Caldera vs granada) possam ter crÃ­ticos distintos. A MESMA funÃ§Ã£o rotula os
+  // hits para a inferÃªncia (pass-1) e escolhe o multiplicador na reversÃ£o (pass-2).
 
 
 
@@ -302,7 +304,7 @@
 
 
   // Terra Burst (exevo ulus tera, earth) and Ice Burst (exevo ulus frigo, ice) are the
-  // same target-life conditional-bonus mechanic, differing only by element — both actions
+  // same target-life conditional-bonus mechanic, differing only by element â€” both actions
   // are recognized here so validateTerraBurstBonusBlock (element-agnostic already) applies
   // to either.
 
@@ -333,9 +335,24 @@
   }
 
   function bossNameSet(hits) {
-    // Heurística conservadora: se sessão inteira tem um único mob, tratamos turnos como boss/single-target.
-    const mobs = new Set((hits || []).filter(isMainHit).map(h => normalizeName(h.mob)));
-    return mobs.size === 1 ? mobs : new Set();
+    // M-009: um mob Ã© boss (alvo Ãºnico, sem artigo) se TODAS as suas ocorrÃªncias como hit
+    // principal aparecem sem artigo (a/an/the) no Server Log. DetecÃ§Ã£o por-mob (nÃ£o por
+    // contagem de mobs distintos na sessÃ£o): uma sessÃ£o pode ter vÃ¡rios bosses + adds, e cada
+    // boss Ã© reconhecido individualmente. CritÃ©rio conservador: uma Ãºnica ocorrÃªncia com
+    // artigo exclui o mob. Boss de sessÃ£o-Ãºnica continua entrando (todas sem artigo) â†’ zero-drift.
+    const seen = new Map(); // mob -> { total, articleless }
+    for (const h of (hits || []).filter(isMainHit)) {
+      const name = normalizeName(h.mob);
+      const e = seen.get(name) || { total: 0, articleless: 0 };
+      e.total++;
+      if (h.articleless) e.articleless++;
+      seen.set(name, e);
+    }
+    const bosses = new Set();
+    for (const [name, e] of seen) {
+      if (e.total > 0 && e.articleless === e.total) bosses.add(name);
+    }
+    return bosses;
   }
 
 
@@ -439,25 +456,25 @@
     };
   }
 
-  // Estimador de crítico POR-COMPONENTE por buckets crit/não-crit.
-  // Entrada: hits já rotulados (cada um com `compKey`, `mob`, `dmg`, `realCrit`,
+  // Estimador de crÃ­tico POR-COMPONENTE por buckets crit/nÃ£o-crit.
+  // Entrada: hits jÃ¡ rotulados (cada um com `compKey`, `mob`, `dmg`, `realCrit`,
   // `overkill`, `isPrey`, `ts`, `onslaught`, `exposeWeakness`, `gravSanActive`).
-  // O crítico é uniforme por-ataque e escala a distribuição inteira, então
+  // O crÃ­tico Ã© uniforme por-ataque e escala a distribuiÃ§Ã£o inteira, entÃ£o
   // mean(crit)/mean(noncrit) por estrato estima o multiplicador sem depender do mod do
-  // mob (ele cancela na razão). Tira a mediana entre os estratos elegíveis.
-  // Não usa min/min (viés de amostra do lado crit, que é mais raro).
+  // mob (ele cancela na razÃ£o). Tira a mediana entre os estratos elegÃ­veis.
+  // NÃ£o usa min/min (viÃ©s de amostra do lado crit, que Ã© mais raro).
   //
-  // Limpeza dos buckets (C-005: cada bônus no seu eixo mecânico, nunca ajuste livre):
-  //   EXCLUI  — overkill (dano truncado); onslaught+crit e crit em janela de
-  //             Transcendence (bônus ADITIVOS sobre o multiplicador sendo medido —
-  //             descontar exigiria já conhecer o crítico-base, circular).
-  //   NORMALIZA — prey (÷1.25) e utevo grav san (÷(1+bonus), só quando o hit está em
-  //             janela E a hipótese por-componente não é `false`); onslaught sem crit
-  //             (÷1.6 — sem crítico junto, o bônus aditivo vira fator conhecido).
-  //   ESTRATIFICA — Expose Weakness muda o mod efetivo do mob (não é fator fixo
-  //             divisível): crit só compara com não-crit do MESMO estado de EW; o
-  //             fator de EW cancela na razão dentro do estrato.
-  // Low Blow fica como está: o charm dá CHANCE de crítico, não multiplicador.
+  // Limpeza dos buckets (C-005: cada bÃ´nus no seu eixo mecÃ¢nico, nunca ajuste livre):
+  //   EXCLUI  â€” overkill (dano truncado); onslaught+crit e crit em janela de
+  //             Transcendence (bÃ´nus ADITIVOS sobre o multiplicador sendo medido â€”
+  //             descontar exigiria jÃ¡ conhecer o crÃ­tico-base, circular).
+  //   NORMALIZA â€” prey (Ã·1.25) e utevo grav san (Ã·(1+bonus), sÃ³ quando o hit estÃ¡ em
+  //             janela E a hipÃ³tese por-componente nÃ£o Ã© `false`); onslaught sem crit
+  //             (Ã·1.6 â€” sem crÃ­tico junto, o bÃ´nus aditivo vira fator conhecido).
+  //   ESTRATIFICA â€” Expose Weakness muda o mod efetivo do mob (nÃ£o Ã© fator fixo
+  //             divisÃ­vel): crit sÃ³ compara com nÃ£o-crit do MESMO estado de EW; o
+  //             fator de EW cancela na razÃ£o dentro do estrato.
+  // Low Blow fica como estÃ¡: o charm dÃ¡ CHANCE de crÃ­tico, nÃ£o multiplicador.
   function inferCritByComponent(labeledHits, options, context) {
     const MIN = (options && options.minSamples) || CRIT_BUCKET_MIN_SAMPLES;
     const gravSetup = context && context.gravSanSetup;
@@ -500,7 +517,7 @@
       if (!ratios.length) continue;
       const mult = median(ratios);
       byComponent[key] = mult;
-      // `mobs` mantém o nome por compatibilidade de shape; conta ESTRATOS (mob × EW).
+      // `mobs` mantÃ©m o nome por compatibilidade de shape; conta ESTRATOS (mob Ã— EW).
       evidence[key] = { multiplier: mult, mobs: ratios.length, spread: ratios.length > 1 ? Math.max.apply(null, ratios) - Math.min.apply(null, ratios) : 0, noncrit: nc, crit: cr };
       allMults.push(mult);
     }
@@ -508,10 +525,10 @@
     return { byComponent, fallback, evidence, source: allMults.length ? 'bucket_mean_ratio' : 'no_bucket_samples' };
   }
 
-  // Bootstrap crit-independente para o pass-1 (quebra a circularidade rótulo↔crit):
-  // razão mean(crit)/mean(noncrit) POR MOB (todos os componentes juntos), mediana entre
-  // mobs. Não precisa de rótulo de componente nem de reversão — só do flag realCrit.
-  // É um blend (ponderado por dano) dos críticos por-componente, suficiente para os turnos
+  // Bootstrap crit-independente para o pass-1 (quebra a circularidade rÃ³tuloâ†”crit):
+  // razÃ£o mean(crit)/mean(noncrit) POR MOB (todos os componentes juntos), mediana entre
+  // mobs. NÃ£o precisa de rÃ³tulo de componente nem de reversÃ£o â€” sÃ³ do flag realCrit.
+  // Ã‰ um blend (ponderado por dano) dos crÃ­ticos por-componente, suficiente para os turnos
   // com crit resolverem no pass-1 e alimentarem os buckets por-componente.
   function inferCoarseGlobalCrit(hits) {
     const byMob = new Map();
@@ -529,20 +546,20 @@
     ratios.sort((a, b) => a - b);
     const m = ratios.length >> 1;
     const med = ratios.length % 2 ? ratios[m] : (ratios[m - 1] + ratios[m]) / 2;
-    // Clamp: o coarse é confundido por componente (numa porção onde os crits são
-    // predominantemente AA-alto e os não-crits spell/runa-baixo, a razão infla acima do
-    // crit real, ~1.5–2.0). Como isto é só o BOOTSTRAP do pass-1, limitá-lo a um teto
-    // plausível evita que uma porção patológica (ex.: highwin coarse 2.48) sobre-divida o
-    // crit e derrube o pass-1 inteiro (physical_no_candidate) — o que deixaria byComponent
-    // vazio e travaria a porção no próprio coarse ruim.
+    // Clamp: o coarse Ã© confundido por componente (numa porÃ§Ã£o onde os crits sÃ£o
+    // predominantemente AA-alto e os nÃ£o-crits spell/runa-baixo, a razÃ£o infla acima do
+    // crit real, ~1.5â€“2.0). Como isto Ã© sÃ³ o BOOTSTRAP do pass-1, limitÃ¡-lo a um teto
+    // plausÃ­vel evita que uma porÃ§Ã£o patolÃ³gica (ex.: highwin coarse 2.48) sobre-divida o
+    // crit e derrube o pass-1 inteiro (physical_no_candidate) â€” o que deixaria byComponent
+    // vazio e travaria a porÃ§Ã£o no prÃ³prio coarse ruim.
     return Math.min(Math.max(med, 1), CRIT_BOOTSTRAP_MAX);
   }
 
   // Extrai hits rotulados (compKey por bloco) dos turnos resolvidos de um passe, para
-  // alimentar inferCritByComponent. Só componentes reais (não 'unresolved').
-  // Além dos campos de bucket, propaga o que a limpeza dos buckets precisa: `ts`
-  // (janelas de grav san/Transcendence), `onslaught`, `exposeWeakness` (estratificação)
-  // e `gravSanActive` — a hipótese por-componente vencedora da validação (V18: o buff
+  // alimentar inferCritByComponent. SÃ³ componentes reais (nÃ£o 'unresolved').
+  // AlÃ©m dos campos de bucket, propaga o que a limpeza dos buckets precisa: `ts`
+  // (janelas de grav san/Transcendence), `onslaught`, `exposeWeakness` (estratificaÃ§Ã£o)
+  // e `gravSanActive` â€” a hipÃ³tese por-componente vencedora da validaÃ§Ã£o (V18: o buff
   // aplica por componente; `false` significa "dentro da janela mas sem o tapete").
   function labeledHitsFromTurns(resolvedTurns) {
     const out = [];
@@ -582,10 +599,10 @@
     context.localFacts = localFacts;
     context.transcendenceWindows = (serverFacts.transcendenceTriggers || []).map(t => [t.ts, t.ts + TRANSCENDENCE_WINDOW_SECONDS]);
     context.gravSanSetup = inferGravSanSetup(serverFacts, localFacts, options || {});
-    // Crítico por-componente: aqui só o BOOTSTRAP (pass-1). Se `options.critMultiplier`
-    // for dado, respeita como fallback fixo; senão usa o global grosso crit-independente
-    // da porção. Os multiplicadores por-componente (`byComponent`) são preenchidos pelo
-    // two-pass em classifyUnifiedParsed. `multiplier` fica como espelho do fallback só
+    // CrÃ­tico por-componente: aqui sÃ³ o BOOTSTRAP (pass-1). Se `options.critMultiplier`
+    // for dado, respeita como fallback fixo; senÃ£o usa o global grosso crit-independente
+    // da porÃ§Ã£o. Os multiplicadores por-componente (`byComponent`) sÃ£o preenchidos pelo
+    // two-pass em classifyUnifiedParsed. `multiplier` fica como espelho do fallback sÃ³
     // para compatibilidade de leitura (report/telemetria).
     const critOverride = options && options.critMultiplier != null ? (+options.critMultiplier || 1) : null;
     const coarse = critOverride != null ? critOverride : inferCoarseGlobalCrit(serverFacts.hits);
@@ -614,6 +631,122 @@
     return out;
   }
 
+  // Split a per-turn Executioner's Throw block into base/amped tiers. PÃ“S-PASSE de
+  // sessÃ£o sobre os turnos jÃ¡ resolvidos â€” NÃƒO participa da pontuaÃ§Ã£o de partiÃ§Ã£o.
+  // Sinal primÃ¡rio Ã© o LEECH (a maioria dos hits de amp kor Ã© overkill, com dano
+  // truncado e inÃºtil). O leech incide sobre o dano real e Ã© bimodal na razÃ£o A do
+  // bÃ´nus. Canais avaliados separadamente; mana Ã© o canal PRIMÃRIO (o life leech Ã©
+  // capado pela vida faltante e mente quando o jogador estÃ¡ quase cheio). Clusteriza
+  // POR TURNO porque o leech carrega o fator de Ã¡rea (0.1+0.9/N) que desliza entre
+  // casts. O multiplicador A Ã© fixo por log e vem da razÃ£o de dano de pares limpos do
+  // mesmo cast (exato), snap em EXECUTIONER_BONUS_LEVELS.
+  const EXEC_LEECH_GAP = 1.55; // gap mÃ­nimo entre base e amped (bÃ´nus ~2Ã—) vs variaÃ§Ã£o intra-tier (~1.3Ã—)
+
+  // Retorna o Set de Ã­ndices no cluster ALTO (amped) se houver um gap >= threshold no
+  // maior salto relativo entre valores >0 ordenados; null se nÃ£o houver split (tier Ãºnico).
+  function execBimodalHighSet(pairs, threshold) {
+    const pts = pairs.filter(p => p.v > 0).sort((a, b) => a.v - b.v);
+    if (pts.length < 2) return null;
+    let bestRatio = 1, splitAt = -1;
+    for (let i = 1; i < pts.length; i++) {
+      const r = pts[i].v / pts[i - 1].v;
+      if (r > bestRatio) { bestRatio = r; splitAt = i; }
+    }
+    if (bestRatio < threshold || splitAt < 0) return null;
+    const high = new Set();
+    for (let i = splitAt; i < pts.length; i++) high.add(pts[i].idx);
+    return high;
+  }
+
+  function detectExecutionerTiers(turns) {
+    const execComps = [];
+    for (const turn of turns || []) {
+      for (const comp of (turn.components || [])) {
+        if (isExecutionerThrowAction(comp.action)) execComps.push(comp);
+      }
+    }
+    if (!execComps.length) return;
+
+    // Pass 1: classificar cada hit por turno (bloco), mana leech primÃ¡rio, life confirmatÃ³rio.
+    for (const comp of execComps) {
+      const hits = comp.hits || [];
+      const manaHigh = execBimodalHighSet(hits.map((h, i) => ({ idx: i, v: +h.manaLeech || 0 })), EXEC_LEECH_GAP);
+      const lifeHigh = execBimodalHighSet(hits.map((h, i) => ({ idx: i, v: +h.lifeLeech || 0 })), EXEC_LEECH_GAP);
+      hits.forEach((h, i) => {
+        const mana = +h.manaLeech || 0;
+        const life = +h.lifeLeech || 0;
+        let active = null;
+        if (manaHigh && mana > 0) {
+          active = manaHigh.has(i); // mana Ã© o canal confiÃ¡vel: decide sozinho quando presente
+        } else if (lifeHigh && life > 0) {
+          active = lifeHigh.has(i); // sem mana utilizÃ¡vel, cai pro life
+        }
+        h.executionerBonusActive = active;
+      });
+    }
+
+    // Pass 1.5: fallback de sessÃ£o. Muitos casts sÃ£o de tier Ãºnico (todos os mobs na mesma
+    // faixa de HP) e nÃ£o tÃªm gap interno â€” ficam null no pass 1. Como A Ã© fixo por log e o
+    // mana leech de base/amped Ã© estÃ¡vel e bem separado na sessÃ£o (o life leech capa por HP
+    // faltante, entÃ£o sÃ³ mana serve de fallback), calibra os nÃ­veis com os hits jÃ¡ confiantes
+    // e classifica os null por proximidade, deixando null sÃ³ a zona ambÃ­gua do meio.
+    const confBaseMana = [], confAmpedMana = [];
+    for (const comp of execComps) for (const h of comp.hits || []) {
+      const mana = +h.manaLeech || 0;
+      if (mana <= 0) continue;
+      if (h.executionerBonusActive === false) confBaseMana.push(mana);
+      else if (h.executionerBonusActive === true) confAmpedMana.push(mana);
+    }
+    if (confBaseMana.length >= 2 && confAmpedMana.length >= 2) {
+      const baseLvl = median(confBaseMana), ampedLvl = median(confAmpedMana);
+      if (baseLvl > 0 && ampedLvl / baseLvl >= EXEC_LEECH_GAP) {
+        for (const comp of execComps) for (const h of comp.hits || []) {
+          if (h.executionerBonusActive != null) continue;
+          const mana = +h.manaLeech || 0;
+          if (mana <= 0) continue;
+          if (mana <= baseLvl * 1.12) h.executionerBonusActive = false;
+          else if (mana >= ampedLvl * 0.88) h.executionerBonusActive = true;
+        }
+      }
+    }
+
+    // Pass 2: A fixo por log â€” razÃ£o de dano de pares limpos (nÃ£o-overkill) do MESMO cast
+    // (mesma rolagem â‡’ exato). Fallback: razÃ£o entre mÃ©dias de dano limpo de toda a sessÃ£o.
+    const sameCastRatios = [];
+    const cleanBase = [], cleanAmped = [];
+    for (const comp of execComps) {
+      const base = [], amped = [];
+      for (const h of comp.hits || []) {
+        if (h.overkill) continue;
+        const dmg = +h.dmg || 0;
+        if (!(dmg > 0)) continue;
+        if (h.executionerBonusActive === true) { amped.push(dmg); cleanAmped.push(dmg); }
+        else if (h.executionerBonusActive === false) { base.push(dmg); cleanBase.push(dmg); }
+      }
+      if (base.length && amped.length) sameCastRatios.push(median(amped) / median(base));
+    }
+    let rawA = null;
+    if (sameCastRatios.length) rawA = median(sameCastRatios);
+    else if (cleanBase.length && cleanAmped.length) rawA = median(cleanAmped) / median(cleanBase);
+    const A = rawA != null
+      ? EXECUTIONER_BONUS_LEVELS.reduce((best, lv) => Math.abs(lv - rawA) < Math.abs(best - rawA) ? lv : best, EXECUTIONER_BONUS_LEVELS[0])
+      : null;
+
+    // Pass 3: multiplicador por hit + nÃ­vel no componente.
+    for (const comp of execComps) {
+      let anyResolved = false;
+      for (const h of comp.hits || []) {
+        h.executionerBonusMultiplier = h.executionerBonusActive === true ? (A || null)
+          : (h.executionerBonusActive === false ? 1 : null);
+        if (h.executionerBonusActive != null) anyResolved = true;
+      }
+      if (anyResolved && A != null) {
+        comp.deterministic = comp.deterministic || {};
+        comp.deterministic.executionerBonusLevel = A;
+      }
+    }
+  }
+
   function classifyUnifiedParsed(server, local, options, bmDetection) {
     const shouldGoldInferLeech = !(options && options.leechSetup) && !(options && options.disableGoldLeechPipeline);
     const context = buildContext(server, local, Object.assign({}, options || {}, shouldGoldInferLeech ? { deferLeechSetupInference: true } : {}));
@@ -622,23 +755,23 @@
     let resolvedTurns;
     let resolvedWithoutLeech = null;
     let goldLeechObservations = [];
-    // M-024/M-025: a consolidação de granada cross-turno é por-passe e dependente de
-    // ordem temporal; o conjunto de casts já explodidos é reiniciado a cada varredura.
-    // Crítico por-componente (two-pass): a passada pass-1 (bootstrap crit grosso) rotula os
+    // M-024/M-025: a consolidaÃ§Ã£o de granada cross-turno Ã© por-passe e dependente de
+    // ordem temporal; o conjunto de casts jÃ¡ explodidos Ã© reiniciado a cada varredura.
+    // CrÃ­tico por-componente (two-pass): a passada pass-1 (bootstrap crit grosso) rotula os
     // hits; inferimos o crit por-componente e a passada final usa `byComponent`. Reusa a
-    // passada `resolvedWithoutLeech` como pass-1 de crit para não pagar uma varredura extra.
+    // passada `resolvedWithoutLeech` como pass-1 de crit para nÃ£o pagar uma varredura extra.
     const refineCritByComponent = pass1 => {
       const est = inferCritByComponent(labeledHitsFromTurns(pass1), null, context);
       if (est && est.byComponent && Object.keys(est.byComponent).length) {
         // Etapa 2: o multiplicador por-componente estimado pela etapa 1 (buckets
-        // mean(crit)/mean(noncrit), inalterada) é ajustado ("snap") para o candidato
-        // mais próximo da tabela conhecida do build (CRIT_MULTIPLIER_CANDIDATES),
-        // absorvendo ruído de amostra pequena por (componente, mob).
+        // mean(crit)/mean(noncrit), inalterada) Ã© ajustado ("snap") para o candidato
+        // mais prÃ³ximo da tabela conhecida do build (CRIT_MULTIPLIER_CANDIDATES),
+        // absorvendo ruÃ­do de amostra pequena por (componente, mob).
         for (const key of Object.keys(est.byComponent)) est.byComponent[key] = snapCritMultiplier(est.byComponent[key]);
-        // O bucket 'physical' (AA) pode inflar por confusão de componente + viés de
-        // cauda-baixa da armadura (numa porção onde o não-crit-AA é raro/baixo). Crits
-        // físicos reais ficam ≤ ~1.9; um valor acima disso quebra a reversão do bloco AA
-        // (physical_no_candidate). Só o físico é limitado — holy/runa/granada chegam a ~1.99.
+        // O bucket 'physical' (AA) pode inflar por confusÃ£o de componente + viÃ©s de
+        // cauda-baixa da armadura (numa porÃ§Ã£o onde o nÃ£o-crit-AA Ã© raro/baixo). Crits
+        // fÃ­sicos reais ficam â‰¤ ~1.9; um valor acima disso quebra a reversÃ£o do bloco AA
+        // (physical_no_candidate). SÃ³ o fÃ­sico Ã© limitado â€” holy/runa/granada chegam a ~1.99.
         if (est.byComponent.physical > CRIT_BOOTSTRAP_MAX) est.byComponent.physical = CRIT_BOOTSTRAP_MAX;
         context.critSetup.byComponent = est.byComponent;
         context.critSetup.evidence = est.evidence;
@@ -653,13 +786,14 @@
       goldLeechObservations = collectGoldLeechObservations(resolvedWithoutLeech, context);
       const charmCandidates = detectCharmCandidateMobsFromColocatedTurns(resolvedWithoutLeech, context);
       context.leechSetup = inferLeechSetupFromGoldObservations(goldLeechObservations, context, charmCandidates);
-      // M-016e: só depois do leech real (não o bootstrap) é que o cluster
-      // vida/mana-por-dano é confiável para corrigir um estágio atrasado que a
-      // 1ª passada (sem leech) não conseguiu provar por reversão elemental.
+      // M-016e: sÃ³ depois do leech real (nÃ£o o bootstrap) Ã© que o cluster
+      // vida/mana-por-dano Ã© confiÃ¡vel para corrigir um estÃ¡gio atrasado que a
+      // 1Âª passada (sem leech) nÃ£o conseguiu provar por reversÃ£o elemental.
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
       context.consolidatedGrenadeCasts = new Set();
       resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
+      detectExecutionerTiers(resolvedTurns);
     } else {
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
       context.consolidatedGrenadeCasts = new Set();
@@ -669,6 +803,7 @@
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
       context.consolidatedGrenadeCasts = new Set();
       resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
+      detectExecutionerTiers(resolvedTurns);
     }
     const result = {
       version: VERSION,
@@ -725,11 +860,11 @@
 
     if (!shouldAutoDetectBm) return baseResult;
 
-    // Se a classificação BM=0 tem turnos `unresolved`, a incoerência pode ser o próprio
-    // BM ausente (casts holy mistos mob≠1.0 + mob 1.0). Classifica a hipótese BM=0.04 em
+    // Se a classificaÃ§Ã£o BM=0 tem turnos `unresolved`, a incoerÃªncia pode ser o prÃ³prio
+    // BM ausente (casts holy mistos mobâ‰ 1.0 + mob 1.0). Classifica a hipÃ³tese BM=0.04 em
     // paralelo (parse fresco, sem contaminar os hits de baseResult) e alimenta o detector
-    // com os blocos holy de AMBAS as hipóteses. Só quando há `unresolved` — sessões limpas
-    // seguem o caminho barato de 1 classificação.
+    // com os blocos holy de AMBAS as hipÃ³teses. SÃ³ quando hÃ¡ `unresolved` â€” sessÃµes limpas
+    // seguem o caminho barato de 1 classificaÃ§Ã£o.
     let altResult = null;
     if ((baseResult.turns || []).some(t => t && t.status === 'unresolved')) {
       const server2 = parseServerFacts(serverLogText);

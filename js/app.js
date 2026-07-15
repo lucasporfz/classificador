@@ -348,7 +348,7 @@ function renderClassifier(res) {
   }
   const f2 = x => x.toFixed(2);
   const f1 = x => x.toFixed(1);
-  const tierLabel = (tier, mult) => {
+  const tierLabel = (tier, mult, frac) => {
     if (tier.kind === 'tier_primary') return t('cls_tier_death_echo_primary');
     if (tier.kind === 'tier_echo') {
       // M-016e: Spiritual Outburst's delayed stage resolves to one of three candidate
@@ -358,6 +358,9 @@ function renderClassifier(res) {
         ? t('cls_tier_death_echo_echo') + ' (' + t('cls_tier_stage_' + tier.stage) + ')'
         : t('cls_tier_death_echo_echo');
     }
+    // M-035: beam central/side. O lateral mostra a fração F resolvida (fixa por log).
+    if (tier.kind === 'tier_central') return t('cls_tier_beam_central');
+    if (tier.kind === 'tier_side') return t('cls_tier_beam_side') + (frac ? ' (×' + f2(frac) + ')' : '');
     return tier.kind === 'tier_bonus'
       ? t('cls_tier_bonus') + (mult ? ' (×' + f2(mult) + ')' : '')
       : t('cls_tier_base');
@@ -390,8 +393,8 @@ function renderClassifier(res) {
       // real. Suppress it for these two tiers specifically; "Dano médio com crítico" pools
       // raw shown damage (not cast-roll-sensitive in the same way) and already shows the
       // expected order.
-      const tierBaseCell = (tier.kind === 'tier_base' || tier.kind === 'tier_bonus' || tier.kind === 'tier_primary' || tier.kind === 'tier_echo') ? '—' : rowDmg(tier, 'base');
-      return '<tr style="color:var(--text-muted);font-size:12px"><td style="padding-left:22px">└ ' + tierLabel(tier, r.bonusMult) +
+      const tierBaseCell = (tier.kind === 'tier_base' || tier.kind === 'tier_bonus' || tier.kind === 'tier_primary' || tier.kind === 'tier_echo' || tier.kind === 'tier_central' || tier.kind === 'tier_side') ? '—' : rowDmg(tier, 'base');
+      return '<tr style="color:var(--text-muted);font-size:12px"><td style="padding-left:22px">└ ' + tierLabel(tier, r.bonusMult, r.beamFraction) +
         '</td><td></td><td style="text-align:right">' + f2(tier.hitsMean) +
         '</td><td style="text-align:right">' + tierBaseCell + '</td><td style="text-align:right">' + rowDmg(tier, 'eff') + '</td></tr>';
     }).join('');

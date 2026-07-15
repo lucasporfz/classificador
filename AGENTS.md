@@ -44,7 +44,32 @@ Se uma implementação contradiz `docs/CLASSIFICATION_RULES.md`, a implementaç�
 
 ## Comandos obrigatórios após mudanças
 
-Depois de qualquer alteração no classificador, rodar:
+Depois de qualquer alteração no classificador, a validacao operacional de
+classificacao/drift do Unified e feita pelas ferramentas Node do proprio motor
+(as mesmas usadas pelo Claude neste projeto), nao pelos testes Python:
+
+```bash
+node tools/diag-unified-turn.mjs "logs/<sv>.txt" "logs/<lc>.txt" HH:MM:SS [--session N|DD/Mon/YYYY]
+node tools/gabarito-unified.mjs
+node tools/dump-unified.mjs
+```
+
+- `diag-unified-turn.mjs`: diagnostico hit-a-hit do turno alvo.
+- `gabarito-unified.mjs`: gabarito curado de turnos Unified; pode ter falhas
+  pre-existentes, mas a mudanca nao pode introduzir falha nova.
+- `dump-unified.mjs`: dump completo para diff zero-drift antes/depois. Para
+  mudancas de escopo claro, rode primeiro com `--pairs "<fixtures>"` e so depois
+  rode o corpus inteiro.
+- Se `dump-unified.mjs` mostrar qualquer alteracao fora do turno alvo, gerar o
+  detalhe com:
+
+```bash
+node tools/diag-changed-turns.mjs --diff diff-unified.txt > reports/<change>-review.txt
+```
+
+Tambem rodar os testes Python abaixo quando o ambiente tiver Python/pytest
+disponiveis; eles sao uma camada formal adicional, mas nao substituem a
+validacao Unified de gabarito/drift:
 
 ```bash
 python tools/run_classifier_evals.py

@@ -31,6 +31,9 @@
     nearestRuneUseForTurn,
     detectCharmKilledZeroAction,
     makeVirtualZeroHit,
+    makeVirtualZeroHitForCharm,
+    canUseVirtualZeroForBlock,
+    eligibleVirtualZeroCharmsForBlock,
     finalizeManualTurn,
     leechPartitionScore,
     hasStrongTimestampAaSpellBoundary,
@@ -85,6 +88,9 @@
     const actionComp = spell ? 'spell' : 'rune';
     const hits = turn.hits || [];
     if (!hits.length) return null;
+    const profile = action && action.profile || {};
+    const isMageDruid = context.vocation === 'sorcerer' || context.vocation === 'druid';
+    const concreteAreaActionCanExplainTurn = profile.topology === 'area' && !isSingleTargetAction(actionComp, action);
 
     // Mecânica rara: charm/proc entra antes do dano do hit que o ativou. Se a
     // ação concreta existe, mas o dano principal dela é zero e não aparece como
@@ -93,6 +99,11 @@
       const zero = detectCharmKilledZeroAction(turn, action, facts);
       if (zero && action.ts >= hits[0].ts && action.ts <= hits[0].ts + 1) {
         const virtual = makeVirtualZeroHit(turn, action, zero);
+        if (isMageDruid && concreteAreaActionCanExplainTurn) {
+          return finalizeManualTurn(turn, [
+            { comp: actionComp, action, hits: [hits[0], virtual], reason: 'h005_mage_druid_area_action_without_positive_aa_evidence' },
+          ], 'h005_mage_druid_area_action_without_positive_aa_evidence', context);
+        }
         return finalizeManualTurn(turn, [
           { comp: 'arrow', hits: [hits[0]], reason: 'ek_single_visible_aa_before_zero_damage_spell' },
           { comp: actionComp, action, hits: [virtual], reason: 'zero_damage_spell_charm_killed_target_before_hit' },
@@ -113,7 +124,8 @@
     const splitScore = leechPartitionScore(split, context);
     const strongTimestampBoundary = hasStrongTimestampAaSpellBoundary(hits, action);
     const forceA1 = shouldForceA1ByLeech(hits, context);
-
+    const mageDruidHasPositiveAaEvidence = !isMageDruid || !concreteAreaActionCanExplainTurn
+      || strongTimestampBoundary;
     let chosen = split;
     let reason = 'ek_positional_aa_first_hit';
 
@@ -135,25 +147,27 @@
       } else if (allHasEvidence && splitHasEvidence && allScore.bad === 0 && splitScore.bad === 0 && allScore.clean > splitScore.clean + 1) {
         chosen = allSpell;
         reason = 'ek_all_spell_stronger_leech_cardinality';
-      } else if (splitHasEvidence && splitScore.bad < allScore.bad) {
+      } else if (splitHasEvidence && splitScore.bad < allScore.bad && splitScore.clean > allScore.clean) {
         chosen = split;
         reason = 'ek_positional_aa_confirmed_by_leech_cardinality';
       }
     }
 
-    // H-005/S-004a: a ordem AA→componente é desempate em ambiguidade genuína, não
-    // um veto que sobreponha evidência positiva. Se o candidato a AA (primeiro hit)
-    // tem o MESMO mob, MESMO estado de modificadores (EW/prey/crit/Low
-    // Blow/Onslaught) e MESMO dano de algum hit que ficaria no bloco do sufixo,
-    // esses dois hits são mecanicamente o mesmo componente determinístico
-    // (S-004a): não há evidência positiva de AA (nem separação de timing, nem
-    // crit-state distinto, nem dano original distinto, nem salto de leech — H-005),
-    // então o split é rejeitado independentemente do que a cardinalidade por leech
-    // sozinha sugerir (o "AA" isolado sempre parece leech-limpo em N=1 pelo
-    // capped-low de D-023, o que por si só nunca é evidência positiva).
+    // Se o candidato a AA (primeiro hit) tem o MESMO mob, MESMO estado de
+    // modificadores (EW/prey/crit/Low Blow/Onslaught) e MESMO dano de algum hit
+    // que ficaria no bloco do sufixo, esses dois hits são mecanicamente o mesmo
+    // componente determinístico (S-004a) e o split é rejeitado.
     if (chosen === split && firstHitSharesExactOriginalWithRest(hits)) {
       chosen = allSpell;
       reason = 'h005_same_mob_state_exact_match_blocks_aa_split';
+    }
+
+    if (chosen === split
+      && isMageDruid
+      && concreteAreaActionCanExplainTurn
+      && !mageDruidHasPositiveAaEvidence) {
+      chosen = allSpell;
+      reason = 'h005_mage_druid_area_action_without_positive_aa_evidence';
     }
 
     // M-033: runa single-target (Sudden Death, Icicle, Holy Missile) recebe no
@@ -164,6 +178,25 @@
     const actionBlock = chosen.find(def => def.comp === actionComp);
     if (actionBlock && isSingleTargetAction(actionComp, action) && actionBlock.hits.length > 1) {
       return null;
+    }
+
+    // Hit principal virtual por charm-kill (fato observado, sem leech): uma linha
+    // de dano de charm imediatamente seguida por XP (killedTarget) prova que o
+    // charm matou o alvo antes da linha de dano principal daquele ataque aparecer
+    // — logo existe um hit de dano 0 daquela ação. Generaliza o atalho
+    // hits.length===1 para k>=2. O dono é o componente de ÁREA do turno: o AA
+    // single-target já saturado por seu hit visível não pode reivindicar um alvo
+    // varrido a mais (canUseVirtualZeroForBlock só habilita spell/rune de área e
+    // arrow). Anexa o virtual a block.hits (dump conta hits.length; isMainHit
+    // exclui type:'virtual' do leech, sem duplicar). Não toca no caminho RP
+    // (validateLeechBlockForNWithVirtual). Regras: S-014e, C-008, T-004.
+    if (actionBlock && canUseVirtualZeroForBlock({ comp: actionComp, action })) {
+      const areaBlock = { comp: actionComp, hits: actionBlock.hits, action };
+      const charms = eligibleVirtualZeroCharmsForBlock(turn, areaBlock, context);
+      if (charms.length) {
+        const virtuals = charms.map((ch, idx) => makeVirtualZeroHitForCharm(turn, action, ch, idx, areaBlock));
+        actionBlock.hits = actionBlock.hits.concat(virtuals);
+      }
     }
 
     const defs = chosen.map(def => {
@@ -669,11 +702,13 @@
         const row = map.get(key);
         row.turns++;
         row.hits.push(c.hits.length);
-        for (const h of c.hits) if (h.countsAsHit !== false && (!h.overkill || c.hits.every(x => x.overkill))) {
+        for (const h of c.hits) {
+          if (h.countsAsHit !== false && (!h.overkill || c.hits.every(x => x.overkill))) {
           row.dmgEff.push(h.dmg);
           // Base atual: usa menor candidato/interseção disponível; métrica só informativa.
           if (c.comp === 'arrow' && h.evidence && h.evidence.physical && h.evidence.physical.interval) row.dmgBase.push(Math.round((h.evidence.physical.interval[0] + h.evidence.physical.interval[1]) / 2));
           else row.dmgBase.push(h.dmg);
+          }
         }
       }
     }

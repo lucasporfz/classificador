@@ -368,7 +368,10 @@
         if (originCast) return originCast;
       }
       const centerTs = Math.round(mean(hits.map(h => h.ts)));
-      const sorted = actions.spellCasts.slice().sort((a, b) => Math.abs(a.ts - centerTs) - Math.abs(b.ts - centerTs) || b.ts - a.ts);
+      const sorted = actions.spellCasts.slice().sort((a, b) =>
+        Math.abs(a.ts - centerTs) - Math.abs(b.ts - centerTs)
+        || a.ts - b.ts
+        || (a.seq || 0) - (b.seq || 0));
       return sorted[0] || null;
     }
     if (comp === 'rune') {
@@ -461,6 +464,7 @@
       const intervals = [];
       let known = 0, unknown = 0;
       for (const h of block.hits.filter(h => !h.overkill)) {
+        if (h.zeroDamageDodge) { unknown++; continue; }
         const ev = physicalOriginalInterval(h, context);
         if (!ev || !ev.known) { unknown++; continue; }
         if (!ev.interval) return { ok: false, rule: 'D-004/S-007', reason: 'physical_no_candidate', known, unknown };
@@ -716,6 +720,7 @@
     const perHit = [];
     let known = 0, unknown = 0;
     for (const h of block.hits.filter(h => !h.overkill)) {
+      if (h.zeroDamageDodge) { unknown++; continue; }
       const ev = elementalOriginalCandidates(h, element, context);
       if (!ev || !ev.known) { unknown++; continue; }
       if (!ev.originals || !ev.originals.length) return { ok: false, rule: 'D-003/S-004', reason: 'elemental_no_candidate', element, known, unknown };
@@ -1398,6 +1403,8 @@
 
   function compareValidated(a, b) {
     const A = a.score, B = b.score;
+    const boundaryLeech = compareTimestampLeechBoundary(a, b);
+    if (boundaryLeech) return boundaryLeech;
     // Degeneração elemental mesmo-segundo (elementalSameSecondTimingDemoted):
     // `timing` sai da posição 2 e vira o ÚLTIMO desempate antes de shape/cut —
     // a evidência de leech (cappedLowHits) decide antes dele, mas em empate
@@ -1425,6 +1432,39 @@
     if (A.shapeKey !== B.shapeKey) return A.shapeKey < B.shapeKey ? -1 : 1;
     if (A.cutKey !== B.cutKey) return A.cutKey < B.cutKey ? -1 : 1;
     return 0;
+  }
+
+  function compareTimestampLeechBoundary(a, b) {
+    const ca = a && a.candidate, cb = b && b.candidate;
+    if (!ca || !cb) return 0;
+    if ((ca.shape || []).join('>') !== 'arrow>spell') return 0;
+    if ((cb.shape || []).join('>') !== 'arrow>spell') return 0;
+    if (!ca.cuts || !cb.cuts || ca.cuts.length !== 2 || cb.cuts.length !== 2) return 0;
+    if (ca.cuts[1] !== cb.cuts[1]) return 0;
+    if (Math.abs(ca.cuts[0] - cb.cuts[0]) !== 1) return 0;
+
+    const spellA = ca.components && ca.components[1];
+    const spellB = cb.components && cb.components[1];
+    const actionA = spellA && spellA.action;
+    const actionB = spellB && spellB.action;
+    if (!actionA || !actionB) return 0;
+    if (actionA.ts !== actionB.ts || normalizeName(actionA.text || '') !== normalizeName(actionB.text || '')) return 0;
+    const profile = actionA.profile || {};
+    if (profile.topology !== 'area') return 0;
+
+    const timestampDelta = a.score.timestampSplitPenalty - b.score.timestampSplitPenalty;
+    if (!timestampDelta) return 0;
+    const cappedDelta = a.score.cappedLowHits - b.score.cappedLowHits;
+    if (!cappedDelta || Math.sign(timestampDelta) !== Math.sign(cappedDelta)) return 0;
+    if (a.score.leechContradictions > b.score.leechContradictions && timestampDelta < 0) return 0;
+    if (b.score.leechContradictions > a.score.leechContradictions && timestampDelta > 0) return 0;
+    if (a.score.leechFits < b.score.leechFits && timestampDelta < 0) return 0;
+    if (b.score.leechFits < a.score.leechFits && timestampDelta > 0) return 0;
+
+    // T-001/T-002/T-004 + S-018/S-019/H-001/H-003/H-005:
+    // when timestamp boundary and leech-cardinality consensus agree, cast
+    // alignment must not pull the boundary hit into the neighboring AoE spell.
+    return timestampDelta;
   }
 
 
@@ -1463,7 +1503,10 @@
       if (originCast) return originCast;
     }
     const center = Math.round(mean(hits.map(h => h.ts)));
-    const sorted = candidates.slice().sort((a, b) => Math.abs(a.ts - center) - Math.abs(b.ts - center) || b.ts - a.ts);
+    const sorted = candidates.slice().sort((a, b) =>
+      Math.abs(a.ts - center) - Math.abs(b.ts - center)
+      || a.ts - b.ts
+      || (a.seq || 0) - (b.seq || 0));
     return sorted[0] || null;
   }
 
@@ -2048,8 +2091,9 @@
   }
 
   // H-005/S-004a: mesmo mob + mesmo estado de modificadores (EW/prey/crit/Low
-  // Blow/Onslaught) + mesmo dano ⇒ mesmo componente determinístico. Hits de
-  // overkill são excluídos (dano truncado não é comparável).
+  // Blow/Onslaught) + mesmo dano/leech observado ⇒ mesmo componente observado.
+  // Overkill não serve para reconstruir original, mas não apaga uma duplicata
+  // textual idêntica usada apenas para bloquear AA posicional fantasma.
   function hitStateKey(h) {
     return normalizeName(h.mob) + '|' + (h.exposeWeakness ? 1 : 0) + '|' + (h.isPrey ? 1 : 0) + '|' +
       (h.realCrit ? 1 : 0) + '|' + (h.onslaught ? 1 : 0) + '|' + (h.lowBlow ? 1 : 0);
@@ -2058,7 +2102,11 @@
     const first = hits[0];
     if (!first || first.overkill) return false;
     const firstKey = hitStateKey(first);
-    return hits.slice(1).some(h => h && !h.overkill && hitStateKey(h) === firstKey && (+h.dmg) === (+first.dmg));
+    return hits.slice(1).some(h => h
+      && hitStateKey(h) === firstKey
+      && (+h.dmg) === (+first.dmg)
+      && (+h.lifeLeech || 0) === (+first.lifeLeech || 0)
+      && (+h.manaLeech || 0) === (+first.manaLeech || 0));
   }
 
   function actionLabel(comp, action) {

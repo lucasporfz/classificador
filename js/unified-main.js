@@ -159,6 +159,34 @@
     }
   }
 
+  // Executioner's Throw (exori amp kor, EK físico de área) tem um bônus de dano condicional
+  // por vida do alvo (execute): binário por-hit, multiplicador A fixo por log (2.0/2.25/2.5).
+  // O motor (detectExecutionerTiers) já decidiu por hit (h.executionerBonusActive) por leech
+  // por-canal por-turno; aqui só agrupamos as sub-linhas base/amped, reaproveitando o mesmo
+  // encanamento do Terra Burst. Hits null (indeterminados) caem em base (conservador).
+  const EXECUTIONER_ACTIONS = ['exori amp kor'];
+
+  function applyExecutionerTiers(row, context) {
+    if (row.kind !== 'spell' || !row._allHits.length) return;
+    const first = row._allHits[0];
+    const isExec = EXECUTIONER_ACTIONS.indexOf(first.action) !== -1 ||
+      /executioner/i.test(first.actionLabel || '');
+    if (!isExec) return;
+    const baseHits = row._allHits.filter(l => l.executionerBonusActive !== true);
+    const bonusHits = row._allHits.filter(l => l.executionerBonusActive === true);
+    if (!baseHits.length || !bonusHits.length) return;
+    row.tiers = [
+      buildTerraBurstTier('tier_base', baseHits, row.turns, context),
+      buildTerraBurstTier('tier_bonus', bonusHits, row.turns, context),
+    ];
+    // A é fixo por log: usa o executionerBonusLevel já resolvido pelo motor.
+    const levels = new Set();
+    for (const l of row._allHits) if (l.executionerBonusLevel != null) levels.add(l.executionerBonusLevel);
+    const distinct = Array.from(levels);
+    if (distinct.length === 1) row.bonusMult = distinct[0];
+    else if (distinct.length > 1) { row.bonusMultAmbiguous = true; row.bonusMultLevels = distinct.map(level => ({ level })); }
+  }
+
   // Death Echo (exevo mort ora) and Spiritual Outburst (exori gran mas nia, M-016e) are the
   // two known multi-stage casts: an initial full-power blast followed by a delayed echo. The
   // engine already tags each hit's stage (h.multiStageStage = 'primary' | 'echo'); overkill
@@ -291,7 +319,7 @@
       row.dmgEffPerHit = totalHits > 0 ? Math.round(totalEff / totalHits) : 0;
       row.dmgBase = row.dmgBasePerTurn;
       row.dmgEff = row.dmgEffPerTurn;
-      if (withTiers) { applyTerraBurstTiers(row, context); applyDeathEchoTiers(row, context); }
+      if (withTiers) { applyTerraBurstTiers(row, context); applyExecutionerTiers(row, context); applyDeathEchoTiers(row, context); }
       delete row._hits; delete row._base; delete row._baseHits; delete row._eff; delete row._allHits; delete row.key;
       return row;
     }).sort((a, b) => (rank[a.kind] || 9) - (rank[b.kind] || 9) || String(a.label).localeCompare(String(b.label)));
@@ -384,6 +412,11 @@
             exposeWeakness: !!h.exposeWeakness,
             terraBurstBonusActive: h.terraBurstBonusActive === undefined ? null : h.terraBurstBonusActive,
             terraBurstBonusLevel: (component.deterministic && component.deterministic.terraBurstBonusLevel) || null,
+            executionerBonusActive: h.executionerBonusActive === undefined ? null : h.executionerBonusActive,
+            executionerBonusLevel: (component.deterministic && component.deterministic.executionerBonusLevel) || null,
+            beamSide: h.beamSide === undefined ? null : h.beamSide,
+            beamFraction: (component.deterministic && component.deterministic.beamFraction) || null,
+            beamElement: (component.deterministic && component.deterministic.beamElement) || null,
             multiStageStage: h.multiStageStage || null,
             multiStageTierStage: h.multiStageTierStage != null ? h.multiStageTierStage : null,
             gravSanActive: component.gravSanActive === undefined ? null : component.gravSanActive,

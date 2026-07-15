@@ -64,6 +64,7 @@
     const transcendenceTriggers = [];
     const tsPattern = /^(\d{2}):(\d{2}):(\d{2})\s+(.*)$/;
     const attackPattern = /(?:(?:A|An|The)\s+)?([A-Za-z][A-Za-z\s'\-]+?)\s+loses\s+(\d+)\s+hitpoints\s+due to your\s+(critical attack|attack)\b\.?\s*(\([^)]*\))?/i;
+    const hazardDodgePattern = /(?:(?:A|An|The)\s+)?([A-Za-z][A-Za-z\s'\-]+?)\s+dodged your attack\.\s*(\([^)]*\))?/i;
     const runeUsePattern = /Using one of\s+\d+\s+(.+?)\s+runes?\b/i;
     const xpPattern = /You gained\s+(\d+)\s+experience(?:\s+points?)?/i;
     const transcendencePattern = /^Transcendence was triggered\.?/i;
@@ -98,6 +99,9 @@
           ts,
           clock: tsToClock(ts),
           mob: normalizeName(a[1]),
+          // M-009: fato observado — o nome do mob veio SEM artigo (a/an/the) no Server Log.
+          // Sinal textual direto de boss; a agregação por-mob é feita em bossNameSet (engine).
+          articleless: !/^\s*(?:A|An|The)\s/i.test(body),
           dmg: +a[2],
           type: isCrit || hasCritCharm || hasOnslaught ? 'crit' : 'normal',
           realCrit: isCrit || hasCritCharm,
@@ -123,6 +127,39 @@
           hits.push(ev);
           pendingLeechHit = ev; // Low Blow/Savage Blow continuam sendo hits principais com leech
         }
+        continue;
+      }
+
+      const hd = hazardDodgePattern.exec(body);
+      if (hd) {
+        const suffix = hd[2] || '';
+        const ev = {
+          id: 'h' + seq,
+          kind: 'hit',
+          seq: seq++,
+          ts,
+          clock: tsToClock(ts),
+          mob: normalizeName(hd[1]),
+          articleless: !/^\s*(?:A|An|The)\s/i.test(body),
+          dmg: 0,
+          type: 'normal',
+          realCrit: false,
+          lowBlow: false,
+          onslaught: false,
+          perfectShot: false,
+          isPrey: /prey|Bounty Talisman/i.test(suffix),
+          exposeWeakness: /Expose Weakness/i.test(suffix),
+          elementalAmplification: /active elemental amplification/i.test(suffix),
+          hazardDodge: true,
+          zeroDamageDodge: true,
+          rawLine,
+          lifeLeech: 0,
+          manaLeech: 0,
+          overkill: false,
+        };
+        events.push(ev);
+        hits.push(ev);
+        pendingLeechHit = null;
         continue;
       }
 
@@ -345,7 +382,7 @@
       if (!delayed || !delays || !delays.length || !tiers || !tiers.length) continue;
       const primaryWindow = [cast.ts - 1, cast.ts]
         .flatMap(ts => hitsByTs.get(ts) || [])
-        .filter(h => !delayedByHit.has(h.id) && !h.overkill);
+        .filter(h => !delayedByHit.has(h.id) && !h.overkill && !h.zeroDamageDodge);
       if (!primaryWindow.length) continue;
       const primaryTerminal = Math.max(...primaryWindow.map(h => h.ts));
       // M-016d/M-016e: delays candidatos são tentados em ordem; o primeiro
@@ -357,7 +394,7 @@
       for (const delayCandidate of delays) {
         const ts = primaryTerminal + delayCandidate;
         const block = (hitsByTs.get(ts) || []).filter(h => !delayedByHit.has(h.id));
-        const candidates = block.filter(h => !h.overkill);
+        const candidates = block.filter(h => !h.overkill && !h.zeroDamageDodge);
         if (candidates.length) { echoTs = ts; echoBlock = block; echoCandidates = candidates; break; }
       }
       if (echoTs == null) continue;
@@ -517,7 +554,7 @@
 
       const originTurn = turns.find(t => t.hits.some(h => h.ts === cast.ts || h.ts === cast.ts - 1));
       if (!originTurn) continue;
-      const primaryWindow = originTurn.hits.filter(h => (h.ts === cast.ts || h.ts === cast.ts - 1) && isMainHit(h) && !h.overkill && !h.multiStageStage);
+      const primaryWindow = originTurn.hits.filter(h => (h.ts === cast.ts || h.ts === cast.ts - 1) && isMainHit(h) && !h.overkill && !h.multiStageStage && !h.zeroDamageDodge);
       if (!primaryWindow.length) continue;
       const primaryTerminal = Math.max(...primaryWindow.map(h => h.ts));
       const primaryAvg = primaryWindow.reduce((s, h) => s + (+h.dmg || 0), 0) / primaryWindow.length;
@@ -534,7 +571,7 @@
         const ts = primaryTerminal + delayCandidate;
         const t = turns.find(tt => tt.hits.some(h => h.ts === ts));
         if (!t) continue;
-        const b = t.hits.filter(h => h.ts === ts && isMainHit(h) && !h.overkill && !h.multiStageStage);
+        const b = t.hits.filter(h => h.ts === ts && isMainHit(h) && !h.overkill && !h.multiStageStage && !h.zeroDamageDodge);
         if (b.length) { echoTs = ts; targetTurn = t; block = b; break; }
       }
       if (echoTs == null) continue;

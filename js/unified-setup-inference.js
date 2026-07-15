@@ -192,6 +192,13 @@
 
     if (comp.comp === 'arrow') {
       if (context && context.vocation === 'paladin') return null;
+      if (context && (context.vocation === 'sorcerer' || context.vocation === 'druid')) {
+        const reason = String(comp.reason || turn.reason || '');
+        const positiveMageDruidAa = reason === 'ek_timestamp_boundary_aa_then_spell'
+          || reason === 'ek_positional_aa_confirmed_by_leech_cardinality'
+          || reason.indexOf('ek_a1_forced_by_leech_cardinality_') === 0;
+        if (!positiveMageDruidAa) return null;
+      }
       return n === 1 ? { n, source: source + ':single_target_vocation_aa' } : null;
     }
 
