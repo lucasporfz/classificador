@@ -82,6 +82,48 @@
 
   Caso-prova: `logs/death echo server log.txt` / `logs/death echo local chat.txt` (`Fri Jul 10 2026`, sorcerer solo `Very Pog`, pós-cutoff), turno `11:06:22` — componente `Great Death Beam` (elemento resolvido `death`, `F = 0.70`): revertidos `cyclursus 1700`/`roaming dread 1805` → central (nível ~1600); `cyclursus 1189`/`roaming dread 1263 ×4` → side (nível ~1120 = `1600 × 0.70`); `504 OK` (overkill) → `null`. `Energy Beam`/`Great Energy Beam` (energy) ficam validados só transitivamente por falta de fixture solo pós-cutoff de energy beam (risco documentado, precedente do risco Stage 1/2 de M-016e). Fixtures sem ação de beam permanecem idênticos (o pós-passe encontra o conjunto vazio e retorna sem mutar nada).
 
+- **M-036 — Bônus de dano do player contra classe de bestiário:** um reward de bestiário
+  (ex. "Improved" de Charm Points) dá ao personagem `+N%` de dano contra TODOS os mobs de
+  uma classe de bestiário inteira (`bestiaryClass` em `js/mob-element-mods-post-2026-06-16.js`,
+  mesclado do `bestiary.json` oficial). É fato do **personagem**, não do mob nem do
+  elemento — entra como multiplicador pós-mitigação uniforme (`bestiaryClassMultiplierForHit`
+  em `js/unified-formulas.js`, mesmo ponto de prey/utevo grav san em `postMultiplier`),
+  afetando igualmente a reversão física (AA) e elemental (spell/runa/granada) contra mobs
+  da classe detectada.
+
+  Detectado por sessão (`inferBestiaryClassDamageBonus`, `js/unified-classification-engine.js`)
+  usando o dano de charm ofensivo como testemunha: é FIXO por mob (sem sorteio), então
+  `hitpoints × 0.05 × mitigação × effectiveMod(modElemento, pierce)` prevê o valor exato
+  quando não há bônus. `pierce` usa a mesma fórmula do dano normal do player
+  (`pierceForElement`/`effectiveMod`): `+0.08` se a linha do charm tiver "increased damage
+  by Expose Weakness", mais qualquer pierce já inferido pra sessão (`context.bmPierce`,
+  holy/physical). Procs dentro de uma janela de utevo grav san são excluídos (grav san
+  também infla dano de charm, M-016/`inferGravSanSetup`). "due to active charm upgrade" no
+  sufixo NÃO afeta dano (é só chance de ativação do charm) e é ignorado. Vota por CLASSE
+  (não por mob) entre `BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES`, exigindo unanimidade entre
+  todas as linhas (mob×estado-EW) testemunhas da classe — sem isso, ela fica sem bônus em
+  vez de arriscar um valor por maioria.
+
+  Caso-prova (bônus real): `logs/ingol ed Server Log.txt` / `logs/ingol ed Local Chat.txt`
+  (`Fri Jul 17 2026`, druid, sem utevo grav san — a spell é exclusiva de paladin) — harpy
+  (`bestiaryClass: Bird`) diverge consistentemente `×1.05` do original de gelo revertido
+  em 143 componentes da sessão (crape man/rhindeer, não-aves, batem exatos); confirmado
+  pelo `freeze charm` da harpy: observado `431` vs esperado `411.05`
+  (`7700 × 0.05 × 0.970596 × 1.10`), razão `1.0485`. Sem o multiplicador de classe, os 11
+  turnos de `Ice Burst (exevo ulus frigo)` falhavam `validateTerraBurstBonusBlock`
+  (`terra_burst_bonus_cluster_span_too_wide`) e a UI não mostrava sub-linhas
+  base/bônus — com a classe `Bird = 0.05` aplicada, 10/11 turnos fecham o cluster no
+  nível correto `1.4`.
+
+  Caso-prova negativo (falso positivo evitado): `logs/mazzerinbarrage server log.txt`
+  sessão salva `Sun Jun 28 23:02:16 2026` (paladin, `utevo grav san` ativo, `gravSanSetup.bonus
+  = 0.12`, `bmPierce = 0.04` holy/physical) — sem descontar grav san/EW/bmPierce, 4 classes
+  divergiam `~3–12%` da fórmula bruta (falso positivo "Construct +3%" via `walking pillar`);
+  com os 3 descontos, as 8 combinações mob×EW fecham em razão `0.9995–1.0003`, nenhuma
+  classe é confirmada (correto — este log não tem o reward). Fixtures sem charm elemental
+  fora de janela de grav san permanecem idênticos (o detector retorna `bonus: 0` e o
+  pós-passe é inerte).
+
 ### Runas
 
 - **M-017 — Sinal de execução:** `Using one of N … runes` é sinal **primário** de classificação, no mesmo nível da mudança de crit-state (D-007). Comprova a execução da runa; não inventa dano onde não existe bloco determinístico compatível.

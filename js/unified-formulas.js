@@ -219,6 +219,14 @@
   const GRAV_SAN_DURATION_SECONDS = 5;
   const GRAV_SAN_BONUS_CANDIDATES = [0.08, 0.10, 0.12];
 
+  // Bônus de dano do player contra uma classe de bestiário (ex.: reward "Improved" de
+  // Charm Points). Candidatos testados por inferBestiaryClassDamageBonus contra o dano
+  // de charm ofensivo (fixo por-mob, sem sorteio), já com Expose Weakness e pierce da
+  // sessão (bmPierce) descontados via effectiveMod/pierceForElement — a mesma disciplina
+  // do dano normal do player — e fora de qualquer janela de utevo grav san. Confirmado no
+  // par logs/ingol ed (17/Jul/2026, ED): harpy/Bird = 0.05, fechado pelo freeze charm.
+  const BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES = [0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.12, 0.15, 0.20, 0.25, 0.30];
+
   // O crÃ­tico Ã© inferido POR-COMPONENTE por buckets crit/nÃ£o-crit (mean/mean), nÃ£o por
   // uma grade de candidatos global. `criticalMultiplierForHit` aplica o crit do componente
   // do bloco em reversÃ£o; a inferÃªncia estÃ¡ em inferCritByComponent (+ bootstrap
@@ -579,6 +587,7 @@
     let m = 1;
     if (hit && hit.isPrey) m *= 1.25;
     m *= gravSanMultiplierAtTs(context, hit && hit.ts, hit);
+    m *= bestiaryClassMultiplierForHit(hit, context);
     return m;
   }
 
@@ -693,6 +702,22 @@
     if (typeof root.getMobElementMods === 'function') return root.getMobElementMods(name) || null;
     if (root.MOB_ELEMENT_MODS) return root.MOB_ELEMENT_MODS[name] || null;
     return null;
+  }
+
+  // Bônus de dano do PLAYER contra uma classe de bestiário (ex.: reward "Improved" de
+  // +5% contra Aves). Fato do personagem, não da spell/elemento — por isso entra como
+  // multiplicador pós-mitigação uniforme (mesmo ponto de prey/utevo grav san), afetando
+  // igualmente a reversão física (AA) e elemental (spell/runa/granada) contra mobs da
+  // classe detectada. Detectado por sessão em inferBestiaryClassDamageBonus (motor),
+  // confirmado pelo dano de charm ofensivo (valor fixo por mob, sem sorteio) usando a
+  // MESMA fórmula de pierce/mitigação do dano normal (effectiveMod/pierceForElement/
+  // mitigationMultiplier) — ver docs/CLASSIFICATION_RULES.md.
+  function bestiaryClassMultiplierForHit(hit, context) {
+    const setup = context && context.bestiaryClassBonus;
+    if (!setup || !(setup.multiplier > 1) || !setup.class) return 1;
+    const mods = getMobMods(hit && hit.mob, context);
+    if (!mods || !mods.bestiaryClass) return 1;
+    return normalizeName(mods.bestiaryClass) === setup.class ? setup.multiplier : 1;
   }
 
   function elementalOriginalCandidates(hit, element, context, options) {
@@ -892,6 +917,8 @@
     GRAV_SAN_INCANTATION,
     GRAV_SAN_DURATION_SECONDS,
     GRAV_SAN_BONUS_CANDIDATES,
+    BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES,
+    bestiaryClassMultiplierForHit,
     CRIT_BUCKET_MIN_SAMPLES,
     CRIT_BOOTSTRAP_MAX,
     CRIT_MULTIPLIER_CANDIDATES,

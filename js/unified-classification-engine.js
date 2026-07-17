@@ -54,6 +54,7 @@
     GRAV_SAN_INCANTATION,
     GRAV_SAN_DURATION_SECONDS,
     GRAV_SAN_BONUS_CANDIDATES,
+    BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES,
     CRIT_BUCKET_MIN_SAMPLES,
     CRIT_BOOTSTRAP_MAX,
     CRIT_MULTIPLIER_CANDIDATES,
@@ -456,6 +457,115 @@
     };
   }
 
+  // Mapa elemento <- assinatura de charm ofensivo (charmSignature acima). Charms sem
+  // elemento de dano claro (overpower/wound = fisico, ja coberto por
+  // physicalOriginalInterval via postMultiplier; overflux e mana, nao dano) ficam de fora
+  // dessa lista de elemento — mas wound (fisico) e divine_wrath (holy) SAO usados aqui.
+  const CHARM_ELEMENT_MAP = {
+    freeze: 'ice',
+    enflame: 'fire',
+    curse: 'death',
+    poison: 'earth',
+    zap: 'energy',
+    divine_wrath: 'holy',
+    overpower: 'physical',
+    wound: 'physical',
+  };
+
+  // Bonus de dano do player contra uma classe de bestiario (ex.: reward "Improved" de
+  // Charm Points, +N% contra uma classe inteira). Nao e fato do mob (nao entra na tabela
+  // de mods) nem do elemento (aparece em toda spell/AA contra a classe) - e fato do
+  // personagem, constante na sessao inteira. O dano de charm ofensivo e FIXO por mob (sem
+  // sorteio), entao serve de testemunha independente da reversao elemental/fisica -- MAS
+  // só depois de descontar as duas fontes de contaminação já modeladas em outro lugar do
+  // motor: (1) utevo grav san infla o dano de charm igual dano de spell (mesma janela de
+  // inferGravSanSetup) — procs dentro da janela são excluídos; (2) Expose Weakness
+  // ("increased damage by Expose Weakness" no sufixo) e qualquer pierce já inferido pra
+  // sessão (context.bmPierce, só holy/physical) entram na fórmula exatamente como no dano
+  // normal do player, via pierceForElement/effectiveMod — sem isso, procs do mesmo mob com
+  // e sem EW parecem "dois valores" e o cálculo diverge da tabela mesmo sem bônus real.
+  // "due to active charm upgrade" no sufixo NÃO afeta dano (só chance de ativação do
+  // charm) e é ignorado.
+  // Caso-prova: logs/mazzerinbarrage server log.txt S11 (Sun Jun 28 23:02:16 2026) — sem
+  // filtrar grav san/EW/bmPierce, 4 classes divergiam ~3-12% da fórmula bruta (falso
+  // positivo "Construct +3%" via walking pillar); com os 3 descontos, as 8 combinações
+  // mob×EW fecham em razão 0.9995–1.0003. logs/ingol ed 17/Jul/2026 (druid, sem utevo
+  // grav san): harpy (Bird) freeze charm ainda diverge ~1.05 mesmo com a fórmula
+  // completa — bônus de classe real, confirmado.
+  function inferBestiaryClassDamageBonus(serverFacts, context) {
+    const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
+    const events = (serverFacts && serverFacts.events) || [];
+    const charmEvents = events
+      .filter(ev => ev && ev.kind === 'charm' && ev.dmg > 0 && !ev.isPrey)
+      .filter(ev => !isWithinAnyWindow(ev.ts, windows))
+      .map(ev => ({ ev, element: CHARM_ELEMENT_MAP[charmSignature(ev)], ew: /expose weakness/i.test(ev.rawLine || '') }))
+      .filter(x => !!x.element);
+    if (!charmEvents.length) return { bonus: 0, multiplier: 1, class: null, source: 'no_elemental_charm_evidence_outside_grav_san' };
+
+    const byKey = new Map();
+    for (const { ev, element, ew } of charmEvents) {
+      const mob = normalizeName(ev.mob);
+      if (!mob) continue;
+      const key = mob + '|' + element + '|' + (ew ? 1 : 0);
+      if (!byKey.has(key)) byKey.set(key, { mob, element, ew, values: [] });
+      byKey.get(key).values.push(ev.dmg);
+    }
+
+    const rows = [];
+    for (const { mob, element, ew, values } of byKey.values()) {
+      // Exige repetição: um único proc pode estar truncado pela vida restante do alvo.
+      if (values.length < 3) continue;
+      const mods = getMobMods(mob, context);
+      if (!mods || !mods.bestiaryClass || !(mods.hitpoints > 0)) continue;
+      const key = ELEMENT_KEYS[element];
+      if (!key || !(mods[key] > 0)) continue;
+      const pierce = pierceForElement(element, { exposeWeakness: ew }, context);
+      const mod = effectiveMod(+mods[key], pierce);
+      const mit = mitigationMultiplier(mods, context);
+      const expected = mods.hitpoints * 0.05 * mit * mod;
+      if (!(expected > 0)) continue;
+      const observed = median(values);
+      rows.push({ mob, element, ew, class: normalizeName(mods.bestiaryClass), observed, expected, ratio: observed / expected, n: values.length });
+    }
+    if (!rows.length) return { bonus: 0, multiplier: 1, class: null, source: 'no_mob_with_bestiary_class_and_hitpoints', rows };
+
+    const byClass = new Map();
+    for (const r of rows) {
+      const arr = byClass.get(r.class) || [];
+      arr.push(r);
+      byClass.set(r.class, arr);
+    }
+
+    let best = null;
+    for (const [cls, clsRows] of byClass) {
+      const scores = BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES.map(b => ({ bonus: b, multiplier: 1 + b, votes: 0, error: 0 }));
+      for (const r of clsRows) {
+        for (const cand of scores) {
+          const expected = r.expected * cand.multiplier;
+          const delta = Math.abs(r.observed - expected);
+          const tolerance = Math.max(2, expected * 0.0125);
+          if (delta <= tolerance) { cand.votes++; cand.error += delta; }
+        }
+      }
+      scores.sort((a, b) => b.votes - a.votes || a.error - b.error);
+      const top = scores[0];
+      // Unanime: toda linha (mob×EW) testemunha da classe tem que concordar com o mesmo
+      // candidato, senao a classe fica sem bonus detectado em vez de arriscar um valor
+      // por maioria.
+      if (top && top.votes === clsRows.length && (!best || top.votes > best.votes)) {
+        best = { class: cls, bonus: top.bonus, multiplier: top.multiplier, votes: top.votes, rows: clsRows };
+      }
+    }
+    if (!best) return { bonus: 0, multiplier: 1, class: null, source: 'charm_evidence_inconclusive', rows };
+    return {
+      bonus: best.bonus,
+      multiplier: best.multiplier,
+      class: best.class,
+      source: 'confirmed_by_charm_damage',
+      rows: best.rows,
+    };
+  }
+
   // Estimador de crÃ­tico POR-COMPONENTE por buckets crit/nÃ£o-crit.
   // Entrada: hits jÃ¡ rotulados (cada um com `compKey`, `mob`, `dmg`, `realCrit`,
   // `overkill`, `isPrey`, `ts`, `onslaught`, `exposeWeakness`, `gravSanActive`).
@@ -599,6 +709,7 @@
     context.localFacts = localFacts;
     context.transcendenceWindows = (serverFacts.transcendenceTriggers || []).map(t => [t.ts, t.ts + TRANSCENDENCE_WINDOW_SECONDS]);
     context.gravSanSetup = inferGravSanSetup(serverFacts, localFacts, options || {});
+    context.bestiaryClassBonus = inferBestiaryClassDamageBonus(serverFacts, context);
     // CrÃ­tico por-componente: aqui sÃ³ o BOOTSTRAP (pass-1). Se `options.critMultiplier`
     // for dado, respeita como fallback fixo; senÃ£o usa o global grosso crit-independente
     // da porÃ§Ã£o. Os multiplicadores por-componente (`byComponent`) sÃ£o preenchidos pelo
@@ -822,6 +933,7 @@
       goldLeechObservationCount: goldLeechObservations.length,
       goldLeechObservationsSample: goldLeechObservations.slice(0, 20),
       gravSanSetup: context.gravSanSetup,
+      bestiaryClassDamageBonus: context.bestiaryClassBonus,
       critSetup: context.critSetup,
       spellLeechBonusCandidates: SPELL_LEECH_BONUS_CANDIDATES,
       turns: resolvedTurns,
@@ -901,6 +1013,7 @@
     parseServerFacts,
     parseLocalChat,
     inferGravSanSetup,
+    inferBestiaryClassDamageBonus,
     inferCritByComponent,
     inferBmPierceFromCrossMobEvidence,
     buildTurns,
