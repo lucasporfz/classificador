@@ -39,6 +39,7 @@
     PHYSICAL_INTERSECTION_TOLERANCE,
     SPELL_LEECH_BONUS_CANDIDATES,
     TERRA_BURST_BONUS_LEVELS,
+    ELEMENTS,
   } = root.UnifiedFormulas;
 
   const {
@@ -199,6 +200,37 @@
     return total / h.dmg;
   }
 
+  // Compara dois hits no espaço do DANO ORIGINAL revertido (D-010a), não no dano bruto.
+  // Retorna `true` = quebra (originais disjuntos em todo eixo elemental comparável),
+  // `false` = compatível (algum eixo intersecta), `null` = não comparável (D-006:
+  // evidência ausente dos dois lados no mesmo eixo).
+  //
+  // Por que revertido e por que CROSS-MOB: a reversão normaliza mitigação, resistência
+  // do mob, Expose Weakness, prey e crítico — então hits de mobs DIFERENTES do mesmo
+  // componente colapsam no mesmo original, e a comparação passa a ser válida entre
+  // vizinhos de array (o dano bruto só permitia comparar dentro do mesmo mob). Prova:
+  // `bakra` 19:49:57 — roaming dread 889, cyclursus 1139 e crypt mage 886 revertem
+  // todos para holy ~831 (granada), enquanto dread 687, cyclursus 880 e crypt mage 685
+  // revertem para holy ~642 (Divine Caldera); no dano bruto esses dois blocos são
+  // indistinguíveis de ruído de armadura, no espaço revertido a fronteira é exata.
+  // Isto é geração de CANDIDATO, não decisão: validateCandidate continua sendo o árbitro
+  // e as duas redes de segurança de resolveTurn continuam valendo.
+  function guidedRevertedBreak(a, b) {
+    const ea = a && a.evidence && a.evidence.elemental;
+    const eb = b && b.evidence && b.evidence.elemental;
+    if (!ea || !eb) return null;
+    let sawAxis = false;
+    for (const el of ELEMENTS) {
+      if (el === 'physical') continue;
+      const ca = ea[el], cb = eb[el];
+      if (!ca || !cb || !ca.known || !cb.known) continue;
+      if (!ca.originals || !ca.originals.length || !cb.originals || !cb.originals.length) continue;
+      sawAxis = true;
+      if (intersectSets([ca.originals, cb.originals], 0).length) return false;
+    }
+    return sawAxis ? true : null;
+  }
+
   // Retorna as posições de corte candidatas (1..n-1, ordenadas) para o turno, ou null
   // quando o turno é pequeno demais pra busca guiada valer a pena (usa segmentations
   // direto). As posições independem de k — resolveTurn combina (k-1) delas por shape.
@@ -220,7 +252,14 @@
       const mob = normalizeName(cur.mob);
       const prevSameMob = lastSeenByMob.get(mob);
       if (i >= 1) {
-        if (prevSameMob && !prevSameMob.overkill && !cur.overkill) {
+        // Sinal 1 no espaço revertido (cross-mob) quando há evidência; senão, fallback
+        // para a comparação de magnitude por dano bruto DENTRO do mesmo mob
+        // (comportamento anterior, preservado para mob sem mods conhecidos — D-006:
+        // boss e mobs fora da tabela do regime da sessão).
+        const prevAny = hits[i - 1];
+        const revBreak = (!prevAny.overkill && !cur.overkill) ? guidedRevertedBreak(prevAny, cur) : null;
+        if (revBreak === true) mark(i);
+        else if (revBreak === null && prevSameMob && !prevSameMob.overkill && !cur.overkill) {
           const ma = +prevSameMob.dmg, mb = +cur.dmg;
           if (ma > 0 && mb > 0 && Math.max(ma, mb) / Math.min(ma, mb) - 1 > GUIDED_MAG_TOLERANCE) mark(i);
         }
@@ -257,17 +296,23 @@
     // primeira: o motor aceita várias posições de corte empatadas dentro do mesmo
     // trecho determinístico (ex.: `server log rp` 19:49:57, cortes 12..17 todos
     // válidos), e disparar só uma vez perde exatamente essas posições.
+    // Com evidência revertida disponível, este sinal é REDUNDANTE: a fronteira de um
+    // trecho determinístico é exatamente onde o nível revertido quebra, e o sinal 1
+    // (acima) já marca essa posição — enquanto o critério por dano bruto precisava
+    // disparar em TODA repetição do trecho (inundando o interior do bloco) porque não
+    // enxergava onde o trecho começava. Sem evidência comparável (D-006), o critério
+    // antigo continua sendo a única pista e é preservado.
     const lastByMobDet = new Map();
     for (let i = 0; i < n; i++) {
       const cur = hits[i];
       if (cur.overkill) continue; // overkill não conta como par nem quebra o trecho
       const mob = normalizeName(cur.mob);
       const prev = lastByMobDet.get(mob);
-      if (prev) {
+      if (prev && guidedRevertedBreak(prev.hit, cur) === null) {
         const ma = +prev.dmg, mb = +cur.dmg;
         if (ma > 0 && mb > 0 && Math.max(ma, mb) / Math.min(ma, mb) - 1 <= GUIDED_DETERMINISM_TOLERANCE) mark(prev.idx);
       }
-      lastByMobDet.set(mob, { idx: i, dmg: cur.dmg, overkill: cur.overkill });
+      lastByMobDet.set(mob, { idx: i, dmg: cur.dmg, overkill: cur.overkill, hit: cur });
     }
 
     // Overkill deixa a posição sem NENHUM sinal confiável (dano truncado exclui o hit
@@ -448,9 +493,13 @@
 
   function validateCritHomogeneity(block) {
     // D-007/S-008: o FLAG de crit é observável mesmo em hit overkill (só o DANO é
-    // truncado), então overkill participa do check de crit-state. Só hits virtuais
-    // (realCrit sempre false, sem linha real) ficam de fora.
-    const clean = block.hits.filter(h => !h.virtual);
+    // truncado), então overkill participa do check de crit-state. Hits virtuais
+    // (realCrit sempre false, sem linha real) e dodge de Hazard (zeroDamageDodge —
+    // linha "dodged your attack. (Hazard)") ficam de fora: um dodge nunca rola crit,
+    // então seu `realCrit: false` não é informativo nem contradiz um bloco
+    // uniformemente crítico — mesma exclusão que validateElementalBlock e
+    // sameMobStateExactnessForHits já aplicam a esse tipo de hit (D-011/glossário).
+    const clean = block.hits.filter(h => !h.virtual && !h.zeroDamageDodge);
     if (clean.length < 2) return { ok: true };
     const first = !!(clean[0].realCrit || clean[0].onslaught || clean[0].lowBlow);
     const mixed = clean.some(h => !!(h.realCrit || h.onslaught || h.lowBlow) !== first);
@@ -705,6 +754,123 @@
     };
   }
 
+  // S-004a/D-010a: hits do MESMO mob no MESMO estado de modificadores (EW, prey,
+  // amplification, crit-flags) tem inversao exata -- mesmo componente => mesmo dano
+  // final. `perHit` e uma lista de { hit, originals } (ja filtrada por !overkill, com
+  // originals conhecidos). Extraido de validateElementalBlock para reuso: o gate de
+  // evidencia positiva mage/druid (H-005c) precisa do MESMO teste aplicado a um bloco
+  // fundido hipotetico (AA + spell juntos) antes de decidir se separa o primeiro hit,
+  // nao so ao bloco ja escolhido.
+  function sameMobStateExactnessViolation(perHit) {
+    const stateGroups = new Map();
+    for (const ph of perHit) {
+      // M-016d/M-016e: uma spell multiestagio produz, do MESMO cast e no MESMO mob,
+      // hits de potencia diferente (blast integral + estagio atrasado a 1/2, 3/8 ou
+      // 5/8). Comparar cross-estagio quebraria a exatidao same-mob por construcao, o
+      // que e o oposto do que S-004a quer dizer -- o estagio faz parte do "estado" do
+      // hit, tanto quanto EW/prey/crit. Agrupar por (estado, estagio) mantem a
+      // comparacao exata DENTRO de cada estagio e nao inventa contradicao entre eles.
+      // Caso-prova: `death echo` 11:06:08 e 11:06:20 (gabarito 35/37, normativos).
+      const key = elementalStateKey(ph.hit) + '|' + (ph.hit.multiStageStage || '');
+      if (!stateGroups.has(key)) stateGroups.set(key, []);
+      stateGroups.get(key).push(ph);
+    }
+    for (const group of stateGroups.values()) {
+      if (group.length < 2) continue;
+      const exact = intersectSets(group.map(x => x.originals), 0);
+      if (!exact.length) {
+        return {
+          violated: true,
+          group: group.map(x => ({ mob: x.hit.mob, dmg: x.hit.dmg, originals: x.originals })),
+        };
+      }
+    }
+    return { violated: false };
+  }
+
+  // Recomputa originais elementais para um conjunto de hits (sem depender de um bloco
+  // ja validado) e roda `sameMobStateExactnessViolation` sobre eles. Usado pelo gate de
+  // evidencia positiva mage/druid (H-005c) para testar o bloco FUNDIDO (AA + spell)
+  // contra o SUFIXO (so spell) sem reimplementar a reconstrucao de original.
+  function sameMobStateExactnessForHits(hits, element, context) {
+    if (!element || element === 'unknown' || element === 'physical') return { known: 0, violated: false };
+    const perHit = [];
+    for (const h of hits || []) {
+      if (h.overkill || h.zeroDamageDodge || h.virtual) continue;
+      const ev = elementalOriginalCandidates(h, element, context);
+      if (!ev || !ev.known || !ev.originals || !ev.originals.length) continue;
+      perHit.push({ hit: h, originals: ev.originals });
+    }
+    return Object.assign({ known: perHit.length }, sameMobStateExactnessViolation(perHit));
+  }
+
+  // H-005c: evidencia positiva de AA mage/druid quando o bloco FUNDIDO (AA + spell)
+  // viola a exatidao same-mob/same-estado (S-004a) mas o SUFIXO (so spell, sem o
+  // primeiro hit) passa a mesma checagem -- ou seja, separar o primeiro hit resolve a
+  // quebra. So se aplica a acoes elementais concretas (nao fisicas); sem elemento
+  // conhecido nao ha evidencia (nem positiva nem negativa) por este caminho.
+  // M-035: beams de sorcerer (Energy Beam, Great Energy Beam, Great Death Beam) tem
+  // sub-linhas central/side com um mesmo mob podendo ser atingido pelos dois segmentos
+  // do feixe em niveis distintos legitimos -- mas ao contrario de Terra/Ice Burst, essa
+  // deteccao (M-035) ainda NAO esta implementada no motor Unified (so referenciada como
+  // campo de passagem em js/unified-main.js). Sem um validador de tier real pra reusar
+  // (como fizemos com validateTerraBurstBonusBlock), a checagem crua same-mob nao pode
+  // diferenciar "AA fantasma" de "central/side legitimo" -- melhor nao gerar evidencia
+  // (nem positiva nem negativa) e deixar o turno cair em unresolved se a validacao final
+  // tambem falhar, do que arriscar separar um hit que pertence ao beam.
+  const BEAM_ACTION_WORDS = new Set(['exevo vis lux', 'exevo gran vis lux', 'exevo max mort']);
+  function isBeamAction(action) {
+    return !!(action && BEAM_ACTION_WORDS.has(normalizeName(action.text || '')));
+  }
+
+  function firstHitSeparationFixesSameMobExactness(hits, action, context) {
+    const element = action && action.profile && action.profile.element;
+    if (!element || element === 'unknown' || element === 'physical') return false;
+    if (!hits || hits.length < 2) return false;
+    if (isBeamAction(action)) return false;
+    // Terra/Ice Burst tem 2 niveis de bonus legitimos por-mob (bonus ativo/inativo
+    // conforme a vida do alvo) -- a checagem crua same-mob (abaixo) nao sabe disso e
+    // trataria 2 tiers reais como mismatch. Reusar validateTerraBurstBonusBlock (o
+    // mesmo validador que o bloco final usa) em vez de reimplementar a logica de tier.
+    const fusedBlock = { comp: 'spell', hits: hits.slice(), action };
+    const terraBurstFused = validateTerraBurstBonusBlock(fusedBlock, element, context);
+    if (terraBurstFused) {
+      if (terraBurstFused.ok) return false;
+      const suffixBlock = { comp: 'spell', hits: hits.slice(1), action };
+      const terraBurstSuffix = validateTerraBurstBonusBlock(suffixBlock, element, context);
+      return !!(terraBurstSuffix && terraBurstSuffix.ok);
+    }
+    const fused = sameMobStateExactnessForHits(hits, element, context);
+    if (!fused.violated) return false;
+    const suffix = sameMobStateExactnessForHits(hits.slice(1), element, context);
+    return !suffix.violated;
+  }
+
+  // H-005b: fronteira de crit-state entre o primeiro hit e um sufixo uniformemente
+  // critico (ou uniformemente nao-critico), independente de setup de leech -- avaliavel
+  // no pass-1 (bootstrap), ao contrario de shouldForceA1ByLeech (que exige
+  // context.leechSetup e por isso so decide no pass-2). Mesma logica de `critBoundary`
+  // dentro de shouldForceA1ByLeech, extraida para reuso direto no gate de evidencia.
+  // D-007/D-008/D-009/S-008: o "estado especial" de um hit (crit real, Onslaught ou Low
+  // Blow) e o mesmo agrupamento que validateCritHomogeneity usa para vetar bloco misto —
+  // fronteira de evidencia (b) precisa enxergar exatamente essa mesma nocao de estado,
+  // senao um veto por Onslaught assimetrico (comum: o AA nao tem o proc, o resto do bloco
+  // de area tem) nunca vira evidencia positiva de separacao.
+  function specialCritState(h) {
+    return !!(h.realCrit || h.onslaught || h.lowBlow);
+  }
+
+  function firstHitCritStateBoundary(hits) {
+    const main = (hits || []).filter(isMainHit);
+    if (main.length < 2) return false;
+    const first = main[0];
+    const suffix = main.slice(1);
+    if (!suffix.length) return false;
+    const suffixState = specialCritState(suffix[0]);
+    const uniform = suffix.every(h => specialCritState(h) === suffixState);
+    return uniform && specialCritState(first) !== suffixState;
+  }
+
   function validateElementalBlock(block, element, context) {
     const prevCritKey = context && context._activeCritKey;
     if (context) context._activeCritKey = critKeyForBlock(block);
@@ -735,25 +901,15 @@
     // de originais disjuntos são fronteira obrigatória (S-005) e o bloco é inválido —
     // o cluster (V24) não pode resgatá-lo. Caso-prova: mazzerinbarrage 23:46:36,
     // darklight matter+EW F=986 ⇒ O={982} vs F=987 ⇒ O={983} sob P=1.
-    const stateGroups = new Map();
-    for (const ph of perHit) {
-      const h = ph.hit;
-      const key = elementalStateKey(h);
-      if (!stateGroups.has(key)) stateGroups.set(key, []);
-      stateGroups.get(key).push(ph);
-    }
-    for (const group of stateGroups.values()) {
-      if (group.length < 2) continue;
-      const exact = intersectSets(group.map(x => x.originals), 0);
-      if (!exact.length) {
-        return {
-          ok: false,
-          rule: 'S-004/S-005/D-010a/H-001',
-          reason: 'same_mob_state_exact_original_mismatch',
-          element, known, unknown,
-          group: group.map(x => ({ mob: x.hit.mob, dmg: x.hit.dmg, originals: x.originals })),
-        };
-      }
+    const sameMob = sameMobStateExactnessViolation(perHit);
+    if (sameMob.violated) {
+      return {
+        ok: false,
+        rule: 'S-004/S-005/D-010a/H-001',
+        reason: 'same_mob_state_exact_original_mismatch',
+        element, known, unknown,
+        group: sameMob.group,
+      };
     }
     // D-010/S-004: a reconstrução elemental é discreta, mas diferenças pequenas
     // podem surgir de arredondamento de mitigação/prey/mods pós-cutoff. Para runa
@@ -2052,7 +2208,7 @@
     const suffixUsableOk = suffixSupport.ok >= Math.min(2, kSuffix) && suffixSupport.bad === 0;
     const firstRejectsAll = firstAll.usable && !firstAll.ok;
     const firstSingle = firstN1.usable && firstN1.ok;
-    const critBoundary = suffix.length > 0 && suffix.every(h => !!h.realCrit === !!suffix[0].realCrit) && !!first.realCrit !== !!suffix[0].realCrit;
+    const critBoundary = firstHitCritStateBoundary(hits);
     return {
       force: !!(firstSingle && firstRejectsAll && (suffixUsableOk || critBoundary)),
       reason: firstSingle && firstRejectsAll
@@ -2186,6 +2342,11 @@
     hitStateKey,
     firstHitSharesExactOriginalWithRest,
     actionLabel,
+    sameMobStateExactnessViolation,
+    sameMobStateExactnessForHits,
+    firstHitSeparationFixesSameMobExactness,
+    firstHitCritStateBoundary,
+    isBeamAction,
   };
 
   root.UnifiedValidation = API;

@@ -39,9 +39,13 @@
     hasStrongTimestampAaSpellBoundary,
     shouldForceA1ByLeech,
     firstHitSharesExactOriginalWithRest,
+    firstHitCritStateBoundary,
+    firstHitSeparationFixesSameMobExactness,
+    isBeamAction,
     isSingleTargetAction,
     validateElementalBlock,
     validatePhysicalBlock,
+    validateCritHomogeneity,
     validateLeechBlockOfficialRates,
     possibleShapes,
     segmentations,
@@ -124,8 +128,23 @@
     const splitScore = leechPartitionScore(split, context);
     const strongTimestampBoundary = hasStrongTimestampAaSpellBoundary(hits, action);
     const forceA1 = shouldForceA1ByLeech(hits, context);
+    // H-005b/H-005c/H-005d: evidência positiva leech-free ou de cardinalidade (b, c, d).
+    // Um sufixo de 1 hit (spell/runa restante depois de tirar o 1º) não é discriminativo
+    // — leech N=1 vs N=k e exatidão same-mob ficam vazias/triviais com um único hit
+    // (mesmo piso de solidez de S-014c/H-003, adaptado ao tamanho do sufixo em vez do
+    // bloco inteiro). Sem esse piso, um hit orfão de estágio atrasado não-consolidado
+    // (M-016d/M-016e, quando o gate guloso não reconhece o eco por ele ser overkill) ou
+    // de sub-tier de beam (M-035, ainda não implementado no motor) parece um "AA" válido
+    // por coincidência de N pequeno. Caso-prova negativo: `kim` `16:13:26` (Great Energy
+    // Beam, sufixo=1) e `16:20:51` (Death Echo, sufixo=1 = eco órfão) — ambos exigem
+    // A0 (sem separação), não A1.
+    const suffixSize = hits.length - 1;
+    const evidenceHasMinimalSuffix = suffixSize >= 2;
+    const critStateBoundary = evidenceHasMinimalSuffix && firstHitCritStateBoundary(hits);
+    const sameMobSeparationEvidence = evidenceHasMinimalSuffix && firstHitSeparationFixesSameMobExactness(hits, action, context);
+    const forceA1Confirmed = evidenceHasMinimalSuffix && forceA1.force;
     const mageDruidHasPositiveAaEvidence = !isMageDruid || !concreteAreaActionCanExplainTurn
-      || strongTimestampBoundary;
+      || strongTimestampBoundary || critStateBoundary || sameMobSeparationEvidence || forceA1Confirmed;
     let chosen = split;
     let reason = 'ek_positional_aa_first_hit';
 
@@ -199,33 +218,126 @@
       }
     }
 
-    const defs = chosen.map(def => {
-      const block = { comp: def.comp, hits: def.hits.slice(), action: def.action || null };
-      let deterministic;
-      if (def.comp === actionComp) {
-        // Elemental AoE action spells with the target-life bonus (druid Terra/Ice
-        // Burst) must run elemental validation here so validateTerraBurstBonusBlock
-        // sets the per-hit bonus flags that the rotation table splits into tiers.
-        // Physical AoE spells (EK exori mas/gran) keep the non-hard-gated shortcut.
-        if (isTerraBurstAction(block.action)) {
-          const action = block.action || {};
-          const words = normalizeName(action.words || action.spell || action.name || '');
-          const label = normalizeName(action.profile && action.profile.label || '');
-          const entry = BONUS_TIER_ACTIONS[words] || Object.values(BONUS_TIER_ACTIONS).find(a => a.label === label);
-          const el = entry ? entry.element : (action.profile && action.profile.element) || 'unknown';
-          deterministic = validateElementalBlock(block, el, context);
+    // V-015b/V-015d: dispersão cross-mob (elemental_cluster_span_too_wide,
+    // elemental_intersection_empty) NUNCA veta — evidência ausente (D-006), não
+    // contradição. Só quebra de exatidão same-mob/same-estado não explicada (S-004a —
+    // validateTerraBurstBonusBlock já tentou explicar por bônus tier antes de chegar
+    // nesse veto) e crit-state misto (S-008/D-007) são vetos duros.
+    function buildValidatedDefs(candidateDefs, candidateReason) {
+      const built = candidateDefs.map(def => {
+        const block = { comp: def.comp, hits: def.hits.slice(), action: def.action || null };
+        let deterministic;
+        let critHomogeneity = { ok: true };
+        if (def.comp === actionComp) {
+          // Elemental AoE action spells with the target-life bonus (druid Terra/Ice
+          // Burst) must run elemental validation here so validateTerraBurstBonusBlock
+          // sets the per-hit bonus flags that the rotation table splits into tiers.
+          // Physical AoE spells (EK exori mas/gran) keep the non-hard-gated shortcut;
+          // spells/runas ELEMENTAIS fora da família Terra/Ice Burst passam a rodar
+          // validateElementalBlock de verdade (o atalho era pensado só pra elemento
+          // físico, mas a condição original não filtrava por elemento).
+          if (isTerraBurstAction(block.action)) {
+            const action = block.action || {};
+            const words = normalizeName(action.words || action.spell || action.name || '');
+            const label = normalizeName(action.profile && action.profile.label || '');
+            const entry = BONUS_TIER_ACTIONS[words] || Object.values(BONUS_TIER_ACTIONS).find(a => a.label === label);
+            const el = entry ? entry.element : (action.profile && action.profile.element) || 'unknown';
+            deterministic = validateElementalBlock(block, el, context);
+            critHomogeneity = validateCritHomogeneity(block);
+          } else {
+            const el = block.action && block.action.profile && block.action.profile.element;
+            if (el === 'physical') {
+              // Atalho continua exclusivo de elemento físico (comentário original: "EK
+              // exori mas/gran"). Nada muda aqui — nem validateElementalBlock nem o novo
+              // veto de crit-homogeneidade rodam pra esses blocos.
+              deterministic = { ok: true, reason: 'ek_physical_spell_not_hard_gated_by_intersection' };
+            } else {
+              deterministic = validateElementalBlock(block, el || 'unknown', context);
+              critHomogeneity = validateCritHomogeneity(block);
+            }
+          }
         } else {
-          deterministic = { ok: true, reason: 'ek_physical_spell_not_hard_gated_by_intersection' };
+          deterministic = validatePhysicalBlock(block);
         }
-      } else {
-        deterministic = validatePhysicalBlock(block);
-      }
-      return Object.assign({}, def, {
-        deterministic,
-        leech: validateLeechBlockOfficialRates(block, context),
-        reason,
+        return Object.assign({}, def, {
+          deterministic,
+          critHomogeneity,
+          leech: validateLeechBlockOfficialRates(block, context),
+          reason: candidateReason,
+        });
       });
-    });
+      const actionDef = built.find(d => d.comp === actionComp);
+      // M-035: beams (central/side) sao uma mecanica DECLARADA de multiplos niveis
+      // por-mob — o mesmo mob pode ser atingido pelo segmento central e por um lateral
+      // (fracao F do central) no mesmo cast. O detector de M-035 ainda nao existe no
+      // motor, entao nao ha validador de tier para reusar (como
+      // validateTerraBurstBonusBlock e o agrupamento por estagio de M-016d fazem). Sem
+      // ele, a quebra de exatidao same-mob nesses blocos e ESPERADA pela propria regra,
+      // nao contradicao — vetar aqui inventaria um problema onde a spec ja explica o
+      // fenomeno. Caso-prova normativo: `death echo` 11:06:22 (caso-prova de M-035).
+      // Isto NAO vale para mecanicas ainda nao declaradas (ex.: chain decay de Chained
+      // Penance): sem regra em docs/CLASSIFICATION_RULES.md, o veto permanece e o turno
+      // fica unresolved, que e o comportamento pedido.
+      // M-016d/M-016e: spells multiestágio também produzem múltiplos níveis por-mob (o
+      // mesmo mob leva o blast integral E o estágio atrasado a uma fração declarada). A
+      // exatidão same-mob já estratifica por `multiStageStage` — mas só depois que os
+      // estágios foram atribuídos. Quando o perfil prova os estágios por CLUSTER DE
+      // LEECH (`confirmation: 'leech_cluster'`, Spiritual Outburst), essa atribuição só
+      // acontece num passe de correção POSTERIOR, depois do leech real ser inferido:
+      // aqui os hits ainda não têm `multiStageStage`, a estratificação é vazia, e blast
+      // + eco do mesmo mob colidem. A própria regra M-016e declara que a reversão
+      // elemental NÃO fecha para essa spell, então vetar por ela inventa uma contradição
+      // onde a spec já explica o fenômeno — mesmo argumento da isenção de beam acima.
+      // Death Echo (`confirmation: 'elemental'`) NÃO é isento: seus estágios já estão
+      // atribuídos neste ponto e a estratificação funciona.
+      const ms = actionDef && actionDef.action && actionDef.action.profile && actionDef.action.profile.multiStage;
+      const stagesNotYetAssigned = !!(ms && ms.confirmation !== 'elemental');
+      const declaredMultiLevelAction = isBeamAction(actionDef && actionDef.action) || stagesNotYetAssigned;
+      const hardVeto = actionDef && (
+        (!declaredMultiLevelAction && actionDef.deterministic && actionDef.deterministic.ok === false && actionDef.deterministic.reason === 'same_mob_state_exact_original_mismatch')
+        || (actionDef.critHomogeneity && actionDef.critHomogeneity.ok === false)
+      );
+      const vetoReason = hardVeto
+        ? ((actionDef.critHomogeneity && actionDef.critHomogeneity.ok === false) ? actionDef.critHomogeneity.reason : actionDef.deterministic.reason)
+        : null;
+      return { defs: built, hardVeto, vetoReason };
+    }
+
+    let picked = buildValidatedDefs(chosen, reason);
+    if (picked.hardVeto) {
+      // O ramo escolhido (por heurística de leech/timestamp/evidência) falhou um veto
+      // duro. Antes de desistir, testar a partição ALTERNATIVA: se ela validar limpo,
+      // a evidência determinística (H-001/H-002) tem prioridade sobre a heurística que
+      // escolheu errado — sem isso, um sinal de leech/mana-homogeneidade pré-existente
+      // pode travar a escolha errada mesmo quando a partição correta já está disponível
+      // e validaria sem contradição (caso-prova: uhax2 21:37:53/21:42:30, onde o ramo
+      // de score de leech prefere allSpell por 1 "bad" a menos, mas o sufixo splitado
+      // fecha 100% limpo em validateElementalBlock).
+      // Assimétrico por H-005: resgatar MESCLANDO de volta (chosen=split -> allSpell)
+      // é sempre seguro, é só desfazer uma separação sem justificativa. Resgatar
+      // SEPARANDO (chosen=allSpell -> split) só é permitido quando já havia evidência
+      // positiva de AA (mageDruidHasPositiveAaEvidence) — sem isso, "a partição
+      // alternativa validou" não é evidência de AA, é só um subconjunto menor que
+      // escapa por coincidência de uma mecânica ainda não modelada (ex.: M-035 beam
+      // central/side). Caso-prova negativo: `kim` `16:13:26`/`16:22:05` (Great Energy
+      // Beam) — sem essa guarda, o resgate por eliminação separava um "AA" fantasma
+      // porque o sufixo menor validava, mesmo com a evidência (c) desativada de
+      // propósito pra beam.
+      const rescueBySplitting = chosen !== split && mageDruidHasPositiveAaEvidence;
+      const canRescue = chosen === split || rescueBySplitting;
+      const alternate = chosen === split ? allSpell : split;
+      const alternateReason = (chosen === split ? 'ek_all_spell' : 'ek_positional_aa_first_hit')
+        + '_confirmed_by_deterministic_validation_after_hard_veto';
+      const altPicked = canRescue ? buildValidatedDefs(alternate, alternateReason) : null;
+      if (altPicked && !altPicked.hardVeto) {
+        picked = altPicked;
+        reason = alternateReason;
+      } else {
+        return unresolvedTurn(turn, [{ candidate: null, violations: [{ reason: picked.vetoReason, detail: picked.defs.find(d => d.comp === actionComp).deterministic }] }], picked.vetoReason);
+      }
+    }
+    const defs = picked.defs;
+
     return finalizeManualTurn(turn, defs, reason, context);
   }
 

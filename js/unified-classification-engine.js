@@ -492,6 +492,117 @@
   // mob×EW fecham em razão 0.9995–1.0003. logs/ingol ed 17/Jul/2026 (druid, sem utevo
   // grav san): harpy (Bird) freeze charm ainda diverge ~1.05 mesmo com a fórmula
   // completa — bônus de classe real, confirmado.
+  // Testemunhas do perk BM no dano de charm. O BM soma pierce SO em holy e physical
+  // (pierceForElement), entao so os charms desses dois canais testemunham o perk:
+  // `wound charm` (fisico) e `divine wrath charm` (holy).
+  //
+  // `overpower charm` NAO entra: apesar de CHARM_ELEMENT_MAP mapea-lo como 'physical',
+  // ele nao e dano fisico. Medida de apoio: incluindo overpower como fisico, as sessoes
+  // mazzerinbarrage S8/S9/S10 produziam uma linha que nao fechava com NENHUMA das duas
+  // hipoteses de pierce (indeterminada); removendo-o, os indeterminados vao a zero.
+  // (O mapeamento em CHARM_ELEMENT_MAP e usado por M-036 e fica para investigacao
+  // propria -- este detector nao o altera, so nao usa overpower.)
+  const BM_WITNESS_CHARMS = new Set(['wound', 'divine_wrath']);
+  const BM_PIERCE_HYPOTHESIS = 0.04;
+  const CHARM_EXPECTED_TOLERANCE_RATIO = 0.0125; // mesma tolerancia de M-036
+  const CHARM_WITNESS_MIN_PROCS = 3;             // mesmo piso de repeticao de M-036
+
+  // Infere o pierce de BM SO pelo dano de charm, a partir de fatos de parsing -- sem
+  // nenhuma resolucao de turno. Ver openspec/changes/infer-bm-pierce-from-charm-damage.
+  //
+  // Circularidade com M-036 (o bonus de classe de bestiario tambem multiplica o dano de
+  // charm, e a deteccao dele depende do bmPierce): quebrada pela assimetria dos dois
+  // efeitos -- o BM so afeta holy/physical, o bonus de classe afeta TODOS os elementos
+  // daquela classe. Entao os charms de elementos IMUNES ao BM medem o bonus de classe
+  // sem contaminacao, e so depois as linhas holy/fisico da mesma classe, corrigidas por
+  // ele, testemunham o BM. Classe sem testemunha imune => linha nao-discriminante (nao
+  // assume bonus 1).
+  //
+  // Retorna { pierce, source, rows }. `pierce: null` = sem veredito (o chamador deve
+  // usar a deteccao cross-mob existente).
+  function inferBmPierceFromCharmDamage(serverFacts, context) {
+    const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
+    const events = (serverFacts && serverFacts.events) || [];
+    const byKey = new Map();
+    for (const ev of events) {
+      if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey) continue;
+      if (isWithinAnyWindow(ev.ts, windows)) continue;
+      const sig = charmSignature(ev);
+      const element = CHARM_ELEMENT_MAP[sig];
+      if (!element) continue;
+      // Só wound/divine wrath testemunham o BM; os demais entram para medir o bônus de
+      // classe (imunes ao BM). overpower fica de fora dos dois papéis.
+      const isWitness = BM_WITNESS_CHARMS.has(sig);
+      const bmSensitive = element === 'holy' || element === 'physical';
+      if (bmSensitive && !isWitness) continue;
+      const mob = normalizeName(ev.mob);
+      if (!mob) continue;
+      const ew = /expose weakness/i.test(ev.rawLine || '');
+      const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0);
+      if (!byKey.has(key)) byKey.set(key, { mob, sig, element, ew, bmSensitive, values: [] });
+      byKey.get(key).values.push(ev.dmg);
+    }
+
+    const rows = [];
+    for (const r of byKey.values()) {
+      if (r.values.length < CHARM_WITNESS_MIN_PROCS) continue;
+      const mods = getMobMods(r.mob, context);
+      if (!mods || !(mods.hitpoints > 0)) continue;
+      const key = ELEMENT_KEYS[r.element];
+      if (!key || !(mods[key] > 0)) continue;
+      const mit = mitigationMultiplier(mods, context);
+      const base = mods.hitpoints * 0.05 * mit;
+      const pierceEw = r.ew ? 0.08 : 0;
+      const expectedNoBm = base * effectiveMod(+mods[key], pierceEw);
+      const expectedBm = r.bmSensitive
+        ? base * effectiveMod(+mods[key], pierceEw + BM_PIERCE_HYPOTHESIS)
+        : expectedNoBm;
+      if (!(expectedNoBm > 0)) continue;
+      rows.push({
+        mob: r.mob, charm: r.sig, element: r.element, ew: r.ew, n: r.values.length,
+        cls: normalizeName(mods.bestiaryClass || ''), observed: median(r.values),
+        expectedNoBm, expectedBm, bmSensitive: r.bmSensitive,
+      });
+    }
+    if (!rows.length) return { pierce: null, source: 'no_charm_witness_rows', rows: [] };
+
+    // Passo 1: bônus de classe medido SÓ pelos elementos imunes ao BM.
+    const immuneRatiosByClass = new Map();
+    for (const r of rows) {
+      if (r.bmSensitive || !r.cls) continue;
+      const arr = immuneRatiosByClass.get(r.cls) || [];
+      arr.push(r.observed / r.expectedNoBm);
+      immuneRatiosByClass.set(r.cls, arr);
+    }
+
+    // Passo 2: as linhas holy/físico, corrigidas pelo bônus de classe, votam no pierce.
+    let votesNoBm = 0, votesBm = 0;
+    const witnesses = [];
+    for (const r of rows) {
+      if (!r.bmSensitive) continue;
+      const immune = r.cls ? immuneRatiosByClass.get(r.cls) : null;
+      if (!immune || !immune.length) {
+        witnesses.push(Object.assign({}, r, { vote: null, reason: 'class_without_bm_immune_witness' }));
+        continue;
+      }
+      const classMult = median(immune);
+      const eNo = r.expectedNoBm * classMult, eBm = r.expectedBm * classMult;
+      const fitsNo = Math.abs(r.observed - eNo) <= Math.max(2, eNo * CHARM_EXPECTED_TOLERANCE_RATIO);
+      const fitsBm = Math.abs(r.observed - eBm) <= Math.max(2, eBm * CHARM_EXPECTED_TOLERANCE_RATIO);
+      let vote = null, reason = 'fits_neither_hypothesis';
+      if (fitsNo && !fitsBm) { vote = 0; votesNoBm++; reason = 'fits_no_bm_only'; }
+      else if (fitsBm && !fitsNo) { vote = BM_PIERCE_HYPOTHESIS; votesBm++; reason = 'fits_bm_only'; }
+      else if (fitsNo && fitsBm) { reason = 'hypotheses_indistinguishable'; }
+      witnesses.push(Object.assign({}, r, { vote, reason, classMult, expectedNoBmCorrected: eNo, expectedBmCorrected: eBm }));
+    }
+
+    // Unanimidade entre as linhas discriminantes; qualquer conflito => sem veredito.
+    if (votesBm > 0 && votesNoBm > 0) return { pierce: null, source: 'charm_witnesses_conflict', rows: witnesses };
+    if (votesBm > 0) return { pierce: BM_PIERCE_HYPOTHESIS, source: 'confirmed_by_charm_damage', rows: witnesses };
+    if (votesNoBm > 0) return { pierce: 0, source: 'confirmed_by_charm_damage', rows: witnesses };
+    return { pierce: null, source: 'no_discriminating_charm_witness', rows: witnesses };
+  }
+
   function inferBestiaryClassDamageBonus(serverFacts, context) {
     const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
     const events = (serverFacts && serverFacts.events) || [];
@@ -967,6 +1078,41 @@
 
     const explicitBm = explicitBmPierceOption(options);
     const shouldAutoDetectBm = explicitBm == null && !(options && options.autoDetectBmPierce === false);
+
+    // Atalho por testemunha de charm: o dano de charm e determinístico e independente da
+    // classificacao (wound = fisico, divine wrath = holy -- os dois canais que o BM
+    // altera), entao quando ele decide o pierce nao ha motivo para classificar a sessao
+    // duas vezes so para comparar coerencia cross-mob. Quando nao ha veredito (sessao
+    // pre-cutoff sem `hitpoints`, sem charm testemunha, ou evidencia nao-unanime), o
+    // fluxo abaixo segue exatamente como antes.
+    // Ver openspec/changes/infer-bm-pierce-from-charm-damage (comparativo: 0 divergencias
+    // em 74 sessoes; 11 decidem por charm, das quais 5 com veredito 0).
+    if (shouldAutoDetectBm) {
+      const charmProbeContext = {
+        sessionDateKey: server.sessionDateKey,
+        mobModsPre: options && options.mobModsPre,
+        mobModsPost: options && options.mobModsPost,
+        getMobMods: options && options.getMobMods,
+        useFloat16Mitigation: options && options.useFloat16Mitigation !== undefined ? options.useFloat16Mitigation : true,
+        gravSanSetup: inferGravSanSetup(server, local, options || {}),
+      };
+      const charmBm = inferBmPierceFromCharmDamage(server, charmProbeContext);
+      if (charmBm && charmBm.pierce != null) {
+        const detection = {
+          pierce: charmBm.pierce,
+          active: charmBm.pierce > 0,
+          source: 'confirmed_by_charm_damage',
+          charmRows: charmBm.rows,
+        };
+        const charmResult = classifyUnifiedParsed(
+          server, local,
+          Object.assign({}, options || {}, { bmPierce: charmBm.pierce }),
+          detection
+        );
+        return charmResult;
+      }
+    }
+
     const baseOptions = Object.assign({}, options || {}, { bmPierce: explicitBm == null ? 0 : explicitBm });
     const baseResult = classifyUnifiedParsed(server, local, baseOptions, explicitBm == null ? { pierce: 0, active: false, source: 'pending_auto_detection' } : { pierce: explicitBm, active: explicitBm > 0, source: 'option_bmPierce' });
 
@@ -1014,6 +1160,10 @@
     parseLocalChat,
     inferGravSanSetup,
     inferBestiaryClassDamageBonus,
+    // Exportada para diagnóstico/validação. AINDA NÃO ligada ao fluxo de classificação:
+    // o gate de controle negativo (task 3 do change infer-bm-pierce-from-charm-damage)
+    // precisa fechar antes de ela virar decisão primária de bmPierce.
+    inferBmPierceFromCharmDamage,
     inferCritByComponent,
     inferBmPierceFromCrossMobEvidence,
     buildTurns,

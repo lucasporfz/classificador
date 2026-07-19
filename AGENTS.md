@@ -26,10 +26,11 @@ Se uma implementação contradiz `docs/CLASSIFICATION_RULES.md`, a implementaç�
 ## Arquivos importantes
 
 - `docs/CLASSIFICATION_RULES.md`: regras do domínio e critérios de validação.
-- `tools/experimental_classifier.py`: classificador experimental.
-- `tools/run_classifier_evals.py`: executor de avaliações.
-- `tests/test_classifier_golden.py`: testes por gabarito.
-- `tests/test_classification_rules.py`: testes derivados das regras.
+- `tools/run-unified-checks.mjs`: executor da validação obrigatória (gabarito +
+  invariantes + todos os `tests/*.test.mjs`).
+- `tools/unified-experimental.mjs`: harness do gabarito curado (`--gabarito`) e da
+  varredura exaustiva de invariantes mecânicos (`--invariants`).
+- `tests/*.test.mjs`: testes derivados das regras (descobertos do disco pelo runner).
 - `reports/reviewer_report.md`: relatório do agente revisor.
 
 ## Restrições obrigatórias
@@ -67,14 +68,18 @@ node tools/dump-unified.mjs
 node tools/diag-changed-turns.mjs --diff diff-unified.txt > reports/<change>-review.txt
 ```
 
-Tambem rodar os testes Python abaixo quando o ambiente tiver Python/pytest
-disponiveis; eles sao uma camada formal adicional, mas nao substituem a
-validacao Unified de gabarito/drift:
+Tambem rodar a validacao obrigatoria do motor Unified (gabarito curado +
+varredura de invariantes mecanicos + todos os `tests/*.test.mjs`):
 
 ```bash
-python tools/run_classifier_evals.py
-pytest tests/test_classifier_golden.py tests/test_classification_rules.py
+node tools/run-unified-checks.mjs
 ```
+
+**Nao usar `python`/`pytest`** — este repo e 100% Unified/JS e os wrappers Python
+foram removidos (nao tinham logica propria: eram `subprocess.run(["node", ...])`
+sobre estes mesmos alvos, e cobriam a menos que o runner atual). Falhas
+pre-existentes conhecidas, que falham em `HEAD` limpo: `experimental-ui-parity`,
+`mob-element-regime`, `unified-spiritual-outburst-multistage`.
 
 ## Motor único e protocolo de correção
 
