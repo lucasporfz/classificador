@@ -22,7 +22,9 @@ js/unified-comparison-adapter.js
 docs/CLASSIFICATION_RULES_CORRECTED.md
 docs/CLASSIFICATION_RULES_UPDATED.md
 docs/CLASSIFICATION_RULES_revisado.md
-tools/
+tools/*.png
+tools/baseline.txt
+tools/baseline.err
 tests/
 agents/
 openspec/
