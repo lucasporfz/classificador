@@ -24,6 +24,7 @@
 // exige rodar duas vezes (uma antes de editar ou com git stash), igual ao próprio
 // dump-unified.mjs já exige para o diff compacto.
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import process from 'node:process';
+import { discoverFixturePairs } from './fixture-pairs.mjs';
 const ROOT = process.cwd(); const read = p => fs.readFileSync(p, 'utf8');
 const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
 function freshCtx() {
@@ -74,30 +75,16 @@ function applyKnownFixtureExclusions(svN, pairs) {
 const fmt = s => `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 const pct = v => v == null ? '-' : `${(v*100).toFixed(2)}%`;
 
-// Mesma lista que tools/dump-unified.mjs (svFileName -> lcFileName), pra resolver o
-// nome de arquivo que aparece nas linhas do diff de volta no par de logs certo.
-const PAIRS_BY_SV = {
-  'Server Log bakra.txt': 'Local Chat bakra.txt',
-  'Server Log drome.txt': 'Local Chat drome.txt',
-  'Mrowdy Server Log.txt': 'Mrowdy Local Chat.txt',
-  'Mrowdy Server Log 2.txt': 'Mrowdy Local Chat 2.txt',
-  'bastion server log ek.txt': 'bastion local chat ek.txt',
-  'darklight e vemiath server log.txt': 'darklight e vemiath Local Chat.txt',
-  'darklight server log rp.txt': 'darklight local chat rp.txt',
-  'essence server log.txt': 'essence local chat.txt',
-  'mazzerinbarrage server log.txt': 'mazzerinbarrage local chat.txt',
-  'barrage Server Log.txt': 'barrage local chat.txt',
-  'gloompillar Server Log.txt': 'gloompillar Local Chat.txt',
-  'highwin Server Log.txt': 'highwin Local Chat.txt',
-  'jaded Server Log.txt': 'jaded Local Chat.txt',
-  'server log rp.txt': 'localchat rp.txt',
-  'monk server log.txt': 'monk localchat.txt',
-  'murcion server log rp.txt': 'murcion local chat rp.txt',
-  'night harpy server log ek.txt': 'night harpy local chat ek.txt',
-  'uhax 2 server log ed.txt': 'uhax 2 local chat ed.txt',
-  'uhax server log ed.txt': 'uhax local chat ed.txt',
-  'ingol ed Server Log.txt': 'ingol ed Local Chat.txt',
-};
+// svFileName -> lcFileName, pra resolver o nome de arquivo que aparece nas linhas do
+// diff de volta no par de logs certo. Descoberto de logs/ (ver tools/fixture-pairs.mjs),
+// igual a tools/report-unified-unclassified.mjs e tools/find-fixtures-by-owner-cast.mjs.
+// A lista hardcoded anterior estava atrás do corpus (sem `uhax 3`, `serverlog6..9`,
+// `monk 2`, `kim`, `death echo`, `dlc ms`...) e o efeito era SILENCIOSO: turnos desses
+// fixtures apareciam no diff mas eram pulados pelo `continue` do loop, produzindo um
+// review incompleto sem nenhum aviso. Não voltar a hardcodar.
+const PAIRS_BY_SV = Object.fromEntries(
+  discoverFixturePairs({ logDir: path.join(ROOT, 'logs') }).map(p => [p.server, p.local])
+);
 
 // Parseia linhas no formato que dump-unified.mjs emite:
 // "<svFileName> S<N> ts=<ts> st=..." (aparecem em ambos os lados '<'/'>' de um diff -u

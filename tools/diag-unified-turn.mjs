@@ -24,16 +24,26 @@ for (const f of ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-p
 const HEADER_RE = /^Channel .+ saved \w+ (\w+) +(\d+) (\d+:\d+:\d+) (\d{4})/;
 const MONTHS = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11,Sept:8 };
 function splitSessions(text) {
-  const sessions = []; let cur = null;
+  const sessions = []; let cur = null; const preamble = [];
   for (const line of text.replace(/^﻿/, '').split(/\r?\n/)) {
     const m = line.match(HEADER_RE);
     if (m) {
       if (cur) { cur.text = cur.lines.join('\n'); sessions.push(cur); }
       const [, mon, day, time, year] = m; const [h, mi, s] = time.split(':').map(Number);
       cur = { header: line.trim(), year:+year, month: MONTHS[mon] ?? -1, day:+day, saveSec: h*3600+mi*60+s, lines:[line] };
-    } else { if (!cur) cur = { header:'', year:0, month:0, day:0, saveSec:0, lines:[] }; cur.lines.push(line); }
+    } else if (cur) cur.lines.push(line);
+    else preamble.push(line);
   }
   if (cur) { cur.text = cur.lines.join('\n'); sessions.push(cur); }
+  // Preâmbulo (linhas antes do 1º "Channel ... saved" — tipicamente uma linha em branco)
+  // é DESCARTADO quando o arquivo tem cabeçalho, em vez de virar uma sessão fantasma com
+  // header:'' e saveSec:0. A fantasma fazia svS.length virar 2 num arquivo de sessão única,
+  // matando o fast path 1+1 e caindo na regra de |saveSec_lc - saveSec_sv| <= 3600 — que
+  // reprova pares legítimos cujos dois arquivos foram salvos com folga (`mrowdy 2`: server
+  // 17:17:43, chat 19:01:23, 1h43m). tools/report-unified-unclassified.mjs sempre descartou
+  // o preâmbulo, então ele reportava turnos que este diagnóstico não conseguia abrir.
+  // Sem NENHUM cabeçalho (ex.: murcion, monk), o arquivo inteiro segue sendo uma sessão.
+  if (!sessions.length) sessions.push({ header:'', year:0, month:0, day:0, saveSec:0, lines: preamble, text: preamble.join('\n') });
   return sessions;
 }
 

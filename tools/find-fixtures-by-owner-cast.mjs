@@ -17,6 +17,7 @@
 //   ex.: node tools/find-fixtures-by-owner-cast.mjs "exevo tempo mas san"
 // Saída: uma linha por fixture, "SIM"/"NAO", e em quais sessões (S<N>) o dono lança.
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import process from 'node:process';
+import { discoverFixturePairs } from './fixture-pairs.mjs';
 const ROOT = process.cwd(); const read = p => fs.readFileSync(p, 'utf8');
 const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
 function freshCtx() {
@@ -55,28 +56,14 @@ function buildPairs(svS, lcS) {
   return pairs;
 }
 
-// Mesma lista que tools/dump-unified.mjs (label curto, arquivo sv, arquivo lc).
-const PAIRS = [
-  ['bakra', 'Server Log bakra.txt', 'Local Chat bakra.txt'],
-  ['drome', 'Server Log drome.txt', 'Local Chat drome.txt'],
-  ['mrowdy', 'Mrowdy Server Log.txt', 'Mrowdy Local Chat.txt'],
-  ['mrowdy 2', 'Mrowdy Server Log 2.txt', 'Mrowdy Local Chat 2.txt'],
-  ['bastion', 'bastion server log ek.txt', 'bastion local chat ek.txt'],
-  ['darklight e vemiath', 'darklight e vemiath server log.txt', 'darklight e vemiath Local Chat.txt'],
-  ['darklight rp', 'darklight server log rp.txt', 'darklight local chat rp.txt'],
-  ['essence', 'essence server log.txt', 'essence local chat.txt'],
-  ['mazzerinbarrage', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt'],
-  ['barrage', 'barrage Server Log.txt', 'barrage local chat.txt'],
-  ['gloompillar', 'gloompillar Server Log.txt', 'gloompillar Local Chat.txt'],
-  ['highwin', 'highwin Server Log.txt', 'highwin Local Chat.txt'],
-  ['jaded', 'jaded Server Log.txt', 'jaded Local Chat.txt'],
-  ['rp pack', 'server log rp.txt', 'localchat rp.txt'],
-  ['monk', 'monk server log.txt', 'monk localchat.txt'],
-  ['murcion rp', 'murcion server log rp.txt', 'murcion local chat rp.txt'],
-  ['night harpy', 'night harpy server log ek.txt', 'night harpy local chat ek.txt'],
-  ['uhax 2', 'uhax 2 server log ed.txt', 'uhax 2 local chat ed.txt'],
-  ['uhax', 'uhax server log ed.txt', 'uhax local chat ed.txt'],
-];
+// Descoberto de logs/ (ver tools/fixture-pairs.mjs), igual a
+// tools/report-unified-unclassified.mjs. A lista hardcoded anterior tinha ficado 14
+// fixtures atrás do corpus real (sem `uhax 3`, `serverlog6..9`, `monk 2`, `kim`,
+// `death echo`, `ingol ed`, `dlc ms`...) e ainda apontava para `highwin`/`uhax`, que
+// não existem mais — o que fazia esta ferramenta responder "nenhum fixture relevante"
+// para uma incantação que o dono lança de fato, escopando baseline para o lugar errado.
+// Não voltar a hardcodar.
+const PAIRS = discoverFixturePairs({ logDir: path.join(ROOT, 'logs') }).map(p => [p.label, p.server, p.local]);
 
 const needle = String(process.argv[2] || '').toLowerCase().trim();
 if (!needle) {
