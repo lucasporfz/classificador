@@ -654,6 +654,20 @@
     return label === "executioner's throw" || label === 'executioners throw';
   }
 
+  // M-037: Chained Penance (`exori med pug`, monk, holy, area) encadeia entre alvos e
+  // perde uma fracao fixa de dano a cada pulo da cadeia. O mesmo mob pode aparecer em
+  // posicoes de cadeia diferentes dentro do MESMO cast, com danos distintos — divergencia
+  // declarada pela regra, nao contradicao (D-006). O motor NAO reconstroi o fator (mesmo
+  // status dos sub-tiers de beam em M-035): a declaracao existe para isentar o bloco do
+  // veto duro de exatidao same-mob, nao para reverter dano.
+  function isChainedPenanceAction(action) {
+    if (!action) return false;
+    const words = normalizeName(action.words || action.text || action.spell || action.name || '');
+    if (words === 'exori med pug') return true;
+    const label = normalizeName(action.profile && action.profile.label || action.label || '');
+    return label === 'chained penance';
+  }
+
   function isTerraBurstBlock(block, element) {
     if (!block || block.comp !== 'spell' || !isTerraBurstAction(block.action)) return false;
     const action = block.action;
@@ -972,6 +986,7 @@
     isTerraBurstBlock,
     EXECUTIONER_BONUS_LEVELS,
     isExecutionerThrowAction,
+    isChainedPenanceAction,
     pierceForElement,
     explicitBmPierceOption,
     distinctMainMobCount,

@@ -93,12 +93,17 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
-**Baseline conhecido (medido em 19/Jul/2026, commit `bfd4a26`).** Comparar contra ele
+**Baseline conhecido (medido em 19/Jul/2026, commit `68fd1e6`).** Comparar contra ele
 em vez de exigir verde total:
 
 - `--invariants`: **OK**.
-- `--gabarito`: **59/70** em `HEAD` limpo (3 fora do escopo do reviewer). Falham
-  `death-echo` ×3, `bakradrone` ×3, `essence` ×4, `barrage/19:04:08`.
+- `--gabarito`: **62/70** (3 fora do escopo do reviewer). Falham `bakradrone` ×3
+  (`09:31:02`, `09:22:43`, `09:59:53`), `essence` ×4 (`00:21:12`, `00:21:14`,
+  `00:23:29`, `00:25:22`) e `barrage/19:04:08`.
+  (Era **59/70** em `bfd4a26`, com `death-echo` ×3 também falhando; a change C-012a
+  — commit `68fd1e6` — corrigiu esses três. Ao atualizar este baseline, medir com o
+  runner completo e não com `gabarito-unified.mjs --only`, cujo filtro casa mais
+  amplo que o nome sugere.)
 - `--tests`: 3 falhas pré-existentes, com erro idêntico em `HEAD` e no working tree —
   `experimental-ui-parity` (assert `{arrow:0}` vs `{arrow:1,rune:1}`),
   `mob-element-regime` (`ReferenceError: MOB_ELEMENT_MODS is not defined`),

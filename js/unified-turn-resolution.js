@@ -19,6 +19,7 @@
     normalizeName,
     isMainHit,
     isTerraBurstAction,
+    isChainedPenanceAction,
     mean,
     ELEMENTS,
     SINGLE_TARGET_AA_VOCATIONS,
@@ -290,9 +291,20 @@
       // onde a spec já explica o fenômeno — mesmo argumento da isenção de beam acima.
       // Death Echo (`confirmation: 'elemental'`) NÃO é isento: seus estágios já estão
       // atribuídos neste ponto e a estratificação funciona.
+      // Terra/Ice Burst (`exevo ulus tera`/`exevo ulus frigo`): o bonus condicional e
+      // binario POR ALVO com multiplicador global declarado (TERRA_BURST_BONUS_LEVELS),
+      // entao o mesmo mob no mesmo estado leva dano base e dano com bonus dentro do MESMO
+      // cast — divergencia prevista pela regra, nao contradicao. `validateTerraBurstBonusBlock`
+      // continua precedendo o gate; esta isencao so evita que o bloco morra no veto
+      // generico quando aquele validador nao fecha sozinho.
+      // Chained Penance (`exori med pug`, M-037): decay fixo por pulo de cadeia. Isento
+      // pelo mesmo motivo do beam — a mecanica e declarada em docs/CLASSIFICATION_RULES.md
+      // mesmo sem o motor reconstruir o fator.
       const ms = actionDef && actionDef.action && actionDef.action.profile && actionDef.action.profile.multiStage;
       const stagesNotYetAssigned = !!(ms && ms.confirmation !== 'elemental');
-      const declaredMultiLevelAction = isBeamAction(actionDef && actionDef.action) || stagesNotYetAssigned;
+      const act = actionDef && actionDef.action;
+      const declaredMultiLevelAction = isBeamAction(act) || stagesNotYetAssigned
+        || isTerraBurstAction(act) || isChainedPenanceAction(act);
       const hardVeto = actionDef && (
         (!declaredMultiLevelAction && actionDef.deterministic && actionDef.deterministic.ok === false && actionDef.deterministic.reason === 'same_mob_state_exact_original_mismatch')
         || (actionDef.critHomogeneity && actionDef.critHomogeneity.ok === false)

@@ -175,6 +175,14 @@ const CASES = [
   // marksman, então o alvo varrido a mais pertence à Flurry. => A1 S2 (612 + 1 virtual).
   C('monk2/07:20:18', 'monk 2 server log.txt', 'monk 2 local chat.txt', '07:20:18',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 2 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S2; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Spiritual Outburst (exori gran mas nia, M-016e): estágio atrasado multiestágio com
+  // confirmação por cluster de leech (atribuição tardia). Isento do veto same-mob pela
+  // change exempt-late-stage-multistage-from-samemob-veto: o mesmo raubritter leva blast
+  // (:35) e eco (:36) com dano distinto no mesmo cast, e isso é o comportamento declarado.
+  C('monk2/07:19:35', 'monk 2 server log.txt', 'monk 2 local chat.txt', '07:19:35',
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 10 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S10; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  C('monk2/07:19:56', 'monk 2 server log.txt', 'monk 2 local chat.txt', '07:19:56',
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 11 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S11; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // darklight e vemiath 04/Jun (pré-cutoff): sem os mods do regime, o AA físico que
   // varia (911/883/869) colapsava no Divine Caldera determinístico (815), violando
   // H-001. Com os mods PRE expostos, a borda fica correta: AA 5 + Caldera 9. O cast
@@ -295,6 +303,14 @@ const CASES = [
   // concreta deve impedir o filtro de missing evidence.
   C('uhax3/20:51:47', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '20:51:47',
     t => { const c = counts(t); return (c.arrow === 0 && c.spell === 0 && c.rune === 8 && c.grenade === 0 && !t.partialEdgeMissingEvidence) ? null : `esperado R8 (Great Fireball), sem filtro de borda; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade} partialEdgeMissingEvidence=${t.partialEdgeMissingEvidence}`; }),
+  // exempt-burst-and-chain-from-samemob-veto: Terra Burst (exevo ulus tera) tem bonus
+  // condicional por-alvo (x1.6), mecanica declarada -> isenta do veto same-mob. O turno
+  // 13:33:14 (darklight striker 3760/2351, razao 1.60) resolve A1 S7.
+  C('uhax3/13:33:14', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:33:14',
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 7 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S7; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (M-037): caso representativo com fronteira de timestamp AA->spell.
+  C('monk/11:54:44', 'monk server log.txt', 'monk localchat.txt', '11:54:44',
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 4 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
 
   // generalize-single-target-aa-resolver: 58 turnos de Monk (serverlog6..9.txt +
   // localchat6..9.txt) que eram unresolved (multiple_arrow_hits_not_allowed +
@@ -303,521 +319,340 @@ const CASES = [
   // knight/sorcerer/druid/monk, mais o contra-exemplo 07:10:57 (já resolvia pelo
   // caminho genérico; veredito congelado para provar que a generalização não o
   // muda).
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog6/07:10:55', 'serverlog6.txt', 'localchat6.txt', '07:10:55',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog6/localchat6 07:10:57: contra-exemplo: já resolvia pelo caminho genérico, veredito congelado.
   C('serverlog6/07:10:57', 'serverlog6.txt', 'localchat6.txt', '07:10:57',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 9 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S9 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog6/07:11:00', 'serverlog6.txt', 'localchat6.txt', '07:11:00',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog6/localchat6 07:11:02: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog6/07:11:02', 'serverlog6.txt', 'localchat6.txt', '07:11:02',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 8 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S8 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog6/07:11:06', 'serverlog6.txt', 'localchat6.txt', '07:11:06',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog6/07:11:10', 'serverlog6.txt', 'localchat6.txt', '07:11:10',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Spiritual Outburst (exori gran mas nia, M-016e): estagio atrasado multiestagio,
+  // isento do veto same-mob pela change exempt-late-stage-multistage-from-samemob-veto
+  // (nao por esta change). Ja resolvia antes; caso atualizado aqui so para refletir a
+  // realidade do motor.
   C('serverlog6/07:11:12', 'serverlog6.txt', 'localchat6.txt', '07:11:12',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 16 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S16; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog6/localchat6 07:11:14: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog6/07:11:14', 'serverlog6.txt', 'localchat6.txt', '07:11:14',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog6/07:11:16', 'serverlog6.txt', 'localchat6.txt', '07:11:16',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog6/07:11:20', 'serverlog6.txt', 'localchat6.txt', '07:11:20',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog6/localchat6 07:11:22: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog6/07:11:22', 'serverlog6.txt', 'localchat6.txt', '07:11:22',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 8 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S8 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog6/07:11:27', 'serverlog6.txt', 'localchat6.txt', '07:11:27',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog6/07:11:31', 'serverlog6.txt', 'localchat6.txt', '07:11:31',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 5 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S5; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog7/localchat7 07:14:51: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog7/07:14:51', 'serverlog7.txt', 'localchat7.txt', '07:14:51',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 3 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S3 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog7/07:14:55', 'serverlog7.txt', 'localchat7.txt', '07:14:55',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog7/localchat7 07:14:57: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog7/07:14:57', 'serverlog7.txt', 'localchat7.txt', '07:14:57',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog7/07:15:02', 'serverlog7.txt', 'localchat7.txt', '07:15:02',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog7/07:15:06', 'serverlog7.txt', 'localchat7.txt', '07:15:06',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Spiritual Outburst (exori gran mas nia, M-016e): estagio atrasado multiestagio,
+  // isento do veto same-mob pela change exempt-late-stage-multistage-from-samemob-veto
+  // (nao por esta change). Ja resolvia antes; caso atualizado aqui so para refletir a
+  // realidade do motor.
   C('serverlog7/07:15:09', 'serverlog7.txt', 'localchat7.txt', '07:15:09',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 16 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S16; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog7/07:15:13', 'serverlog7.txt', 'localchat7.txt', '07:15:13',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog7/07:15:17', 'serverlog7.txt', 'localchat7.txt', '07:15:17',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog7/localchat7 07:15:20: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog7/07:15:20', 'serverlog7.txt', 'localchat7.txt', '07:15:20',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 12 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S12 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog7/localchat7 07:15:22: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog7/07:15:22', 'serverlog7.txt', 'localchat7.txt', '07:15:22',
     t => { const c = counts(t); return (c.arrow === 0 && c.spell === 8 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S8 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog7/07:15:24', 'serverlog7.txt', 'localchat7.txt', '07:15:24',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog7/07:15:29', 'serverlog7.txt', 'localchat7.txt', '07:15:29',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Spiritual Outburst (exori gran mas nia, M-016e): estagio atrasado multiestagio,
+  // isento do veto same-mob pela change exempt-late-stage-multistage-from-samemob-veto
+  // (nao por esta change). Ja resolvia antes; caso atualizado aqui so para refletir a
+  // realidade do motor.
   C('serverlog7/07:15:31', 'serverlog7.txt', 'localchat7.txt', '07:15:31',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 12 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S12; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog7/07:15:35', 'serverlog7.txt', 'localchat7.txt', '07:15:35',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog7/07:15:40', 'serverlog7.txt', 'localchat7.txt', '07:15:40',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 3 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S3; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:22:34', 'serverlog8.txt', 'localchat8.txt', '07:22:34',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:22:39', 'serverlog8.txt', 'localchat8.txt', '07:22:39',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 5 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S5; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog8/localchat8 07:22:41: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog8/07:22:41', 'serverlog8.txt', 'localchat8.txt', '07:22:41',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 7 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S7 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:22:45', 'serverlog8.txt', 'localchat8.txt', '07:22:45',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:22:50', 'serverlog8.txt', 'localchat8.txt', '07:22:50',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Spiritual Outburst (exori gran mas nia, M-016e): estagio atrasado multiestagio,
+  // isento do veto same-mob pela change exempt-late-stage-multistage-from-samemob-veto
+  // (nao por esta change). Ja resolvia antes; caso atualizado aqui so para refletir a
+  // realidade do motor.
   C('serverlog8/07:22:52', 'serverlog8.txt', 'localchat8.txt', '07:22:52',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 16 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S16; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:22:57', 'serverlog8.txt', 'localchat8.txt', '07:22:57',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:23:01', 'serverlog8.txt', 'localchat8.txt', '07:23:01',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog8/localchat8 07:23:03: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog8/07:23:03', 'serverlog8.txt', 'localchat8.txt', '07:23:03',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 8 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S8 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:23:08', 'serverlog8.txt', 'localchat8.txt', '07:23:08',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:23:12', 'serverlog8.txt', 'localchat8.txt', '07:23:12',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Spiritual Outburst (exori gran mas nia, M-016e): estagio atrasado multiestagio,
+  // isento do veto same-mob pela change exempt-late-stage-multistage-from-samemob-veto
+  // (nao por esta change). Ja resolvia antes; caso atualizado aqui so para refletir a
+  // realidade do motor.
   C('serverlog8/07:23:15', 'serverlog8.txt', 'localchat8.txt', '07:23:15',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 10 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S10; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:23:19', 'serverlog8.txt', 'localchat8.txt', '07:23:19',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 4 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:23:24', 'serverlog8.txt', 'localchat8.txt', '07:23:24',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 3 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S3; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog9/localchat9 07:48:35: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog9/07:48:35', 'serverlog9.txt', 'localchat9.txt', '07:48:35',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 2 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S2 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog9/localchat9 07:48:37: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog9/07:48:37', 'serverlog9.txt', 'localchat9.txt', '07:48:37',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 7 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S7 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog9/07:48:41', 'serverlog9.txt', 'localchat9.txt', '07:48:41',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog9/07:48:45', 'serverlog9.txt', 'localchat9.txt', '07:48:45',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Spiritual Outburst (exori gran mas nia, M-016e): estagio atrasado multiestagio,
+  // isento do veto same-mob pela change exempt-late-stage-multistage-from-samemob-veto
+  // (nao por esta change). Ja resolvia antes; caso atualizado aqui so para refletir a
+  // realidade do motor.
   C('serverlog9/07:48:48', 'serverlog9.txt', 'localchat9.txt', '07:48:48',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 15 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S15; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog9/localchat9 07:48:50: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog9/07:48:50', 'serverlog9.txt', 'localchat9.txt', '07:48:50',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog9/07:48:53', 'serverlog9.txt', 'localchat9.txt', '07:48:53',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog9/07:48:57', 'serverlog9.txt', 'localchat9.txt', '07:48:57',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog9/localchat9 07:49:00: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog9/07:49:00', 'serverlog9.txt', 'localchat9.txt', '07:49:00',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 11 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S11 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog9/07:49:04', 'serverlog9.txt', 'localchat9.txt', '07:49:04',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog9/07:49:09', 'serverlog9.txt', 'localchat9.txt', '07:49:09',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Spiritual Outburst (exori gran mas nia, M-016e): estagio atrasado multiestagio,
+  // isento do veto same-mob pela change exempt-late-stage-multistage-from-samemob-veto
+  // (nao por esta change). Ja resolvia antes; caso atualizado aqui so para refletir a
+  // realidade do motor.
   C('serverlog9/07:49:11', 'serverlog9.txt', 'localchat9.txt', '07:49:11',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 13 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S13; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Greater Flurry of Blows (exori gran mas pug): spell fisica de area do monge; resolve
+  // por posicao do primeiro hit + cardinalidade de leech (V-025), independente do veto
+  // same-mob. Ja resolvia antes desta change; caso atualizado so para refletir o motor.
   C('serverlog9/07:49:13', 'serverlog9.txt', 'localchat9.txt', '07:49:13',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog9/07:49:16', 'serverlog9.txt', 'localchat9.txt', '07:49:16',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
-  // Chained Penance (exori med pug) chains ate 4 alvos extras perdendo 5%/pulo
-  // (confirmado pelo usuario via wiki, 18/Jul/2026) -- o motor Unified nao modela
-  // decaimento por posicao na cadeia, entao a exatidao same-mob/same-estado (S-004a)
-  // genuinamente nao fecha para este spell. Antes de
-  // fix-mage-druid-aa-evidence-gold-leech, o atalho sem validacao elemental
-  // (bug corrigido nessa mudanca) mascarava essa quebra e o turno "resolvia" sem
-  // checar nada de verdade. unresolved e o resultado correto ate a mecanica de
-  // chain decay ser modelada como regra nova (ver memoria
-  // chained-penance-chain-decay-unmodeled).
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
+  // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
+  // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
+  // O turno RESOLVE; o motor nao reverte o decay, entao o dano base fica enviesado
+  // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog9/07:49:20', 'serverlog9.txt', 'localchat9.txt', '07:49:20',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog9/localchat9 07:49:22: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog9/07:49:22', 'serverlog9.txt', 'localchat9.txt', '07:49:22',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 7 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S7 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),

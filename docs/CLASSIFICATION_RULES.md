@@ -70,6 +70,25 @@
   - `07:19:35`: cast `exori gran mas nia` em `:35`; blast inicial em `:35` (5 hits, ~1400–1620) e estágio atrasado em `:36` (5 hits, ~850–950, Stage 3) — os dois estágios caem no MESMO turno mecânico (delay=1), sem precisar mover hits entre turnos. `A1 + Spiritual Outburst`, 10 hits no componente spell.
   - `07:19:56`/`07:19:58`: cast `exori gran mas nia` em `:56`; blast inicial em `:56` (8 hits). O segundo `:57` não tem nenhum hit do jogador (delay=1 sem candidatos), então o único delay avaliado é `:58` (delay=2). Em `:58`, o bloco de 9 candidatos não-overkill mistura o estágio atrasado (`906`, `907`, `907`, razão vida/dano uniforme `~0.208`) com um cast concreto e real de `exori gran mas pug` (Greater Flurry of Blows): o AA do turno `:58` (`781`, razão `~0.521`, claramente distinta) e os crits reais de Flurry of Blows (`1432`/`1448`/`1444`/`1555`/`1516` + `145` overkill, razão `~0.137`). O estágio atrasado (`906`/`907`/`907`) é consolidado de volta ao turno de origem `:56` (11 hits no componente spell); o turno `07:19:58` continua existindo como ciclo independente com seu próprio AA (`781`) e o `Greater Flurry of Blows` real (6 hits) — o estágio atrasado órfão NÃO ancora nem desloca esse turno seguinte (T-002).
 
+  - **M-016e-gate — Isenção do veto same-mob para estágio ainda não atribuído:** a
+    estratificação por estágio que o gate de exatidão same-mob (S-004a) usa só funciona
+    depois que o rótulo de estágio foi atribuído ao hit. Para Spiritual Outburst, cuja
+    confirmação é por cluster de leech numa passada de correção **posterior**, os hits
+    ainda não têm rótulo de estágio no ponto em que a validação de partição roda: blast e
+    eco do mesmo mob colidem e o gate os veria como contradição. Por isso, o veto duro
+    `same_mob_state_exact_original_mismatch` **não se aplica** a uma ação que declara
+    mecânica de múltiplos níveis por-mob cujos rótulos ainda não foram atribuídos —
+    condicionado ao mecanismo **declarado** no perfil da ação (`multiStage.confirmation !==
+    'elemental'`), nunca a uma spell/log/turno específico. Death Echo
+    (`confirmation: 'elemental'`) NÃO é isento: seus estágios já estão atribuídos nesse
+    ponto e a estratificação funciona. Esta isenção significa apenas **ausência de
+    evidência negativa** (D-006), não aprovação: o bloco continua sujeito a leech,
+    crit-homogeneidade, M-024/M-025 e demais validações. Uma mecânica que produz níveis
+    distintos no mesmo mob **sem** estar declarada em `docs/CLASSIFICATION_RULES.md`
+    permanece vetada — a isenção é por regra declarada, não por analogia. (Esta família de
+    isenção por mecânica declarada é a mesma de M-035 para beams e M-037 para o decay de
+    Chained Penance.)
+
 - **M-034 — Tiers de bônus do Executioner's Throw:** `Executioner's Throw (exori amp kor)` de knight (físico, área) tem um bônus de dano condicional por vida do alvo (execute): binário por-hit (um hit tem ou não o bônus) e um multiplicador **fixo por log** (a mastery do personagem), um dentre `2.0`/`2.25`/`2.5` (`+100/+125/+150%`; "bônus 100%" dobra o dano em relação ao hit sem bônus do mesmo alvo). Esta regra apenas **rotula por tier** os hits de um componente `Executioner's Throw` já isolado pela classificação de turno — ela roda como pós-passe de sessão, NÃO participa da pontuação/seleção de partição e NÃO reatribui hits (a segmentação e a cardinalidade por leech continuam por M-031/M-032 e casos 9b/9c). Do resultado, cada hit ganha `executionerBonusActive` e a linha de rotação ganha sub-linhas `base`/`amped` (mesmo encanamento do bônus condicional do Terra Burst).
 
   A decisão de tier é **leech-primário, por-canal, por-turno** — não por reversão física: um EK pode empunhar arma com 0% de ataque físico, o que torna a reversão física (armor + arma) não confiável, e além disso a maioria dos hits de amp kor é overkill (dano exibido truncado e inútil). O leech incide sobre o dano **real** (pré-truncamento) e é bimodal na razão `A` do bônus. Os canais são avaliados **separadamente**, com **mana leech como canal primário** (o life leech é capado pela vida faltante e subestima quando o jogador está quase cheio). A clusterização é **por turno** porque o valor de leech carrega o fator de área (`0.1 + 0.9/N`, D-023) que desliza entre casts de tamanhos diferentes; dentro de um mesmo cast o fator de área é constante e o gap `~A×` sai limpo. Como o multiplicador é fixo por log, um pass de sessão calibra os níveis de mana com os hits já confiantes e classifica os hits de casts de tier único (sem gap interno) por proximidade, deixando `null` (agrupado em `base`, conservador) apenas a zona ambígua e os hits sem leech nenhum. O multiplicador `A` exibido vem da razão de dano dos hits **limpos** (não-overkill) — um dano overkill é piso, não o valor real, então `2243/1115 ≈ 2.01` NÃO pina `A`; a razão de leech também não pina (carrega ruído de área/arredondamento), só classifica.
@@ -123,6 +142,36 @@
   classe é confirmada (correto — este log não tem o reward). Fixtures sem charm elemental
   fora de janela de grav san permanecem idênticos (o detector retorna `bonus: 0` e o
   pós-passe é inerte).
+
+- **M-037 — Decay de cadeia de Chained Penance (mecânica declarada, não reconstruída):**
+  `Chained Penance (exori med pug)` de monk (holy, área) encadeia entre alvos e **perde
+  uma fração fixa de dano a cada pulo da cadeia** — o dano cai monotonicamente ao longo
+  da ordem de encadeamento, e o mesmo mob pode aparecer em posições diferentes de cadeia
+  dentro do MESMO cast, com danos distintos. Consequência normativa: dois hits de um
+  bloco de Chained Penance no mesmo mob e no mesmo estado de modificadores **podem
+  legitimamente ter originais distintos**, e essa divergência **não é contradição**
+  (D-006) — é o fenômeno que esta regra declara.
+
+  Esta regra **declara** a mecânica; ela **não** especifica reversão. O classificador
+  **não** infere, reconstrói nem compensa o fator de decay, exatamente como faz com os
+  sub-tiers central/side de beam (M-035) enquanto o detector correspondente não existir.
+  A fração observada nos fixtures é de aproximadamente `5%` por pulo, mas o valor **não
+  é normativo** aqui: como nada é revertido a partir dele, cravar a constante gravaria na
+  fonte da verdade um número medido num único personagem/log.
+
+  **Limitação conhecida e aceita:** sem a reversão, o dano base agregado (A-006) da linha
+  de rotação de Chained Penance é a média de hits em posições de cadeia diferentes, logo
+  fica **enviesado para baixo** e não representa nenhum hit individual. A classificação
+  em si permanece correta, porque o corte AA × spell nas vocações de AA single-target é
+  decidido por posição do primeiro hit e cardinalidade de leech (V-011/V-013), que não
+  dependem do decay. Modelar a reversão é melhoria de métrica, não pré-requisito de
+  classificação.
+
+  Evidência observada (`logs/monk server log.txt`, mesmo mob e mesmo estado dentro de um
+  cast): razões de dano entre hits consecutivos da cadeia `0,9474 / 0,9481 / 0,9488 /
+  0,9490 / 0,9493 / 0,9495 / 0,9503` (um pulo) e `0,9006 / 0,9003` (dois pulos, ≈ o
+  quadrado do fator de um pulo). Casos-prova: `logs/serverlog6..9.txt`,
+  `logs/monk server log.txt` e `logs/monk 2 server log.txt`.
 
 ### Runas
 
