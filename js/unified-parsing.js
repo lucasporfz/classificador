@@ -380,6 +380,16 @@
       const delays = delayed && Array.isArray(delayed.delays) ? delayed.delays.filter(d => d >= 1) : null;
       const tiers = delayed && Array.isArray(delayed.tiers) ? delayed.tiers.filter(tier => tier && tier.denominator > 0) : null;
       if (!delayed || !delays || !delays.length || !tiers || !tiers.length) continue;
+      // M-016e: esta via confirma o estágio pela transformação elemental discreta
+      // (D-010a), então ela pertence só a perfis que DECLARAM essa confirmação —
+      // hoje Death Echo. Spiritual Outburst declara `leech_cluster` porque a
+      // reversão elemental não fecha para ela; sua consolidação acontece no passe
+      // posterior `reconsolidateMultiStageWithLeech`, com o leech real já inferido.
+      // Antes a separação era acidental (a reversão simplesmente nunca fechava para
+      // 100% dos candidatos); com o gate abaixo aceitando "nenhuma contradição + ao
+      // menos um par casado", um par coincidente bastaria e a via elemental poderia
+      // preemptar a via de leech. A guarda torna explícito o que o perfil já declara.
+      if (!stages || stages.confirmation !== 'elemental') continue;
       const primaryWindow = [cast.ts - 1, cast.ts]
         .flatMap(ts => hitsByTs.get(ts) || [])
         .filter(h => !delayedByHit.has(h.id) && !h.overkill && !h.zeroDamageDodge);
@@ -403,20 +413,41 @@
       const stageContext = Object.assign({}, context || {}, { _revCache: new Map() });
       const primaryEvidence = new Map(primaryWindow.map(h => [h.id, elementalOriginalCandidates(h, profile.element, stageContext)]));
       const echoEvidence = new Map(echoCandidates.map(h => [h.id, elementalOriginalCandidates(h, profile.element, stageContext)]));
-      // M-016e: tenta cada fração candidata em ordem; o bloco inteiro precisa
-      // fechar sob a MESMA fração (sem mistura de tiers no mesmo estágio) --
-      // a primeira fração que fechar todos os hits comparáveis vence.
+      // M-016d-1/D-006: por fração candidata, cada hit não-overkill do segundo do
+      // eco cai em UMA de três categorias:
+      //   CASADO          -- existe hit comparável no blast (mesmo mob/estado, com
+      //                      original calculável dos dois lados) e a transformação
+      //                      discreta fecha sob a fração;
+      //   CONTRADITÓRIO   -- existe hit comparável e ele NÃO fecha;
+      //   SEM CONTRAPARTE -- não há hit comparável no blast, ou o original não é
+      //                      calculável de algum dos lados.
+      // Só CONTRADITÓRIO rejeita a fração. "Sem contraparte" é evidência ausente
+      // (D-006), não prova de que a relação de potência falhou: o gate anterior
+      // exigia 100% de casados (`me.length === echoCandidates.length`) e portanto
+      // tratava os dois casos igual, derrubando a confirmação inteira por um único
+      // mob de eco que o blast não acertou. Sem a marcação de estágio, blast e eco
+      // ficavam fundidos no mesmo bloco elemental e o turno morria no veto same-mob
+      // de S-004a, com o mesmo mob em dois níveis (integral e 1/2).
+      // Casos-prova: kim 16:22:16 (blast só acerta `undertaker`; o `stalking stalk`
+      // do segundo do eco não tem contraparte) e dlc ms 21:36:13.
+      // Os pares casados continuam tendo de fechar todos sob a MESMA fração (uma
+      // explosão tem uma única potência); overkills acompanham, mas nunca provam.
       let winningTier = null, matchedPrimary = null, matchedEcho = null;
       for (const tier of tiers) {
         const mp = new Set();
         const me = [];
+        let contradicted = false;
         for (const echoHit of echoCandidates) {
           const e = echoEvidence.get(echoHit.id);
-          if (!e || !e.known || !e.originals.length) continue;
-          const primaryHit = primaryWindow.find(p => {
+          if (!e || !e.known || !e.originals.length) continue; // sem contraparte (D-006)
+          const comparable = primaryWindow.filter(p => {
             if (elementalStateKey(p) !== elementalStateKey(echoHit)) return false;
             const pe = primaryEvidence.get(p.id);
-            if (!pe || !pe.known || !pe.originals.length) return false;
+            return !!(pe && pe.known && pe.originals.length);
+          });
+          if (!comparable.length) continue; // sem contraparte (D-006)
+          const primaryHit = comparable.find(p => {
+            const pe = primaryEvidence.get(p.id);
             return pe.originals.some(po => e.originals.some(eo => {
               const lo = Math.floor(po * tier.numerator / tier.denominator);
               const hi = Math.ceil(po * tier.numerator / tier.denominator);
@@ -427,15 +458,13 @@
                 Math.abs(eo - hi) <= ELEMENTAL_INTERMEDIATE_TOLERANCE;
             }));
           });
-          if (!primaryHit) continue;
+          if (!primaryHit) { contradicted = true; break; } // contradição real
           mp.add(primaryHit);
           me.push(echoHit);
         }
-        // A queda de um par isolado não prova uma explosão de área inteira.
-        // Todos os hits não-overkill comparáveis do timestamp precisam fechar
-        // contra o blast primário sob a mesma fração; overkills podem
-        // acompanhar, mas nunca servem de prova.
-        if (me.length && me.length === echoCandidates.length) { winningTier = tier; matchedPrimary = mp; matchedEcho = me; break; }
+        // A queda de um bloco sem nenhum par comparável não prova explosão alguma:
+        // exige-se ao menos um par casado, além de nenhuma contradição.
+        if (!contradicted && me.length) { winningTier = tier; matchedPrimary = mp; matchedEcho = me; break; }
       }
       if (!winningTier) continue;
       // Uma vez que pares comparáveis provam timing + potência, a explosão de

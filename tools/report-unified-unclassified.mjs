@@ -195,6 +195,18 @@ function isKnownMultiLeechSetupSession(label, sv) {
   return !!sd && sd.year === 2026 && sd.month === 6 && sd.day === 28;
 }
 
+// A sessão salva `Tue Jun 09 09:30:47 2026` (saveSec 34247) aparece em três fixtures que
+// compartilham o mesmo prefixo de log — `bakra`, `drome` e `jaded` — sempre com os MESMOS
+// 54 turnos sem classificação (09:18:50→09:27:14), categoria `mixed_crit_state` /
+// `no_valid_partition`. Decisão do usuário (20/Jul/2026): esse hunt tem uma mecânica que
+// não vai ser modelada por agora, então essa sessão fica FORA da varredura de turnos sem
+// classificação, incondicionalmente (não é leech, então não caía no filtro pré-cutoff).
+function isIgnoredMechanicSession(label, sv) {
+  if (label !== 'bakra' && label !== 'drome' && label !== 'jaded') return false;
+  const sd = parseSessionDate(sv);
+  return !!sd && sd.year === 2026 && sd.month === 6 && sd.day === 9 && sd.saveSec === 34247;
+}
+
 // Turnos com comportamento conhecido e escolhido não trabalhar (docs/CLASSIFICATION_RULES.md,
 // D-010c-nota): `active elemental amplification` está bugada no jogo (pierce 0%), mas a spec
 // modela 0,16 de propósito. Isso só quebra reconstrução holy de mob resistente + amplification.
@@ -250,6 +262,7 @@ function runPair(ctx, label, serverName, localName, windowFilter, postCutoffOnly
     if (!sessionMatchesWindowDate(pair, windowFilter)) return;
     if (postCutoffOnly && !isPostCutoffSession(pair.sv)) return;
     if (isKnownMultiLeechSetupSession(label, pair.sv)) return;
+    if (isIgnoredMechanicSession(label, pair.sv)) return;
     const result = ctx.UnifiedClassificationEngine.classifyUnified(pair.sv.text, pair.lc.text, opts);
     if (result.error) { lastError = result.error; return; }
     version = result.version;

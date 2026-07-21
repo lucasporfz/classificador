@@ -176,6 +176,35 @@ const CASES = [
   CL('death-echo/11:06:08','death echo server log.txt','death echo local chat.txt','11:06:08',countIs({arrow:1,spell:21,rune:0,grenade:0})),
   CL('death-echo/11:06:11','death echo server log.txt','death echo local chat.txt','11:06:11',countIs({arrow:1,spell:10,rune:0,grenade:0})),
   CL('death-echo/11:06:20','death echo server log.txt','death echo local chat.txt','11:06:20',countIs({arrow:1,spell:15,rune:0,grenade:0})),
+  // M-016d-1/D-006 (fix-death-echo-delayed-stage-absent-evidence): a confirmacao do
+  // estagio atrasado rejeita a fracao apenas por CONTRADICAO (hit de eco com contraparte
+  // comparavel no blast que nao fecha a 1/2), nunca por EVIDENCIA AUSENTE (mob do eco sem
+  // contraparte no blast). O gate antigo exigia 100% dos candidatos casando, entao um unico
+  // mob que o blast nao acertou derrubava tudo: blast+eco ficavam fundidos e o turno morria
+  // no veto same-mob de S-004a com o mesmo mob em dois niveis (integral e 1/2).
+  // 11:06:04: blast :04 + eco :05 (crypt mage 1771->885, roaming dread 1926->965).
+  CL('death-echo/11:06:04','death echo server log.txt','death echo local chat.txt','11:06:04',countIs({arrow:1,spell:20,rune:0,grenade:0})),
+  // kim (sorcerer `ritual`, 14/Jul/2026): o segundo do eco traz mobs que o blast nao
+  // acertou. 16:22:16 e o caso canonico -- undertaker 1070 -> 535 (1/2 exato) casa, mas
+  // stalking stalk 449 nao tem contraparte (o unico outro mob do blast entrou como dodge 0).
+  CL('kim/16:22:16','kim server log.txt','kim local chat.txt','16:22:16',countIs({arrow:0,spell:5,rune:0,grenade:0})),
+  CL('kim/16:23:31','kim server log.txt','kim local chat.txt','16:23:31',countIs({arrow:0,spell:5,rune:0,grenade:0})),
+  CL('kim/16:30:54','kim server log.txt','kim local chat.txt','16:30:54',countIs({arrow:0,spell:16,rune:0,grenade:0})),
+  // Colaterais aprovados: o eco volta ao cast de origem e o turno vizinho re-ancora,
+  // ficando com bloco homogeneo no proprio nivel. Antes, hits em nivel de eco (~440-790)
+  // estavam alojados em turnos cujo bloco real e 1500-1900.
+  // kim 16:25:20: nighthunter 1011->505, sulphider 966->482 (2 mobs confirmam 1/2);
+  // o vizinho 16:25:23 fica AA 1808 + Great Energy Beam 1506x2.
+  CL('kim/16:25:20','kim server log.txt','kim local chat.txt','16:25:20',countIs({arrow:0,spell:6,rune:0,grenade:0})),
+  // kim 16:30:35: o "AA" anterior (undertaker 530 prey, O_fis [415,447]) esta no nivel de
+  // eco da sessao -- identico ao eco confirmado em 16:22:16 (535 prey, O_fis [419,451]).
+  CL('kim/16:30:35','kim server log.txt','kim local chat.txt','16:30:35',countIs({arrow:0,spell:5,rune:0,grenade:0})),
+  // dlc ms (sorcerer `nightt gaze`, 17/Jul/2026), S0: tres mobs confirmam 1/2 exato.
+  // 21:42:51 -> walking pillar 1450->725, darklight matter 1557->778, bloodjaw 1001->500.
+  CL('dlc-ms/21:42:51','dlc ms Server Log.txt','dlc ms Local Chat.txt','21:42:51',countIs({arrow:0,spell:8,rune:0,grenade:0})),
+  // 21:43:27 -> bloodjaw 1014->507, darklight matter 1578->788, walking pillar 1468->733;
+  // o vizinho 21:43:30 fica com o Great Fire Wave homogeneo (1225-1911).
+  CL('dlc-ms/21:43:27','dlc ms Server Log.txt','dlc ms Local Chat.txt','21:43:27',countIs({arrow:0,spell:12,rune:0,grenade:0})),
   // M-016e: Spiritual Outburst (exori gran mas nia) e a segunda spell multiestagio
   // conhecida (delay candidato 1 ou 2s, tier candidato 3/8 | 1/2 | 5/8). Sessao sem
   // cabecalho/data (monk 2); a prova nao depende de mitigacao/tabela de mob.
