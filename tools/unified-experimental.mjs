@@ -370,6 +370,30 @@ const CASES = [
   // real parecido apesar dos exibidos 284 e 702: life 220/232, mana 71/75. => A0 S2.
   // Regime-independente (CL): o criterio e estrutural, nao depende de tabela de mob.
   CL('mazzerinbarrage/16:24:10','mazzerinbarrage server log.txt','mazzerinbarrage local chat.txt','16:24:10',countIs({arrow:0,spell:2,rune:0,grenade:0})),
+
+  // thunder arrow 21/Jul/2026 -- unico fixture com MUNICAO DE AREA ELEMENTAL (S-007b).
+  // O eixo do bloco de AA e inferido por sessao e da `energy` (64 turnos contra 29 do
+  // fisico, em 121 elegiveis). Antes de S-007b, 166 dos 210 turnos ficavam sem
+  // classificacao porque o AA era validado contra intervalo FISICO.
+  // Regime-independentes (CL): a sessao e pos-cutoff.
+
+  // 18:52:46 -- prova de que a municao e elemental E de que a granada explode aqui.
+  // Tres blocos contiguos e limpos: granada 11 hits TODOS CRIT com dano identico por mob
+  // (oozing 1775 x6, sopping 1698 x2, myco 1707 x2, maggot 1700), AA 8 hits nao-crit
+  // (628-679) e Divine Barrage 11 hits (823-862). Antes ficava `unresolved`.
+  CL('thunder-arrow/18:52:46','thunder arrow Server Log.txt','thunder arrow Local Chat.txt','18:52:46',countIs({arrow:8,spell:11,rune:0,grenade:11})),
+
+  // 18:52:44 -- o par do anterior. A granada estava atribuida AQUI (A1 S3 G12) so porque
+  // 18:52:46 era `unresolved` e nao podia competir no desempate por dependencia
+  // (prefer-grenade-cast-turn-that-cannot-resolve-without-it). O cast e 18:52:42, entao
+  // ambos os turnos caem na janela legal [cast+2, cast+4]; com os dois resolvendo, a
+  // granada vai pro que nao resolve sem ela. Aqui sobra AA 4 + Divine Caldera 12.
+  CL('thunder-arrow/18:52:44','thunder arrow Server Log.txt','thunder arrow Local Chat.txt','18:52:44',countIs({arrow:4,spell:12,rune:0,grenade:0})),
+
+  // 18:52:42 -- turno de AA PURO, sem cast nenhum. Era a "familia A" do diagnostico:
+  // 2 hits que o eixo fisico dava como disjuntos (O_fis [1074,1144] vs [1559,1652]) e o
+  // eixo de energy fecha. O primeiro hit carrega `perfect shot`, revertido por D-010f.
+  CL('thunder-arrow/18:52:42','thunder arrow Server Log.txt','thunder arrow Local Chat.txt','18:52:42',countIs({arrow:2,spell:0,rune:0,grenade:0})),
 ];
 
 function runGabarito() {

@@ -98,10 +98,12 @@ CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu dele
 contra ele em vez de exigir verde total. Total de alvos: **8/12 OK**.
 
 - `--invariants`: **OK**.
-- `--gabarito`: **74/81** (3 fora do escopo do reviewer). Falham `bakradrone` ×3
+- `--gabarito`: **77/84** (3 fora do escopo do reviewer). Falham `bakradrone` ×3
   (`09:31:02`, `09:22:43`, `09:59:53`) e `essence` ×4 (`00:21:12`, `00:21:14`,
   `00:23:29`, `00:25:22`) — **7 falhas**. `barrage/19:04:08` saiu da lista com
-  `fix-overkill-only-turn-boundary` (22/Jul/2026).
+  `fix-overkill-only-turn-boundary` (22/Jul/2026); `infer-aa-element-per-session`
+  (22/Jul/2026) somou 3 casos de `thunder arrow`, o único fixture com munição de área
+  elemental (S-007b).
   (Era **71/79** antes de `prefer-grenade-cast-turn-that-cannot-resolve-without-it`,
   **70/78** antes de `require-discriminating-leech-channel-in-bracket`,
   **62/70** em `68fd1e6` e **59/70** em `bfd4a26`; as changes C-012a e

@@ -38,6 +38,8 @@
     normalizeName,
     getMobMods,
     percentile,
+    physicalOriginalInterval,
+    elementalOriginalCandidates,
   } = root.UnifiedFormulas;
 
   const {
@@ -578,6 +580,114 @@
     };
     Object.assign(setup, joint.minor);
     return setup;
+  }
+
+  // ---------------------------------------------------------------------------
+  // S-007a-elem / D-016a: eixo do bloco de AA inferido POR SESSAO.
+  //
+  // O update do regime pos-cutoff introduziu municao de AREA ELEMENTAL pra Royal
+  // Paladin. Ate entao todo AA de RP era fisico e S-007 cravava o eixo. A municao
+  // e escolha de equipamento: muda entre sessoes, nunca dentro de uma -- por isso a
+  // inferencia e por sessao, como o perk BM e o setup de leech.
+  //
+  // Criterio (usuario, 22/Jul/2026): usar so turnos em que uma spell HOLY DE AREA do
+  // dono separa a spell do AA; procurar um corte contiguo AA->spell em que o sufixo
+  // feche como holy e o prefixo feche como o eixo testado; vence quem fechar mais
+  // turnos. Fisico e o PADRAO e o FALLBACK: empate com fisico e ausencia de evidencia
+  // resolvem em fisico, POR REGRA -- nunca pela ordem de iteracao dos candidatos.
+  const AA_ELEMENT_CANDIDATES = ['physical', 'energy', 'ice', 'fire', 'earth'];
+  // `holy` fica fora por ser CIRCULAR (e o eixo da propria spell de referencia);
+  // `death` fica fora porque nao existe municao de area desse elemento.
+  const AA_REFERENCE_HOLY_AREA = new Set(['exevo mas san', 'exori dir san']);
+  // Ethereal Barrage e spell FISICA: nao separa do AA fisico e enviesaria a contagem.
+  const AA_EXCLUDED_PHYSICAL_SPELL = new Set(['exori dir moe']);
+  // Granada e holy e tem instante de explosao incerto (M-023): indistinguivel da spell.
+  const AA_GRENADE_INCANTATION = new Set(['exevo tempo mas san']);
+  const AA_GRENADE_SHADOW_MIN = 1;
+  const AA_GRENADE_SHADOW_MAX = 5;
+  const AA_TURN_WINDOW_BEFORE = 1;
+  const AA_TURN_WINDOW_AFTER = 2;
+
+  function aaOriginalsSet(hit, element, context) {
+    if (element === 'physical') {
+      const r = physicalOriginalInterval(hit, context);
+      if (!r || !r.known || !r.interval) return null;
+      const out = new Set();
+      for (let v = r.interval[0]; v <= r.interval[1]; v++) out.add(v);
+      return out;
+    }
+    const r = elementalOriginalCandidates(hit, element, context);
+    if (!r || !r.known || !r.originals || !r.originals.length) return null;
+    return new Set(r.originals);
+  }
+
+  // Um bloco "fecha" quando os hits nao-overkill tem interseccao de originais nao
+  // vazia sob aquele eixo (S-004). Overkill nao participa de interseccao (D-011).
+  function aaBlockCloses(hits, element, context) {
+    let inter = null;
+    for (const h of hits) {
+      if (h.overkill) continue;
+      const set = aaOriginalsSet(h, element, context);
+      if (!set) return false;
+      if (inter === null) inter = set;
+      else {
+        const next = new Set();
+        for (const v of inter) if (set.has(v)) next.add(v);
+        inter = next;
+      }
+      if (!inter.size) return false;
+    }
+    return !!(inter && inter.size);
+  }
+
+  function inferAaElementForSession(turns, localFacts, context) {
+    const counts = {};
+    for (const e of AA_ELEMENT_CANDIDATES) counts[e] = 0;
+    if (!context || context.vocation !== 'paladin') {
+      return { element: 'physical', source: 'not_paladin', counts, eligible: 0 };
+    }
+    // Casts de granada tem `type: 'grenade'`, nao 'attack'. Filtrar por 'attack' aqui
+    // tornaria a exclusao de granada INERTE (medido: 0 turnos excluidos em vez de 86).
+    const casts = ((localFacts && localFacts.playerCasts) || [])
+      .filter(c => c && c.profile && (c.type === 'attack' || c.type === 'grenade'));
+
+    let eligible = 0;
+    for (const turn of (turns || [])) {
+      const hits = (turn.hits || []).filter(isMainHit);
+      if (hits.length < 2) continue;
+      let hasHolyArea = false, blocked = false;
+      for (const c of casts) {
+        const inc = c.profile.incantation;
+        const inWindow = c.ts >= turn.ts - AA_TURN_WINDOW_BEFORE && c.ts <= turn.ts + AA_TURN_WINDOW_AFTER;
+        if (inWindow && AA_REFERENCE_HOLY_AREA.has(inc)) hasHolyArea = true;
+        if (inWindow && AA_EXCLUDED_PHYSICAL_SPELL.has(inc)) blocked = true;
+        if (AA_GRENADE_INCANTATION.has(inc)
+          && (inWindow || (turn.ts >= c.ts + AA_GRENADE_SHADOW_MIN && turn.ts <= c.ts + AA_GRENADE_SHADOW_MAX))) blocked = true;
+        if (blocked) break;
+      }
+      if (blocked || !hasHolyArea) continue;
+      eligible++;
+      // O sufixo holy nao depende do eixo testado: calcula uma vez por corte.
+      const holySuffixOk = [];
+      for (let k = 1; k < hits.length; k++) holySuffixOk[k] = aaBlockCloses(hits.slice(k), 'holy', context);
+      for (const el of AA_ELEMENT_CANDIDATES) {
+        for (let k = 1; k < hits.length; k++) {
+          if (holySuffixOk[k] && aaBlockCloses(hits.slice(0, k), el, context)) { counts[el]++; break; }
+        }
+      }
+    }
+
+    const ranked = AA_ELEMENT_CANDIDATES.map(e => [e, counts[e]]).sort((a, b) => b[1] - a[1]);
+    const best = ranked[0][1];
+    if (!best) return { element: 'physical', source: 'no_evidence', counts, eligible };
+    const winners = ranked.filter(r => r[1] === best).map(r => r[0]);
+    if (winners.length > 1) {
+      // Empate = eixos indistinguiveis nessa sessao, entao a escolha nao muda a
+      // classificacao. Preferir fisico mantem a mudanca neutra em sessao legada.
+      if (winners.indexOf('physical') !== -1) return { element: 'physical', source: 'tie_prefers_physical', counts, eligible };
+      return { element: winners[0], source: 'tie_any', counts, eligible };
+    }
+    return { element: winners[0], source: 'evidence', counts, eligible };
   }
 
   function inferLeechSetupFallback(hits, context) {
@@ -1265,6 +1375,9 @@
     collectHolyBmProbeData,
     emptyBmPierceScore,
     inferBmPierceFromCrossMobEvidence,
+    AA_ELEMENT_CANDIDATES,
+    aaBlockCloses,
+    inferAaElementForSession,
   };
 
   root.UnifiedSetupInference = API;

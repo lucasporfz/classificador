@@ -240,7 +240,7 @@
 - **D-009a — Reversão de Onslaught:** Onslaught adiciona `+60%` fixo ao dano, ADITIVO com o multiplicador de crítico (não multiplicativo, mesmo modelo do bônus de Transcendence). Ao reconstruir originais físicos ou elementais (D-010a a D-010c) de qualquer hit marcado com Onslaught, em qualquer componente (AA, spell, runa, granada) e qualquer vocação, o classificador deve desfazer esse bônus no mesmo passo em que desfaz o crítico: hit com Onslaught e sem crítico real usa fator `1,6`; hit com Onslaught e crítico real usa `multiplicadorDeCrítico + 0,6`. Omitir essa reversão infla o dano em até 60% antes da comparação de originais, o que pode esvaziar interseções físicas (S-004/S-007) que seriam válidas e vetar partições corretas indicadas pela fronteira de crit-state (D-007/S-008).
 - **D-010 — Modificadores:** reverter Expose Weakness, prey e demais modificadores antes de comparar originais.
 
-- **D-010a — Pipeline discreto de dano elemental:** para reconstruir originais elementais a partir do dano observado, o classificador deve usar a ordem discreta abaixo. É proibido reconstruir original elemental por divisão simples, porque `CEIL`, `FLOOR`, mitigation, prey e demais multiplicadores podem alterar o conjunto de originais possíveis em 1 ou mais pontos.
+- **D-010a — Pipeline discreto de dano elemental:** para reconstruir originais elementais a partir do dano observado, o classificador deve usar a ordem discreta abaixo. É proibido reconstruir original elemental por divisão simples, porque `CEIL`, `FLOOR`, mitigation, prey e demais multiplicadores podem alterar o conjunto de originais possíveis em 1 ou mais pontos. Hits marcados com `perfect shot` exigem, além desta cadeia, a reversão de **D-010f**.
 
 ```text
 F = dano final exibido no Server Log
@@ -271,7 +271,7 @@ O_candidates = união de invCeil(E, m) para cada E em E_candidates
 
 O resultado elemental é um conjunto discreto de originais possíveis. Se `m`, `M` ou `P` forem desconhecidos, a evidência de original desse eixo é desconhecida, não contradição (D-006).
 
-- **D-010b — Pipeline discreto de dano físico:** para reconstruir originais físicos a partir do dano observado, o classificador deve gerar intervalo de originais possíveis, porque o armor roll varia. A média física usada por calculadoras de DPT não deve ser usada para reverter um hit individual do Server Log.
+- **D-010b — Pipeline discreto de dano físico:** para reconstruir originais físicos a partir do dano observado, o classificador deve gerar intervalo de originais possíveis, porque o armor roll varia. A média física usada por calculadoras de DPT não deve ser usada para reverter um hit individual do Server Log. Hits marcados com `perfect shot` exigem, além desta cadeia, a reversão de **D-010f**.
 
 ```text
 F = dano final exibido no Server Log
@@ -333,6 +333,16 @@ Expose Weakness adiciona `0,08` de pierce a todos os elementos e ao físico ante
 - **D-010d — Originais pós-crítico e dano base normalizado:** o classificador deve distinguir dois níveis de comparação. Para segmentar blocos com o mesmo crit-state, comparar o original reconstruído compatível com o estado observado do hit. Para comparar hits de crit-state diferente, remover crit, Low Blow, Onslaught, fatal, prey e demais multiplicadores conhecidos antes da interseção. A normalização não pode apagar a diferença de estado: hits críticos, Low Blow e Onslaught permanecem marcados separadamente conforme D-007, D-008, D-009 e U-011 a U-013.
 
 - **D-010e — Proibição de média física para hit individual:** funções de dano físico médio esperado, úteis para DPT, não são evidência válida para reverter um hit individual. Em hit observado, o eixo físico deve ser representado por intervalo gerado por `armorRoll ∈ [armorLow, armorHigh]`, nunca por média de armor.
+
+- **D-010f — Reversão de Perfect Shot (vale nos DOIS eixos):** `perfect shot`, quando aparece no sufixo de uma linha de dano do Server Log, é um fato observado daquele hit e adiciona um bônus **aditivo em dano** (não multiplicador) de `PERFECT_SHOT_PREMIT_BONUS`. Na cadeia discreta, o bônus é somado **depois do multiplicador de crítico e antes da mitigation** — entre `A` e `B` na notação de D-010b, e na posição equivalente de D-010a. Ao reconstruir o original de um hit marcado, o classificador deve subtraí-lo exatamente nessa posição, **tanto no eixo físico (D-010b) quanto no eixo elemental (D-010a)**.
+
+  O bônus **não** é multiplicativo e **não** entra em D-009a: D-009a trata de bônus que alteram o multiplicador de crítico (Onslaught soma `+0,6` ao multiplicador, mesmo modelo de Transcendence). Implementar Perfect Shot como multiplicador é erro.
+
+  Subtrair o bônus na posição errada da cadeia não é equivalente: aplicá-lo depois da inversão do modificador elemental produziria `O = (F/…)/m − bônus/m` em vez de `O = ((F/…) − bônus)/m`, e como `m` varia por mob a diferença é da ordem de 2 a 3 pontos de original — a mesma ordem de grandeza da tolerância que separa bloco de fronteira (S-004a/S-005).
+
+  Toda memoização de reversão deve distinguir hits com e sem o bônus. Dois hits de mesmo dano exibido, mesmo mob e mesmo estado de modificadores — um marcado e outro não — têm originais **diferentes** e não podem compartilhar entrada de cache.
+
+  Caso-prova: `thunder arrow` (sessão `21/Jul/2026`, munição de área elemental) turno `18:57:18` — o hit `oozing corpus 615 (perfect shot, increased damage by Expose Weakness)` reverte no eixo de energy para `O=503` sem a reversão, contra `O ∈ [485,488]` de dois `oozing corpus 595 (increased damage by Expose Weakness)` do **mesmo mob e mesmo estado**. Por S-004a isso é fronteira obrigatória e mata a partição. Com a reversão, o hit marcado vai para `O=487`, dentro de `[485,488]`, e a violação same-mob desaparece. Medido sobre os 24 turnos de AA-puro do fixture: os blocos que fecham no eixo de energy sobem de **10 para 14**. Enquanto todo AA de RP foi físico a omissão foi invisível, porque Perfect Shot só marca hits de AA e o AA nunca passava pelo eixo elemental (S-007).
 - **D-011 — Overkill:** não participa de interseções, médias, magnitude ou comparação de leech. A proibição de leech aqui se refere à *razão* leech/dano; o leech **absoluto** permanece válido em overkill conforme D-019.
 - **D-012 — Herança de overkill:** recebe o componente do bloco contíguo definido pelos outros hits; nunca cria fronteira.
   - **D-012a — Turno 100% overkill não admite fronteira sem evidência independente:** quando
@@ -525,7 +535,23 @@ overkillMinimo = Dreal_min - danoMostrado
 - **S-004a — Exatidão same-mob/same-estado:** dentro de um bloco determinístico elemental, hits não-overkill do **mesmo mob** com o **mesmo estado de modificadores** (mesma presença de Expose Weakness, prey, elemental amplification e mesmos flags de crit/Low Blow/Onslaught) são comparações **exatas**: mesmo componente ⇒ mesmo dano final (D-010a é função determinística de `(O, m, M, P)`). Qualquer tolerância de interseção usada pela implementação para absorver resíduo de arredondamento discreto (ex.: quantização da mitigation) aplica-se **somente** entre mobs distintos ou entre estados distintos do mesmo mob; dentro do mesmo `(mob, estado)`, conjuntos de originais disjuntos são fronteira obrigatória (S-005) e invalidam o bloco — inclusive contra o fallback de cluster. Caso-prova: `mazzerinbarrage 23:46:36`, darklight matter+EW `F=986 ⇒ O={982}` vs `F=987 ⇒ O={983}` sob `P=1` — o 987 não pode pertencer à mesma Divine Caldera dos dois 986.
 - **S-005 — Fronteira obrigatória:** originais comparáveis e incompatíveis obrigam uma fronteira.
 - **S-006 — Blocos unitários:** componentes com somente um hit são válidos.
-- **S-007 — Físico:** AA e Ethereal Barrage exigem coerência entre intervalos físicos.
+- **S-007 — Físico:** AA e Ethereal Barrage exigem coerência entre intervalos físicos. O eixo do AA é físico **por padrão**, e só deixa de ser quando a própria sessão prova o contrário — ver **S-007b**. Ethereal Barrage é **sempre** física: é spell, tem elemento no perfil da ação, e não é munição.
+
+- **S-007b — Eixo do bloco de AA é inferido por sessão (munição de área elemental):** o update do jogo que coincide com o regime pós-cutoff (D-016) introduziu munição de **área elemental** para Royal Paladin — flechas mais fracas que as físicas, usadas apenas onde o dano físico é muito resistido. Logo o bloco `arrow` não pode ter o eixo cravado como físico. A munição é escolha de equipamento: muda **entre** sessões, nunca dentro de uma, então a inferência é **por sessão**, no mesmo estilo do perk BM (C-012) e do setup de leech.
+
+  **Eixos candidatos:** `physical`, `energy`, `ice`, `fire`, `earth`. `holy` é excluído por ser **circular** — é o eixo da própria spell usada como referência. `death` é excluído por não existir munição de área desse elemento.
+
+  **Turnos elegíveis:** somente aqueles em que uma spell **holy de área** do dono do log (`exevo mas san` / `exori dir san`) separa a spell do AA. São excluídos: turnos com Ethereal Barrage (`exori dir moe`), porque é spell **física** e não separa do AA físico, enviesando a contagem a favor do eixo físico; e turnos com cast de granada (`exevo tempo mas san`) ou dentro da janela de explosão dela, porque o instante da explosão é incerto (M-023) e a granada é holy, indistinguível da spell de referência. A coleta de casts deve incluir os de granada — eles têm tipo próprio (`grenade`, não `attack`), e filtrar por `attack` torna essa exclusão **inerte**.
+
+  **Critério:** para cada eixo candidato, contar em quantos turnos elegíveis existe **algum** corte contíguo prefixo→sufixo tal que o sufixo feche como holy e o prefixo feche como o eixo testado. Vence o eixo com maior contagem.
+
+  **Desempate e ausência de evidência resolvem em físico, por regra.** Empate significa que os eixos são indistinguíveis naquela sessão, e portanto a escolha não altera a classificação; preferir o físico mantém a decisão neutra em sessão legada. Contagem zero em todos os eixos ⇒ físico. Esse resultado **não pode** depender da ordem de iteração dos candidatos.
+
+  **Medição de aceitação (22/Jul/2026):** 51 sessões de RP — 36 elegem `physical` com evidência, **14 por ausência total de evidência** (27%, o que torna o padrão peça central e não caso de canto), e apenas `thunder arrow S0` (`21/Jul/2026`) elege `energy`, por 64 turnos contra 29 do físico. Nenhuma sessão antiga produziu eixo não-físico vencedor nem empatado.
+
+  A inferência consome apenas turnos/hits do parser, casts do local chat, tabela de mods, `critSetup` e `pierce` — **não** usa partição resolvida (os cortes são buscados por força bruta), então não há circularidade com a resolução de turno.
+
+  **Limitação conhecida:** o canal físico de C-012 (inferência de BM) é definido sobre hits de um componente `arrow` de RP, ou seja, assume AA físico. Numa sessão de munição elemental esse canal mede um eixo que não existe. Em `thunder arrow` o acoplamento é inerte porque o BM foi decidido pelo detector de charm (M-036, `confirmed_by_charm_damage`). Uma sessão de munição elemental **sem** evidência de charm exigiria tratar a ordem BM ⟷ eixo do AA explicitamente.
 - **S-007a — Tolerância cross-hit na interseção física:** a interseção física
   de um bloco candidato (`validatePhysicalBlock`) tenta primeiro a interseção
   **exata** (tolerância 0, S-007) e só recorre a uma tolerância cross-hit

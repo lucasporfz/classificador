@@ -744,12 +744,22 @@
     const post = postMultiplier(hit, context);
     const terraBurstBonusMultiplier = options && options.terraBurstBonusMultiplier > 1 ? +options.terraBurstBonusMultiplier : 1;
     const crit = criticalMultiplierForHit(hit, context);
+    // D-010f: Perfect Shot e bonus ADITIVO em dano, somado depois do critico e antes
+    // da mitigation -- a mesma posicao usada por physicalOriginalInterval. Enquanto
+    // todo AA de RP foi fisico isto nunca importou aqui (perfect shot so marca AA, e
+    // o AA nunca passava pelo eixo elemental, S-007); com municao de area elemental,
+    // omitir o termo desloca o hit marcado ~3% e cria fronteira falsa (S-004a).
+    const perfectShotBonus = hit && hit.perfectShot ? PERFECT_SHOT_PREMIT_BONUS : 0;
     // MemoizaÃ§Ã£o (sÃ³-desempenho): a reversÃ£o de um hit depende apenas destes
     // escalares resolvidos â€” mod/mit/post/crit jÃ¡ dobram gravSan/crit/pierce/BM/mob â€”
     // e NÃƒO da partiÃ§Ã£o candidata. O mesmo hit Ã© revertido em centenas de partiÃ§Ãµes;
     // o valor Ã© lido apenas (read-only), entÃ£o Ã© seguro compartilhar por referÃªncia.
+    // D-010f: perfectShotBonus ENTRA na chave. Sem ele, dois hits de mesmo dano no
+    // mesmo mob e mesmo estado -- um marcado, outro nao -- colidiriam e o segundo
+    // receberia o original do primeiro (ex.: thunder arrow 18:57:18 tem dois
+    // "oozing corpus 595" e dois "mycobiontic beetle 552").
     const revCache = context && (context._revCache || (context._revCache = new Map()));
-    const cacheKey = revCache && ('E|' + element + '|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + terraBurstBonusMultiplier);
+    const cacheKey = revCache && ('E|' + element + '|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + terraBurstBonusMultiplier + '|' + perfectShotBonus);
     if (revCache && revCache.has(cacheKey)) return revCache.get(cacheKey);
     const postIntervals = inversePostMultiplierIntervals(+hit.dmg, post);
     if (!postIntervals.length) { const r = { known: true, originals: [], reason: 'invalid_post_multiplier' }; if (revCache) revCache.set(cacheKey, r); return r; }
@@ -762,7 +772,15 @@
           for (let aa = Math.max(1, a - t); aa <= a + t; aa++) {
             const eIv = invFloor(aa, mit);
             if (!eIv) continue;
-            for (let c = eIv[0]; c <= eIv[1]; c++) {
+            for (let c0 = eIv[0]; c0 <= eIv[1]; c0++) {
+              // D-010f: subtrai o bonus de Perfect Shot aqui -- logo apos desfazer a
+              // mitigation e antes de desfazer o critico -- exatamente onde
+              // physicalOriginalInterval faz (`prePerfect = c - perfectShotBonus`).
+              // Terra Burst tambem e pre-mitigation, mas a ordem relativa entre os dois
+              // e inerte: Terra Burst so existe em `exevo ulus tera` (druid) e Perfect
+              // Shot so marca AA de distancia; nenhum hit carrega os dois.
+              const c = c0 - perfectShotBonus;
+              if (c < 1) continue;
               const terraIntervals = inverseTerraBurstBonusIntervals(c, terraBurstBonusMultiplier);
               for (const terraIv of terraIntervals) {
                 for (let tb = terraIv[0]; tb <= terraIv[1]; tb++) {

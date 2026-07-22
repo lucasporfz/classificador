@@ -156,6 +156,7 @@
     inferLeechSetupJointBaseAndCharm,
     inferLeechSetupFromGoldObservations,
     inferLeechSetupFallback,
+    inferAaElementForSession,
     collectTrustedLeechObservationsFromRuneUses,
     isTrustedLeechVoteCredible,
     buildEmpiricalLeechBaseCandidates,
@@ -977,6 +978,7 @@
     let resolvedTurns;
     let resolvedWithoutLeech = null;
     let goldLeechObservations = [];
+    let aaElementDetection = null;
     // M-024/M-025: a consolidaÃ§Ã£o de granada cross-turno Ã© por-passe e dependente de
     // ordem temporal; o conjunto de casts jÃ¡ explodidos Ã© reiniciado a cada varredura.
     // CrÃ­tico por-componente (two-pass): a passada pass-1 (bootstrap crit grosso) rotula os
@@ -1008,6 +1010,12 @@
       goldLeechObservations = collectGoldLeechObservations(resolvedWithoutLeech, context);
       const charmCandidates = detectCharmCandidateMobsFromColocatedTurns(resolvedWithoutLeech, context);
       context.leechSetup = inferLeechSetupFromGoldObservations(goldLeechObservations, context, charmCandidates);
+      // S-007: eixo do bloco de AA por sessao. Roda DEPOIS do crit por-componente e do
+      // leech (usa `crit`/`pierce` na reversao) e ANTES da passada final, que e quem
+      // consome `context.aaElement`. Nao usa particao resolvida -- os cortes sao
+      // buscados por forca bruta -- entao nao ha circularidade com resolveTurn.
+      aaElementDetection = inferAaElementForSession(turns, local, context);
+      context.aaElement = aaElementDetection.element;
       // M-016e: sÃ³ depois do leech real (nÃ£o o bootstrap) Ã© que o cluster
       // vida/mana-por-dano Ã© confiÃ¡vel para corrigir um estÃ¡gio atrasado que a
       // 1Âª passada (sem leech) nÃ£o conseguiu provar por reversÃ£o elemental.
@@ -1021,6 +1029,8 @@
       context.consolidatedGrenadeCasts = new Set();
       const pass1 = turns.map(t => resolveTurn(t, facts, context));
       refineCritByComponent(pass1);
+      aaElementDetection = inferAaElementForSession(turns, local, context);
+      context.aaElement = aaElementDetection.element;
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
       context.consolidatedGrenadeCasts = new Set();
@@ -1044,6 +1054,8 @@
       goldLeechObservationCount: goldLeechObservations.length,
       goldLeechObservationsSample: goldLeechObservations.slice(0, 20),
       gravSanSetup: context.gravSanSetup,
+      aaElement: context.aaElement || 'physical',
+      aaElementDetection: aaElementDetection || { element: 'physical', source: 'not_run', counts: null, eligible: 0 },
       bestiaryClassDamageBonus: context.bestiaryClassBonus,
       critSetup: context.critSetup,
       spellLeechBonusCandidates: SPELL_LEECH_BONUS_CANDIDATES,

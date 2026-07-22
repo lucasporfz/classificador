@@ -1141,7 +1141,14 @@
     const results = [];
     for (const mode of modes) {
       const result = withGravSanBlockMode(context, block, mode, () => {
-        const det = block.comp === 'arrow' ? validatePhysicalBlock(block, context) : validateElementalBlock(block, element, context);
+        // S-007: o eixo do bloco de AA e fisico POR PADRAO, mas municao de area
+        // elemental (regime pos-cutoff) existe. `context.aaElement` e inferido por
+        // sessao (inferAaElementForSession) e vale 'physical' em toda sessao sem prova
+        // do contrario -- inclusive quando nao ha evidencia nenhuma.
+        const aaElement = (context && context.aaElement) || 'physical';
+        const det = block.comp === 'arrow'
+          ? (aaElement === 'physical' ? validatePhysicalBlock(block, context) : validateElementalBlock(block, aaElement, context))
+          : validateElementalBlock(block, element, context);
         const leech = validateLeechBlock(block, context, turn);
         return { deterministic: det, leech, gravSanActive: mode, gravSanTested: mode != null };
       });
