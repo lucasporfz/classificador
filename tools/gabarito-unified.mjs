@@ -292,6 +292,25 @@ const CASES = [
     t => (t.partialEdge === true && t.partialEdgeMissingEvidence === true && t.reason === 'partial_edge_missing_evidence')
       ? null
       : `esperado partial_edge_missing_evidence; status=${t.status} reason=${t.reason} partialEdge=${t.partialEdge} partialEdgeMissingEvidence=${t.partialEdgeMissingEvidence}`),
+  // mazzerinbarrage 09/Jun/2026 23:21:27: mesmo fenomeno de borda do uhax3 acima, mas em
+  // Royal Paladin -- a unica vocacao com AA de area (M-031), onde arrow[n] nunca viola
+  // multiple_arrow_hits_not_allowed e a hipotese remanescente cai por
+  // physical_intersection_empty. O gate de A-009 deixou de exigir vocacao/razao especifica
+  // (extend-partial-edge-missing-evidence-to-area-aa).
+  // Este caso tambem tranca a ordenacao cronologica
+  // (order-hits-chronologically-across-midnight): a sessao vai de 23:21:27 a 00:00:50, e
+  // ordenar por segundos-do-dia colocava os turnos pos-meia-noite primeiro, fazendo
+  // turns[0].partialEdge cair em 00:00:00 -- o ultimo turno cronologico. Se a ordenacao
+  // regredir, este caso falha antes do gate de borda.
+  // Confirmacao independente de que a borda levou hits: o leech dos 6 hits visiveis fecha
+  // EXATO em N_leech=9 nos dois canais e nos quatro mobs (darklight source 1042 -> 106/34,
+  // walking pillar 1047 -> 107/35, darklight matter 1131 -> 115/41 com Void's Call,
+  // darklight striker 1133 -> 123/37 com Vampiric Embrace); N=10 e contradito.
+  C('mazzerinbarrage/23:21:27', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '23:21:27',
+    t => (t.partialEdge === true && t.partialEdgeMissingEvidence === true && t.reason === 'partial_edge_missing_evidence')
+      ? null
+      : `esperado partial_edge_missing_evidence; status=${t.status} reason=${t.reason} partialEdge=${t.partialEdge} partialEdgeMissingEvidence=${t.partialEdgeMissingEvidence}`,
+    '09/Jun/2026'),
   // uhax 3 30/Jun/2026 20:51:47 (M-016c): server log tem `Using one of 3558
   // great fireball runes...` no mesmo segundo dos 8 hits (darklight matter,
   // darklight source x2, bloodjaw x2, walking pillar x3), todos revertendo
@@ -663,31 +682,33 @@ const CASES = [
   // Hazard conta como hit principal observado de dano 0 no componente do beam.
   C('kim/16:12:30', 'kim server log.txt', 'kim local chat.txt', '16:12:30',
     t => { const c = counts(t); return (c.arrow === 0 && c.spell === 4 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // kim 16:13:26: dois hits de Great Energy Beam no mesmo mob/estado; leech N=1
-  // Great Energy Beam (M-035, sub-linhas central/side) tem um mesmo mob podendo ser
-  // atingido pelos dois segmentos do feixe em niveis distintos legitimos, mas essa
-  // deteccao NUNCA foi implementada no motor Unified (so existe como campo de
-  // passagem em js/unified-main.js). Antes de fix-mage-druid-aa-evidence-gold-leech,
-  // o atalho sem validacao elemental (bug corrigido nessa mudanca) mascarava a
-  // quebra de exatidao same-mob; com a validacao real, o motor honestamente nao
-  // consegue confirmar homogeneidade sem o validador de tier de M-035 (que nao
-  // existe). unresolved e o resultado correto ate M-035 ser implementado.
+  // kim 16:13:26: dois hits de Great Energy Beam no MESMO mob e mesmo estado
+  // (stalking stalk 1650 e 1155; razao 0,70 = o F central/side de M-035).
+  // EXPECTATIVA ATUALIZADA em 21/Jul/2026: antes esperava `unresolved`, com a
+  // justificativa de que sem o detector de tier de M-035 o motor nao conseguiria
+  // confirmar homogeneidade. Essa premissa foi superada: `docs/CLASSIFICATION_RULES.md`
+  // passou a declarar a familia de isencao do veto same-mob por MECANICA DECLARADA
+  // (M-016e-gate, que cita nominalmente M-035 para beams e M-037 para o decay de
+  // Chained Penance). E a declaracao da mecanica, nao o detector de tier, que legitima
+  // dois niveis do mesmo mob no mesmo bloco. O detector de M-035 continua NAO
+  // implementado (beamSide so existe como campo de passagem em js/unified-main.js), e
+  // isso segue sendo limitacao de METRICA (sub-linhas central/side), nao de
+  // classificacao.
   C('kim/16:13:26', 'kim server log.txt', 'kim local chat.txt', '16:13:26',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 2 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S2 (Great Energy Beam); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // kim 16:17:14: AA baixo real de sorcerer antes de Sudden Death single-target.
   C('kim/16:17:14', 'kim server log.txt', 'kim local chat.txt', '16:17:14',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 0 && c.rune === 1 && c.grenade === 0) ? null : `esperado A1 R1; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // kim 16:22:02: Death Echo com delay +2 porque :03 não tem hit ofensivo; os hits
-  // Great Energy Beam (M-035, sub-linhas central/side) tem um mesmo mob podendo ser
-  // atingido pelos dois segmentos do feixe em niveis distintos legitimos, mas essa
-  // deteccao NUNCA foi implementada no motor Unified (so existe como campo de
-  // passagem em js/unified-main.js). Antes de fix-mage-druid-aa-evidence-gold-leech,
-  // o atalho sem validacao elemental (bug corrigido nessa mudanca) mascarava a
-  // quebra de exatidao same-mob; com a validacao real, o motor honestamente nao
-  // consegue confirmar homogeneidade sem o validador de tier de M-035 (que nao
-  // existe). unresolved e o resultado correto ate M-035 ser implementado.
+  // kim 16:22:02: Death Echo (exevo mort ora) com delay +2 porque :03 nao tem hit
+  // ofensivo. NAO e turno de beam — o comentario anterior aqui era copia colada do
+  // bloco de M-035 e descrevia a mecanica errada.
+  // EXPECTATIVA ATUALIZADA em 21/Jul/2026: antes esperava `unresolved`. Blast e eco do
+  // MESMO mob em dois niveis (integral e 1/2) so colidiam no veto same-mob enquanto o
+  // estagio atrasado nao era marcado; `fix-death-echo-delayed-stage-absent-evidence`
+  // (M-016d-1a/1b) passou a confirmar o estagio quando ha ao menos um par casado e
+  // nenhuma contradicao, e a marcacao de estagio estratifica a comparacao.
   C('kim/16:22:02', 'kim server log.txt', 'kim local chat.txt', '16:22:02',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 9 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S9 (Death Echo); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   CN('kim/16:22:04-no-turn', 'kim server log.txt', 'kim local chat.txt', '16:22:04'),
   // kim 16:22:05: depois de consumir o echo de :04, o beam real do cast :05 fica
   // Great Energy Beam (M-035, sub-linhas central/side) tem um mesmo mob podendo ser
@@ -698,8 +719,12 @@ const CASES = [
   // quebra de exatidao same-mob; com a validacao real, o motor honestamente nao
   // consegue confirmar homogeneidade sem o validador de tier de M-035 (que nao
   // existe). unresolved e o resultado correto ate M-035 ser implementado.
+  // EXPECTATIVA ATUALIZADA em 21/Jul/2026 (mesma razao de kim/16:13:26): o mesmo mob em
+  // dois niveis (stalking stalk 2059 e 1599) e a mecanica de beam declarada em M-035, e
+  // a familia de isencao do veto same-mob por mecanica declarada (M-016e-gate) e o que
+  // legitima o bloco unico. O detector de tier continua nao implementado.
   C('kim/16:22:05', 'kim server log.txt', 'kim local chat.txt', '16:22:05',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 7 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S7 (Great Energy Beam); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // kim 16:22:09: Death Echo de área sem evidência positiva de AA; o hit 993 não é
   // Great Energy Beam (M-035, sub-linhas central/side) tem um mesmo mob podendo ser
   // atingido pelos dois segmentos do feixe em niveis distintos legitimos, mas essa
@@ -709,8 +734,12 @@ const CASES = [
   // quebra de exatidao same-mob; com a validacao real, o motor honestamente nao
   // consegue confirmar homogeneidade sem o validador de tier de M-035 (que nao
   // existe). unresolved e o resultado correto ate M-035 ser implementado.
+  // EXPECTATIVA ATUALIZADA em 21/Jul/2026 (mesma razao de kim/16:22:02): e Death Echo,
+  // nao beam — o comentario acima era copia colada do bloco de M-035. Blast + eco
+  // consolidados no mesmo componente depois de
+  // `fix-death-echo-delayed-stage-absent-evidence` (M-016d-1a/1b).
   C('kim/16:22:09', 'kim server log.txt', 'kim local chat.txt', '16:22:09',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 17 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S17 (Death Echo); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // kim 16:23:25: Energy Wave com dois hits observados identicos em sulphider
   // (1307 + 58 mana) no mesmo estado; a duplicata bloqueia AA posicional fantasma.
   C('kim/16:23:25', 'kim server log.txt', 'kim local chat.txt', '16:23:25',
@@ -737,8 +766,14 @@ const CASES = [
   // caso geral (kim 16:20:51) mas essa sessao especifica (blast+eco maior, 16 hits)
   // ainda cai no veto duro. unresolved e o resultado correto ate a checagem de
   // exatidao same-mob ganhar a mesma consciencia de tier que ja tem para Terra Burst.
+  // EXPECTATIVA ATUALIZADA em 21/Jul/2026: a condicao que o comentario acima aponta como
+  // bloqueio ("ate a checagem de exatidao same-mob ganhar consciencia de tier") foi
+  // removida por `fix-death-echo-delayed-stage-absent-evidence` — com o estagio atrasado
+  // marcado, blast e eco deixam de colidir no veto same-mob. Este mesmo turno ja e
+  // afirmado como `spell:16` em tools/unified-experimental.mjs (que roda no runner
+  // obrigatorio); as duas expectativas eram contraditorias.
   C('kim/16:30:54', 'kim server log.txt', 'kim local chat.txt', '16:30:54',
-    t => (t.status === 'unresolved') ? null : `esperado unresolved; got status=${t.status} reason=${t.reason}`),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 16 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S16 (Death Echo); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // RPBOSS 17/Jun/2026 (detect-boss-by-articleless-mob): Royal Paladin contra Murcion (boss,
   // sem artigo) com adds. bossNameSet antigo ("sessão tem 1 mob") não detectava boss em sessão
   // multi-boss/com adds, então a leech-cardinalidade fundia 2 hits de casts distintos num

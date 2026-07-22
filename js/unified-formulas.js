@@ -139,8 +139,8 @@
     'exori gran mas pug': { label: 'Greater Flurry of Blows', type: 'attack', element: 'physical', topology: 'area', vocation: 'monk' },
     'exori amp pug': { label: 'Mystic Repulse', type: 'attack', element: 'physical', topology: 'single', vocation: 'monk' },
     'exori infir amp pug': { label: 'Lesser Mystic Repulse', type: 'attack', element: 'physical', topology: 'single', vocation: 'monk' },
-    // Sem nome oficial confirmado (ausente da tabela legada js/classifier.js
-    // tambÃ©m) â€” `label` deliberadamente omitido para nÃ£o inventar um nome de
+    // Sem nome oficial confirmado â€” `label` deliberadamente omitido para
+    // nÃ£o inventar um nome de
     // spell; a exibiÃ§Ã£o cai no fallback de texto (idÃªntico ao comportamento
     // antes deste registro). element/topology/vocation sÃ£o confirmados pelo
     // dano observado em logs/serverlog6..9.txt: sempre fÃ­sico, sempre atingindo

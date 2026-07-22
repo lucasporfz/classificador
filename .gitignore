@@ -16,9 +16,6 @@ js/unified-main-v29.diff
 js/IMPLEMENTACAO_UNIFIED_COMPARISON*.md
 js/IMPLEMENTACAO_UNIFIED_MAIN*.md
 js/TESTE_*.md
-js/experimental-classification-core.js
-js/experimental-ui.js
-js/unified-comparison-adapter.js
 docs/CLASSIFICATION_RULES_CORRECTED.md
 docs/CLASSIFICATION_RULES_UPDATED.md
 docs/CLASSIFICATION_RULES_revisado.md

@@ -21,24 +21,36 @@ npx serve .
 
 ## Como funciona (resumo)
 
-- **`js/classifier-parser.js`** (`parseLogForClassifier`) — parse próprio do classificador:
-  sem guard de tamanho mínimo (lê boss de 1 kill), artigo `A/An/The` opcional.
-- **`js/classifier.js`** — tabela `CLS_SPELLS` (toda spell de todas as vocações), detecção
-  do jogador, join server↔local chat por timestamp e a montagem da rotação. Split mecânico
-  por ordem: **AA single-target primeiro, depois AoE (spell/runa)**; em pack RP usa o
-  classificador por bandas de dano holy.
-- **`js/parser-rp-helpers.js`** — classificação RP compartilhada (arrow/spell/runa/granada
-  por assinatura de dano holy). Mesma lógica validada do app original.
+O projeto tem **um único motor de classificação**, o Unified, carregado por `index.html` na
+ordem abaixo:
+
+- **`js/unified-parsing.js`** — fatos observados: hits, casts, `Using` de runa, leech, charms
+  e modificadores; formação dos turnos de 2 segundos.
+- **`js/unified-formulas.js`** — reversão discreta de dano (elemental e físico), `effectiveMod`
+  por pierce/Expose Weakness, fórmulas de leech.
+- **`js/unified-setup-inference.js`** — inferência por sessão: taxa de leech, minor charms,
+  BM/Battle Momentum, `utevo grav san`, multiplicador de crítico.
+- **`js/unified-validation.js`** — validação de partição candidata: interseções, crit-state,
+  cardinalidade por leech, homogeneidade.
+- **`js/unified-turn-resolution.js`** — enumeração de cortes, escolha da partição e nomeação.
+- **`js/unified-classification-engine.js`** / **`js/unified-main.js`** — orquestração e a API
+  consumida pela UI.
 
 ## Teste / oráculo
 
 ```
-node tools/rp-classify-proto.mjs "logs/<server>.txt" "logs/<localchat>.txt"
+node tools/diag-unified-turn.mjs "logs/<server>.txt" "logs/<localchat>.txt" HH:MM:SS
 ```
 
-Imprime a tabela de rotação + detecção das incantações. Filtros opcionais
-`--spell "<incantação|label>"` e `--hits N` imprimem, hit a hit, os turnos alinhados que
-casam. **1 par de logs por processo.**
+Diagnóstico canônico de turno: roda o Unified com as **mesmas opções da UI** e mostra status,
+hits com evidência física/elemental e as violações de cada partição rejeitada. Use
+`--session N` para mirar uma sessão específica por índice.
+
+Validação obrigatória depois de qualquer mudança no classificador:
+
+```
+node tools/run-unified-checks.mjs
+```
 
 Fixtures em `logs/` cobrem: RP pack (`server log rp` + `localchat rp`), RP party
 (`darklight …`), RP boss single-target (`murcion …`), EK packs (`bastion …`,

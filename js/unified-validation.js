@@ -1196,6 +1196,40 @@
     };
   }
 
+  // D-011/D-012: um hit de overkill herda o componente do bloco contíguo definido pelos
+  // OUTROS hits e "nunca cria fronteira". Quando TODOS os hits principais elegíveis do turno
+  // são overkill, não existe "outro hit" — logo nenhuma fronteira pode ser apoiada só na
+  // posição deles. Uma partição de 2+ componentes só continua admissível se a fronteira
+  // tiver evidência independente do overkill: mudança de segundo (M-005/M-012), mudança de
+  // crit-state (D-007/S-008), linha `Using` de runa (M-017) ou janela de granada (M-023).
+  //
+  // Caso-prova: barrage 19:04:08 — 4 hits, todos CRIT e todos overkill, no MESMO segundo,
+  // com `exevo mas san` como único cast. O corte A3|S1 era criado exclusivamente entre hits
+  // de overkill; sem ele o turno fecha como componente único (`A0 S4`, Divine Caldera), que
+  // é o resultado normativo do gabarito.
+  function overkillOnlyBoundaryUnsupported(candidate, turn, actions) {
+    if (!candidate || !candidate.components || candidate.components.length < 2) return false;
+    const mainHits = (turn.hits || []).filter(isMainHit);
+    if (mainHits.length < 2) return false;
+    if (!mainHits.every(h => h.overkill)) return false; // sobra hit não-overkill: ele define o bloco
+
+    // Granada tem janela própria (M-023) e é evidência de fronteira por construção.
+    if (candidate.shape.indexOf('grenade') !== -1) return false;
+    // `Using` de runa é sinal primário (M-017) e sustenta a fronteira sozinho.
+    if (candidate.shape.indexOf('rune') !== -1 && actions && actions.runeUses && actions.runeUses.length) return false;
+
+    const critKey = h => (h.type === 'crit' ? 'c' : 'n') + (h.lowBlow ? 'L' : '') + (h.onslaught ? 'O' : '');
+    for (let i = 1; i < candidate.components.length; i++) {
+      const prev = candidate.components[i - 1].hits || [];
+      const cur = candidate.components[i].hits || [];
+      if (!prev.length || !cur.length) continue;
+      const last = prev[prev.length - 1], first = cur[0];
+      if (last.ts !== first.ts) return false;              // fronteira temporal: evidência real
+      if (critKey(last) !== critKey(first)) return false;  // fronteira de crit-state: evidência real
+    }
+    return true; // nenhuma fronteira tem apoio fora da posição dos overkills
+  }
+
   function validateCandidate(candidate, turn, actions, context) {
     const diagnostics = [];
     const violations = [];
@@ -1222,6 +1256,10 @@
     }
 
     if (candidate.shape.includes('spell') && candidate.shape.includes('rune')) violations.push({ rule: 'T-006/M-019', reason: 'spell_and_rune_same_turn' });
+
+    if (overkillOnlyBoundaryUnsupported(candidate, turn, actions)) {
+      violations.push({ rule: 'D-011/D-012', reason: 'overkill_only_boundary_without_independent_evidence' });
+    }
 
     // Cardinalidade dura.
     for (const block of candidate.components) {
@@ -1994,9 +2032,22 @@
       out.maxIntervalHigh = maxIntervalHigh;
       out.minIntervalLow = minIntervalLow;
       if (basis > 0 && maxIntervalHigh != null && basis > maxIntervalHigh) {
-        // V27: overkill pode exibir dano maior que a vida real restante do alvo.
-        // Nesse caso o leech observado fica abaixo do esperado pelo dano exibido:
-        // isso é capped_low/neutral, não contradição automática de cardinalidade.
+        // ATENÇÃO (medido em 22/Jul/2026, fix-overkill-only-turn-boundary): pela letra de
+        // D-019/D-025 este ramo DEVERIA ser contradição — em overkill o dano exibido é
+        // truncado e o leech incide sobre o dano real cheio, logo o exibido é PISO do real,
+        // e D-025 diz "hit inválido se danoMostrado > Dreal_max". O comentário original aqui
+        // ("V27: overkill pode exibir dano maior que a vida real restante") afirma o inverso
+        // e é refutado por observação: em `bastion 15:21:16` o hit `340 OK` tem `life 431`,
+        // leech MAIOR que o dano exibido.
+        //
+        // Mesmo assim o ramo permanece capped_low/neutro, DE PROPÓSITO: transformá-lo em
+        // contradição foi implementado e medido, e o motor não rejeita a partição — ele
+        // ESCAPA para um N maior inserindo hit virtual (S-014e), fabricando hits que não
+        // existem no log. Medição no escopo bastion/essence/bakradrone/barrage/
+        // mazzerinbarrage: 42 turnos ganharam hit virtual, contra 5 reclassificações reais,
+        // e o caso normativo `barrage 18:59:58` quebrou (A4 S5 -> A4 S6 virtual).
+        // A invalidação correta por D-012 está em `overkillOnlyBoundaryUnsupported`, restrita
+        // ao turno 100% overkill — ver docs/CLASSIFICATION_RULES.md e o design do change.
         out.cappedLow = true;
         out.neutral = true;
         out.reason = channel + '_overkill_below_expected_cap_aware';

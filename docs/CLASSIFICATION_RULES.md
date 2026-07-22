@@ -335,6 +335,30 @@ Expose Weakness adiciona `0,08` de pierce a todos os elementos e ao físico ante
 - **D-010e — Proibição de média física para hit individual:** funções de dano físico médio esperado, úteis para DPT, não são evidência válida para reverter um hit individual. Em hit observado, o eixo físico deve ser representado por intervalo gerado por `armorRoll ∈ [armorLow, armorHigh]`, nunca por média de armor.
 - **D-011 — Overkill:** não participa de interseções, médias, magnitude ou comparação de leech. A proibição de leech aqui se refere à *razão* leech/dano; o leech **absoluto** permanece válido em overkill conforme D-019.
 - **D-012 — Herança de overkill:** recebe o componente do bloco contíguo definido pelos outros hits; nunca cria fronteira.
+  - **D-012a — Turno 100% overkill não admite fronteira sem evidência independente:** quando
+    **todos** os hits principais elegíveis de um turno são overkill, não existe "outro hit"
+    para definir bloco algum, e a cláusula "nunca cria fronteira" de D-012 passa a valer para
+    a partição inteira. Nesse cenário, uma partição com dois ou mais componentes só é
+    admissível se a fronteira tiver apoio **independente do overkill**: mudança de segundo
+    (M-005/M-012), mudança de crit-state (D-007/S-008), linha `Using` de runa (M-017) ou
+    janela de explosão de granada (M-023). Sem nenhum desses, apenas hipóteses de componente
+    único permanecem candidatas. Caso-prova: `barrage 19:04:08` — 4 hits, todos críticos e
+    todos overkill, no mesmo segundo, com `exevo mas san` como único cast: o corte `A3|S1`
+    era criado exclusivamente entre overkills, e o resultado correto é `A0 S4`.
+  - **D-012b — Nota de implementação: por que a invalidação NÃO vai no teste de leech.** A
+    leitura literal de D-019/D-025 sugere invalidar a hipótese de `N` sempre que
+    `danoMostrado > Dreal_max` num hit de overkill — e ela é logicamente correta (o dano
+    exibido é piso do real; o comentário "V27" em `js/unified-validation.js`, que afirma o
+    contrário, é refutado por `bastion 15:21:16`, onde o hit `340 OK` tem `life 431`, leech
+    **maior** que o dano exibido). Essa versão foi **implementada e medida em 22/Jul/2026, e
+    revogada**: transformar aquele ramo em contradição não faz o motor rejeitar a partição —
+    faz ele **escapar** para um `N` maior inserindo hit virtual (S-014e), fabricando hits que
+    não existem no log. Medição no escopo `bastion`/`essence`/`bakradrone`/`barrage`/
+    `mazzerinbarrage`: **42 turnos ganharam hit virtual** contra 5 reclassificações reais, e o
+    caso normativo `barrage 18:59:58` quebrou (`A4 S5` → `A4 S6` virtual). Nem o gabarito nem
+    a varredura de invariantes detectaram 41 das 42 fabricações. A invalidação correta é a de
+    D-012a, no ponto onde a fronteira é decidida (validação de partição), não onde a
+    contradição é medida.
 - **D-013 — Leech:** usar `(lifeLeech + manaLeech) / dano` somente em hits não-overkill. Esta restrição vale para a *razão*; o leech **absoluto** (`lifeLeech + manaLeech`, sem dividir pelo dano) é tratado por D-019.
 - **D-014 — Leech secundário:** confirma ou desempata; não substitui dano, ordem ou cooldown.
 - **D-015 — Associação:** leech só pode ser ligado ao último hit ofensivo elegível do mesmo timestamp.
@@ -455,6 +479,26 @@ overkillMinimo = Dreal_min - danoMostrado
 ## 4. Formação dos turnos
 
 - **T-001 — Ordem:** ordenar hits por timestamp e `seq`.
+  - **T-001a — O timestamp observado é segundos do dia; a ordem cronológica é a ordem do
+    log.** O `HH:MM:SS` do Server Log volta a zero quando a sessão atravessa a meia-noite,
+    então ele **não** pode ser usado sozinho como chave de ordenação: os hits posteriores à
+    virada seriam ordenados antes dos anteriores a ela, e a diferença temporal usada para
+    formar turnos (T-002) ficaria negativa na emenda — o que funde no mesmo turno hits
+    separados por quase 24 horas. A ordem cronológica real é a ordem das linhas do log, e o
+    classificador deve derivar dela uma chave absoluta (`ts + 86400 × dias`), usada **apenas**
+    para ordenar e para a aritmética de fronteira de turno. O `ts` exposto em turnos, hits,
+    `clock`, ferramentas e UI permanece em segundos do dia. Consequência direta: `turns[0]` —
+    o turno marcado como parcial por T-007 — é o primeiro turno **do log**, não o de menor
+    `ts`. Caso-prova: `mazzerinbarrage` sessão salva `09/Jun/2026 00:00:54`, que vai de
+    `23:21:27` a `00:00:50`; a marca de borda pertence a `23:21:27` (`seq 1`), não a
+    `00:00:00`. Medido no corpus: 3 de 367 sessões cruzam a meia-noite.
+    - **Limitação conhecida e aceita:** as janelas de ação (`actionsNearTurn`, janela de
+      explosão de granada `[cast+2, cast+4]`, M-023) comparam o timestamp do cast do Local
+      Chat com o do hit do Server Log, ambos em segundos do dia, e **não** são normalizadas
+      por esta regra. Nos poucos segundos em volta da virada, essas janelas permanecem
+      incorretas. Nenhum turno do corpus atual depende disso; corrigir exigiria propagar a
+      normalização também para o Local Chat, e fica registrado aqui em vez de decidido em
+      silêncio.
 - **T-002 — Janela mecânica:** formar turnos independentes em blocos de 2 segundos. Um efeito atrasado comprovado de estágio declarado (M-016d/M-016e — Death Echo e Spiritual Outburst) permanece anexado à ação originária e não ancora nem desloca o próximo turno independente, mesmo quando o segundo do estágio atrasado também contém hits de um cast concreto diferente e legítimo (M-016e); todos os seus hits continuam preservados e auditáveis no componente originário.
 - **T-003 — Preservar linhas:** nenhum hit ofensivo observado pode desaparecer.
 - **T-004 — Um componente por hit:** cada hit pertence a exatamente um componente.
@@ -663,6 +707,35 @@ Caso-prova obrigatório — mazzerinbarrage 22:09:57 (sessão salva 28/Jun/2026)
   Sem contradição entre canais => cuts=[3,5] vence (AA=3, Barrage=2)
 ```
 
+- **S-020b — Só canal discriminante vota; canal sem poder de resolução se abstém:** a
+  exigência de unanimidade de S-020/S-020a vale entre os canais que são **evidência**, e um
+  canal só é evidência quando consegue separar os dois lados. O leech observado é
+  `CEIL(danoReal × taxa × areaFactor)` (D-023), então diferenças da ordem do arredondamento
+  não distinguem nada. Um canal só vota quando a **margem** entre as duas distâncias
+  comparadas — `| |leech − âncoraAntes| − |leech − âncoraDepois| |` em S-020, ou a mesma
+  quantidade contra os núcleos estáveis em S-020a — excede a tolerância de valor de leech já
+  usada pelo classificador para esse mesmo ruído. Canal cuja margem não supera essa tolerância
+  é **evidência ausente** (D-006), não contradição: ele se abstém e **não** bloqueia a decisão
+  dos demais. Empate exato de distância é o caso particular de margem zero, logo também é
+  abstenção. Se **nenhum** canal for discriminante, o turno permanece
+  `unresolved/ambiguous_equal_best_partitions` (S-013) — a regra nunca decide por ausência de
+  evidência. Esta cláusula não introduz limiar novo: reusa a tolerância de leech já normativa
+  do motor.
+
+```text
+Caso-prova obrigatório — gloompillar 08:36:51 (sessão 14/Jul/2026, Ethereal Barrage,
+16 hits):
+  Candidatos empatados: arrow>spell cuts=[8,16] vs cuts=[9,16]
+  Hit em disputa (darklight emitter, seq 5594): life=100, mana=27
+  Âncoras do mesmo mob: ANTES (seq 5576) life=80 mana=26
+                        DEPOIS (seq 5600) life=104 mana=29
+  Vida:  |100-80|=20 vs |100-104|=4   => margem |20-4| = 16  => DISCRIMINANTE, vota DEPOIS
+  Mana:  |27-26|=1   vs |27-29|=2     => margem |1-2|  = 1   => NÃO discriminante, abstém
+  Resultado: cuts=[8,16] vence (AA=8, Barrage=8).
+  Corroboração independente (S-018/D-029): o life-leech salta 85→100 exatamente no
+  índice 8 — a mesma fronteira. A mana do turno inteiro vive entre 26 e 30.
+```
+
 ### Homogeneidade determinística de componentes
 
 - **H-001 — Homogeneidade determinística de componentes elementais não-overkill:** todo componente classificado como spell, runa ou granada elemental/mágica de área deve ser mecanicamente homogêneo quando seus hits forem não-overkill. Um cast concreto não é suficiente para absorver todos os hits do turno. O componente só pode receber hits que sejam compatíveis com o mesmo bloco determinístico, considerando elemento, crit-state, prey, mob mods disponíveis, topologia, timing e leech-cardinality. Se hits não-overkill atribuídos ao mesmo componente se separam em clusters incompatíveis por dano, leech ou cardinalidade, o componente único deve ser rejeitado e o classificador deve testar partições contíguas alternativas. A razão de leech `(vida + mana) / dano` de um componente de área é `leechBase × areaFactor(N_leech)` (D-023): um único componente tem `N_leech` fixo, logo uma única razão; dois blocos contíguos com `N_leech` distinto produzem **níveis de razão distintos**, e esse salto é a fronteira (bidirecional: o AA, atingindo menos alvos, tem razão **maior** — a razão pode cair através da fronteira).
@@ -718,7 +791,7 @@ Caso-prova obrigatório — mazzerinbarrage 22:09:57 (sessão salva 28/Jun/2026)
       - leech-cardinality: N=1 rejeitado em todos; o bloco fecha em N_leech = 9.
     Hipótese ERRADA: A1 S8 (separa o crypt mage 668 como AA fantasma) — vencedora
       apenas pela precedência do prior AA-first, sem evidência positiva. REJEITAR.
-    Hipótese CORRETA: A0 S9 (igual à produção js/classifier.js).
+    Hipótese CORRETA: A0 S9.
   ```
 
 ### Fase 2 — Nomear
@@ -783,7 +856,7 @@ runa single-target.
 - **V-015:** evidência inconclusiva gera diagnóstico; não apaga silenciosamente o AA posicional.
 - **V-015a — Cardinalidade de leech como fronteira sob overkill:** em um turno dominado por overkill no qual nem originais elementais/físicos nem razão de leech conseguem formar fronteira confiável, a cardinalidade por leech (S-014/S-015) é sinal de fronteira primário. O classificador deve testar partições contíguas e validar se cada bloco de `k` hits principais elegíveis aceita `N_leech = k` pelo leech absoluto e pela reconstrução de dano real. O caso de AA single-target como outlier é apenas uma manifestação comum dessa regra, não a única. É proibido colapsar o turno inteiro em spell por ausência de originais quando o leech absoluto sustenta uma partição menor.
 - **V-015b — O bloco de spell não é validado por origem física/elemental comum:** para as quatro vocações desta seção, o bloco de spell resultante do corte por posição/leech NÃO deve ser rejeitado por ausência de intersecção física (`physical_intersection_empty`) ou por dispersão elemental entre mobs distintos (`same_mob_state_exact_original_mismatch`, `elemental_cluster_span_too_wide`) — esses testes (S-007/V-001) são exigência exclusiva do Eixo 2-físico do RP (AA × Ethereal Barrage), não desta seção. Caso-prova: `serverlog6`/`localchat6` `07:10:55` (Monk, pack de raubritter) — 6 hits físicos contra 4 mobs distintos com dano decrescente (784, 735, 695, 715, 625, 618) e intervalos físicos revertidos disjuntos entre si; sem AA por cardinalidade/posição, o turno é um único bloco `spell` de 6 hits, e a ausência de origem física comum entre os mobs não é motivo de rejeição. Contra-exemplo que permanece válido pelo mesmo mecanismo mesmo quando a origem física dos hits **converge**: `serverlog6`/`localchat6` `07:10:57` — 1 AA (chastener, 558) + 9 hits de `exori mas amp pug` cujos intervalos físicos já se intersectam; o resultado não muda por ser decidido por posição/leech em vez de pela busca de partição genérica.
-- **V-015c — `exori mas amp pug` (Monk):** incantation ausente de toda tabela de ações até `generalize-single-target-aa-resolver` (nem `js/classifier.js` nem `js/unified-classification-engine.js` a conheciam). Registrada com `element: physical`, `topology: area`, `vocation: monk`, confirmados pelo dano observado em todas as ocorrências de `logs/serverlog6..9.txt` (sempre físico, sempre 3+ mobs distintos no mesmo turno). Nome de exibição (`label`) deliberadamente **não** registrado — sem fonte confiável para o nome oficial da spell nesta ambiguidade; a exibição usa o fallback de texto (idêntico ao comportamento anterior ao registro).
+- **V-015c — `exori mas amp pug` (Monk):** incantation ausente de toda tabela de ações até `generalize-single-target-aa-resolver` (`js/unified-classification-engine.js` não a conhecia). Registrada com `element: physical`, `topology: area`, `vocation: monk`, confirmados pelo dano observado em todas as ocorrências de `logs/serverlog6..9.txt` (sempre físico, sempre 3+ mobs distintos no mesmo turno). Nome de exibição (`label`) deliberadamente **não** registrado — sem fonte confiável para o nome oficial da spell nesta ambiguidade; a exibição usa o fallback de texto (idêntico ao comportamento anterior ao registro).
 - **V-015d — O bloco de runa também não é validado por origem física/elemental comum (extensão de V-015b para runa):** para as quatro vocações desta seção, quando a ação concreta do turno é uma runa (não spell), o bloco resultante do corte por posição/leech também NÃO deve ser rejeitado por `physical_intersection_empty` ou `elemental_cluster_span_too_wide` — a mesma razão de V-015b se aplica, agora ao caminho de runa. Caso-prova: `logs/uhax 3 server log ed.txt` + `logs/uhax 3 local chat ed.txt` (druid), sessão salva `Fri Jul 03 13:46:53 2026`, janela `13:33–13:42` — turnos de `Using one of N great fireball runes...` contra múltiplos mobs (darklight striker/matter/source, walking pillar), onde mobs com bônus Prey ativo revertem para um original elemental sistematicamente mais baixo que os demais hits do mesmo cast (achado à parte, não corrigido aqui: o `Bounty Talisman Effect` do `walking pillar` ainda não é lido pelo motor). Antes de `generalize-single-target-aa-resolver-to-runes`, isso levava 150 de 257 turnos da janela a `status=unresolved reason=no_valid_partition`; o mesmo log/vocação, na sessão salva `Tue Jun 30 21:02:55 2026` (janela `20:49–21:02`, sem bônus Prey na maioria dos turnos), já resolvia 219/350 turnos via componente rune — mostrando que a composição de mobs não era a causa, e sim a ausência do caminho de posição+leech para o eixo runa.
 
 ### Mage/druid
@@ -947,7 +1020,7 @@ Verificar que:
 
 ## 10. Apêndice de casos-gabarito
 
-Os casos abaixo são normativos. As contagens usam `A=arrow`, `S=spell`, `R=rune` e `G=grenade`. Para os logs brutos, consultar `tools/turnos-problematicos.md`; para inspecionar um turno, usar `node tools/diag-turn.mjs "logs/<server>.txt" "logs/<local>.txt" HH:MM:SS`.
+Os casos abaixo são normativos. As contagens usam `A=arrow`, `S=spell`, `R=rune` e `G=grenade`. Para os logs brutos, consultar `tools/turnos-problematicos.md`; para inspecionar um turno, usar `node tools/diag-unified-turn.mjs "logs/<server>.txt" "logs/<local>.txt" HH:MM:SS [--session N]`.
 
 | Caso | Logs e turno | Resultado obrigatório e evidência | Regressão impedida |
 |---|---|---|---|
@@ -1002,6 +1075,9 @@ Os casos abaixo são normativos. As contagens usam `A=arrow`, `S=spell`, `R=rune
 | 38 | monk2 `07:19:35` (sem data/cabeçalho) | `A1 + Spiritual Outburst`: cast `exori gran mas nia` em `:35`; blast inicial em `:35` (5 hits, ~1400–1620) e estágio atrasado Stage 3 em `:36` (5 hits, ~850–950), MESMO turno mecânico (delay=1). 10 hits no componente spell. | Ancorar novo turno em `:36` ou deixar o estágio atrasado sem tag por a reversão elemental (D-010a) genuinamente não fechar para esta spell. |
 | 39 | monk2 `07:19:56` (sem data/cabeçalho) | `A1 + Spiritual Outburst`: cast em `:56`; blast inicial em `:56` (8 hits); `:57` sem hits (delay=1 vazio); estágio atrasado Stage 3 encontrado em `:58` (delay=2, hits `906`/`907`/`907`, razão vida/dano `~0,208`) e consolidado de volta ao turno de origem via cluster de leech. 11 hits no componente spell. | Deixar o blast inicial incompleto (8 hits, sem estágio atrasado) ou tentar fechar o estágio atrasado por reversão elemental holy (nunca fecha para esta spell). |
 | 40 | monk2 `07:19:58` (sem data/cabeçalho) | `A1(781) + Greater Flurry of Blows`: turno independente seguinte preserva seu próprio AA (`781`, razão `~0,521`, distinta) e os 6 hits reais de Flurry of Blows (razão `~0,137`), sem o estágio atrasado órfão do cast de `:56` (que pertence ao caso 39). | Rotular `906` como AA deste turno (na verdade é o estágio atrasado de `:56`) ou fundir o estágio atrasado com os hits reais de Greater Flurry of Blows por estarem no mesmo segundo bruto. |
+| 41 | mazzerinbarrage `23:21:27` (sessão salva `09/Jun/2026 00:00:54`) | `partial_edge_missing_evidence` (T-001a + T-007/A-009). Primeiro turno **do log** (`seq 1`) numa sessão que atravessa a meia-noite (`23:21:27` → `00:00:50`): 6 hits críticos de Royal Paladin, sem spell/runa/granada concreta no recorte, e a única hipótese `arrow[6]` cai por `physical_intersection_empty` (o `darklight striker` reverte `O∈[730,789]` contra o cluster `[607,619]`). Equivalente em RP do caso 34 (druid) — a vocação e a razão de rejeição mudam, a causa não. Confirmação independente de que a borda levou hits: o leech dos 6 visíveis fecha **exato** em `N_leech = 9` nos dois canais e nos quatro mobs (source `1042→106/34`, pillar `1047→107/35`, matter `1131→115/41` com Void's Call, striker `1133→123/37` com Vampiric Embrace); `N=10` é contradito. | Ordenar por segundos do dia e marcar `partialEdge` em `00:00:00` (o último turno cronológico); exigir vocação de AA single-target ou a razão `multiple_arrow_hits_not_allowed` para reconhecer perda de informação de borda; ou classificar os 6 hits inventando componente. |
+| 42 | mazzerinbarrage `01:21:04` (sessão salva `09/Jul/2026 01:26:16`) | `A8 + Ethereal Barrage 8 + Divine Grenade 9` (T-005/U-004 + T-003). Três blocos coerentes num turno de 2s: 8 hits não-crit em `:04` (AA, interseção física `[854,856]`), 8 críticos em `:04` (`exori dir moe`, interseção `[981,983]`) e 9 em `:05` com `O_holy` homogêneo `[1012,1013]` em **quatro mobs distintos** — a granada do cast `exevo tempo mas san` de `01:21:02`, explodindo em `cast+3` (M-023). O leech confirma os três: `N=8/8/9`, com **18 de 18** encaixes exatos no bloco de granada. `AA + spell + granada` é combinação permitida por T-005 e a única forma prevista por U-004 de duas ações com natureza de spell no mesmo turno. O cast era disputado com `01:21:06`; como este resolve sem ele (`A8 + Caldera 13`) e `01:21:04` não resolve de forma alguma, o cast pertence a `01:21:04`. | Descartar o cast por empate de desempate, deixando os 25 hits sem componente (T-003) e perdendo o cast até como execução (M-020/A-004); ou desempatar por contagem de hits do bloco de granada (aqui o vencedor tem 9 contra 12 do concorrente). |
+| 43 | mazzerinbarrage `16:24:10` (sessão salva `17/Jun/2026 16:35:46`) | `A0 S2` — `Ethereal Barrage (exori dir moe)` (D-011/D-012a). Os dois hits são overkill, no mesmo segundo e com o mesmo crit-state (`orclops bloodbreaker 284 OK`, `norcferatu nightweaver 702 OK`), então a fronteira `A1|S1` era criada exclusivamente entre hits de overkill — sem mudança de segundo, de crit-state, `Using` de runa ou janela de granada que a sustentasse. O leech corrobora dano real parecido apesar dos exibidos divergentes: vida `220`/`232`, mana `71`/`75`. | Cravar um corte AA×spell apoiado só na posição de hits cujo dano exibido está truncado (D-011), em vez de manter o componente único que a evidência sustenta. |
 
 ### Casos novos obrigatórios
 

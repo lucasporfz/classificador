@@ -333,6 +333,43 @@ const CASES = [
   // limite de resolucao do eixo fisico (zona ambigua ~½ armor-width, ver memoria
   // fisico-axis-resolution-limit), nao um erro de leech-cardinalidade.
   C('barrage/19:00:30','barrage Server Log.txt','barrage local chat.txt','19:00:30',countIs({arrow:7,spell:9})),
+  // S-020/D-006 (require-discriminating-leech-channel-in-bracket): o desempate por
+  // bracketing same-mob exige unanimidade entre os canais, mas um canal so pode votar se
+  // for DISCRIMINANTE -- a margem entre as duas distancias precisa superar
+  // leechValueToleranceForN, que e a granularidade do CEIL de D-023.
+  // 08:36:51 (Ethereal Barrage, 16 hits, sessao 14/Jul/2026): as particoes [8,16] e [9,16]
+  // empatam em todas as chaves de compareValidated. O hit em disputa (darklight emitter,
+  // seq 5594, life=100 mana=27) tem ancoras same-mob life=80/mana=26 antes e
+  // life=104/mana=29 depois. Vida vota "depois" com margem |20-4|=16; mana votava "antes"
+  // com margem |1-2|=1 -- ruido puro (a mana do turno inteiro vive entre 26 e 30). Antes,
+  // essa divergencia matava o turno em ambiguous_equal_best_partitions com a fronteira
+  // visivel no canal de vida (salto 85->100 exatamente no indice 8, S-018/D-029).
+  // Regime-independente (CL): a evidencia e leech absoluto, nao tabela de mob.
+  CL('gloompillar/08:36:51','gloompillar Server Log.txt','gloompillar Local Chat.txt','08:36:51',countIs({arrow:8,spell:8,rune:0,grenade:0})),
+  // T-005/U-004 + T-003 (prefer-grenade-cast-turn-that-cannot-resolve-without-it):
+  // AA + Ethereal Barrage + Divine Grenade e uma combinacao PERMITIDA (T-005), e a unica
+  // forma prevista de duas acoes com natureza de spell no mesmo turno (U-004).
+  // mazzerinbarrage 09/Jul/2026 01:21:04 tem tres blocos coerentes: 8 hits nao-crit
+  // (AA, interseccao fisica [854,856]), 8 crit (Barrage, [981,983]) e 9 em :05 com
+  // O_holy homogeneo [1012,1013] em QUATRO mobs distintos (granada do cast 01:21:02,
+  // explodindo em cast+3, dentro da janela de M-023). O leech confirma: N=8/8/9 com 18
+  // de 18 encaixes exatos no bloco de granada (life 105/104/98, mana 32/34/30/37).
+  // Antes, o cast era disputado por 01:21:04 e 01:21:06; o desempate por residuo nao
+  // separava e o fail-safe entregava o cast a NINGUEM -- 01:21:04 ficava unresolved com
+  // os 25 hits sem componente (T-003) e o cast sumia ate como execucao (M-020/A-004).
+  // O criterio novo pergunta qual candidato NAO resolve sem o cast: 01:21:06 resolve bem
+  // sem ele (A8 + Caldera 13), 01:21:04 nao resolve de jeito nenhum.
+  CL('mazzerinbarrage/01:21:04','mazzerinbarrage server log.txt','mazzerinbarrage local chat.txt','01:21:04',countIs({arrow:8,spell:8,rune:0,grenade:9})),
+  // D-011/D-012 (fix-overkill-only-turn-boundary): overkill herda o componente do bloco
+  // definido pelos OUTROS hits e nunca cria fronteira. Com TODOS os hits principais em
+  // overkill, no mesmo segundo e mesmo crit-state, nao existe "outro hit" -- entao nenhum
+  // corte de 2+ componentes e admissivel sem evidencia independente (segundo, crit-state,
+  // `Using` de runa ou janela de granada).
+  // mazzerinbarrage 17/Jun/2026 16:24:10: 2 hits, ambos OK, mesmo segundo, nao-crit, cast
+  // `exori dir moe`. Era A1 S1 -- corte cravado so entre overkills. O leech confirma dano
+  // real parecido apesar dos exibidos 284 e 702: life 220/232, mana 71/75. => A0 S2.
+  // Regime-independente (CL): o criterio e estrutural, nao depende de tabela de mob.
+  CL('mazzerinbarrage/16:24:10','mazzerinbarrage server log.txt','mazzerinbarrage local chat.txt','16:24:10',countIs({arrow:0,spell:2,rune:0,grenade:0})),
 ];
 
 function runGabarito() {

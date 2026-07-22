@@ -1,5 +1,5 @@
 // Glue da UI do Classificador (página standalone). Reusa classifyWithLocalChat
-// (classifier.js) e os helpers de gráfico. Sem simulação — só leitura dos dois logs.
+// (js/unified-main.js) e os helpers de gráfico. Sem simulação — só leitura dos dois logs.
 const $ = id => document.getElementById(id);
 
 let clsTimelineComponentsChart = null;

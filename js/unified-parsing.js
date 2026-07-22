@@ -358,8 +358,29 @@
     };
   }
 
+  // T-001/T-002: `ts` é SEGUNDOS DO DIA, então ele volta a zero quando a sessão atravessa a
+  // meia-noite — ordenar por ele coloca os hits de depois da virada ANTES dos de antes dela,
+  // e faz `h.ts - prevTs` ficar fortemente negativo na emenda (o que satisfaz `< 2` e funde
+  // hits separados por quase 24h no mesmo turno). A ordem cronológica real é a ordem do log:
+  // o parser varre o Server Log linha a linha atribuindo `seq` crescente, então a ordem do
+  // array de entrada já é a ordem dos eventos. `ordTs` deriva dela uma chave absoluta
+  // (`ts + 86400 × dias`), usada SÓ para ordenar e para a aritmética de fronteira de turno —
+  // `ts` continua em segundos do dia em toda a saída pública (turnos, hits, clock, UI).
+  // Medido no corpus: 3 de 367 sessões cruzam a meia-noite (`mazzerinbarrage` S39/S98,
+  // `darklight e vemiath` S39); nas demais o offset fica 0 e nada muda.
+  const CLOCK_WRAP_MIN_DROP = 300; // margem: uma virada real cai ~86400s; isso ignora ruído de ordenação local
+  function assignOrderingTs(hits) {
+    let dayOffset = 0, prevTs = null;
+    for (const h of hits || []) {
+      if (prevTs != null && h.ts < prevTs - CLOCK_WRAP_MIN_DROP) dayOffset++;
+      h.ordTs = h.ts + 86400 * dayOffset;
+      prevTs = h.ts;
+    }
+  }
+
   function buildTurns(hits, spellCasts, context) {
-    const sorted = (hits || []).filter(isMainHit).slice().sort((a, b) => (a.ts - b.ts) || ((a.seq || 0) - (b.seq || 0)));
+    assignOrderingTs(hits);
+    const sorted = (hits || []).filter(isMainHit).slice().sort((a, b) => (a.ordTs - b.ordTs) || ((a.seq || 0) - (b.seq || 0)));
     const turns = [];
     if (!sorted.length) return turns;
     // M-016d/T-002: efeitos atrasados declarados no perfil são consolidados antes
@@ -485,27 +506,33 @@
     }
     const turnEligible = sorted.filter(h => !delayedByHit.has(h.id));
     const blocks = [];
-    let cur = [turnEligible[0]], prevTs = turnEligible[0].ts;
+    // A aritmética de fronteira usa `ordTs` (absoluto); o turno gravado volta a segundos do
+    // dia via `% 86400`, para `clock` e para o casamento por HH:MM:SS das ferramentas.
+    let cur = [turnEligible[0]], prevTs = turnEligible[0].ordTs;
     for (let i = 1; i < turnEligible.length; i++) {
       const h = turnEligible[i];
-      if (h.ts - prevTs < 2) cur.push(h);
+      if (h.ordTs - prevTs < 2) cur.push(h);
       else { blocks.push(cur); cur = [h]; }
-      prevTs = h.ts;
+      prevTs = h.ordTs;
     }
     blocks.push(cur);
     let idx = 0;
+    const pushTurn = (start, turnHits) => {
+      const ts = ((start % 86400) + 86400) % 86400;
+      turns.push({ id: 't' + idx++, idx, ts, clock: tsToClock(ts), hits: turnHits });
+    };
     for (const block of blocks) {
-      let start = block[0].ts;
+      let start = block[0].ordTs;
       let turnHits = [];
       for (const h of block) {
-        if (h.ts - start < 2) turnHits.push(h);
+        if (h.ordTs - start < 2) turnHits.push(h);
         else {
-          turns.push({ id: 't' + idx++, idx, ts: start, clock: tsToClock(start), hits: turnHits });
-          while (h.ts - start >= 2) start += 2;
+          pushTurn(start, turnHits);
+          while (h.ordTs - start >= 2) start += 2;
           turnHits = [h];
         }
       }
-      if (turnHits.length) turns.push({ id: 't' + idx++, idx, ts: start, clock: tsToClock(start), hits: turnHits });
+      if (turnHits.length) pushTurn(start, turnHits);
     }
     for (const assignment of assignments) {
       const origin = turns.find(t => assignment.primaryHits.some(h => t.hits.includes(h)));

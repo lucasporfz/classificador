@@ -24,6 +24,7 @@
     ELEMENTS,
     SINGLE_TARGET_AA_VOCATIONS,
     BONUS_TIER_ACTIONS,
+    leechValueToleranceForN,
   } = root.UnifiedFormulas;
 
   const {
@@ -548,6 +549,21 @@
     return false;
   }
 
+  // "O turno resolve SEM este cast de granada?" — reusa o mecanismo que já existe pra negar
+  // um cast a um turno (`consolidatedGrenadeCasts`) em vez de inventar flag nova. Só o
+  // status interessa; nenhum componente deste resolve auxiliar é aproveitado.
+  function turnResolvesWithoutCast(turn, cast, facts, context) {
+    if (!context) return true;
+    const saved = context.consolidatedGrenadeCasts;
+    try {
+      context.consolidatedGrenadeCasts = new Set([cast]);
+      const t = resolveTurn(turn, facts, context);
+      return !!(t && t.status === 'resolved');
+    } finally {
+      context.consolidatedGrenadeCasts = saved;
+    }
+  }
+
   function buildGrenadeCastAssignments(turns, facts, context) {
     const savedConsumed = context && context.consolidatedGrenadeCasts;
     const savedPreassigned = context && context.preassignedGrenadeCasts;
@@ -556,7 +572,12 @@
       context.preassignedGrenadeCasts = null;
       context.grenadeAssignmentOnly = true;
     }
-    const bestByCast = new Map();
+    // Um cast pode ter mais de um turno candidato (a janela [c+2,c+4] de M-023 cruza a
+    // fronteira de turnos de 2s). Guardamos TODOS os candidatos, em vez de dobrar num
+    // "melhor" durante o laço, porque o desempate por dependência (T-003, abaixo) precisa
+    // reexaminar cada candidato depois que todos forem conhecidos.
+    const candidatesByCast = new Map();
+    const assigned = new Map();
     try {
       for (const turn of turns || []) {
         if (!turnHasEligibleGrenadeCast(turn, facts)) continue;
@@ -565,33 +586,42 @@
         const hasResidue = turnCandidateHasResidue(t, context);
         for (const b of t.components || []) {
           if (!b || b.comp !== 'grenade' || !b.action) continue;
-          const det = b.deterministic || {};
-          const leech = b.leech || {};
-          const score = {
-            turnTs: t.ts,
-            hasResidue,
-            hitCount: (b.hits || []).filter(isMainHit).length,
-            deterministicHits: det.known || 0,
-            leechFits: leech.ok && leech.fits ? leech.fits.filter(x => x.fit && x.fit.usable).length : 0,
-            leechContradictions: leech.consensus ? (leech.consensus.failedCount || 0) : 0,
-          };
-          const prev = bestByCast.get(b.action);
-          if (!prev) { bestByCast.set(b.action, score); continue; }
-          if (score.hasResidue !== prev.hasResidue) {
-            // Candidato sem resíduo vence, independente de hitCount/deterministicHits:
-            // uma partição que não deixa hit inexplicado é evidência mais forte que
-            // contagem de hits do bloco granada.
-            if (!score.hasResidue) bestByCast.set(b.action, score);
-            continue;
-          }
-          // D1 empatou (nenhum candidato tem resíduo, ou mais de um tem): NÃO cai pra
-          // hitCount/deterministicHits/leechFits/leechContradictions -- isso
-          // reintroduziria o mesmo desempate arbitrário que este change corrige. Marca
-          // o cast como ambíguo em vez de escolher um vencedor por contagem de hits.
-          if (prev.turnTs !== score.turnTs) {
-            bestByCast.set(b.action, Object.assign({}, prev, { ambiguous: true }));
-          }
+          if (!candidatesByCast.has(b.action)) candidatesByCast.set(b.action, []);
+          candidatesByCast.get(b.action).push({ turn, turnTs: t.ts, hasResidue });
         }
+      }
+
+      for (const [cast, cands] of candidatesByCast) {
+        const distinctTs = new Set(cands.map(c => c.turnTs));
+        if (distinctTs.size === 1) { assigned.set(cast, cands[0].turnTs); continue; }
+
+        // D1 — resíduo: um candidato cuja partição não deixa hit inexplicado vence,
+        // independente de hitCount/deterministicHits (que reintroduziriam o desempate
+        // arbitrário corrigido por fix-grenade-cast-turn-assignment).
+        const noResidueTs = new Set(cands.filter(c => !c.hasResidue).map(c => c.turnTs));
+        if (noResidueTs.size === 1) { assigned.set(cast, [...noResidueTs][0]); continue; }
+
+        // NOVO (prefer-grenade-cast-turn-that-cannot-resolve-without-it) — dependência:
+        // quando o resíduo não separa, perguntar qual candidato NÃO resolve sem o cast.
+        // Descartar o cast (o fail-safe antigo) deixa TODOS os hits desse turno sem
+        // componente, o que T-003 proíbe, enquanto os demais candidatos seguem explicados
+        // sem ele — e ainda perde o cast como execução (M-020/A-004). Pela ordem de S-011
+        // (critério 1, menos contradições; critério 6, menos evidência desconhecida), a
+        // atribuição que explica todos os hits observados de todos os turnos é melhor.
+        // Só decide quando EXATAMENTE um candidato depende do cast; caso contrário o
+        // fail-safe permanece.
+        // Caso-prova: mazzerinbarrage 09/Jul/2026, cast exevo tempo mas san 01:21:02 —
+        // 01:21:04 (A8 + Ethereal Barrage 8 + Divine Grenade 9) não tem NENHUMA partição
+        // válida sem o cast, enquanto 01:21:06 resolve bem sem ele (A8 + Caldera 13).
+        const dependentTs = new Set(
+          cands.filter(c => !turnResolvesWithoutCast(c.turn, cast, facts, context)).map(c => c.turnTs)
+        );
+        if (dependentTs.size === 1) { assigned.set(cast, [...dependentTs][0]); continue; }
+
+        // `null` é sentinela pra cast ambíguo: `actionsNearTurn` só oferece o cast ao turno
+        // em `preassigned.get(c) === turn.ts`, e nenhum turn.ts real é `null`, então isso
+        // exclui o cast de TODOS os turnos candidatos em vez de escolher um vencedor.
+        assigned.set(cast, null);
       }
     } finally {
       if (context) {
@@ -600,11 +630,6 @@
         delete context.grenadeAssignmentOnly;
       }
     }
-    const assigned = new Map();
-    // `null` é sentinela pra cast ambíguo: `actionsNearTurn` só oferece o cast ao turno
-    // em `preassigned.get(c) === turn.ts`, e nenhum turn.ts real é `null`, então isso
-    // exclui o cast de TODOS os turnos candidatos em vez de escolher um vencedor.
-    for (const [cast, score] of bestByCast) assigned.set(cast, score.ambiguous ? null : score.turnTs);
     return assigned;
   }
 
@@ -634,6 +659,21 @@
     const dVals = {};
     for (const ch of channels) { const v = +d[ch] || 0; if (v > 0) dVals[ch] = v; }
     if (!Object.keys(dVals).length) return null;
+
+    // S-020 exige unanimidade entre "todos os canais disponiveis", mas nao definia quando um
+    // canal e grosso demais pra ser evidencia. O comparador era estritamente ordinal: uma
+    // diferenca de 1 unidade virava voto de mesmo peso que uma de 20. Como o leech e
+    // CEIL(dano x taxa x areaFactor) (D-023), 1 unidade e a propria granularidade do
+    // arredondamento -- e leechValueToleranceForN ja e o piso normativo do motor pra esse
+    // ruido (1 pra n > 3; 3..5 adaptativo em bloco pequeno, onde a base inferida desloca
+    // mais). Um canal cuja MARGEM de voto nao supera essa tolerancia se abstem: e evidencia
+    // ausente (D-006), nao contradicao, e nao pode anular um canal que discrimina.
+    // Caso-prova: gloompillar 08:36:51 -- vida vota com margem |20-4|=16 e mana "vota" o lado
+    // oposto com margem |1-2|=1 (a mana inteira do turno vive entre 26 e 30). Sem a guarda, o
+    // turno morre em ambiguous_equal_best_partitions com a fronteira visivel no canal de vida.
+    const nDisputed = Math.max(hits.length - lo, hi);
+    const channelIsDiscriminating = (db, da, observed) =>
+      Math.abs(db - da) > leechValueToleranceForN(nDisputed, observed);
 
     const mob = normalizeName(d.mob);
     const ew = !!d.exposeWeakness;
@@ -666,6 +706,7 @@
         const bv = +anchorBefore[ch] || 0, av = +anchorAfter[ch] || 0;
         if (!(bv > 0) || !(av > 0)) continue;
         const db = Math.abs(dv - bv), da = Math.abs(dv - av);
+        if (!channelIsDiscriminating(db, da, dv)) continue; // canal sem poder de resolucao: abstem (D-006)
         if (db < da) voteBefore++;
         else if (da < db) voteAfter++;
       }
@@ -685,7 +726,9 @@
       if (!beforeVals.length || !afterVals.length) continue;
       const db = Math.min(...beforeVals.map(v => Math.abs(dv - v)));
       const da = Math.min(...afterVals.map(v => Math.abs(dv - v)));
-      if (db === da) return null;
+      // Mesma guarda do ramo S-020: empate exato (margem 0) passa a ser um caso particular de
+      // canal nao-discriminante, entao ele abstem em vez de matar a decisao dos outros canais.
+      if (!channelIsDiscriminating(db, da, dv)) continue;
       if (db < da) voteBefore++;
       else voteAfter++;
     }
@@ -781,20 +824,35 @@
     ));
   }
 
+  // T-007/A-009: o critério é a CAUSA (a borda inicial removeu a ação concreta que
+  // explicaria os hits), não a razão de rejeição específica de cada vocação. Sem ação
+  // ofensiva concreta no recorte, `possibleShapes` só consegue gerar o bloco único
+  // `arrow[n]`; quando ele cai, não existe classificação derivável da evidência visível.
+  //
+  // Antes o gate exigia vocação de AA single-target E a razão
+  // `multiple_arrow_hits_not_allowed`. As duas eram a mesma restrição escrita duas vezes:
+  // essa razão só pode ocorrer nessas vocações, porque M-031 dá AA de área
+  // exclusivamente ao Royal Paladin. Isso deixava de fora o mesmo fenômeno em RP, onde a
+  // hipótese remanescente cai por incoerência do eixo físico.
+  // Casos-prova: `uhax 3 20:49:26` (druid, `multiple_arrow_hits_not_allowed`) e
+  // `mazzerinbarrage 23:21:27` sessão 09/Jun/2026 (RP, `physical_intersection_empty`;
+  // o leech dos 6 hits visíveis fecha exato em N_leech=9 nos dois canais e nos quatro
+  // mobs, confirmando que a borda levou 3 hits do bloco).
   function isPartialEdgeMissingEvidence(turn, rejected, context) {
     if (!turn || !turn.partialEdge) return false;
     if (hasConcreteOffensiveAction(turn.actions)) return false;
     if (!turn.hits || turn.hits.length <= 1) return false;
-    const vocation = normalizeName(context && context.vocation || '');
-    if (!['knight', 'druid', 'sorcerer', 'monk'].includes(vocation)) return false;
     const rejectedList = rejected || [];
     if (!rejectedList.length) return false;
+    // Conjunto fechado de propósito: um `arrow[n]` rejeitado por, por exemplo,
+    // `leech_cardinality_failed` significa que HÁ evidência utilizável no recorte
+    // contradizendo a hipótese — isso é `unresolved` legítimo, não informação perdida.
     const allowedReasons = new Set(['multiple_arrow_hits_not_allowed', 'physical_intersection_empty']);
     return rejectedList.every(val => {
       const cand = val && val.candidate;
       if (!cand || cand.shape.join('>') !== 'arrow' || cand.cuts.join(',') !== String(turn.hits.length)) return false;
       const reasons = (val.violations || []).map(v => v && v.reason).filter(Boolean);
-      if (!reasons.includes('multiple_arrow_hits_not_allowed')) return false;
+      if (!reasons.length) return false;
       return reasons.every(r => allowedReasons.has(r));
     });
   }

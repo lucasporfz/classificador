@@ -89,10 +89,9 @@ O **único** motor a ser alterado é o `unified-classification-engine` — ele �
 classificador atual.
 
 - **Diagnóstico de turno é pelo Unified:** `node tools/diag-unified-turn.mjs`
-  (mesmas opções da UI, tabela pós-cutoff por data). **PROIBIDO** analisar/explicar
-  turnos com as ferramentas legadas (`diag-turn.mjs`, `rp-classify-proto.mjs`,
-  `dump-all.mjs`, `js/classifier.js`) — elas rodam outro pipeline e só a tabela
-  pré-cutoff; não refletem a UI.
+  (mesmas opções da UI, tabela pós-cutoff por data). O classificador legado e suas
+  ferramentas foram removidos do repositório em 21/Jul/2026
+  (`remove-legacy-classifier`); tudo em `tools/` roda o Unified.
 
 - Regra histórica deste projeto: correções viram função-sobre-função e quebram
   outros turnos. Isto está **PROIBIDO** de acontecer novamente.

@@ -1,7 +1,11 @@
 #!/usr/bin/env node
-// dump-experimental.mjs — despeja contagens por turno (engine EXPERIMENTAL) de
-// todas as fixtures. Artefato estavel p/ diff antes/depois de mudanca no engine
-// experimental (espelha dump-all.mjs, que cobre so a producao).
+// dump-experimental.mjs — despeja contagens por turno de todas as fixtures, pelo
+// motor UNIFIED (importa modelForPair de unified-experimental.mjs, que roda
+// classifyWithLocalChat de js/unified-main.js). O nome e historico: vem de quando
+// existia um engine experimental separado do legado; os dois foram removidos em
+// 21/Jul/2026 (remove-legacy-classifier) e hoje so existe o Unified.
+// Artefato estavel p/ diff antes/depois de mudanca no motor. Ver tambem
+// tools/dump-unified.mjs.
 import path from 'node:path';
 import { modelForPair } from './unified-experimental.mjs';
 
