@@ -1831,6 +1831,7 @@
     return true;
   }
 
+  const eligibleVirtualZeroEventsByContext = new WeakMap();
   function eligibleVirtualZeroCharmsForBlock(turn, block, context) {
     if (!turn || !block || !context || !context.serverEvents) return [];
     const main = (block.hits || []).filter(isMainHit);
@@ -1844,8 +1845,18 @@
     const turnMinSeq = turnMain.length ? Math.min.apply(null, turnMain.map(h => Number.isFinite(+h.seq) ? +h.seq : 0)) : minSeq;
     const turnMaxSeq = turnMain.length ? Math.max.apply(null, turnMain.map(h => Number.isFinite(+h.seq) ? +h.seq : 0)) : maxSeq;
 
-    return (context.serverEvents || [])
-      .filter(isEligibleVirtualZeroCharm)
+    const sourceEvents = context.serverEvents || [];
+    let cachedEligible = eligibleVirtualZeroEventsByContext.get(context);
+    if (!cachedEligible || cachedEligible.source !== sourceEvents || cachedEligible.length !== sourceEvents.length) {
+      cachedEligible = {
+        source: sourceEvents,
+        length: sourceEvents.length,
+        events: sourceEvents.filter(isEligibleVirtualZeroCharm),
+      };
+      eligibleVirtualZeroEventsByContext.set(context, cachedEligible);
+    }
+
+    return cachedEligible.events
       .filter(ev => {
         if (!Number.isFinite(+ev.ts)) return false;
         const evSeq = Number.isFinite(+ev.seq) ? +ev.seq : null;
