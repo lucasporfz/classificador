@@ -576,11 +576,20 @@
         let min = base, max = base;
         for (const item of clean) {
           const vals = item.values;
-          let pick = vals[0];
-          let dist = Math.abs(vals[0] - base);
-          for (let i = 1; i < vals.length; i++) {
-            const d = Math.abs(vals[i] - base);
-            if (d < dist || (d === dist && vals[i] < pick)) { pick = vals[i]; dist = d; }
+          let low = 0;
+          let high = vals.length;
+          while (low < high) {
+            const mid = (low + high) >>> 1;
+            if (vals[mid] < base) low = mid + 1;
+            else high = mid;
+          }
+          let pick;
+          if (low === 0) pick = vals[0];
+          else if (low === vals.length) pick = vals[vals.length - 1];
+          else {
+            const lower = vals[low - 1];
+            const upper = vals[low];
+            pick = base - lower <= upper - base ? lower : upper;
           }
           chosen[item.idx] = pick;
           if (pick < min) min = pick;
