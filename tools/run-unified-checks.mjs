@@ -17,6 +17,7 @@
 //   node tools/run-unified-checks.mjs --gabarito   # so o gabarito curado
 //   node tools/run-unified-checks.mjs --invariants # so a varredura de invariantes
 //   node tools/run-unified-checks.mjs --tests      # so os tests/*.test.mjs
+//   node tools/run-unified-checks.mjs --gabarito --match barrage
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -63,17 +64,45 @@ function run(target) {
   return { ok, out };
 }
 
-const flags = process.argv.slice(2);
-const only = new Set(flags.filter(f => f.startsWith('--')).map(f => f.slice(2)));
-const all = only.size === 0;
+const args = process.argv.slice(2);
+const validModes = new Set(['--gabarito', '--invariants', '--tests']);
+const modes = new Set();
+let match = null;
+
+for (let index = 0; index < args.length; index++) {
+  const arg = args[index];
+  if (arg === '--match') {
+    const value = args[++index];
+    if (match !== null || !value || value.startsWith('--')) {
+      console.error('Uso invalido: --match exige exatamente um substring.');
+      process.exit(2);
+    }
+    match = value;
+  } else if (validModes.has(arg)) {
+    modes.add(arg.slice(2));
+  } else {
+    console.error(`Flag desconhecida: ${arg}`);
+    process.exit(2);
+  }
+}
+
+if (match !== null && modes.size !== 1) {
+  console.error('Uso invalido: --match exige exatamente um modo: --gabarito, --invariants ou --tests.');
+  process.exit(2);
+}
+
+const all = modes.size === 0;
+const scoped = target => match === null ? target : { ...target, args: [...target.args, '--only', match] };
 
 const targets = [];
-if (all || only.has('gabarito')) targets.push(GABARITO);
-if (all || only.has('invariants')) targets.push(INVARIANTS);
-if (all || only.has('tests')) targets.push(...discoverTests());
+if (all || modes.has('gabarito')) targets.push(scoped(GABARITO));
+if (all || modes.has('invariants')) targets.push(scoped(INVARIANTS));
+if (all || modes.has('tests')) {
+  targets.push(...discoverTests().filter(target => match === null || target.name.includes(match)));
+}
 
 if (!targets.length) {
-  console.error('Nada a rodar. Flags validas: --gabarito, --invariants, --tests');
+  console.error(`Nada a rodar${match === null ? '' : ` para o filtro: ${match}`}.`);
   process.exit(2);
 }
 

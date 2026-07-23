@@ -7,6 +7,7 @@ import process from 'node:process';
 import vm from 'node:vm';
 import { pathToFileURL } from 'node:url';
 import { selectMobElementModsRegime } from './mob-element-mod-regime.mjs';
+import { SHARED_UNIFIED_GOLDEN_CASES } from './unified-golden-cases.mjs';
 
 const ROOT = process.cwd();
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -23,6 +24,12 @@ const SINGLE_TARGET_RP_SPELLS = new Set(['exori san', 'exori con', 'exori infir 
 const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 const isSingleTargetRune = name => SINGLE_TARGET_RUNES.has(norm(name));
 const isRpSingleTargetSpell = text => SINGLE_TARGET_RP_SPELLS.has(norm(text));
+const DISABLE_GOLDEN_SESSION_FILTER = process.argv.includes('--no-session-filter');
+const SHOW_MODEL_STATS = process.argv.includes('--model-stats');
+const modelStats = { queries:0, pairingRequests:0, pairingHits:0, classifications:0, classificationHits:0, skippedSessions:0 };
+const SESSION_PAIRS_CACHE = new Map();
+const SESSION_MODEL_CACHE = new Map();
+const SESSION_CLOCK_CACHE = new WeakMap();
 
 function splitSessions(text) {
   const sessions = [];
@@ -46,11 +53,19 @@ function parseSessionDate(session) {
 }
 
 function sessionPairs(serverPath, localPath) {
+  modelStats.pairingRequests++;
+  const cacheKey = `${path.resolve(serverPath)}\n${path.resolve(localPath)}`;
+  if (SESSION_PAIRS_CACHE.has(cacheKey)) {
+    modelStats.pairingHits++;
+    return SESSION_PAIRS_CACHE.get(cacheKey);
+  }
   const servers = splitSessions(fs.readFileSync(serverPath, 'utf8'));
   const locals = splitSessions(fs.readFileSync(localPath, 'utf8'));
   if (servers.length === 1 && locals.length === 1) {
     const sessionDate = parseSessionDate(servers[0]);
-    return [{ sv: servers[0], lc: locals[0], sessionDate, label: sessionDate ? `${sessionDate.day}/${sessionDate.month}/${sessionDate.year}` : 'undated' }];
+    const pairs = [{ sv: servers[0], lc: locals[0], sessionDate, label: sessionDate ? `${sessionDate.day}/${sessionDate.month}/${sessionDate.year}` : 'undated' }];
+    SESSION_PAIRS_CACHE.set(cacheKey, pairs);
+    return pairs;
   }
   const pairs = [];
   for (const sv of servers) {
@@ -66,6 +81,7 @@ function sessionPairs(serverPath, localPath) {
     }
     if (best && bestDiff <= 3600) pairs.push({ sv, lc: best, sessionDate: sd, label: `${sd.day}/${sd.month}/${sd.year}` });
   }
+  SESSION_PAIRS_CACHE.set(cacheKey, pairs);
   return pairs;
 }
 
@@ -117,24 +133,58 @@ const isTempExcludedSession = (serverPath, sd) =>
   !!sd && sd.year === 2026 && sd.month === 6 && sd.day === 9 && sd.saveSec === JADED_EXCLUDED_SESSION_SAVESEC &&
   /jaded Server Log\.txt$/.test(serverPath);
 
-const MODEL_CACHE = new Map();
-function modelForPair(serverPath, localPath) {
-  const cacheKey = `${path.resolve(serverPath)}\n${path.resolve(localPath)}`;
-  if (MODEL_CACHE.has(cacheKey)) return MODEL_CACHE.get(cacheKey);
+function clocksInSession(session) {
+  if (!SESSION_CLOCK_CACHE.has(session)) {
+    SESSION_CLOCK_CACHE.set(session, new Set(String(session.text || '').match(/\b\d{2}:\d{2}:\d{2}\b/g) || []));
+  }
+  return SESSION_CLOCK_CACHE.get(session);
+}
+
+function modelForSession(serverPath, localPath, pair, pairIndex) {
+  const cacheKey = `${path.resolve(serverPath)}\n${path.resolve(localPath)}\n${pairIndex}`;
+  if (SESSION_MODEL_CACHE.has(cacheKey)) {
+    modelStats.classificationHits++;
+    return SESSION_MODEL_CACHE.get(cacheKey);
+  }
   const out = [];
-  for (const pair of sessionPairs(serverPath, localPath)) {
-    if (isTempExcludedSession(serverPath, pair.sessionDate)) continue;
-    const mobElementRegime = selectMobElementModsRegime(pair.sessionDate);
-    const ctx = freshCtx(mobElementRegime);
-    const res = ctx.classifyWithLocalChat(pair.sv.text, pair.lc.text, { trace:true });
-    if (!res || res.error) continue;
+  if (isTempExcludedSession(serverPath, pair.sessionDate)) {
+    SESSION_MODEL_CACHE.set(cacheKey, out);
+    return out;
+  }
+  const mobElementRegime = selectMobElementModsRegime(pair.sessionDate);
+  const ctx = freshCtx(mobElementRegime);
+  const res = ctx.classifyWithLocalChat(pair.sv.text, pair.lc.text, { trace:true });
+  modelStats.classifications++;
+  if (res && !res.error) {
     for (const turn of res.turnTrace || []) {
       const evidence = turn.experimentalEvidence || {};
       const ev = { ...evidence, ts:turn.ts, lines:turn.lines || [] };
       out.push({ pairLabel:pair.label, mobElementRegime, ev, resolved:resolvedFromTurn(turn), res });
     }
   }
-  MODEL_CACHE.set(cacheKey, out);
+  SESSION_MODEL_CACHE.set(cacheKey, out);
+  return out;
+}
+
+function modelForPair(serverPath, localPath, { timestamps = null } = {}) {
+  modelStats.queries++;
+  const wanted = timestamps ? [...new Set(timestamps)].sort((a, b) => a - b) : null;
+  const wantedClocks = wanted && new Set(wanted.map(fmtSec));
+  const out = [];
+  for (const [pairIndex, pair] of sessionPairs(serverPath, localPath).entries()) {
+    if (wantedClocks) {
+      const sessionClocks = clocksInSession(pair.sv);
+      let containsWantedClock = false;
+      for (const clock of wantedClocks) {
+        if (sessionClocks.has(clock)) { containsWantedClock = true; break; }
+      }
+      if (!containsWantedClock) {
+        modelStats.skippedSessions++;
+        continue;
+      }
+    }
+    out.push(...modelForSession(serverPath, localPath, pair, pairIndex));
+  }
   return out;
 }
 
@@ -142,9 +192,9 @@ function lineSummary(row) {
   return Object.fromEntries(['arrow', 'spell', 'rune', 'grenade'].map(comp => [comp, sumComp(row.resolved.lines, comp)]));
 }
 
-function findModelTurn(server, local, ts, fingerprint) {
-  const rows = modelForPair(`logs/${server}`, `logs/${local}`).filter(row => row.ev.ts === ts);
-  return (fingerprint && rows.find(row => fingerprint(row.resolved.lines))) || rows[0] || null;
+function findModelTurnInRows(rows, ts, fingerprint) {
+  const matching = rows.filter(row => row.ev.ts === ts);
+  return (fingerprint && matching.find(row => fingerprint(row.resolved.lines))) || matching[0] || null;
 }
 
 const countIs = expected => row => {
@@ -381,25 +431,44 @@ const CASES = [
   // Tres blocos contiguos e limpos: granada 11 hits TODOS CRIT com dano identico por mob
   // (oozing 1775 x6, sopping 1698 x2, myco 1707 x2, maggot 1700), AA 8 hits nao-crit
   // (628-679) e Divine Barrage 11 hits (823-862). Antes ficava `unresolved`.
-  CL('thunder-arrow/18:52:46','thunder arrow Server Log.txt','thunder arrow Local Chat.txt','18:52:46',countIs({arrow:8,spell:11,rune:0,grenade:11})),
-
-  // 18:52:44 -- o par do anterior. A granada estava atribuida AQUI (A1 S3 G12) so porque
-  // 18:52:46 era `unresolved` e nao podia competir no desempate por dependencia
-  // (prefer-grenade-cast-turn-that-cannot-resolve-without-it). O cast e 18:52:42, entao
-  // ambos os turnos caem na janela legal [cast+2, cast+4]; com os dois resolvendo, a
-  // granada vai pro que nao resolve sem ela. Aqui sobra AA 4 + Divine Caldera 12.
-  CL('thunder-arrow/18:52:44','thunder arrow Server Log.txt','thunder arrow Local Chat.txt','18:52:44',countIs({arrow:4,spell:12,rune:0,grenade:0})),
-
-  // 18:52:42 -- turno de AA PURO, sem cast nenhum. Era a "familia A" do diagnostico:
-  // 2 hits que o eixo fisico dava como disjuntos (O_fis [1074,1144] vs [1559,1652]) e o
-  // eixo de energy fecha. O primeiro hit carrega `perfect shot`, revertido por D-010f.
-  CL('thunder-arrow/18:52:42','thunder arrow Server Log.txt','thunder arrow Local Chat.txt','18:52:42',countIs({arrow:2,spell:0,rune:0,grenade:0})),
+  ...SHARED_UNIFIED_GOLDEN_CASES.map(c => CL(c.id, c.server, c.local, c.ts, countIs(c.expected))),
 ];
+
+const onlyIndex = process.argv.indexOf('--only');
+const onlyFilter = onlyIndex >= 0 ? process.argv[onlyIndex + 1] : null;
+if (onlyIndex >= 0 && !onlyFilter) {
+  console.error('Uso: node tools/unified-experimental.mjs --gabarito --only <substring>');
+  process.exit(2);
+}
+const selectedByFilter = id => !onlyFilter || id.includes(onlyFilter);
+const fixtureKey = (server, local) => `${server}\n${local}`;
+
+function printModelStats() {
+  if (!SHOW_MODEL_STATS) return;
+  console.log(`MODEL queries=${modelStats.queries} pairingRequests=${modelStats.pairingRequests} pairingHits=${modelStats.pairingHits} classifications=${modelStats.classifications} classificationHits=${modelStats.classificationHits} skippedSessions=${modelStats.skippedSessions}`);
+}
 
 function runGabarito() {
   let pass = 0, fail = 0, skipped = 0;
-  for (const c of CASES) {
-    const row = findModelTurn(c.sv, c.lc, c.ts, c.fp);
+  const selectedCases = CASES.filter(c => selectedByFilter(c.id));
+  if (!selectedCases.length) {
+    console.error(`Nenhum caso de gabarito corresponde a: ${onlyFilter}`);
+    process.exit(2);
+  }
+  const casesByFixture = new Map();
+  for (const c of selectedCases) {
+    const key = fixtureKey(c.sv, c.lc);
+    if (!casesByFixture.has(key)) casesByFixture.set(key, []);
+    casesByFixture.get(key).push(c);
+  }
+  const rowsByFixture = new Map();
+  for (const [key, fixtureCases] of casesByFixture) {
+    const [server, local] = key.split('\n');
+    const timestamps = DISABLE_GOLDEN_SESSION_FILTER ? null : fixtureCases.map(c => c.ts);
+    rowsByFixture.set(key, modelForPair(`logs/${server}`, `logs/${local}`, { timestamps }));
+  }
+  for (const c of selectedCases) {
+    const row = findModelTurnInRows(rowsByFixture.get(fixtureKey(c.sv, c.lc)), c.ts, c.fp);
     if (!row) { console.log(`FAIL ${c.id}: no aligned model turn at ${c.tsRaw}`); fail++; continue; }
     // Casos de cardinalidade por leech sao regime-independentes (D-019/V-015a):
     // o leech absoluto + fator de area nao usam a tabela de mob, entao o D-017
@@ -410,27 +479,8 @@ function runGabarito() {
     if (reason) { console.log(`FAIL ${c.id}: ${reason}`); fail++; }
     else { const got = lineSummary(row); console.log(`PASS ${c.id}: A${got.arrow} S${got.spell} R${got.rune} G${got.grenade}${row.resolved.ambiguous.length ? ` ambiguous=${row.resolved.ambiguous.length}` : ''}`); pass++; }
   }
-  for (const [id,sv,lc] of [
-    ['bakradrone','logs/bakradrone server log.txt','logs/bakradrone local chat.txt'],
-    ['highwin2','logs/highwin 2 Server Log.txt','logs/highwin 2 Local Chat.txt'],
-    ['bastion','logs/bastion server log ek.txt','logs/bastion local chat ek.txt'],
-  ]) {
-    const rows = modelForPair(sv,lc).filter(row => row.mobElementRegime.id === 'pre-2026-06-16');
-    if (!rows.length) { console.log(`SKIP audit/${id}: no dated pre-2026-06-16 session; not normatively approved under D-017`); skipped++; continue; }
-    const violations = [];
-    for (const row of rows) {
-      const got = lineSummary(row);
-      if (row.resolved.lines.length !== row.ev.lines.length) violations.push(`${fmtSec(row.ev.ts)} lost observed hits`);
-      if (!row.ev.isRpRegime && got.arrow > 1) violations.push(`${fmtSec(row.ev.ts)} non-RP AA=${got.arrow}`);
-      if (row.ev.uniqueBossTarget && [got.arrow,got.spell,got.rune,got.grenade].some(count => count > 1)) violations.push(`${fmtSec(row.ev.ts)} boss reused a concrete action`);
-      if (row.ev.spellCast && isRpSingleTargetSpell(row.ev.spellCast.text) && got.spell > 1) violations.push(`${fmtSec(row.ev.ts)} single-target spell hits=${got.spell}`);
-      if (row.ev.runeUse && isSingleTargetRune(row.ev.runeUse.name) && got.rune > 1) violations.push(`${fmtSec(row.ev.ts)} single-target rune hits=${got.rune}`);
-      const labelReason = concreteLabels(row); if (labelReason) violations.push(`${fmtSec(row.ev.ts)} ${labelReason}`);
-    }
-    if (violations.length) { console.log(`FAIL audit/${id}: ${violations.slice(0,5).join('; ')}`); fail++; }
-    else { console.log(`PASS audit/${id}: ${rows.length} pre-cutoff turns preserve hits, cardinality and concrete labels`); pass++; }
-  }
   console.log(`\n${pass}/${pass + fail} pre-2026-06-16 experimental gabarito/problem turns ok; ${skipped} outside reviewer scope`);
+  printModelStats();
   process.exit(fail ? 1 : 0);
 }
 
@@ -513,7 +563,12 @@ function turnInvariantViolations(row) {
 
 function runInvariants() {
   let pass = 0, fail = 0, skipped = 0;
-  for (const [id, sv, lc] of FIXTURES) {
+  const selectedFixtures = FIXTURES.filter(([id]) => selectedByFilter(`invariants/${id}`));
+  if (!selectedFixtures.length) {
+    console.error(`Nenhuma fixture de invariantes corresponde a: ${onlyFilter}`);
+    process.exit(2);
+  }
+  for (const [id, sv, lc] of selectedFixtures) {
     let rows;
     try {
       rows = modelForPair(`logs/${sv}`, `logs/${lc}`).filter(row => row.mobElementRegime.id === 'pre-2026-06-16');
@@ -540,6 +595,7 @@ function runInvariants() {
     }
   }
   console.log(`\n${pass}/${pass + fail} fixtures pre-2026-06-16 sem violacao de invariante mecanico; ${skipped} fora do escopo D-017`);
+  printModelStats();
   process.exit(fail ? 1 : 0);
 }
 
@@ -551,12 +607,16 @@ function runAudit() {
   let suspects = 0;
   let audited = 0;
   let bigBlocks = 0;
-  for (const [id, sv, lc] of FIXTURES) {
-    let pairs;
-    try { pairs = sessionPairs(`logs/${sv}`, `logs/${lc}`); }
+  const selectedFixtures = FIXTURES.filter(([id]) => selectedByFilter(`audit/${id}`));
+  if (!selectedFixtures.length) {
+    console.error(`Nenhuma fixture de auditoria corresponde a: ${onlyFilter}`);
+    process.exit(2);
+  }
+  for (const [id, sv, lc] of selectedFixtures) {
+    let rows;
+    try { rows = modelForPair(`logs/${sv}`, `logs/${lc}`); }
     catch (err) { console.log(`SKIP audit/${id}: ${err.message}`); continue; }
     const seen = new Set();
-    const rows = modelForPair(`logs/${sv}`, `logs/${lc}`);
     audited++;
     for (const row of rows) {
       if (seen.has(row.res)) continue;
@@ -572,6 +632,7 @@ function runAudit() {
   }
   console.log(`\nAUDIT: ${bigBlocks} blocos únicos de 3+ hits aceitos em ${audited} fixtures; ${suspects} SUSPECT.`);
   console.log(suspects ? 'STATUS: FAIL' : 'STATUS: PASS (nenhum bloco único grande aceito sem prova de homogeneidade + N_leech)');
+  printModelStats();
   process.exit(suspects ? 1 : 0);
 }
 
@@ -600,5 +661,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     printCompare(server, local, tsIndex >= 0 ? toSec(argv[tsIndex + 1]) : null);
     process.exit(0);
   }
-  console.log('Usage: node tools/unified-experimental.mjs --gabarito | --invariants | --audit | --compare server local [--ts HH:MM:SS]');
+  console.log('Usage: node tools/unified-experimental.mjs --gabarito | --invariants | --audit [--only substring] | --compare server local [--ts HH:MM:SS]');
 }

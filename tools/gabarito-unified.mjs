@@ -11,7 +11,16 @@
 //   node tools/gabarito-unified.mjs            -> roda os asserts (exit 1 se algum falhar)
 //   node tools/gabarito-unified.mjs --only <substr>  -> filtra casos cujo id contém <substr>
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import process from 'node:process';
+import { classificationFingerprint } from './unified-classification-fingerprint.mjs';
+import { SHARED_UNIFIED_GOLDEN_CASES } from './unified-golden-cases.mjs';
 const ROOT = process.cwd(); const read = p => fs.readFileSync(p, 'utf8');
+const CACHE_ENABLED = !process.argv.includes('--no-cache');
+const SHOW_CACHE_STATS = process.argv.includes('--cache-stats');
+const SHOW_FINGERPRINTS = process.argv.includes('--fingerprints');
+const sessionPairsCache = new Map();
+const classificationCache = new Map();
+const sessionClockCache = new WeakMap();
+const cacheStats = { requests: 0, classifications: 0, hits: 0, skippedWithoutTimestamp: 0 };
 
 function freshCtx() {
   const ctx = { console: { log() {}, warn() {}, error() {} }, Math, JSON, Array, Object, Number, String, Map, Set, isFinite, isNaN, parseInt, parseFloat, Date, Float32Array, Int32Array };
@@ -59,21 +68,67 @@ function buildPairs(svS, lcS) {
   return pairs;
 }
 function sessionsOf(svP, lcP) {
+  const cacheKey = path.resolve(svP) + '\n' + path.resolve(lcP);
+  if (sessionPairsCache.has(cacheKey)) return sessionPairsCache.get(cacheKey);
   const svS = splitSessions(read(svP)), lcS = splitSessions(read(lcP));
-  if (svS.length === 1 && lcS.length === 1) return [{ sv: svS[0], lc: lcS[0] }];
-  return buildPairs(svS, lcS);
+  const pairs = svS.length === 1 && lcS.length === 1 ? [{ sv: svS[0], lc: lcS[0] }] : buildPairs(svS, lcS);
+  sessionPairsCache.set(cacheKey, pairs);
+  return pairs;
 }
 const toSec = hms => { const m=/^(\d{2}):(\d{2}):(\d{2})$/.exec(hms); return m ? (+m[1]*3600)+(+m[2]*60)+(+m[3]) : null; };
+const clockForTs = ts => {
+  const normalized = ((+ts % 86400) + 86400) % 86400;
+  const h = Math.floor(normalized / 3600);
+  const m = Math.floor((normalized % 3600) / 60);
+  const s = Math.floor(normalized % 60);
+  return [h, m, s].map(value => String(value).padStart(2, '0')).join(':');
+};
+
+function sessionContainsClock(session, clock) {
+  if (!sessionClockCache.has(session)) {
+    sessionClockCache.set(session, new Set(String(session.text || '').match(/\b\d{2}:\d{2}:\d{2}\b/g) || []));
+  }
+  return sessionClockCache.get(session).has(clock);
+}
+
+function classifyPair(svP, lcP, pair, pairIndex) {
+  cacheStats.requests++;
+  const cacheKey = path.resolve(svP) + '\n' + path.resolve(lcP) + '\n' + pairIndex;
+  if (CACHE_ENABLED && classificationCache.has(cacheKey)) {
+    cacheStats.hits++;
+    return classificationCache.get(cacheKey);
+  }
+  const ctx = freshCtx();
+  let result = null;
+  try {
+    result = ctx.UnifiedClassificationEngine.classifyUnified(pair.sv.text, pair.lc.text, {
+      mobModsPre: ctx.MOB_ELEMENT_MODS,
+      mobModsPost: ctx.MOB_ELEMENT_MODS_POST_2026_06_16,
+      strictLeech: true,
+      maxOriginal: 6000,
+      useFloat16Mitigation: true,
+    });
+  } catch (_error) {
+    result = null;
+  }
+  cacheStats.classifications++;
+  if (CACHE_ENABLED) classificationCache.set(cacheKey, result);
+  return result;
+}
 
 function findTurns(svN, lcN, ts, date) {
   const svP = 'logs/' + svN, lcP = 'logs/' + lcN;
   if (!fs.existsSync(svP) || !fs.existsSync(lcP)) return { missing: true, turns: [] };
   const found = [];
-  for (const pair of sessionsOf(svP, lcP)) {
-    const wantedDate = parseCaseDate(date);
+  const wantedDate = parseCaseDate(date);
+  const wantedClock = clockForTs(ts);
+  for (const [pairIndex, pair] of sessionsOf(svP, lcP).entries()) {
     if (wantedDate && dateKey(parseSessionDate(pair.sv)) !== wantedDate) continue;
-    const ctx = freshCtx();
-    let res; try { res = ctx.UnifiedClassificationEngine.classifyUnified(pair.sv.text, pair.lc.text, { mobModsPre: ctx.MOB_ELEMENT_MODS, mobModsPost: ctx.MOB_ELEMENT_MODS_POST_2026_06_16, strictLeech: true, maxOriginal: 6000, useFloat16Mitigation: true }); } catch (e) { continue; }
+    if (!sessionContainsClock(pair.sv, wantedClock)) {
+      cacheStats.skippedWithoutTimestamp++;
+      continue;
+    }
+    const res = classifyPair(svP, lcP, pair, pairIndex);
     if (!res || !res.turns) continue;
     for (const t of res.turns) if (t.ts === ts) found.push(t);
   }
@@ -87,6 +142,15 @@ const counts = turn => {
 
 const C = (id, sv, lc, ts, check, date) => ({ id, sv, lc, ts: toSec(ts), tsRaw: ts, check, date });
 const CN = (id, sv, lc, ts, date) => ({ id, sv, lc, ts: toSec(ts), tsRaw: ts, noTurn: true, date });
+const sharedCountCheck = expected => turn => {
+  const got = counts(turn);
+  for (const [component, count] of Object.entries(expected)) {
+    if (got[component] !== count) {
+      return `esperado ${JSON.stringify(expected)}; got A${got.arrow} S${got.spell} R${got.rune} G${got.grenade}`;
+    }
+  }
+  return null;
+};
 const CASES = [
   // essence/Echo of Ichgahal: boss unitario, sem cast ofensivo e sem Using de
   // runa no turno; o unico hit observado so pode ser AA.
@@ -804,6 +868,7 @@ const CASES = [
   // Caldera com 2 hits no bakragore (viola M-009) corrigido para Caldera(1) + Granada(1).
   C('mazzerinbarrage/21:08:57', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '21:08:57',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 1 && c.rune === 0 && c.grenade === 1) ? null : `esperado A1 S1 G1; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '14/Jun/2026'),
+  ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 
 const argv = process.argv.slice(2);
@@ -820,10 +885,14 @@ for (const c of cases) {
     if (c.noTurn) { console.log(`PASS ${c.id}`); pass++; continue; }
     console.log(`FAIL ${c.id}: nenhum turno alinhado em ${c.tsRaw}`); fail++; continue;
   }
+  if (SHOW_FINGERPRINTS) console.log(`FINGERPRINT ${c.id} ${classificationFingerprint(pick)}`);
   if (c.noTurn) { console.log(`FAIL ${c.id}: turno alinhado inesperado em ${c.tsRaw}`); fail++; continue; }
   let reason = null; try { reason = c.check(pick); } catch (e) { reason = 'throw: ' + e.message; }
   if (reason) { console.log(`FAIL ${c.id}: ${reason}`); fail++; }
   else { console.log(`PASS ${c.id}`); pass++; }
 }
 console.log(`\n${pass}/${pass+fail} gabarito-unified ok` + (fail ? `  (${fail} falha(s))` : ''));
+if (SHOW_CACHE_STATS) {
+  console.log(`CACHE enabled=${CACHE_ENABLED} requests=${cacheStats.requests} classifications=${cacheStats.classifications} hits=${cacheStats.hits} skippedWithoutTimestamp=${cacheStats.skippedWithoutTimestamp} pairedFixtures=${sessionPairsCache.size}`);
+}
 process.exit(fail ? 1 : 0);
