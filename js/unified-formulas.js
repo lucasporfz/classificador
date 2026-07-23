@@ -760,13 +760,40 @@
     return normalizeName(mods.bestiaryClass) === setup.class ? setup.multiplier : 1;
   }
 
+  const STATIC_ELEMENTAL_MECHANICS_CACHE_LIMIT = 128;
+  const staticElementalMechanicsByMods = new WeakMap();
   function elementalOriginalCandidates(hit, element, context, options) {
     const mods = getMobMods(hit.mob, context);
     if (!mods) return { known: false, originals: [], reason: 'mob_mods_absent' };
     const key = ELEMENT_KEYS[element];
     if (!key || !(mods[key] > 0)) return { known: true, originals: [], reason: 'element_mod_absent_or_zero' };
-    const mod = effectiveMod(+mods[key], pierceForElement(element, hit, context));
-    const mit = mitigationMultiplier(mods, context);
+    const rawMod = +mods[key];
+    const rawMitigation = +(mods.mitigation) || 0;
+    const pierce = pierceForElement(element, hit, context);
+    const useFloat16 = !(context && context.useFloat16Mitigation === false);
+    let mod;
+    let mit;
+    if (typeof mods === 'object' || typeof mods === 'function') {
+      let cache = staticElementalMechanicsByMods.get(mods);
+      if (!cache) {
+        cache = new Map();
+        staticElementalMechanicsByMods.set(mods, cache);
+      }
+      const staticKey = key + '|' + pierce + '|' + (useFloat16 ? 1 : 0);
+      const cached = cache.get(staticKey);
+      if (cached && cached.rawMod === rawMod && cached.rawMitigation === rawMitigation) {
+        mod = cached.mod;
+        mit = cached.mit;
+      } else {
+        mod = effectiveMod(rawMod, pierce);
+        mit = mitigationMultiplier(mods, context);
+        if (cache.size >= STATIC_ELEMENTAL_MECHANICS_CACHE_LIMIT) cache.clear();
+        cache.set(staticKey, { rawMod, rawMitigation, mod, mit });
+      }
+    } else {
+      mod = effectiveMod(rawMod, pierce);
+      mit = mitigationMultiplier(mods, context);
+    }
     const post = postMultiplier(hit, context);
     const terraBurstBonusMultiplier = options && options.terraBurstBonusMultiplier > 1 ? +options.terraBurstBonusMultiplier : 1;
     const crit = criticalMultiplierForHit(hit, context);
