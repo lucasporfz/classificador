@@ -1972,8 +1972,8 @@
     return entry ? Object.assign({ incantation: inc }, entry) : null;
   }
 
-  function spellLeechBonusOptionsForBlock(block, channel) {
-    const entry = spellLeechBonusEntryForBlock(block);
+  function spellLeechBonusOptionsForBlock(block, channel, resolvedEntry) {
+    const entry = arguments.length >= 3 ? resolvedEntry : spellLeechBonusEntryForBlock(block);
     if (!entry) return [0];
     const values = channel === 'mana' ? entry.mana : entry.life;
     return sortedUnique((values && values.length ? values : [0]).map(x => +x || 0));
@@ -1993,7 +1993,12 @@
   function leechEffectiveRateCandidates(setup, channel, block, hit) {
     const base = setup && channel === 'mana' ? (+setup.manaBase || 0) : (+setup.lifeBase || 0);
     const minorBonuses = leechMinorBonusOptionsForHit(setup, channel, hit);
-    const spellBonuses = spellLeechBonusOptionsForBlock(block, channel);
+    let spellBonusEntry = null;
+    let spellBonuses = [0];
+    if (block && block.comp === 'spell') {
+      spellBonusEntry = spellLeechBonusEntryForBlock(block);
+      spellBonuses = spellLeechBonusOptionsForBlock(block, channel, spellBonusEntry);
+    }
     const out = [];
     for (const minorBonus of minorBonuses || [0]) {
       for (const spellBonus of spellBonuses || [0]) {
@@ -2003,7 +2008,7 @@
           minorBonus: +minorBonus || 0,
           minorMob: +minorBonus ? (channel === 'mana' ? setup.voidsMob : setup.vampiricMob) : null,
           spellBonus: +spellBonus || 0,
-          spellBonusEntry: spellLeechBonusEntryForBlock(block),
+          spellBonusEntry,
         });
       }
     }
