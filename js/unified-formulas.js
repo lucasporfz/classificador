@@ -376,7 +376,33 @@
     return out.sort((a, b) => a.base - b.base || a.weaponCount - b.weaponCount);
   }
 
-  function normalizeName(s) { return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+  const NORMALIZE_NAME_CACHE_LIMIT = 4096;
+  const normalizeNameCache = new Map();
+  function isCanonicalAsciiName(raw) {
+    if (!raw) return true;
+    let previousSpace = false;
+    for (let index = 0; index < raw.length; index++) {
+      const code = raw.charCodeAt(index);
+      if (code > 127 || (code >= 65 && code <= 90) || (code <= 32 && code !== 32)) return false;
+      if (code === 32) {
+        if (index === 0 || index === raw.length - 1 || previousSpace) return false;
+        previousSpace = true;
+      } else {
+        previousSpace = false;
+      }
+    }
+    return true;
+  }
+  function normalizeName(s) {
+    const raw = String(s || '');
+    if (isCanonicalAsciiName(raw)) return raw;
+    const cached = normalizeNameCache.get(raw);
+    if (cached !== undefined) return cached;
+    const normalized = raw.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (normalizeNameCache.size >= NORMALIZE_NAME_CACHE_LIMIT) normalizeNameCache.clear();
+    normalizeNameCache.set(raw, normalized);
+    return normalized;
+  }
 
   function elementalStateKey(h) {
     return normalizeName(h.mob) + '|' + (h.exposeWeakness ? 1 : 0) + '|' + (h.isPrey ? 1 : 0) +
