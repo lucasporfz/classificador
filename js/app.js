@@ -239,8 +239,12 @@ function clsDetailComponentLabel(hit, turn) {
 
 function clsDetailCritLabel(hit) {
   if (!hit) return '-';
-  if (hit.onslaught) return (hit.realCrit || hit.lowBlow) ? 'Crítico e Onslaught' : 'Onslaught';
-  if (hit.type === 'crit') return hit.lowBlow ? 'crítico low blow' : 'crítico';
+  if (hit.onslaught) return (hit.realCrit || hit.lowBlow) ? (hit.savageBlow ? 'Crítico savage blow e Onslaught' : 'Crítico e Onslaught') : 'Onslaught';
+  if (hit.type === 'crit' || hit.realCrit || hit.lowBlow) {
+    if (hit.lowBlow) return 'crítico low blow';
+    if (hit.savageBlow) return 'crítico savage blow';
+    return 'crítico';
+  }
   return '-';
 }
 

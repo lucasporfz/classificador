@@ -211,6 +211,86 @@
     row.tiers = [tierPrimary, tierEcho];
   }
 
+  const BEAM_ACTIONS = ['exevo vis lux', 'exevo gran vis lux', 'exevo max mort'];
+
+  function beamTierDamageValue(hit) {
+    const base = +hit.base;
+    if (Number.isFinite(base) && base > 0) return base;
+    return +hit.dmg || 0;
+  }
+
+  function meanBeamTierDamage(hits) {
+    if (!hits.length) return null;
+    let total = 0, count = 0;
+    for (const hit of hits) {
+      const value = beamTierDamageValue(hit);
+      if (!Number.isFinite(value) || value <= 0) continue;
+      total += value;
+      count++;
+    }
+    return count ? total / count : null;
+  }
+
+  function sameBeamComponent(a, b) {
+    return a && b && a.turnIdx === b.turnIdx && a.componentIdx === b.componentIdx;
+  }
+
+  function chooseBeamSideForUnmarked(hit, centralHits, sideHits) {
+    const centralSameComponent = centralHits.filter(anchor => sameBeamComponent(anchor, hit));
+    const sideSameComponent = sideHits.filter(anchor => sameBeamComponent(anchor, hit));
+    let centralPool = centralSameComponent;
+    let sidePool = sideSameComponent;
+
+    if (!centralPool.length || !sidePool.length) {
+      const centralSameTurn = centralHits.filter(anchor => anchor.turnIdx === hit.turnIdx);
+      const sideSameTurn = sideHits.filter(anchor => anchor.turnIdx === hit.turnIdx);
+      if (centralSameTurn.length && sideSameTurn.length) {
+        centralPool = centralSameTurn;
+        sidePool = sideSameTurn;
+      }
+    }
+
+    if (!centralPool.length || !sidePool.length) {
+      centralPool = centralHits;
+      sidePool = sideHits;
+    }
+
+    const centralSameMob = centralPool.filter(anchor => anchor.mob === hit.mob);
+    const sideSameMob = sidePool.filter(anchor => anchor.mob === hit.mob);
+    if (centralSameMob.length && !sideSameMob.length) return 'central';
+    if (sideSameMob.length && !centralSameMob.length) return 'side';
+
+    const centralMean = meanBeamTierDamage(centralPool);
+    const sideMean = meanBeamTierDamage(sidePool);
+    if (centralMean == null || sideMean == null) return 'side';
+
+    const value = beamTierDamageValue(hit);
+    if (!Number.isFinite(value) || value <= 0) return 'side';
+    return Math.abs(value - centralMean) <= Math.abs(value - sideMean) ? 'central' : 'side';
+  }
+
+  function applyBeamTiers(row, context) {
+    if (row.kind !== 'spell' || !row._allHits.length || BEAM_ACTIONS.indexOf(row._allHits[0].action) === -1) return;
+    const centralHits = row._allHits.filter(l => l.beamSide === 'central');
+    const sideHits = row._allHits.filter(l => l.beamSide === 'side');
+    if (!centralHits.length || !sideHits.length) return;
+    for (const hit of row._allHits) {
+      if (hit.beamSide === 'central' || hit.beamSide === 'side') continue;
+      const inferred = chooseBeamSideForUnmarked(hit, centralHits, sideHits);
+      if (inferred === 'central') centralHits.push(hit);
+      else if (inferred === 'side') sideHits.push(hit);
+      else return;
+    }
+    if (centralHits.length + sideHits.length !== row._allHits.length) return;
+    row.tiers = [
+      buildTerraBurstTier('tier_central', centralHits, row.turns, context),
+      buildTerraBurstTier('tier_side', sideHits, row.turns, context),
+    ];
+    row.beamTierCoverageComplete = true;
+    const fractions = Array.from(new Set(row._allHits.map(l => l.beamFraction).filter(v => v != null)));
+    if (fractions.length === 1) row.beamFraction = fractions[0];
+  }
+
   function buildCounts() {
     return { arrow: 0, spell: 0, rune: 0, grenade: 0, unresolved: 0 };
   }
@@ -319,7 +399,7 @@
       row.dmgEffPerHit = totalHits > 0 ? Math.round(totalEff / totalHits) : 0;
       row.dmgBase = row.dmgBasePerTurn;
       row.dmgEff = row.dmgEffPerTurn;
-      if (withTiers) { applyTerraBurstTiers(row, context); applyExecutionerTiers(row, context); applyDeathEchoTiers(row, context); }
+      if (withTiers) { applyTerraBurstTiers(row, context); applyExecutionerTiers(row, context); applyDeathEchoTiers(row, context); applyBeamTiers(row, context); }
       delete row._hits; delete row._base; delete row._baseHits; delete row._eff; delete row._allHits; delete row.key;
       return row;
     }).sort((a, b) => (rank[a.kind] || 9) - (rank[b.kind] || 9) || String(a.label).localeCompare(String(b.label)));
@@ -377,7 +457,9 @@
       let rune = null;
       let gren = null;
 
-      for (const component of turn.components || []) {
+      const components = turn.components || [];
+      for (let componentIdx = 0; componentIdx < components.length; componentIdx++) {
+        const component = components[componentIdx];
         const normComp = normalizeComp(component.comp || component.kind);
         const lineComp = publicLineComp(component);
         const label = component.actionLabel || component.label || '';
@@ -398,6 +480,8 @@
             comp: lineComp,
             component: normComp,
             correctedComponent: normComp,
+            turnIdx: turn.idx || index + 1,
+            componentIdx,
             action: (component.action && component.action.text) || null,
             actionLabel: label,
             ok: !!h.overkill,
@@ -407,6 +491,7 @@
             seq: Number.isFinite(+h.seq) ? +h.seq : lines.length + 1,
             type: h.realCrit || h.lowBlow ? 'crit' : (h.type || ''),
             lowBlow: !!h.lowBlow,
+            savageBlow: !!h.savageBlow,
             realCrit: !!h.realCrit,
             onslaught: !!h.onslaught,
             exposeWeakness: !!h.exposeWeakness,

@@ -227,6 +227,10 @@
 
   function collectGoldLeechObservations(turns, context) {
     const observations = [];
+    const pendingGravSanWindows = context && context.gravSanSetup
+      && context.gravSanSetup.pendingDamageLeechFallback
+      ? (context.gravSanSetup.windows || [])
+      : [];
     for (const turn of turns || []) {
       if (!turn || turn.status !== 'resolved' || turn.partialEdge) continue;
       for (const comp of turn.components || []) {
@@ -234,6 +238,10 @@
         if (!gold) continue;
         const main = (comp.hits || []).filter(h => isMainHit(h) && !h.virtual);
         for (const h of main) {
+          // D-030: enquanto o tier global está pendente, dano de dentro da janela
+          // ainda contém um multiplicador desconhecido e não pode votar no próprio
+          // setup de leech que será usado para inferi-lo.
+          if (pendingGravSanWindows.some(w => h.ts >= w.start && h.ts <= w.end)) continue;
           const life = cloneHitForGoldObservation(h, 'life', +h.lifeLeech || 0, gold.n, gold.source, context);
           const mana = cloneHitForGoldObservation(h, 'mana', +h.manaLeech || 0, gold.n, gold.source, context);
           if (life) observations.push(life);
@@ -1135,7 +1143,7 @@
 
   // Canal FÍSICO de prova para a detecção de BM (add-bm-physical-pierce-channel):
   // paralelo ao canal holy acima. Extrai, de um componente `arrow` RP, o SUBCONJUNTO
-  // de hits "limpos" (sem overkill/crit/onslaught/lowBlow/prey/EW — garante post=1 e
+  // de hits "limpos" (sem overkill/crit/onslaught/lowBlow/savageBlow/prey/EW — garante post=1 e
   // crit=1 no subconjunto), e usa esse subconjunto como bloco de prova quando tem
   // >=2 hits de >=2 mobs distintos. Não exige que TODO hit do componente seja limpo
   // (validado empiricamente: exigir isso elimina o sinal em turnos RP reais, que quase
@@ -1145,7 +1153,7 @@
   // Ethereal Barrage) como prova de BM.
   function physicalRpPierceProbeSubset(block) {
     if (!block || block.comp !== 'arrow' || !block.hits) return null;
-    const clean = block.hits.filter(h => h && !h.overkill && !h.realCrit && !h.onslaught && !h.lowBlow && !h.isPrey && !h.exposeWeakness);
+    const clean = block.hits.filter(h => h && !h.overkill && !h.realCrit && !h.onslaught && !h.lowBlow && !h.savageBlow && !h.isPrey && !h.exposeWeakness);
     if (clean.length < 2) return null;
     if (distinctMainMobCount(clean) < 2) return null;
     return { comp: 'arrow', hits: clean };

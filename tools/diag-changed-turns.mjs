@@ -115,7 +115,7 @@ function dumpTurn(u, t) {
     for (const h of (c.hits || [])) {
       const p = h.evidence && h.evidence.physical;
       const holy = h.evidence && h.evidence.elemental && h.evidence.elemental.holy;
-      const flags = [h.realCrit && 'CRIT', h.onslaught && 'ONS', h.lowBlow && 'LB', h.overkill && 'OK', h.isPrey && 'prey', h.exposeWeakness && 'EW'].filter(Boolean).join(' ');
+      const flags = [h.realCrit && 'CRIT', h.onslaught && 'ONS', h.lowBlow && 'LB', h.savageBlow && 'SB', h.overkill && 'OK', h.isPrey && 'prey', h.exposeWeakness && 'EW'].filter(Boolean).join(' ');
       const phys = p && p.interval ? `O_fis=[${p.interval[0]},${p.interval[1]}]` : '';
       const holyStr = holy && holy.known ? `O_holy=[${(holy.originals || []).join(',')}]` : '';
       const fit = fitBySeq.get(h.seq);

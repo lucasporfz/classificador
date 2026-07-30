@@ -379,7 +379,7 @@
     return raw.includes('charm') ? 'charm' : 'proc';
   }
 
-  function inferGravSanSetup(serverFacts, localFacts, options) {
+  function inferGravSanSetup(serverFacts, localFacts, options, fallbackState) {
     if (options && options.gravSanBonus != null) {
       const bonus = +options.gravSanBonus || 0;
       const castsOpt = ((localFacts && localFacts.playerCasts) || []).filter(c => normalizeName(c.text) === GRAV_SAN_INCANTATION);
@@ -415,10 +415,12 @@
 
     const scores = GRAV_SAN_BONUS_CANDIDATES.map(b => ({ bonus: b, multiplier: 1 + b, votes: 0, error: 0, examples: [] }));
     const inside = charmEvents.filter(ev => isWithinAnyWindow(ev.ts, windows));
+    let comparableCharmCount = 0;
     for (const ev of inside) {
       const key = keyOf(ev);
       const baseline = baselines.get(key);
       if (!(baseline > 0)) continue;
+      comparableCharmCount++;
       for (const cand of scores) {
         const expected = baseline * cand.multiplier;
         const delta = Math.abs(ev.dmg - expected);
@@ -443,18 +445,262 @@
     }
     scores.sort((a, b) => b.votes - a.votes || a.error - b.error || b.bonus - a.bonus);
     const best = scores[0];
-    if (!best || best.votes <= 0) {
-      return { bonus: 0, multiplier: 1, source: 'utevo_grav_san_cast_without_charm_inference', casts, windows, ranked: scores, insideCharmCount: inside.length };
+    if (comparableCharmCount > 0) {
+      const tied = best && best.votes > 0
+        ? scores.filter(c => c.votes === best.votes && Math.abs(c.error - best.error) <= Number.EPSILON)
+        : [];
+      if (!best || best.votes <= 0 || tied.length !== 1) {
+        return {
+          bonus: 0,
+          multiplier: 1,
+          source: 'utevo_grav_san_comparable_charm_conflict',
+          casts,
+          windows,
+          ranked: scores,
+          insideCharmCount: inside.length,
+          comparableCharmCount,
+        };
+      }
+      return {
+        bonus: best.bonus,
+        multiplier: best.multiplier,
+        source: 'inferred_from_charm_damage_in_grav_san_windows',
+        casts,
+        windows,
+        ranked: scores,
+        examples: best.examples,
+        insideCharmCount: inside.length,
+        comparableCharmCount,
+      };
     }
-    return {
-      bonus: best.bonus,
-      multiplier: best.multiplier,
-      source: 'inferred_from_charm_damage_in_grav_san_windows',
+
+    const pending = {
+      bonus: 0,
+      multiplier: 1,
+      source: 'utevo_grav_san_pending_damage_leech_fallback',
       casts,
       windows,
       ranked: scores,
-      examples: best.examples,
       insideCharmCount: inside.length,
+      comparableCharmCount: 0,
+      pendingDamageLeechFallback: true,
+    };
+    const context = fallbackState && fallbackState.context;
+    const resolvedTurns = fallbackState && fallbackState.resolvedTurns;
+    if (!context || !Array.isArray(resolvedTurns)) return pending;
+
+    // D-030: a mesma função canônica finaliza o estado pendente. Os componentes já
+    // vieram resolvidos sem leech; seus hits, ação e N_leech ficam congelados enquanto
+    // os três tiers oficiais comparam modo ativo x inativo.
+    const ranked = GRAV_SAN_BONUS_CANDIDATES.map(bonus => ({
+      bonus,
+      multiplier: 1 + bonus,
+      votes: 0,
+      eligibleComponents: 0,
+      fits: 0,
+      exact: 0,
+      tolerated: 0,
+      cappedLow: 0,
+      contradictions: 0,
+      residual: 0,
+      examples: [],
+    }));
+    const rankedByBonus = new Map(ranked.map(x => [x.bonus, x]));
+    const componentVotes = [];
+    const abstentions = [];
+    const previousSetup = context.gravSanSetup;
+    const compareFit = (a, b) => {
+      if (a.contradictions !== b.contradictions) return a.contradictions - b.contradictions;
+      if (a.fits !== b.fits) return b.fits - a.fits;
+      if (a.exact !== b.exact) return b.exact - a.exact;
+      return a.residual - b.residual;
+    };
+    const scoreMode = (comp, main, nLeech, active) => {
+      const out = {
+        active,
+        fits: 0,
+        exact: 0,
+        tolerated: 0,
+        cappedLow: 0,
+        contradictions: 0,
+        residual: 0,
+        absent: 0,
+        scoredHitCount: 0,
+        exactManaObserved: [],
+        examples: [],
+      };
+      const scoredHits = new Set();
+      withGravSanBlockMode(context, comp, active, () => {
+        for (const hit of main) {
+          if (hit.overkill) continue;
+          for (const channel of ['life', 'mana']) {
+            const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
+            if (!(observed > 0)) {
+              out.absent++;
+              continue;
+            }
+            const check = observedLeechAcceptsN(hit, context.leechSetup, nLeech, channel, comp, context);
+            if (!check.usable) {
+              out.absent++;
+              continue;
+            }
+            scoredHits.add(hit.id);
+            if (check.ok) {
+              const match = (check.matches || []).slice().sort((a, b) => Math.abs(a.delta || 0) - Math.abs(b.delta || 0))[0];
+              const residual = Math.abs(match && match.delta || 0);
+              out.fits++;
+              out.residual += residual;
+              if (residual === 0) {
+                out.exact++;
+                if (channel === 'mana') out.exactManaObserved.push(observed);
+              } else {
+                out.tolerated++;
+              }
+              if (out.examples.length < 12) out.examples.push({
+                ts: hit.ts,
+                seq: hit.seq,
+                mob: hit.mob,
+                channel,
+                observed,
+                expected: match && match.expected,
+                delta: match && match.delta,
+                nLeech,
+              });
+            } else if (check.cappedLow) {
+              out.cappedLow++;
+            } else {
+              out.contradictions++;
+            }
+          }
+        }
+      });
+      out.scoredHitCount = scoredHits.size;
+      return out;
+    };
+
+    try {
+      for (const turn of resolvedTurns) {
+        if (!turn || turn.status !== 'resolved' || turn.partialEdge) {
+          abstentions.push({ turn: turn && (turn.clock || turn.ts), reason: 'turn_not_resolved_without_leech' });
+          continue;
+        }
+        for (const comp of turn.components || []) {
+          const componentRef = {
+            turn: turn.clock || turn.ts,
+            component: comp.id || comp.comp,
+            comp: comp.comp,
+            actionLabel: comp.actionLabel || actionLabel(comp.comp, comp.action),
+          };
+          if (!comp || comp.comp === 'unresolved' || (comp.comp !== 'arrow' && !comp.action)) {
+            abstentions.push(Object.assign(componentRef, { reason: 'mechanical_action_not_concrete' }));
+            continue;
+          }
+          const main = (comp.hits || []).filter(h => isMainHit(h) && !h.virtual);
+          if (!main.length) {
+            abstentions.push(Object.assign(componentRef, { reason: 'no_main_hits' }));
+            continue;
+          }
+          if (!main.some(h => isWithinAnyWindow(h.ts, windows))) {
+            abstentions.push(Object.assign(componentRef, { reason: 'outside_grav_san_window' }));
+            continue;
+          }
+          const measurable = main.filter(h => !h.overkill && ((+h.lifeLeech || 0) > 0 || (+h.manaLeech || 0) > 0));
+          if (!measurable.length) {
+            abstentions.push(Object.assign(componentRef, { reason: 'no_positive_non_overkill_leech' }));
+            continue;
+          }
+          let indeterminateActionBonus = false;
+          let setupUnknown = false;
+          for (const hit of measurable) {
+            for (const channel of ['life', 'mana']) {
+              const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
+              if (!(observed > 0)) continue;
+              const rates = leechEffectiveRateCandidates(context.leechSetup, channel, comp, hit);
+              if (!rates.length) setupUnknown = true;
+              else if (rates.length !== 1) indeterminateActionBonus = true;
+            }
+          }
+          if (setupUnknown) {
+            abstentions.push(Object.assign(componentRef, { reason: 'leech_setup_unknown' }));
+            continue;
+          }
+          if (indeterminateActionBonus) {
+            abstentions.push(Object.assign(componentRef, { reason: 'indeterminate_action_leech_bonus' }));
+            continue;
+          }
+
+          const nLeech = main.length;
+          const tiers = [];
+          for (const aggregate of ranked) {
+            context.gravSanSetup = Object.assign({}, pending, {
+              bonus: aggregate.bonus,
+              multiplier: aggregate.multiplier,
+              pendingDamageLeechFallback: false,
+            });
+            const inactive = scoreMode(comp, main, nLeech, false);
+            const active = scoreMode(comp, main, nLeech, true);
+            const eligible = active.contradictions === 0 && active.fits > 0 && compareFit(active, inactive) < 0;
+            const tier = {
+              bonus: aggregate.bonus,
+              active,
+              inactive,
+              eligible,
+              exactManaObserved: active.exactManaObserved,
+            };
+            tiers.push(tier);
+            aggregate.eligibleComponents++;
+            aggregate.fits += active.fits;
+            aggregate.exact += active.exact;
+            aggregate.tolerated += active.tolerated;
+            aggregate.cappedLow += active.cappedLow;
+            aggregate.contradictions += active.contradictions;
+            aggregate.residual += active.residual;
+            for (const example of active.examples) {
+              if (aggregate.examples.length >= 12) break;
+              aggregate.examples.push(Object.assign({}, componentRef, example));
+            }
+          }
+
+          const eligible = tiers.filter(x => x.eligible).sort((a, b) => compareFit(a.active, b.active));
+          const winners = eligible.length
+            ? eligible.filter(x => compareFit(x.active, eligible[0].active) === 0)
+            : [];
+          const vote = winners.length === 1 ? winners[0].bonus : null;
+          if (vote != null) rankedByBonus.get(vote).votes++;
+          const voteRow = Object.assign(componentRef, {
+            nLeech,
+            scoredHitCount: measurable.length,
+            vote,
+            reason: vote != null ? 'unique_best_tier' : (winners.length > 1 ? 'local_tier_tie' : 'active_not_better_than_inactive'),
+            tiers,
+          });
+          componentVotes.push(voteRow);
+          if (vote == null) abstentions.push(Object.assign({}, componentRef, { reason: voteRow.reason }));
+        }
+      }
+    } finally {
+      context.gravSanSetup = previousSetup;
+    }
+
+    const discriminatingComponentCount = componentVotes.filter(x => x.vote != null).length;
+    const leaders = ranked.slice().sort((a, b) => b.votes - a.votes);
+    const winner = leaders[0] && leaders[0].votes > discriminatingComponentCount / 2 ? leaders[0] : null;
+    const source = winner
+      ? 'inferred_from_damage_leech_in_grav_san_windows'
+      : (discriminatingComponentCount ? 'utevo_grav_san_damage_leech_no_majority' : 'utevo_grav_san_damage_leech_no_evidence');
+    return {
+      bonus: winner ? winner.bonus : 0,
+      multiplier: winner ? winner.multiplier : 1,
+      source,
+      casts,
+      windows,
+      ranked,
+      insideCharmCount: inside.length,
+      comparableCharmCount: 0,
+      pendingDamageLeechFallback: false,
+      discriminatingComponentCount,
+      componentVotes,
+      abstentions,
     };
   }
 
@@ -697,6 +943,8 @@
   //             divisÃ­vel): crit sÃ³ compara com nÃ£o-crit do MESMO estado de EW; o
   //             fator de EW cancela na razÃ£o dentro do estrato.
   // Low Blow fica como estÃ¡: o charm dÃ¡ CHANCE de crÃ­tico, nÃ£o multiplicador.
+  // Savage Blow Ã© dano crÃ­tico aumentado por mob/hit; sem normalizaÃ§Ã£o canÃ´nica
+  // do bÃ´nus, ele nÃ£o pode medir o multiplicador base do componente.
   function inferCritByComponent(labeledHits, options, context) {
     const MIN = (options && options.minSamples) || CRIT_BUCKET_MIN_SAMPLES;
     const gravSetup = context && context.gravSanSetup;
@@ -704,6 +952,7 @@
     const groups = new Map(); // compKey -> "mob|ew" -> { crit:[], noncrit:[] }
     for (const h of labeledHits || []) {
       if (!h || h.overkill) continue;
+      if (h.savageBlow) continue;
       if (h.onslaught && h.realCrit) continue;
       if (h.realCrit && isTranscendenceActiveAt(context, h.ts)) continue;
       const key = h.compKey;
@@ -756,6 +1005,7 @@
     const byMob = new Map();
     for (const h of hits || []) {
       if (!isMainHit(h) || h.overkill || h.isPrey) continue;
+      if (h.savageBlow) continue;
       const d = +h.dmg || 0; if (!(d > 0)) continue;
       const mob = normalizeName(h.mob);
       if (!byMob.has(mob)) byMob.set(mob, { crit: [], noncrit: [] });
@@ -795,7 +1045,7 @@
           out.push({
             compKey: key, mob: h.mob, dmg: h.dmg, realCrit: !!h.realCrit,
             overkill: !!h.overkill, isPrey: !!h.isPrey, ts: h.ts,
-            onslaught: !!h.onslaught, exposeWeakness: !!h.exposeWeakness,
+            onslaught: !!h.onslaught, savageBlow: !!h.savageBlow, exposeWeakness: !!h.exposeWeakness,
             gravSanActive: comp.gravSanActive,
           });
         }
@@ -1010,6 +1260,18 @@
       goldLeechObservations = collectGoldLeechObservations(resolvedWithoutLeech, context);
       const charmCandidates = detectCharmCandidateMobsFromColocatedTurns(resolvedWithoutLeech, context);
       context.leechSetup = inferLeechSetupFromGoldObservations(goldLeechObservations, context, charmCandidates);
+      context.gravSanSetup = inferGravSanSetup(server, local, options || {}, {
+        context,
+        resolvedTurns: resolvedWithoutLeech,
+      });
+      if (context.gravSanSetup.source === 'inferred_from_damage_leech_in_grav_san_windows') {
+        // D-030: depois de fixar o tier global, repete o refinamento que pode depender
+        // da reversão do multiplicador. A votação continua apoiada exclusivamente nos
+        // componentes congelados da primeira passada.
+        context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
+        context.consolidatedGrenadeCasts = new Set();
+        refineCritByComponent(turns.map(t => resolveTurn(t, facts, context)));
+      }
       // S-007: eixo do bloco de AA por sessao. Roda DEPOIS do crit por-componente e do
       // leech (usa `crit`/`pierce` na reversao) e ANTES da passada final, que e quem
       // consome `context.aaElement`. Nao usa particao resolvida -- os cortes sao
@@ -1029,6 +1291,15 @@
       context.consolidatedGrenadeCasts = new Set();
       const pass1 = turns.map(t => resolveTurn(t, facts, context));
       refineCritByComponent(pass1);
+      context.gravSanSetup = inferGravSanSetup(server, local, options || {}, {
+        context,
+        resolvedTurns: pass1,
+      });
+      if (context.gravSanSetup.source === 'inferred_from_damage_leech_in_grav_san_windows') {
+        context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
+        context.consolidatedGrenadeCasts = new Set();
+        refineCritByComponent(turns.map(t => resolveTurn(t, facts, context)));
+      }
       aaElementDetection = inferAaElementForSession(turns, local, context);
       context.aaElement = aaElementDetection.element;
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);

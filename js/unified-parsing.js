@@ -73,22 +73,36 @@
     const selfHealPattern = /^You healed yourself for\s+(\d+)\s+hitpoints\./i;
     const externalHealPattern = /^You were healed by\s+(.+?)\s+for\s+(\d+)\s+hitpoints\./i;
     const potionUsePattern = /^Using one of\s+\d+\s+.+?\s+potions?\b/i;
-    const CRIT_CHARM_RE = /low blow|savage blow/i;
     let pendingLeechHit = null;
     let lastPotionTs = null;
     let seq = 0;
+    // D-011a: `seq` enumera somente fatos modelados e, portanto, não preserva
+    // sozinho a continuidade causal hit/charm -> XP. Mantemos a ordem bruta em
+    // um mapa interno, sem renumerar nem expor eventos. `barrierEpoch` avança
+    // quando outra ação explícita do jogador foi omitida de `events`; épocas
+    // diferentes provam que houve uma barreira entre os fatos.
+    const rawOrderByEvent = new Map();
+    let rawLineOrdinal = 0;
+    let barrierEpoch = 0;
 
     for (const rawLine of String(serverText || '').split(/\r?\n/)) {
       const m = tsPattern.exec(rawLine);
       if (!m) continue;
+      const lineOrdinal = rawLineOrdinal++;
       const ts = (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]);
       const body = m[4];
-      if (potionUsePattern.test(body)) { lastPotionTs = ts; continue; }
+      if (potionUsePattern.test(body)) {
+        lastPotionTs = ts;
+        barrierEpoch++;
+        continue;
+      }
       const a = attackPattern.exec(body);
       if (a) {
         const suffix = a[4] || '';
         const hasCharm = /charm/i.test(suffix);
-        const hasCritCharm = CRIT_CHARM_RE.test(suffix);
+        const hasLowBlow = /low blow/i.test(suffix);
+        const hasSavageBlow = /savage blow/i.test(suffix);
+        const hasCritCharm = hasLowBlow || hasSavageBlow;
         const hasOnslaught = /\bOnslaught\b/i.test(suffix);
         const isReflection = /damage reflection/i.test(suffix);
         const isCrit = /critical/i.test(a[3]);
@@ -104,8 +118,9 @@
           articleless: !/^\s*(?:A|An|The)\s/i.test(body),
           dmg: +a[2],
           type: isCrit || hasCritCharm || hasOnslaught ? 'crit' : 'normal',
-          realCrit: isCrit || hasCritCharm,
-          lowBlow: hasCritCharm,
+          realCrit: isCrit || hasLowBlow,
+          lowBlow: hasLowBlow,
+          savageBlow: hasSavageBlow,
           onslaught: hasOnslaught,
           perfectShot: /perfect shot/i.test(suffix),
           isPrey: /prey|Bounty Talisman/i.test(suffix),
@@ -119,6 +134,7 @@
           manaLeech: 0,
           overkill: false,
         };
+        rawOrderByEvent.set(ev, { lineOrdinal, barrierEpoch });
         events.push(ev);
         if (ev.damageReflection || (hasCharm && !hasCritCharm && !hasOnslaught)) {
           ev.kind = ev.damageReflection ? 'reflect' : 'charm';
@@ -145,6 +161,7 @@
           type: 'normal',
           realCrit: false,
           lowBlow: false,
+          savageBlow: false,
           onslaught: false,
           perfectShot: false,
           isPrey: /prey|Bounty Talisman/i.test(suffix),
@@ -157,6 +174,7 @@
           manaLeech: 0,
           overkill: false,
         };
+        rawOrderByEvent.set(ev, { lineOrdinal, barrierEpoch });
         events.push(ev);
         hits.push(ev);
         pendingLeechHit = null;
@@ -211,11 +229,18 @@
       const xp = xpPattern.exec(body);
       if (xp) {
         const ev = { kind: 'xp', seq: seq++, ts, clock: tsToClock(ts), xp: +xp[1], rawLine };
+        rawOrderByEvent.set(ev, { lineOrdinal, barrierEpoch });
         events.push(ev); xpLines.push(ev);
+        continue;
       }
+      // D-011a: notificações de estado do mundo e dano recebido podem ser
+      // intercalados pelo servidor e não são, sozinhos, nova autoria do XP.
+      // A barreira oculta canônica é a ação de poção tratada no início do loop;
+      // fatos modelados já bloqueiam pelo próprio "próximo evento relevante".
     }
 
-    // Overkill: próximo evento relevante em até 1s é XP.
+    // D-011/D-011a: o próximo evento relevante em até 1s só prova overkill se
+    // nenhuma ação explícita incompatível tiver sido omitida de `events`.
     for (const h of hits) {
       let next = null;
       for (const ev of events) {
@@ -224,10 +249,14 @@
         if (ev.kind === 'charm' || ev.kind === 'reflect' || ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
         next = ev; break;
       }
-      h.overkill = !!(next && next.kind === 'xp' && next.ts - h.ts <= 1);
+      const hOrder = rawOrderByEvent.get(h);
+      const nextOrder = rawOrderByEvent.get(next);
+      const causallyContinuous = !!(hOrder && nextOrder && hOrder.barrierEpoch === nextOrder.barrierEpoch);
+      h.overkill = !!(next && next.kind === 'xp' && next.ts - h.ts <= 1 && causallyContinuous);
     }
 
-    // Charm-kill (S-014e): um charm cujo próximo evento relevante (fora leech) é XP
+    // Charm-kill (S-014e/D-011a): um charm cujo próximo evento relevante (fora leech)
+    // é XP e cuja ordem bruta permanece contínua
     // MATOU o alvo — o hit principal daquele componente nesse mob fica invisível
     // (dano 0). Charm seguido de hit visível => o alvo sobreviveu, sem hit invisível.
     // Estrutura: mk 05:43:59 `curse/wound charm` -> hit visível (não mata);
@@ -241,7 +270,10 @@
         if (ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
         next = ev; break;
       }
-      cev.killedTarget = !!(next && next.kind === 'xp' && next.ts - cev.ts <= 1);
+      const charmOrder = rawOrderByEvent.get(cev);
+      const nextOrder = rawOrderByEvent.get(next);
+      const causallyContinuous = !!(charmOrder && nextOrder && charmOrder.barrierEpoch === nextOrder.barrierEpoch);
+      cev.killedTarget = !!(next && next.kind === 'xp' && next.ts - cev.ts <= 1 && causallyContinuous);
     }
 
     return { events, hits, runeUses, xpLines, leechLines, selfHealLines, externalHealLines, transcendenceTriggers, sessionDateKey: sessionDateKey(serverText), distinctMobs: distinctMainMobCount(hits) };

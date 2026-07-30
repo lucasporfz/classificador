@@ -406,8 +406,9 @@
 
   function elementalStateKey(h) {
     return normalizeName(h.mob) + '|' + (h.exposeWeakness ? 1 : 0) + '|' + (h.isPrey ? 1 : 0) +
-      '|' + (h.elementalAmplification ? 1 : 0) + '|' + (h.type || '') + '|' + (h.realCrit ? 1 : 0) +
-      '|' + (h.lowBlow ? 1 : 0) + '|' + (h.onslaught ? 1 : 0);
+      '|' + (h.elementalAmplification ? 1 : 0) + '|' + (h.perfectShot ? 1 : 0) +
+      '|' + (h.type || '') + '|' + (h.realCrit ? 1 : 0) +
+      '|' + (h.lowBlow ? 1 : 0) + '|' + (h.savageBlow ? 1 : 0) + '|' + (h.onslaught ? 1 : 0);
   }
 
   function pad2(n) { return String(n).padStart(2, '0'); }

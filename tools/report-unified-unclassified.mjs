@@ -213,6 +213,7 @@ function isIgnoredMechanicSession(label, sv) {
 // Decisão do usuário (13/Jul/2026): não modelar (sem regra por data pré/pós), marcar como
 // conhecido. Chave: `label|YYYY-MM-DD|HH:MM:SS`.
 const KNOWN_ACCEPTED_UNRESOLVED = new Set([
+  'mrowdy 2|2026-06-11|17:19:16',
   'mazzerinbarrage|2026-07-09|01:25:57',
   'mazzerinbarrage|2026-07-09|01:26:06',
 ]);
@@ -453,11 +454,13 @@ console.log(JSON.stringify({
   window: windowFilter ? windowArg : null,
   totalTurns: summary.totalTurns,
   totalUnresolved: summary.totalUnresolved,
+  knownAcceptedUnresolved: results.reduce((s, r) => s + (r.knownAcceptedUnresolved || 0), 0),
   preCutoffLeechExcluded: results.reduce((s, r) => s + (r.preCutoffLeechExcluded || 0), 0),
   pairs: results.map(r => ({
     label: r.label,
     totalTurns: r.totalTurns || 0,
     unresolvedTurns: r.unresolvedTurns || 0,
+    knownAcceptedUnresolved: r.knownAcceptedUnresolved || 0,
     preCutoffLeechExcluded: r.preCutoffLeechExcluded || 0,
     status: r.missing ? 'missing' : (r.error || r.status || 'ok'),
   })),

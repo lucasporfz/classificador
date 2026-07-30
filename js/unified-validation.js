@@ -130,12 +130,11 @@
     const lastTs = Math.max(...turn.hits.map(h => h.ts));
     const spellCasts = facts.local.spellCasts.filter(c => c.ts >= firstTs - 1 && c.ts <= lastTs + 1);
     const runeUses = facts.server.runeUses.filter(r => r.ts >= firstTs - 1 && r.ts <= lastTs + 1);
-    // M-024/M-025: uma granada possui um único timestamp de impacto e o mesmo cast
-    // não pode explicar hits em dois turnos. Um cast cuja explosão já foi consolidada
-    // num turno anterior (em ordem temporal) não é mais oferecido como ação de granada
-    // — senão a janela [c+2,c+4] que cruza a fronteira de turno semeia uma granada
-    // fantasma no segundo turno (ex.: barrage cast 19:00:05 explode em 19:00:07 e
-    // vazaria para 19:00:09).
+    // M-024/M-025: uma granada possui um único evento de impacto (um timestamp ou
+    // dois timestamps cronologicamente consecutivos comprovados) e o mesmo cast não
+    // pode explicar hits em dois turnos consolidados. Um cast cuja explosão já foi
+    // consolidada num turno anterior não é mais oferecido como ação de granada —
+    // senão a janela [c+2,c+4] semeia uma granada fantasma no segundo turno.
     const consumed = context && context.consolidatedGrenadeCasts;
     const preassigned = context && context.preassignedGrenadeCasts;
     const grenadeCasts = facts.local.grenadeCasts.filter(c => {
@@ -188,9 +187,13 @@
   const GUIDED_DETERMINISM_TOLERANCE = 0.01; // par mesmo-mob "idêntico" (holy determinístico)
   const GUIDED_SLACK = 1;             // folga ±1 em volta de cada posição sinalizada
 
+  function componentCritState(h) {
+    return !!(h && (h.onslaught || (h.realCrit && !h.lowBlow)));
+  }
+
   function guidedCritStateOf(h) {
     if (h.overkill) return 'overkill'; // dano truncado — não comparável
-    return (h.type === 'crit' ? 'c' : 'n') + (h.lowBlow ? 'L' : '') + (h.onslaught ? 'O' : '');
+    return (componentCritState(h) ? 'c' : 'n') + (h.onslaught ? 'O' : '');
   }
 
   function guidedLeechRatioOf(h) {
@@ -377,23 +380,34 @@
   // Gate cirúrgico do k=3 (só-desempenho, comportamentalmente neutro): num pack RP
   // a granada faz parte da rotação, então a janela [c+2,c+4] (≈2 turnos por cast)
   // cobre a maioria dos turnos e habilita as formas de 3 componentes em TODO turno
-  // que roça uma janela — mas a explosão real está num único segundo. Enumerar
+  // que roça uma janela. Enumerar
   // C(n-1,2) cortes de granada e validar cada um (reversão holy + leech) é o grosso
   // do custo. Este pré-filtro descarta, antes do validateCandidate caro, os cortes
   // cujo bloco de granada NÃO é uma explosão válida (M-023/M-024): sem cast, fora de
-  // [cast+2,cast+4], ou com mais de um timestamp de impacto. Esses cortes são
+  // [cast+2,cast+4], ou fora da forma temporal permitida por M-024. Esses cortes são
   // EXATAMENTE os que validateCandidate já rejeita (grenade_without_cast,
   // grenade_outside_impact_window, grenade_multiple_impact_timestamps, L2554/2558/2559)
   // — nunca entram em `candidates`, logo não alteram best/second/ambiguous. A escolha
   // da ação usa o MESMO chooseActionForComponent do validador, garantindo equivalência.
-  function grenadeCandidateWindowInvalid(candidate, actions) {
+  function grenadeCandidateWindowInvalid(candidate, actions, context) {
     for (const block of candidate.components) {
       if (block.comp !== 'grenade') continue;
       const action = chooseActionForComponent('grenade', block.hits, actions);
       if (!action) return true;
       const okImpact = block.hits.every(h => h.ts >= action.ts + 2 && h.ts <= action.ts + 4);
       if (!okImpact) return true;
-      if (new Set(block.hits.map(h => h.ts)).size > 1) return true;
+      const timestamps = [...new Set(block.hits.map(h => Number.isFinite(h.ordTs) ? h.ordTs : h.ts))]
+        .sort((a, b) => a - b);
+      if (!(timestamps.length === 1 || (timestamps.length === 2 && timestamps[1] - timestamps[0] === 1))) return true;
+      if (timestamps.length === 2) {
+        const setup = context && context.leechSetup;
+        if (!setup || (!(setup.lifeBase > 0) && !(setup.manaBase > 0))) return true;
+      }
+      // Poda comportamentalmente neutra: validateCandidate aplica exatamente a
+      // mesma homogeneidade de crit-state antes de aceitar o bloco. Antecipá-la
+      // evita pagar reversão elemental/leech para rollovers que já são
+      // contraditórios por S-008, sem criar um validador concorrente.
+      if (!validateCritHomogeneity(block).ok) return true;
     }
     return false;
   }
@@ -501,8 +515,8 @@
     // sameMobStateExactnessForHits já aplicam a esse tipo de hit (D-011/glossário).
     const clean = block.hits.filter(h => !h.virtual && !h.zeroDamageDodge);
     if (clean.length < 2) return { ok: true };
-    const first = !!(clean[0].realCrit || clean[0].onslaught || clean[0].lowBlow);
-    const mixed = clean.some(h => !!(h.realCrit || h.onslaught || h.lowBlow) !== first);
+    const first = componentCritState(clean[0]);
+    const mixed = clean.some(h => componentCritState(h) !== first);
     return mixed ? { ok: false, rule: 'D-007/S-008', reason: 'mixed_crit_state' } : { ok: true };
   }
 
@@ -818,18 +832,200 @@
   // primeiro hit) passa a mesma checagem -- ou seja, separar o primeiro hit resolve a
   // quebra. So se aplica a acoes elementais concretas (nao fisicas); sem elemento
   // conhecido nao ha evidencia (nem positiva nem negativa) por este caminho.
-  // M-035: beams de sorcerer (Energy Beam, Great Energy Beam, Great Death Beam) tem
-  // sub-linhas central/side com um mesmo mob podendo ser atingido pelos dois segmentos
-  // do feixe em niveis distintos legitimos -- mas ao contrario de Terra/Ice Burst, essa
-  // deteccao (M-035) ainda NAO esta implementada no motor Unified (so referenciada como
-  // campo de passagem em js/unified-main.js). Sem um validador de tier real pra reusar
-  // (como fizemos com validateTerraBurstBonusBlock), a checagem crua same-mob nao pode
-  // diferenciar "AA fantasma" de "central/side legitimo" -- melhor nao gerar evidencia
-  // (nem positiva nem negativa) e deixar o turno cair em unresolved se a validacao final
-  // tambem falhar, do que arriscar separar um hit que pertence ao beam.
+  // M-035: beams de sorcerer (Energy Beam, Great Energy Beam, Great Death Beam)
+  // tem sub-linhas central/side. O bonus de Beam Mastery por alvo e por sub-linha,
+  // entao a fracao observada e 0.70 * bonusSide / bonusCentral.
   const BEAM_ACTION_WORDS = new Set(['exevo vis lux', 'exevo gran vis lux', 'exevo max mort']);
+  const BEAM_EFFECTIVE_ELEMENTS = ['death', 'energy', 'fire'];
+  const BEAM_BASE_SIDE_FRACTION = 0.70;
+  const BEAM_MASTERY_TARGET_RATES = [0, 0.10, 0.12, 0.14];
   function isBeamAction(action) {
     return !!(action && BEAM_ACTION_WORDS.has(normalizeName(action.text || '')));
+  }
+
+  function beamMasteryMultiplier(hitCount, rate) {
+    return 1 + (+rate || 0) * Math.min(3, Math.max(0, +hitCount || 0));
+  }
+
+  function representativeOriginal(originals) {
+    const vals = (originals || []).filter(v => Number.isFinite(v)).sort((a, b) => a - b);
+    if (!vals.length) return null;
+    return (vals[0] + vals[vals.length - 1]) / 2;
+  }
+
+  function beamSublineLeechOk(hits, action, context) {
+    if (!hits || !hits.length) return false;
+    const res = validateLeechBlockOfficialRates({ comp: 'spell', hits, action }, context);
+    return !res.usable || !!res.ok;
+  }
+
+  function validateBeamSublineBlock(block, context) {
+    const action = block && block.action;
+    if (!isBeamAction(action)) return null;
+    const hits = (block.hits || []).filter(isMainHit);
+    const visible = hits.filter(h => !h.overkill && !h.zeroDamageDodge && !h.virtual);
+    if (visible.length < 3) return { ok: false, beam: true, reason: 'beam_subline_not_enough_hits' };
+
+    const results = [];
+    for (const element of BEAM_EFFECTIVE_ELEMENTS) {
+      const perHit = [];
+      for (const h of visible) {
+        const ev = elementalOriginalCandidates(h, element, context);
+        if (!ev || !ev.known || !ev.originals || !ev.originals.length) continue;
+        const representative = representativeOriginal(ev.originals);
+        if (representative == null) continue;
+        const state = (h.realCrit ? 1 : 0) + '|' + (h.lowBlow ? 1 : 0) + '|' +
+          (h.savageBlow ? 1 : 0) + '|' + (h.onslaught ? 1 : 0);
+        perHit.push({ hit: h, originals: ev.originals, representative, state });
+      }
+      if (perHit.length < 3) {
+        results.push({ ok: false, element, known: perHit.length, reason: 'beam_subline_not_enough_known_hits' });
+        continue;
+      }
+      const elementResults = [];
+      const anchorGroups = [perHit];
+      for (let groupIndex = 0; groupIndex < anchorGroups.length; groupIndex++) {
+        const anchors = anchorGroups[groupIndex].slice().sort((a, b) => a.representative - b.representative);
+        for (let split = 1; split < anchors.length; split++) {
+          const side = anchors.slice(0, split);
+          const central = anchors.slice(split);
+          const sideCluster = minimalCandidateCluster(side.map(x => x.originals));
+          const centralCluster = minimalCandidateCluster(central.map(x => x.originals));
+          if (!sideCluster || !centralCluster) continue;
+          if (sideCluster.span > elementalClusterTolerance(sideCluster.center)) continue;
+          if (centralCluster.span > elementalClusterTolerance(centralCluster.center)) continue;
+
+          // M-035/D-008/D-011/D-019/D-023-D-026: os clusters sao provados apenas
+          // pelos hits de estado critico comparavel. Hits de outro estado e overkills
+          // continuam hits principais reais; distribua-os entre side/central e deixe
+          // a cardinalidade completa por leech eliminar as hipoteses impossiveis.
+          const anchored = new Set(anchors.map(x => x.hit));
+          const remaining = hits.filter(h => !anchored.has(h));
+          let assignments = [{ side: [], central: [] }];
+          for (const h of remaining) {
+            const next = [];
+            for (const assignment of assignments) {
+              next.push({ side: assignment.side.concat([h]), central: assignment.central });
+              next.push({ side: assignment.side, central: assignment.central.concat([h]) });
+            }
+            assignments = next;
+          }
+
+          for (const assignment of assignments) {
+            const sideHits = side.map(x => x.hit).concat(assignment.side);
+            const centralHits = central.map(x => x.hit).concat(assignment.central);
+            if (!beamSublineLeechOk(sideHits, action, context)) continue;
+            if (!beamSublineLeechOk(centralHits, action, context)) continue;
+            for (const rate of BEAM_MASTERY_TARGET_RATES) {
+              const expectedFraction = BEAM_BASE_SIDE_FRACTION
+                * beamMasteryMultiplier(sideHits.length, rate)
+                / beamMasteryMultiplier(centralHits.length, rate);
+              const expectedSide = centralCluster.center * expectedFraction;
+              const tolerance = elementalClusterTolerance(expectedSide);
+              const delta = Math.abs(sideCluster.center - expectedSide);
+              if (delta > tolerance) continue;
+              const sideSet = new Set(sideHits);
+              elementResults.push({
+                ok: true,
+                element,
+                rate,
+                expectedFraction,
+                beamFraction: sideCluster.center / centralCluster.center,
+                sideCount: sideHits.length,
+                centralCount: centralHits.length,
+                sideCluster,
+                centralCluster,
+                side,
+                central,
+                sideHits,
+                centralHits,
+                assignmentSignature: hits.map(h => sideSet.has(h) ? 's' : 'c').join(''),
+                delta,
+                tolerance,
+                reason: 'beam_subline_mastery_cluster',
+              });
+            }
+          }
+        }
+
+        // D-008/C-007: se o bloco completo nao fecha porque crit/Low Blow de um
+        // subconjunto usa evidencia de critico indisponivel, tente cada estado
+        // comparavel como ancora. Os demais hits so entram depois, pela cardinalidade.
+        if (groupIndex === 0 && !elementResults.length) {
+          const byState = new Map();
+          for (const x of perHit) {
+            if (!byState.has(x.state)) byState.set(x.state, []);
+            byState.get(x.state).push(x);
+          }
+          for (const group of byState.values()) {
+            if (group.length >= 2 && group.length < perHit.length) anchorGroups.push(group);
+          }
+        }
+      }
+      results.push(...elementResults);
+    }
+
+    const profileElement = action && action.profile && action.profile.element;
+    const ok = results.filter(r => r.ok).sort((a, b) =>
+      a.delta - b.delta
+      || (a.sideCluster.span + a.centralCluster.span) - (b.sideCluster.span + b.centralCluster.span)
+      || (a.element === profileElement ? -1 : 0)
+      || (b.element === profileElement ? 1 : 0)
+    );
+    const best = ok[0];
+    if (!best) return { ok: false, beam: true, reason: 'beam_subline_no_mastery_cluster', candidates: results };
+
+    // D-006/C-007: mais de uma distribuicao valida nao derruba a prova inteira
+    // do beam. Grave somente os hits cujo tier e unanime entre todas as explicacoes
+    // mecanicamente validas; os divergentes permanecem sem beamSide e podem ser
+    // exibidos como cobertura parcial, sem inventar certeza pelo dano truncado.
+    const assignmentSignatures = Array.from(new Set(ok.map(r => r.assignmentSignature)));
+    const resolvedSideHits = [];
+    const resolvedCentralHits = [];
+    const ambiguousHits = [];
+    for (let i = 0; i < hits.length; i++) {
+      const tiers = new Set(assignmentSignatures.map(signature => signature[i]));
+      if (tiers.size !== 1) {
+        ambiguousHits.push(hits[i]);
+        delete hits[i].beamSide;
+        delete hits[i].beamMasteryTargetRate;
+        continue;
+      }
+      const tier = tiers.values().next().value;
+      hits[i].beamSide = tier === 's' ? 'side' : 'central';
+      hits[i].beamMasteryTargetRate = best.rate;
+      if (tier === 's') resolvedSideHits.push(hits[i]);
+      else resolvedCentralHits.push(hits[i]);
+    }
+
+    return {
+      ok: true,
+      beam: true,
+      element: best.element,
+      beamElement: best.element,
+      beamFraction: best.beamFraction,
+      beamExpectedFraction: best.expectedFraction,
+      beamMasteryTargetRate: best.rate,
+      beamSideCount: resolvedSideHits.length,
+      beamCentralCount: resolvedCentralHits.length,
+      beamAmbiguousCount: ambiguousHits.length,
+      sideCluster: {
+        min: best.sideCluster.min,
+        max: best.sideCluster.max,
+        span: best.sideCluster.span,
+        center: best.sideCluster.center,
+        tolerance: elementalClusterTolerance(best.sideCluster.center),
+      },
+      centralCluster: {
+        min: best.centralCluster.min,
+        max: best.centralCluster.max,
+        span: best.centralCluster.span,
+        center: best.centralCluster.center,
+        tolerance: elementalClusterTolerance(best.centralCluster.center),
+      },
+      reason: best.reason,
+      rule: 'M-035/D-010a/S-004',
+    };
   }
 
   function firstHitSeparationFixesSameMobExactness(hits, action, context) {
@@ -866,7 +1062,7 @@
   // senao um veto por Onslaught assimetrico (comum: o AA nao tem o proc, o resto do bloco
   // de area tem) nunca vira evidencia positiva de separacao.
   function specialCritState(h) {
-    return !!(h.realCrit || h.onslaught || h.lowBlow);
+    return componentCritState(h);
   }
 
   function firstHitCritStateBoundary(hits) {
@@ -889,6 +1085,8 @@
     // V26: Terra Burst / exevo ulus tera has a global bonus level (+20/+40/+60),
     // but activation is per mob/hit. Test active=false/true per hit under one
     // global level before falling back to generic elemental cluster logic.
+    const beam = validateBeamSublineBlock(block, context);
+    if (beam && beam.ok) return beam;
     const terraBurst = validateTerraBurstBonusBlock(block, element, context);
     if (terraBurst && terraBurst.ok) return terraBurst;
     const sets = [];
@@ -1234,7 +1432,7 @@
     // `Using` de runa é sinal primário (M-017) e sustenta a fronteira sozinho.
     if (candidate.shape.indexOf('rune') !== -1 && actions && actions.runeUses && actions.runeUses.length) return false;
 
-    const critKey = h => (h.type === 'crit' ? 'c' : 'n') + (h.lowBlow ? 'L' : '') + (h.onslaught ? 'O' : '');
+    const critKey = h => (componentCritState(h) ? 'c' : 'n') + (h.onslaught ? 'O' : '');
     for (let i = 1; i < candidate.components.length; i++) {
       const prev = candidate.components[i - 1].hits || [];
       const cur = candidate.components[i].hits || [];
@@ -1265,9 +1463,12 @@
       if (block.comp === 'grenade' && !block.action) violations.push({ rule: 'M-023/N-004', reason: 'grenade_without_cast', block });
       if (block.comp === 'grenade' && block.action) {
         const okImpact = block.hits.every(h => h.ts >= block.action.ts + 2 && h.ts <= block.action.ts + 4);
-        const timestamps = new Set(block.hits.map(h => h.ts));
+        const timestamps = [...new Set(block.hits.map(h => Number.isFinite(h.ordTs) ? h.ordTs : h.ts))]
+          .sort((a, b) => a - b);
+        const oneMechanicalImpact = timestamps.length === 1 ||
+          (timestamps.length === 2 && timestamps[1] - timestamps[0] === 1);
         if (!okImpact) violations.push({ rule: 'M-023', reason: 'grenade_outside_impact_window', block });
-        if (timestamps.size > 1) violations.push({ rule: 'M-024/M-025', reason: 'grenade_multiple_impact_timestamps', block });
+        if (!oneMechanicalImpact) violations.push({ rule: 'M-024/M-025', reason: 'grenade_multiple_impact_timestamps', block });
       }
     }
 
@@ -1314,6 +1515,12 @@
       }
       block.leech = leech;
       diagnostics.push({ kind: 'leech', block, result: leech, gravSanActive: block.gravSanActive, gravSanTested: block.gravSanTested });
+      if (block.comp === 'grenade') {
+        const impactTimestamps = new Set(block.hits.map(h => Number.isFinite(h.ordTs) ? h.ordTs : h.ts));
+        if (impactTimestamps.size === 2 && (!leech || !leech.usable || !leech.ok)) {
+          violations.push({ rule: 'M-024/D-023/D-024/S-014', reason: 'grenade_rollover_without_usable_leech_proof', block, leech });
+        }
+      }
       if (context.strictLeech !== false && canUseLeechAsHardReject(context) && leech.usable && !leech.ok) {
         // M-017/M-018a: com Using explícito, fronteira correta e bloco elemental
         // determinístico, a runa tem precedência sobre leitura física coincidente.
@@ -1431,7 +1638,7 @@
     if (maxArrowTs < minNextTs) return false;
 
     // (b) crit-state distinto na fronteira => componente diferente => evidência.
-    const critOf = h => !!(h.realCrit || h.onslaught || h.lowBlow);
+    const critOf = h => componentCritState(h);
     if (critOf(arrowMain[0]) !== critOf(nextMain[0])) return false;
 
     // (c) dano original: se a fusão prefixo+bloco mantém interseção elemental exata,
@@ -1565,7 +1772,7 @@
   }
 
   function scoreCandidate(candidate, actions, context) {
-    let deterministicHits = 0, unknownHits = 0, leechFits = 0, timing = 0, mechanicalOrder = 0, virtualZeroHits = 0, cappedLowHits = 0, leechContradictions = 0, actionRecencyPenalty = 0;
+    let deterministicHits = 0, unknownHits = 0, leechFits = 0, timing = 0, mechanicalOrder = 0, virtualZeroHits = 0, cappedLowHits = 0, leechContradictions = 0, actionRecencyPenalty = 0, grenadeRolloverPenalty = 0;
     const tsSplitPenalty = timestampSplitPenalty(candidate);
     const comps = candidate.components || [];
     if (comps.length > 1 && comps[0] && comps[0].comp === 'arrow' && comps.slice(1).some(b => b && (b.comp === 'spell' || b.comp === 'rune' || b.comp === 'grenade')) && !arrowPrefixIsAbsorbable(comps, context)) {
@@ -1574,6 +1781,10 @@
     const physDegenerate = physicalAxisTimingDegenerate(candidate);
     const timingDemoted = elementalSameSecondTimingDemoted(candidate, actions);
     for (const b of candidate.components) {
+      if (b.comp === 'grenade') {
+        const impactTimestamps = new Set((b.hits || []).map(h => Number.isFinite(h.ordTs) ? h.ordTs : h.ts));
+        if (impactTimestamps.size > 1) grenadeRolloverPenalty++;
+      }
       const det = b.deterministic || {};
       deterministicHits += det.known || 0;
       unknownHits += det.unknown || 0;
@@ -1600,6 +1811,7 @@
       deterministicHits,
       leechFits,
       leechContradictions,
+      grenadeRolloverPenalty,
       actionRecencyPenalty,
       unknownHits,
       virtualZeroHits,
@@ -1629,6 +1841,10 @@
       // componentes quando existe partição válida que põe a fronteira entre segundos.
       ['timestampSplitPenalty', 1],
       ['leechContradictions', 1],
+      // M-024: dois timestamps são uma permissão de rollover, não evidência
+      // para engolir uma spell concreta que a forma-base de um timestamp
+      // preserva. Aplica-se só depois das provas determinística e de leech.
+      ['grenadeRolloverPenalty', 1],
       ['actionRecencyPenalty', 1],
       ['virtualZeroHits', 1],
       ['unknownHits', 1],
@@ -1762,6 +1978,7 @@
       type: 'virtual',
       realCrit: false,
       lowBlow: false,
+      savageBlow: false,
       onslaught: false,
       isPrey: false,
       exposeWeakness: false,
@@ -2276,9 +2493,11 @@
     return out;
   }
 
-  function shouldForceA1ByLeech(hits, context) {
+  function shouldForceA1ByLeech(hits, context, action, beamSubline) {
     const main = (hits || []).filter(isMainHit);
     if (main.length < 2) return { force: false, reason: 'not_enough_main_hits' };
+    const beam = beamSubline || validateBeamSublineBlock({ comp: 'spell', hits: main, action }, context);
+    if (beam && beam.ok) return { force: false, reason: 'beam_subline_leech_not_aa_evidence', beam };
     const setup = context && context.leechSetup;
     if (!setup || (!(setup.lifeBase > 0) && !(setup.manaBase > 0))) return { force: false, reason: 'setup_unknown' };
     const first = main[0];
@@ -2291,15 +2510,22 @@
     const suffixUsableOk = suffixSupport.ok >= Math.min(2, kSuffix) && suffixSupport.bad === 0;
     const firstRejectsAll = firstAll.usable && !firstAll.ok;
     const firstSingle = firstN1.usable && firstN1.ok;
+    // H-005d/M-035: central e side de beam têm cardinalidades independentes.
+    // Só teste o sufixo depois que o primeiro hit já provou o contraste N=1 vs N=k.
+    const suffixBeam = firstSingle && firstRejectsAll && isBeamAction(action)
+      ? validateBeamSublineBlock({ comp: 'spell', hits: suffix, action }, context)
+      : null;
+    const suffixBeamOk = !!(suffixBeam && suffixBeam.ok);
     const critBoundary = firstHitCritStateBoundary(hits);
     return {
-      force: !!(firstSingle && firstRejectsAll && (suffixUsableOk || critBoundary)),
+      force: !!(firstSingle && firstRejectsAll && (suffixUsableOk || suffixBeamOk || critBoundary)),
       reason: firstSingle && firstRejectsAll
-        ? (suffixUsableOk ? 'first_hit_n1_suffix_accepts_n_minus_1' : (critBoundary ? 'first_hit_n1_plus_crit_boundary' : 'first_hit_n1_but_suffix_weak'))
+        ? (suffixBeamOk ? 'first_hit_n1_suffix_validated_beam_sublines' : (suffixUsableOk ? 'first_hit_n1_suffix_accepts_n_minus_1' : (critBoundary ? 'first_hit_n1_plus_crit_boundary' : 'first_hit_n1_but_suffix_weak')))
         : 'no_first_single_target_leech_signature',
       firstN1,
       firstAll,
       suffixSupport,
+      suffixBeam,
       critBoundary,
     };
   }
@@ -2335,7 +2561,7 @@
   // textual idêntica usada apenas para bloquear AA posicional fantasma.
   function hitStateKey(h) {
     return normalizeName(h.mob) + '|' + (h.exposeWeakness ? 1 : 0) + '|' + (h.isPrey ? 1 : 0) + '|' +
-      (h.realCrit ? 1 : 0) + '|' + (h.onslaught ? 1 : 0) + '|' + (h.lowBlow ? 1 : 0);
+      (h.realCrit ? 1 : 0) + '|' + (h.onslaught ? 1 : 0) + '|' + (h.lowBlow ? 1 : 0) + '|' + (h.savageBlow ? 1 : 0);
   }
   function firstHitSharesExactOriginalWithRest(hits) {
     const first = hits[0];
@@ -2430,6 +2656,7 @@
     firstHitSeparationFixesSameMobExactness,
     firstHitCritStateBoundary,
     isBeamAction,
+    validateBeamSublineBlock,
   };
 
   root.UnifiedValidation = API;

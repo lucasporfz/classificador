@@ -154,7 +154,7 @@ for (const t of targets) {
   for (const h of hits) {
     const r = F.elementalOriginalCandidates(h, 'energy', context, null);
     const os = (r && r.originals) || [];
-    const flags = [h.realCrit && 'CRIT', h.onslaught && 'ONS', h.lowBlow && 'LB', h.overkill && 'OK', h.isPrey && 'prey', h.exposeWeakness && 'EW'].filter(Boolean).join(' ');
+    const flags = [h.realCrit && 'CRIT', h.onslaught && 'ONS', h.lowBlow && 'LB', h.savageBlow && 'SB', h.overkill && 'OK', h.isPrey && 'prey', h.exposeWeakness && 'EW'].filter(Boolean).join(' ');
     const span = os.length ? `[${os[0]}..${os[os.length - 1]}]` : '-';
     console.log(`  seq=${String(h.seq || 0).padStart(5)} ${String(h.mob).padEnd(19)} dmg=${String(h.dmg).padStart(5)} ${flags.padEnd(14)} mod=${r && r.mod != null ? +(+r.mod).toFixed(4) : '?'} O_energy=${span} n=${os.length}`);
   }

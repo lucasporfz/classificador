@@ -133,7 +133,7 @@ for (const t of (u.turns || [])) {
     console.log(`  comp=${c.comp} label=${c.actionLabel || '-'} hits=${(c.hits || []).length} reason=${c.reason || '-'}`);
     for (const h of (c.hits || [])) {
       const p = h.evidence && h.evidence.physical;
-      const flags = [h.realCrit && 'CRIT', h.onslaught && 'ONS', h.lowBlow && 'LB', h.overkill && 'OK', h.isPrey && 'prey', h.exposeWeakness && 'EW'].filter(Boolean).join(' ');
+      const flags = [h.realCrit && 'CRIT', h.onslaught && 'ONS', h.lowBlow && 'LB', h.savageBlow && 'SB', h.overkill && 'OK', h.isPrey && 'prey', h.exposeWeakness && 'EW'].filter(Boolean).join(' ');
       const phys = p && p.interval ? ` O_fis=[${p.interval[0]},${p.interval[1]}] mod=${+(+p.mod).toFixed(4)} mit=${+(+p.mitigation).toFixed(6)} post=${p.post} armor=[${p.armorLow},${p.armorHigh}]` : '';
       console.log(`    ${fmt(h.ts)} seq=${String(h.seq || 0).padStart(5)} ${String(h.mob).padEnd(18)} dmg=${String(h.dmg).padStart(5)} ${flags.padEnd(16)}${phys}`);
     }

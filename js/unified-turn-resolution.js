@@ -44,6 +44,7 @@
     firstHitCritStateBoundary,
     firstHitSeparationFixesSameMobExactness,
     isBeamAction,
+    validateBeamSublineBlock,
     isSingleTargetAction,
     validateElementalBlock,
     validatePhysicalBlock,
@@ -77,6 +78,20 @@
     }
     hit.evidence = { physical, elemental };
     return hit;
+  }
+
+  function deathEchoExplainsFirstHit(hits, action) {
+    if (!hits || hits.length < 2 || !action || !action.profile) return false;
+    const multiStage = action.profile.multiStage;
+    const primary = multiStage && multiStage.primary;
+    const delayed = multiStage && multiStage.delayed;
+    if (!primary || !delayed || multiStage.confirmation !== 'elemental') return false;
+    const words = normalizeName(action.words || action.spell || action.name || '');
+    const label = normalizeName(action.profile.label || '');
+    if (words !== 'exevo mort ora' && label !== 'death echo') return false;
+    const first = hits[0];
+    if (!first || first.multiStageStage !== primary.id || first.multiStageCastTs !== action.ts) return false;
+    return hits.slice(1).some(h => h && h.multiStageStage === delayed.id && h.multiStageCastTs === action.ts);
   }
 
   function resolveSingleTargetAaVocationTurn(turn, facts, context) {
@@ -129,7 +144,9 @@
     const allScore = leechPartitionScore(allSpell, context);
     const splitScore = leechPartitionScore(split, context);
     const strongTimestampBoundary = hasStrongTimestampAaSpellBoundary(hits, action);
-    const forceA1 = shouldForceA1ByLeech(hits, context);
+    const beamSubline = isBeamAction(action) ? validateBeamSublineBlock({ comp: actionComp, hits, action }, context) : null;
+    const forceA1 = shouldForceA1ByLeech(hits, context, action, beamSubline);
+    const deathEchoFirstHitExplained = deathEchoExplainsFirstHit(hits, action);
     // H-005b/H-005c/H-005d: evidência positiva leech-free ou de cardinalidade (b, c, d).
     // Um sufixo de 1 hit (spell/runa restante depois de tirar o 1º) não é discriminativo
     // — leech N=1 vs N=k e exatidão same-mob ficam vazias/triviais com um único hit
@@ -144,15 +161,32 @@
     const evidenceHasMinimalSuffix = suffixSize >= 2;
     const critStateBoundary = evidenceHasMinimalSuffix && firstHitCritStateBoundary(hits);
     const sameMobSeparationEvidence = evidenceHasMinimalSuffix && firstHitSeparationFixesSameMobExactness(hits, action, context);
-    const forceA1Confirmed = evidenceHasMinimalSuffix && forceA1.force;
+    const beamLeechForceNeutral = isBeamAction(action)
+      && forceA1.force
+      && forceA1.reason === 'first_hit_n1_suffix_accepts_n_minus_1'
+      && !strongTimestampBoundary
+      && !critStateBoundary
+      && !sameMobSeparationEvidence;
+    const deathEchoLeechForceNeutral = deathEchoFirstHitExplained && forceA1.force;
+    const timestampBoundaryConfirmed = strongTimestampBoundary && !deathEchoFirstHitExplained;
+    const forceA1Confirmed = evidenceHasMinimalSuffix && forceA1.force && !beamLeechForceNeutral && !deathEchoLeechForceNeutral;
     const mageDruidHasPositiveAaEvidence = !isMageDruid || !concreteAreaActionCanExplainTurn
-      || strongTimestampBoundary || critStateBoundary || sameMobSeparationEvidence || forceA1Confirmed;
+      || timestampBoundaryConfirmed || critStateBoundary || sameMobSeparationEvidence || forceA1Confirmed;
     let chosen = split;
     let reason = 'ek_positional_aa_first_hit';
 
-    if (strongTimestampBoundary) {
+    if (timestampBoundaryConfirmed) {
       chosen = split;
       reason = 'ek_timestamp_boundary_aa_then_spell';
+    } else if (deathEchoFirstHitExplained) {
+      chosen = allSpell;
+      reason = 'ms_death_echo_multistage_not_independent_aa_evidence';
+    } else if (beamSubline && beamSubline.ok) {
+      chosen = allSpell;
+      reason = 'ms_beam_subline_validated_no_a1';
+    } else if (beamLeechForceNeutral) {
+      chosen = allSpell;
+      reason = 'ms_beam_leech_cardinality_not_independent_aa_evidence';
     } else if (forceA1.force) {
       chosen = split;
       reason = 'ek_a1_forced_by_leech_cardinality_' + forceA1.reason;
@@ -359,7 +393,13 @@
     turn.hits.forEach(h => enrichHitEvidence(h, context));
 
     const singleTargetAaTurn = resolveSingleTargetAaVocationTurn(turn, facts, context);
-    if (singleTargetAaTurn) return singleTargetAaTurn;
+    if (singleTargetAaTurn) {
+      if (singleTargetAaTurn.status === 'unresolved'
+        && isPartialEdgeMissingEvidence(turn, singleTargetAaTurn.rejected, context)) {
+        return partialEdgeMissingEvidenceTurn(turn, singleTargetAaTurn.rejected);
+      }
+      return singleTargetAaTurn;
+    }
 
     let candidates = [];
     let rejected = [];
@@ -398,7 +438,7 @@
             const cand = candidateFromShape(turn, shape, cuts);
             // Poda comportamentalmente neutra: um corte de granada fora da janela de
             // explosão válida seria rejeitado por validateCandidate de qualquer forma.
-            if (hasGrenade && grenadeCandidateWindowInvalid(cand, turn.actions)) { valCache.set(cacheKey, null); continue; }
+            if (hasGrenade && grenadeCandidateWindowInvalid(cand, turn.actions, context)) { valCache.set(cacheKey, null); continue; }
             val = validateCandidate(cand, turn, turn.actions, context);
             valCache.set(cacheKey, val);
           } else if (val === null) {
@@ -448,6 +488,7 @@
         best.score.deterministicHits === second.score.deterministicHits &&
         best.score.leechFits === second.score.leechFits &&
         best.score.leechContradictions === second.score.leechContradictions &&
+        best.score.grenadeRolloverPenalty === second.score.grenadeRolloverPenalty &&
         best.score.actionRecencyPenalty === second.score.actionRecencyPenalty &&
         best.score.virtualZeroHits === second.score.virtualZeroHits &&
         best.score.unknownHits === second.score.unknownHits &&
@@ -577,29 +618,130 @@
     // "melhor" durante o laço, porque o desempate por dependência (T-003, abaixo) precisa
     // reexaminar cada candidato depois que todos forem conhecidos.
     const candidatesByCast = new Map();
+    const resolvedAssignmentTurns = new Map();
     const assigned = new Map();
+    const winningCandidates = new Map();
     try {
       for (const turn of turns || []) {
         if (!turnHasEligibleGrenadeCast(turn, facts)) continue;
         const t = resolveTurn(turn, facts, context);
+        resolvedAssignmentTurns.set(turn, t);
         if (!t || t.status !== 'resolved') continue;
         const hasResidue = turnCandidateHasResidue(t, context);
         for (const b of t.components || []) {
           if (!b || b.comp !== 'grenade' || !b.action) continue;
           if (!candidatesByCast.has(b.action)) candidatesByCast.set(b.action, []);
-          candidatesByCast.get(b.action).push({ turn, turnTs: t.ts, hasResidue });
+          candidatesByCast.get(b.action).push({ turn, turnTs: t.ts, hasResidue, rollover: null });
+        }
+      }
+
+      // M-024/M-025/T-002: o agrupamento de 2s é provisório. Uma explosão no fim de
+      // um turno pode continuar no prefixo cronologicamente contíguo do seguinte.
+      // A hipótese só existe com setup de leech utilizável e precisa fazer os DOIS
+      // turnos resolverem: origem com o prefixo anexado; vizinho sem o prefixo e sem
+      // reutilizar o cast. Todos os cortes possíveis são testados e exatamente um
+      // deve sobreviver — não há escolha por hit count, dano, fixture ou vocação.
+      const leechSetup = context && context.leechSetup;
+      const canProveRollover = leechSetup && (leechSetup.lifeBase > 0 || leechSetup.manaBase > 0);
+      if (canProveRollover) {
+        for (let turnIndex = 0; turnIndex + 1 < (turns || []).length; turnIndex++) {
+          const origin = turns[turnIndex], next = turns[turnIndex + 1];
+          if (!turnHasEligibleGrenadeCast(origin, facts) || !next || !next.hits || next.hits.length < 2) continue;
+          const resolvedOrigin = resolvedAssignmentTurns.get(origin);
+          if (!resolvedOrigin || resolvedOrigin.status !== 'resolved') continue;
+
+          for (const grenade of resolvedOrigin.components || []) {
+            if (!grenade || grenade.comp !== 'grenade' || !grenade.action) continue;
+            const cast = grenade.action;
+            const impactOrdTs = [...new Set((grenade.hits || []).map(h => Number.isFinite(h.ordTs) ? h.ordTs : h.ts))]
+              .sort((a, b) => a - b);
+            if (impactOrdTs.length !== 1) continue;
+            const rolloverOrdTs = impactOrdTs[0] + 1;
+            let prefixLimit = 0;
+            while (prefixLimit < next.hits.length &&
+                   (Number.isFinite(next.hits[prefixLimit].ordTs) ? next.hits[prefixLimit].ordTs : next.hits[prefixLimit].ts) === rolloverOrdTs) {
+              prefixLimit++;
+            }
+            if (!prefixLimit) continue;
+            // Se o vizinho inteiro já resolve sem este cast, a borda não cria a
+            // dependência mecânica que provaria mover qualquer prefixo. Esta prova
+            // cara só roda depois das guardas temporais baratas acima.
+            if (turnResolvesWithoutCast(next, cast, facts, context)) continue;
+
+            const validPrefixes = [];
+            const observedGrenadeHits = (grenade.hits || []).filter(h => origin.hits.includes(h));
+            const rolloverActions = actionsNearTurn(
+              Object.assign({}, origin, { hits: origin.hits.concat(next.hits.slice(0, 1)) }),
+              facts,
+              context
+            );
+            for (let prefixLength = 1; prefixLength <= prefixLimit && prefixLength < next.hits.length; prefixLength++) {
+              const prefix = next.hits.slice(0, prefixLength);
+              const originWithPrefix = Object.assign({}, origin, { hits: origin.hits.concat(prefix) });
+              const nextWithoutPrefix = Object.assign({}, next, { hits: next.hits.slice(prefixLength) });
+              // Pré-poda comportamentalmente neutra: antes da resolução combinatória
+              // do turno inteiro, o próprio validador canônico testa o bloco de
+              // granada observado + prefixo. Uma reprovação aqui também reprovaria
+              // esse mesmo bloco em qualquer partição completa; aprovação apenas
+              // autoriza a prova cara dos dois turnos, nunca decide o rollover.
+              const probeHits = observedGrenadeHits.concat(prefix);
+              const probeCandidate = {
+                shape: ['grenade'],
+                cuts: [probeHits.length],
+                components: [{ comp: 'grenade', start: 0, end: probeHits.length, hits: probeHits }],
+              };
+              const probeValidation = validateCandidate(probeCandidate, originWithPrefix, rolloverActions, context);
+              if (!probeValidation.ok) continue;
+              const resolvedWithPrefix = resolveTurn(originWithPrefix, facts, context);
+              if (!resolvedWithPrefix || resolvedWithPrefix.status !== 'resolved') continue;
+              const combinedGrenade = (resolvedWithPrefix.components || []).find(b =>
+                b && b.comp === 'grenade' && b.action === cast &&
+                prefix.every(h => (b.hits || []).includes(h)) &&
+                (grenade.hits || []).filter(h => origin.hits.includes(h)).every(h => (b.hits || []).includes(h))
+              );
+              if (!combinedGrenade || !turnResolvesWithoutCast(nextWithoutPrefix, cast, facts, context)) continue;
+              validPrefixes.push({
+                turn: originWithPrefix,
+                actualTurn: origin,
+                nextTurn: next,
+                prefix,
+                turnTs: resolvedWithPrefix.ts,
+                hasResidue: turnCandidateHasResidue(resolvedWithPrefix, context),
+                rollover: { prefixLength },
+              });
+            }
+
+            if (validPrefixes.length !== 1) continue;
+            if (!candidatesByCast.has(cast)) candidatesByCast.set(cast, []);
+            candidatesByCast.get(cast).push(validPrefixes[0]);
+          }
         }
       }
 
       for (const [cast, cands] of candidatesByCast) {
         const distinctTs = new Set(cands.map(c => c.turnTs));
-        if (distinctTs.size === 1) { assigned.set(cast, cands[0].turnTs); continue; }
+        if (distinctTs.size === 1) {
+          const turnTs = cands[0].turnTs;
+          assigned.set(cast, turnTs);
+          const rollovers = cands.filter(c => c.turnTs === turnTs && c.rollover);
+          if (rollovers.length === 1) winningCandidates.set(cast, rollovers[0]);
+          else if (!rollovers.length) winningCandidates.set(cast, cands[0]);
+          continue;
+        }
 
         // D1 — resíduo: um candidato cuja partição não deixa hit inexplicado vence,
         // independente de hitCount/deterministicHits (que reintroduziriam o desempate
         // arbitrário corrigido por fix-grenade-cast-turn-assignment).
         const noResidueTs = new Set(cands.filter(c => !c.hasResidue).map(c => c.turnTs));
-        if (noResidueTs.size === 1) { assigned.set(cast, [...noResidueTs][0]); continue; }
+        if (noResidueTs.size === 1) {
+          const turnTs = [...noResidueTs][0];
+          assigned.set(cast, turnTs);
+          const winners = cands.filter(c => c.turnTs === turnTs);
+          const rollovers = winners.filter(c => c.rollover);
+          if (rollovers.length === 1) winningCandidates.set(cast, rollovers[0]);
+          else if (!rollovers.length) winningCandidates.set(cast, winners[0]);
+          continue;
+        }
 
         // NOVO (prefer-grenade-cast-turn-that-cannot-resolve-without-it) — dependência:
         // quando o resíduo não separa, perguntar qual candidato NÃO resolve sem o cast.
@@ -616,12 +758,46 @@
         const dependentTs = new Set(
           cands.filter(c => !turnResolvesWithoutCast(c.turn, cast, facts, context)).map(c => c.turnTs)
         );
-        if (dependentTs.size === 1) { assigned.set(cast, [...dependentTs][0]); continue; }
+        if (dependentTs.size === 1) {
+          const turnTs = [...dependentTs][0];
+          assigned.set(cast, turnTs);
+          const winners = cands.filter(c => c.turnTs === turnTs);
+          const rollovers = winners.filter(c => c.rollover);
+          if (rollovers.length === 1) winningCandidates.set(cast, rollovers[0]);
+          else if (!rollovers.length) winningCandidates.set(cast, winners[0]);
+          continue;
+        }
 
         // `null` é sentinela pra cast ambíguo: `actionsNearTurn` só oferece o cast ao turno
         // em `preassigned.get(c) === turn.ts`, e nenhum turn.ts real é `null`, então isso
         // exclui o cast de TODOS os turnos candidatos em vez de escolher um vencedor.
         assigned.set(cast, null);
+      }
+
+      // A transferência é posterior à escolha global. Se dois casts tentarem consumir
+      // qualquer hit do mesmo prefixo, nenhum deles recebe o rollover (fail-safe).
+      const claimedRolloverHits = new Map();
+      for (const [cast, winner] of winningCandidates) {
+        if (!winner.rollover || assigned.get(cast) !== winner.turnTs) continue;
+        for (const h of winner.prefix) {
+          if (!claimedRolloverHits.has(h)) claimedRolloverHits.set(h, []);
+          claimedRolloverHits.get(h).push(cast);
+        }
+      }
+      for (const [cast, winner] of winningCandidates) {
+        if (!winner.rollover || assigned.get(cast) !== winner.turnTs) continue;
+        const conflicted = winner.prefix.some(h => (claimedRolloverHits.get(h) || []).length !== 1);
+        const prefixStillPresent = winner.prefix.every((h, i) => winner.nextTurn.hits[i] === h);
+        if (conflicted || !prefixStillPresent) {
+          assigned.set(cast, null);
+          continue;
+        }
+        winner.actualTurn.hits.push(...winner.prefix);
+        winner.actualTurn.hits.sort((a, b) =>
+          ((Number.isFinite(a.ordTs) ? a.ordTs : a.ts) - (Number.isFinite(b.ordTs) ? b.ordTs : b.ts)) ||
+          ((a.seq || 0) - (b.seq || 0))
+        );
+        winner.nextTurn.hits.splice(0, winner.prefix.length);
       }
     } finally {
       if (context) {
@@ -824,37 +1000,18 @@
     ));
   }
 
-  // T-007/A-009: o critério é a CAUSA (a borda inicial removeu a ação concreta que
-  // explicaria os hits), não a razão de rejeição específica de cada vocação. Sem ação
-  // ofensiva concreta no recorte, `possibleShapes` só consegue gerar o bloco único
-  // `arrow[n]`; quando ele cai, não existe classificação derivável da evidência visível.
+  // T-007/A-009: este gate só é chamado DEPOIS que a resolução normal esgotou as
+  // hipóteses e terminou unresolved. Nesse ponto, `partialEdge` é a causa operacional:
+  // não há evidência suficiente no recorte para distinguir uma contradição real da perda
+  // provocada pelo início do Server Log. Isso também cobre uma ação concreta que explique
+  // apenas parte do turno; ela não autoriza absorver o prefixo nem confirmar estágio
+  // multietapa sem a prova exigida por M-016d.
   //
-  // Antes o gate exigia vocação de AA single-target E a razão
-  // `multiple_arrow_hits_not_allowed`. As duas eram a mesma restrição escrita duas vezes:
-  // essa razão só pode ocorrer nessas vocações, porque M-031 dá AA de área
-  // exclusivamente ao Royal Paladin. Isso deixava de fora o mesmo fenômeno em RP, onde a
-  // hipótese remanescente cai por incoerência do eixo físico.
-  // Casos-prova: `uhax 3 20:49:26` (druid, `multiple_arrow_hits_not_allowed`) e
-  // `mazzerinbarrage 23:21:27` sessão 09/Jun/2026 (RP, `physical_intersection_empty`;
-  // o leech dos 6 hits visíveis fecha exato em N_leech=9 nos dois canais e nos quatro
-  // mobs, confirmando que a borda levou 3 hits do bloco).
+  // Turnos parciais que resolvem nunca chegam aqui e permanecem classificáveis/auditáveis.
+  // Casos-prova: `uhax 3 20:49:26`, `mazzerinbarrage 23:21:27` (09/Jun/2026) e
+  // `death echo 11:06:01` (10/Jul/2026).
   function isPartialEdgeMissingEvidence(turn, rejected, context) {
-    if (!turn || !turn.partialEdge) return false;
-    if (hasConcreteOffensiveAction(turn.actions)) return false;
-    if (!turn.hits || turn.hits.length <= 1) return false;
-    const rejectedList = rejected || [];
-    if (!rejectedList.length) return false;
-    // Conjunto fechado de propósito: um `arrow[n]` rejeitado por, por exemplo,
-    // `leech_cardinality_failed` significa que HÁ evidência utilizável no recorte
-    // contradizendo a hipótese — isso é `unresolved` legítimo, não informação perdida.
-    const allowedReasons = new Set(['multiple_arrow_hits_not_allowed', 'physical_intersection_empty']);
-    return rejectedList.every(val => {
-      const cand = val && val.candidate;
-      if (!cand || cand.shape.join('>') !== 'arrow' || cand.cuts.join(',') !== String(turn.hits.length)) return false;
-      const reasons = (val.violations || []).map(v => v && v.reason).filter(Boolean);
-      if (!reasons.length) return false;
-      return reasons.every(r => allowedReasons.has(r));
-    });
+    return !!(turn && turn.partialEdge);
   }
 
   function partialEdgeMissingEvidenceTurn(turn, rejected) {

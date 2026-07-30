@@ -151,6 +151,78 @@ const sharedCountCheck = expected => turn => {
   }
   return null;
 };
+const beamNoAaCheck = (expectedSpellHits, labelPart) => turn => {
+  const c = counts(turn);
+  if (!(c.arrow === 0 && c.spell === expectedSpellHits && c.rune === 0 && c.grenade === 0)) {
+    return `esperado A0 S${expectedSpellHits}; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+  }
+  const spell = (turn.components || []).find(comp => comp.comp === 'spell');
+  if (!spell || !String(spell.actionLabel || '').includes(labelPart)) {
+    return `esperado ${labelPart}; got ${spell && spell.actionLabel || '-'}`;
+  }
+  const hits = (spell.hits || []).filter(h => !h.overkill && h.dmg > 0);
+  const side = hits.filter(h => h.beamSide === 'side').length;
+  const central = hits.filter(h => h.beamSide === 'central').length;
+  return side > 0 && central > 0 ? null : `esperado beamSide side+central; got side=${side} central=${central}`;
+};
+const spellNoAaCheck = (expectedSpellHits, labelPart) => turn => {
+  const c = counts(turn);
+  if (!(c.arrow === 0 && c.spell === expectedSpellHits && c.rune === 0 && c.grenade === 0)) {
+    return `esperado A0 S${expectedSpellHits}; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+  }
+  const spell = (turn.components || []).find(comp => comp.comp === 'spell');
+  return spell && String(spell.actionLabel || '').includes(labelPart)
+    ? null
+    : `esperado ${labelPart}; got ${spell && spell.actionLabel || '-'}`;
+};
+const spellWithAaCheck = (expectedArrowHits, expectedSpellHits, labelPart, expectedBeam = null) => turn => {
+  const c = counts(turn);
+  if (!(c.arrow === expectedArrowHits && c.spell === expectedSpellHits && c.rune === 0 && c.grenade === 0)) {
+    return `esperado A${expectedArrowHits} S${expectedSpellHits}; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+  }
+  const spell = (turn.components || []).find(comp => comp.comp === 'spell');
+  if (!spell || !String(spell.actionLabel || '').includes(labelPart)) {
+    return `esperado ${labelPart}; got ${spell && spell.actionLabel || '-'}`;
+  }
+  if (expectedBeam) {
+    const central = (spell.hits || []).filter(h => h.beamSide === 'central').length;
+    const side = (spell.hits || []).filter(h => h.beamSide === 'side').length;
+    if (central !== expectedBeam.central || side !== expectedBeam.side) {
+      return `esperado beam central=${expectedBeam.central} side=${expectedBeam.side}; got central=${central} side=${side}`;
+    }
+  }
+  return null;
+};
+const grenadeWithAaSpellCheck = (expectedArrowHits, expectedSpellHits, expectedGrenadeHits, spellLabelPart, expectedGrenadeTimestamps, requiredGrenadeSeqs) => turn => {
+  const c = counts(turn);
+  if (!(c.arrow === expectedArrowHits && c.spell === expectedSpellHits && c.rune === 0 && c.grenade === expectedGrenadeHits)) {
+    return `esperado A${expectedArrowHits} S${expectedSpellHits} G${expectedGrenadeHits}; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+  }
+  const spell = (turn.components || []).find(comp => comp.comp === 'spell');
+  if (!spell || !String(spell.actionLabel || '').includes(spellLabelPart)) {
+    return `esperado ${spellLabelPart}; got ${spell && spell.actionLabel || '-'}`;
+  }
+  const grenade = (turn.components || []).find(comp => comp.comp === 'grenade');
+  if (!grenade || !String(grenade.actionLabel || '').includes('Divine Grenade')) {
+    return `esperado Divine Grenade; got ${grenade && grenade.actionLabel || '-'}`;
+  }
+  const timestamps = [...new Set((grenade.hits || []).filter(h => !h.virtual).map(h => h.ts))].sort((a, b) => a - b);
+  if (timestamps.join(',') !== expectedGrenadeTimestamps.join(',')) {
+    return `esperado timestamps de granada ${expectedGrenadeTimestamps.join(',')}; got ${timestamps.join(',')}`;
+  }
+  const seqs = new Set((grenade.hits || []).map(h => h.seq));
+  const missingSeqs = requiredGrenadeSeqs.filter(seq => !seqs.has(seq));
+  return missingSeqs.length ? `hits de rollover ausentes da granada: seq=${missingSeqs.join(',')}` : null;
+};
+const savageBlowIdentityCheck = turn => {
+  const base = spellWithAaCheck(1, 14, 'Death Echo')(turn);
+  if (base) return base;
+  const hits = (turn.components || []).flatMap(comp => comp.hits || []);
+  const savage = hits.filter(h => h.savageBlow);
+  if (savage.length !== 2) return `esperado 2 hits savageBlow; got ${savage.length}`;
+  const mislabeled = savage.filter(h => h.lowBlow);
+  return mislabeled.length ? `savageBlow marcado tambem como lowBlow em ${mislabeled.length} hits` : null;
+};
 const CASES = [
   // essence/Echo of Ichgahal: boss unitario, sem cast ofensivo e sem Using de
   // runa no turno; o unico hit observado so pode ser AA.
@@ -261,14 +333,85 @@ const CASES = [
     t => { const c = counts(t); return (c.arrow === 8 && c.spell === 8 && c.rune === 0 && c.grenade === 10) ? null : `esperado A8 S8 G10; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // mk 05:42:01 (M-031): a Divine Caldera crit (O_holy 1390) atravessa :01->:02 e é UM
   // componente; não pode ser fatiada em spell+granada só porque há cast de granada na
-  // janela (a granada real, nível distinto, está em 05:42:03). => AA 9 + Caldera 13.
+  // janela (a granada real, nível distinto, está em 05:42:03). O antigo N=13
+  // contava o hit virtual da granada rejeitada; os hits reais são AA 9 + Caldera 12.
   C('mk/05:42:01', 'mk server log.txt', 'mk localchat.txt', '05:42:01',
-    t => { const c = counts(t); return (c.arrow === 9 && c.spell === 13 && c.rune === 0 && c.grenade === 0) ? null : `esperado A9 S13; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+    t => { const c = counts(t); return (c.arrow === 9 && c.spell === 12 && c.rune === 0 && c.grenade === 0) ? null : `esperado A9 S12; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // mk 05:43:59 (S-014e): granada de 8 hits visíveis; curse/wound charm NÃO matam
   // (seguidos de hit visível), então não geram hit virtual. N_leech=8, um só timestamp
   // de impacto (05:44:00). => AA 12 + Caldera 13 + granada 8, sem virtual.
   C('mk/05:43:59', 'mk server log.txt', 'mk localchat.txt', '05:43:59',
     t => { const c = counts(t); return (c.arrow === 12 && c.spell === 13 && c.rune === 0 && c.grenade === 8) ? null : `esperado A12 S13 G8; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // fix-thunder-arrow-perfect-shot-state: Perfect Shot é parte do estado
+  // determinístico de S-004a. Os cinco turnos deixam de misturar hits com/sem a
+  // marca, preservando a spell concreta e o eixo energy da munição desta sessão.
+  C('thunder-arrow-perfect-shot-state/18:51:21', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:51:21',
+    spellWithAaCheck(4, 5, 'Divine Caldera'), '21/Jul/2026'),
+  C('thunder-arrow-perfect-shot-state/18:53:38', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:53:38',
+    spellWithAaCheck(5, 12, 'Divine Caldera'), '21/Jul/2026'),
+  // M-024/M-025/T-002: os dois hits de :51 são o rollover cronologicamente
+  // contíguo da granada do cast :47. O vizinho resolve A8 S12 sem reutilizar o cast.
+  C('thunder-arrow-perfect-shot-state/18:55:49', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:55:49',
+    grenadeWithAaSpellCheck(7, 15, 13, 'Divine Caldera', [68150, 68151], [5510, 5513]), '21/Jul/2026'),
+  C('thunder-arrow-perfect-shot-state/18:55:51', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:55:51',
+    spellWithAaCheck(8, 12, 'Divine Barrage'), '21/Jul/2026'),
+  C('thunder-arrow-perfect-shot-state/18:56:11', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:56:11',
+    spellWithAaCheck(3, 4, 'Divine Barrage'), '21/Jul/2026'),
+  C('thunder-arrow-perfect-shot-state/18:56:35', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:56:35',
+    spellWithAaCheck(3, 4, 'Divine Caldera'), '21/Jul/2026'),
+  // Segundo rollover: G9 continua um único evento mecânico em :44/:45; o turno
+  // :46 perde apenas o prefixo da granada e fecha A7 S11 Divine Barrage, G0.
+  C('thunder-arrow-perfect-shot-state/18:56:44', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:56:44',
+    grenadeWithAaSpellCheck(6, 9, 9, 'Divine Caldera', [68204, 68205], [6483, 6487]), '21/Jul/2026'),
+  C('thunder-arrow-perfect-shot-state/18:56:46', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:56:46',
+    spellWithAaCheck(7, 11, 'Divine Barrage'), '21/Jul/2026'),
+  C('thunder-arrow-perfect-shot-state/18:57:33', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:57:33',
+    spellWithAaCheck(5, 5, 'Divine Barrage'), '21/Jul/2026'),
+  // D-030/D-011a: com Grav San global em 10%, a divisão aprovada é A8 S7 G7.
+  // O hit seq 3894 permanece no bloco Caldera e NÃO é overkill: há poção e dano
+  // recebido antes do XP posterior. A granada é o nível holy distinto de sete
+  // hits em :53.
+  C('grav-san-damage-leech/jaded-21:01:52', 'jaded Server Log.txt', 'jaded Local Chat.txt', '21:01:52',
+    t => {
+      const baseReason = grenadeWithAaSpellCheck(8, 7, 7, 'Divine Caldera', [75713], [])(t);
+      if (baseReason) return baseReason;
+      const caldera = (t.components || []).find(comp =>
+        comp.comp === 'spell' && String(comp.actionLabel || '').includes('Divine Caldera'));
+      const hit = caldera && (caldera.hits || []).find(item => item.seq === 3894);
+      if (!hit) return 'esperado seq 3894 dentro da Divine Caldera';
+      return hit.overkill ? 'seq 3894 não pode ser overkill (D-011a)' : null;
+    }, '10/Jun/2026'),
+  // Colaterais sem leech_cardinality_failed pré-cutoff, aprovados na mesma
+  // revisão humana: fronteiras finais sob o tier global de 10%.
+  C('grav-san-damage-leech/jaded-21:02:30', 'jaded Server Log.txt', 'jaded Local Chat.txt', '21:02:30',
+    grenadeWithAaSpellCheck(9, 11, 10, 'Divine Caldera', [75751], []), '10/Jun/2026'),
+  C('grav-san-damage-leech/jaded-21:04:40', 'jaded Server Log.txt', 'jaded Local Chat.txt', '21:04:40',
+    t => {
+      const c = counts(t);
+      if (!(c.arrow === 8 && c.spell === 0 && c.rune === 9 && c.grenade === 0)) {
+        return `esperado A8 R9; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const rune = (t.components || []).find(comp => comp.comp === 'rune');
+      return rune && String(rune.actionLabel || '').includes('Thunderstorm')
+        ? null
+        : `esperado Thunderstorm; got ${rune && rune.actionLabel || '-'}`;
+    }, '10/Jun/2026'),
+  // Alcance geral de M-024: rollover real encontrado pelo dump RP fora do
+  // fixture alvo. Passa cumulativamente por dano, crit-state, M-031 e
+  // cardinalidade de leech; não é exceção por log.
+  C('grenade-rollover-corpus/bakra-09:21:00', 'Server Log bakra.txt', 'Local Chat bakra.txt', '09:21:00',
+    t => {
+      const c = counts(t);
+      return (t.status === 'unresolved' && c.arrow === 0 && c.spell === 0 && c.rune === 0 && c.grenade === 0)
+        ? null
+        : `esperado unresolved sem rollover não comprovado; status=${t.status} A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }, '09/Jun/2026'),
+  // Forma-base de um timestamp: a hipótese de rollover não pode engolir a
+  // Caldera concreta e vencer só por ter menos componentes.
+  C('grenade-rollover-corpus/bakra-09:23:20', 'Server Log bakra.txt', 'Local Chat bakra.txt', '09:23:20',
+    grenadeWithAaSpellCheck(1, 9, 10, 'Divine Caldera', [33801], []), '09/Jun/2026'),
+  C('grenade-rollover-corpus/bakra-09:27:02', 'Server Log bakra.txt', 'Local Chat bakra.txt', '09:27:02',
+    grenadeWithAaSpellCheck(1, 10, 13, 'Divine Caldera', [34023], []), '09/Jun/2026'),
   // mazzerinbarrage 09/Jul/2026: granada do cast anterior cai no prefixo do turno
   // seguinte. M-023/M-025 exigem comparar a janela inteira antes de consumir o cast.
   C('mazzerinbarrage/01:20:45', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '01:20:45',
@@ -375,6 +518,33 @@ const CASES = [
       ? null
       : `esperado partial_edge_missing_evidence; status=${t.status} reason=${t.reason} partialEdge=${t.partialEdge} partialEdgeMissingEvidence=${t.partialEdgeMissingEvidence}`,
     '09/Jun/2026'),
+  // T-007/A-009: primeiro turno do Server Log começa depois do blast inicial de Death
+  // Echo. O estágio atrasado não pode ser confirmado sem contraparte por M-016d-1a, e o
+  // cast de Energy Wave em :02 explica apenas o sufixo crítico. Não inventar componente:
+  // excluir operacionalmente como informação perdida de borda.
+  C('death-echo-partial-edge/11:06:01', 'death echo server log.txt', 'death echo local chat.txt', '11:06:01',
+    t => {
+      const c = counts(t);
+      return (t.partialEdge === true
+        && t.partialEdgeMissingEvidence === true
+        && t.reason === 'partial_edge_missing_evidence'
+        && c.arrow === 0 && c.spell === 0 && c.rune === 0 && c.grenade === 0)
+        ? null
+        : `esperado partial_edge_missing_evidence sem componentes nomeados; status=${t.status} reason=${t.reason} partialEdge=${t.partialEdge} partialEdgeMissingEvidence=${t.partialEdgeMissingEvidence} A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }, '10/Jul/2026'),
+  // R-001/R-003/M-017: início de sessão interna colada no mega-log; sem cast ofensivo e
+  // sem linha Using preservados. O motor continua unresolved e não inventa a runa que o
+  // conhecimento externo diz ter sido usada; só o relatório aceita esta chave.
+  C('mrowdy2-accepted-unresolved/17:19:16', 'Mrowdy Server Log 2.txt', 'Mrowdy Local Chat 2.txt', '17:19:16',
+    t => {
+      const c = counts(t);
+      return (t.status === 'unresolved'
+        && t.reason === 'no_valid_partition'
+        && !t.partialEdgeMissingEvidence
+        && c.arrow === 0 && c.spell === 0 && c.rune === 0 && c.grenade === 0)
+        ? null
+        : `esperado unresolved/no_valid_partition sem runa inventada; status=${t.status} reason=${t.reason} partialEdgeMissingEvidence=${t.partialEdgeMissingEvidence} A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }, '11/Jun/2026'),
   // uhax 3 30/Jun/2026 20:51:47 (M-016c): server log tem `Using one of 3558
   // great fireball runes...` no mesmo segundo dos 8 hits (darklight matter,
   // darklight source x2, bloodjaw x2, walking pillar x3), todos revertendo
@@ -760,6 +930,21 @@ const CASES = [
   // classificacao.
   C('kim/16:13:26', 'kim server log.txt', 'kim local chat.txt', '16:13:26',
     t => { const c = counts(t); return (c.arrow === 0 && c.spell === 2 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S2 (Great Energy Beam); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // kim 14/Jul/2026: blocos pequenos de Great Energy Beam. A cardinalidade de leech
+  // primeiro-hit N=1 + sufixo N-1 e compativel com sub-linhas de beam (M-035) e,
+  // sem fronteira independente, nao e prova positiva de AA.
+  C('kim-ms-beam-small/16:15:13', 'kim server log.txt', 'kim local chat.txt', '16:15:13',
+    spellNoAaCheck(3, 'Great Energy Beam')),
+  C('kim-ms-beam-small/16:15:20', 'kim server log.txt', 'kim local chat.txt', '16:15:20',
+    spellNoAaCheck(3, 'Great Energy Beam')),
+  C('kim-ms-beam-small/16:18:06', 'kim server log.txt', 'kim local chat.txt', '16:18:06',
+    spellNoAaCheck(4, 'Great Energy Beam')),
+  C('kim-ms-beam-small/16:24:54', 'kim server log.txt', 'kim local chat.txt', '16:24:54',
+    spellNoAaCheck(3, 'Great Energy Beam')),
+  C('kim-ms-beam-small/16:25:23', 'kim server log.txt', 'kim local chat.txt', '16:25:23',
+    spellNoAaCheck(4, 'Great Energy Beam')),
+  C('kim-ms-beam-small/16:29:53', 'kim server log.txt', 'kim local chat.txt', '16:29:53',
+    spellNoAaCheck(4, 'Great Energy Beam')),
   // kim 16:17:14: AA baixo real de sorcerer antes de Sudden Death single-target.
   C('kim/16:17:14', 'kim server log.txt', 'kim local chat.txt', '16:17:14',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 0 && c.rune === 1 && c.grenade === 0) ? null : `esperado A1 R1; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
@@ -821,6 +1006,11 @@ const CASES = [
       const spell = (t.components || []).find(comp => comp.comp === 'spell');
       return spell && spell.actionLabel === 'Death Echo (exevo mort ora)' ? null : `esperado Death Echo (exevo mort ora); got ${spell && spell.actionLabel || '-'}`;
     }),
+  // kim 16:30:47: Death Echo confirmado por M-016d-1a (`undertaker 566 -> 282`).
+  // O `sulphider 378` acompanha como sem contraparte, entao o primeiro hit nao e
+  // evidência independente de AA apesar da cardinalidade N=1 parecer plausivel.
+  C('kim-ms-death-echo-aa/16:30:47', 'kim server log.txt', 'kim local chat.txt', '16:30:47',
+    spellNoAaCheck(3, 'Death Echo')),
   // kim 16:30:54: empate de distancia entre `exevo mort ora` (:54) e beam (:56)
   // Death Echo (exevo mort ora, M-016d) tem blast + eco a 1/2 potencia -- mesmo
   // mob pode legitimamente aparecer em 2 niveis (blast e eco). A checagem crua
@@ -838,6 +1028,42 @@ const CASES = [
   // obrigatorio); as duas expectativas eram contraditorias.
   C('kim/16:30:54', 'kim server log.txt', 'kim local chat.txt', '16:30:54',
     t => { const c = counts(t); return (c.arrow === 0 && c.spell === 16 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S16 (Death Echo); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // dlc ms 17/Jul/2026: M-035 implementado para Great Death Beam. Os subníveis
+  // central/side explicam os degraus de razão por Beam Mastery nível 3; um cluster
+  // central de 1 hit com N_leech=1 não é AA.
+  // death echo 10/Jul/2026: Low Blow e crit por mob/hit, nao crit-state global.
+  // O roaming dread com Low Blow nao torna o crypt mage sem Low Blow uma contradicao
+  // de componente; o turno resolve como AA + Great Death Beam.
+  C('death-echo-low-blow-mob-scoped/11:06:15', 'death echo server log.txt', 'death echo local chat.txt', '11:06:15',
+    spellWithAaCheck(1, 7, 'Great Death Beam', { central: 2, side: 5 }), '10/Jul/2026'),
+  // H-005d/M-035: o primeiro hit fecha N=1 e o sufixo fecha Great Death Beam
+  // pelas cardinalidades independentes das sub-linhas central/side.
+  C('death-echo-aa-before-beam/11:06:22', 'death echo server log.txt', 'death echo local chat.txt', '11:06:22',
+    spellWithAaCheck(1, 8, 'Great Death Beam', { central: 3, side: 5 }), '10/Jul/2026'),
+  C('death-echo-aa-before-beam/11:06:31', 'death echo server log.txt', 'death echo local chat.txt', '11:06:31',
+    spellWithAaCheck(1, 9, 'Great Death Beam'), '10/Jul/2026'),
+  C('death-echo-aa-before-beam/11:06:38', 'death echo server log.txt', 'death echo local chat.txt', '11:06:38',
+    spellWithAaCheck(1, 6, 'Great Death Beam'), '10/Jul/2026'),
+  // death echo 10/Jul/2026: Savage Blow e modificador de dano critico por mob/hit,
+  // nao Low Blow. Os dois cyclursus com `(savage blow charm)` precisam sair como
+  // savageBlow sem lowBlow.
+  C('death-echo-savage-blow-not-low-blow/11:06:35', 'death echo server log.txt', 'death echo local chat.txt', '11:06:35',
+    savageBlowIdentityCheck, '10/Jul/2026'),
+  C('dlc-ms-beam/21:41:16-ratio-0562', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:41:16',
+    beamNoAaCheck(5, 'Great Death Beam'), '17/Jul/2026'),
+  C('dlc-ms-beam/21:56:38-ratio-0631', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:56:38',
+    beamNoAaCheck(5, 'Great Death Beam'), '17/Jul/2026'),
+  C('dlc-ms-beam/21:35:10-ratio-0700', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:35:10',
+    beamNoAaCheck(13, 'Great Death Beam'), '17/Jul/2026'),
+  C('dlc-ms-beam/21:36:49-ratio-0777', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:36:49',
+    beamNoAaCheck(7, 'Great Death Beam'), '17/Jul/2026'),
+  C('dlc-ms-beam/21:44:27-ratio-0872', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:44:27',
+    beamNoAaCheck(6, 'Great Death Beam'), '17/Jul/2026'),
+  // dlc ms 17/Jul/2026 21:41:33: o blast primario de Death Echo atravessa a borda
+  // :33 -> :34 (M-005) e o eco em :35 confirma M-016d-1a; a fronteira de timestamp
+  // nao e evidência independente de AA.
+  C('dlc-ms-death-echo-aa/21:41:33', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:41:33',
+    spellNoAaCheck(15, 'Death Echo'), '17/Jul/2026'),
   // RPBOSS 17/Jun/2026 (detect-boss-by-articleless-mob): Royal Paladin contra Murcion (boss,
   // sem artigo) com adds. bossNameSet antigo ("sessão tem 1 mob") não detectava boss em sessão
   // multi-boss/com adds, então a leech-cardinalidade fundia 2 hits de casts distintos num
