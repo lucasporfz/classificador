@@ -10,138 +10,21 @@
 // Uso:
 //   node tools/gabarito-unified.mjs            -> roda os asserts (exit 1 se algum falhar)
 //   node tools/gabarito-unified.mjs --only <substr>  -> filtra casos cujo id contém <substr>
-import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import process from 'node:process';
+import process from 'node:process';
+import { pathToFileURL } from 'node:url';
+
 import { classificationFingerprint } from './unified-classification-fingerprint.mjs';
+import { UnifiedCorpus, toSec as parseClock } from './unified-corpus.mjs';
 import { SHARED_UNIFIED_GOLDEN_CASES } from './unified-golden-cases.mjs';
-const ROOT = process.cwd(); const read = p => fs.readFileSync(p, 'utf8');
-const CACHE_ENABLED = !process.argv.includes('--no-cache');
-const SHOW_CACHE_STATS = process.argv.includes('--cache-stats');
-const SHOW_FINGERPRINTS = process.argv.includes('--fingerprints');
-const sessionPairsCache = new Map();
-const classificationCache = new Map();
-const sessionClockCache = new WeakMap();
-const cacheStats = { requests: 0, classifications: 0, hits: 0, skippedWithoutTimestamp: 0 };
 
-function freshCtx() {
-  const ctx = { console: { log() {}, warn() {}, error() {} }, Math, JSON, Array, Object, Number, String, Map, Set, isFinite, isNaN, parseInt, parseFloat, Date, Float32Array, Int32Array };
-  ctx.globalThis = ctx; ctx.window = ctx;
-  vm.createContext(ctx);
-  for (const f of ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'])
-    vm.runInContext(read(path.join(ROOT, f)), ctx, { filename: f });
-  return ctx;
-}
-function splitSessions(text) {
-  const headerRe = /^Channel .+ saved /; const sessions = []; let cur = null;
-  for (const line of text.replace(/^﻿/, '').split(/\r?\n/)) {
-    if (headerRe.test(line)) { if (cur) sessions.push(cur); cur = { header: line, lines: [line] }; }
-    else if (cur) cur.lines.push(line);
-  }
-  if (cur) sessions.push(cur);
-  if (!sessions.length) sessions.push({ header: '', lines: text.replace(/^﻿/, '').split(/\r?\n/) });
-  return sessions.map(s => ({ ...s, text: s.lines.join('\n') }));
-}
-const MONTHS = { Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12 };
-function parseSessionDate(s) {
-  const m = /saved \w+ (\w+) +(\d+) (\d{2}):(\d{2}):(\d{2}) (\d{4})/.exec(s.header);
-  if (!m) return null;
-  return { year:+m[6], month:MONTHS[m[1]]||0, day:+m[2], saveSec:+m[3]*3600+ +m[4]*60+ +m[5] };
-}
-function dateKey(d) {
-  if (!d) return null;
-  return d.year + '-' + String(d.month).padStart(2, '0') + '-' + String(d.day).padStart(2, '0');
-}
-function parseCaseDate(s) {
-  if (!s) return null;
-  const m = /^(\d{1,2})\/(\w{3})\/(\d{4})$/.exec(s);
-  if (!m) return null;
-  return +m[3] + '-' + String(MONTHS[m[2]] || 0).padStart(2, '0') + '-' + String(+m[1]).padStart(2, '0');
-}
-function buildPairs(svS, lcS) {
-  const pairs = [];
-  for (const sv of svS) {
-    const sd = parseSessionDate(sv); if (!sd) continue;
-    let best = null, bestDiff = Infinity;
-    for (const lc of lcS) { const ld = parseSessionDate(lc); if (!ld || ld.year!==sd.year||ld.month!==sd.month||ld.day!==sd.day) continue;
-      const diff = Math.abs(ld.saveSec - sd.saveSec); if (diff < bestDiff) { bestDiff = diff; best = lc; } }
-    if (best && bestDiff <= 3600) pairs.push({ sv, lc: best });
-  }
-  return pairs;
-}
-function sessionsOf(svP, lcP) {
-  const cacheKey = path.resolve(svP) + '\n' + path.resolve(lcP);
-  if (sessionPairsCache.has(cacheKey)) return sessionPairsCache.get(cacheKey);
-  const svS = splitSessions(read(svP)), lcS = splitSessions(read(lcP));
-  const pairs = svS.length === 1 && lcS.length === 1 ? [{ sv: svS[0], lc: lcS[0] }] : buildPairs(svS, lcS);
-  sessionPairsCache.set(cacheKey, pairs);
-  return pairs;
-}
-const toSec = hms => { const m=/^(\d{2}):(\d{2}):(\d{2})$/.exec(hms); return m ? (+m[1]*3600)+(+m[2]*60)+(+m[3]) : null; };
-const clockForTs = ts => {
-  const normalized = ((+ts % 86400) + 86400) % 86400;
-  const h = Math.floor(normalized / 3600);
-  const m = Math.floor((normalized % 3600) / 60);
-  const s = Math.floor(normalized % 60);
-  return [h, m, s].map(value => String(value).padStart(2, '0')).join(':');
-};
-
-function sessionContainsClock(session, clock) {
-  if (!sessionClockCache.has(session)) {
-    sessionClockCache.set(session, new Set(String(session.text || '').match(/\b\d{2}:\d{2}:\d{2}\b/g) || []));
-  }
-  return sessionClockCache.get(session).has(clock);
-}
-
-function classifyPair(svP, lcP, pair, pairIndex) {
-  cacheStats.requests++;
-  const cacheKey = path.resolve(svP) + '\n' + path.resolve(lcP) + '\n' + pairIndex;
-  if (CACHE_ENABLED && classificationCache.has(cacheKey)) {
-    cacheStats.hits++;
-    return classificationCache.get(cacheKey);
-  }
-  const ctx = freshCtx();
-  let result = null;
-  try {
-    result = ctx.UnifiedClassificationEngine.classifyUnified(pair.sv.text, pair.lc.text, {
-      mobModsPre: ctx.MOB_ELEMENT_MODS,
-      mobModsPost: ctx.MOB_ELEMENT_MODS_POST_2026_06_16,
-      strictLeech: true,
-      maxOriginal: 6000,
-      useFloat16Mitigation: true,
-    });
-  } catch (_error) {
-    result = null;
-  }
-  cacheStats.classifications++;
-  if (CACHE_ENABLED) classificationCache.set(cacheKey, result);
-  return result;
-}
-
-function findTurns(svN, lcN, ts, date) {
-  const svP = 'logs/' + svN, lcP = 'logs/' + lcN;
-  if (!fs.existsSync(svP) || !fs.existsSync(lcP)) return { missing: true, turns: [] };
-  const found = [];
-  const wantedDate = parseCaseDate(date);
-  const wantedClock = clockForTs(ts);
-  for (const [pairIndex, pair] of sessionsOf(svP, lcP).entries()) {
-    if (wantedDate && dateKey(parseSessionDate(pair.sv)) !== wantedDate) continue;
-    if (!sessionContainsClock(pair.sv, wantedClock)) {
-      cacheStats.skippedWithoutTimestamp++;
-      continue;
-    }
-    const res = classifyPair(svP, lcP, pair, pairIndex);
-    if (!res || !res.turns) continue;
-    for (const t of res.turns) if (t.ts === ts) found.push(t);
-  }
-  return { missing: false, turns: found };
-}
 const counts = turn => {
   const c = { arrow:0, spell:0, rune:0, grenade:0 };
   for (const comp of turn.components || []) { const k = comp.comp || comp.kind; if (k in c) c[k] += (comp.hits || []).length; }
   return c;
 };
 
-const C = (id, sv, lc, ts, check, date) => ({ id, sv, lc, ts: toSec(ts), tsRaw: ts, check, date });
-const CN = (id, sv, lc, ts, date) => ({ id, sv, lc, ts: toSec(ts), tsRaw: ts, noTurn: true, date });
+const C = (id, sv, lc, ts, check, date) => ({ id, sv, lc, ts: parseClock(ts), tsRaw: ts, check, date });
+const CN = (id, sv, lc, ts, date) => ({ id, sv, lc, ts: parseClock(ts), tsRaw: ts, noTurn: true, date });
 const sharedCountCheck = expected => turn => {
   const got = counts(turn);
   for (const [component, count] of Object.entries(expected)) {
@@ -174,6 +57,19 @@ const spellNoAaCheck = (expectedSpellHits, labelPart) => turn => {
   return spell && String(spell.actionLabel || '').includes(labelPart)
     ? null
     : `esperado ${labelPart}; got ${spell && spell.actionLabel || '-'}`;
+};
+const energyWaveWithoutHealingRuneCheck = turn => {
+  const c = counts(turn);
+  if (!(c.arrow === 0 && c.spell === 1 && c.rune === 0 && c.grenade === 0)) {
+    return `esperado A0 S1; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+  }
+  const spell = (turn.components || []).find(comp => comp.comp === 'spell');
+  if (!spell || !String(spell.actionLabel || '').includes('Energy Wave (exevo vis hur)')) {
+    return `esperado Energy Wave (exevo vis hur); got ${spell && spell.actionLabel || '-'}`;
+  }
+  const healingRune = (turn.components || []).find(comp =>
+    comp.comp === 'rune' && /ultimate healing/i.test(String(comp.actionLabel || '')));
+  return healingRune ? 'Ultimate Healing não pode nomear componente de dano' : null;
 };
 const spellWithAaCheck = (expectedArrowHits, expectedSpellHits, labelPart, expectedBeam = null) => turn => {
   const c = counts(turn);
@@ -223,7 +119,88 @@ const savageBlowIdentityCheck = turn => {
   const mislabeled = savage.filter(h => h.lowBlow);
   return mislabeled.length ? `savageBlow marcado tambem como lowBlow em ${mislabeled.length} hits` : null;
 };
-const CASES = [
+export const CASES = [
+  // ms boss S25: Ultimate Healing é tentativa observada, não ação ofensiva.
+  // O cast concreto de Energy Wave no mesmo segundo explica o único hit.
+  C('ms boss/22:19:01-energy-wave', 'ms boss server log.txt', 'ms boss local chat.txt', '22:19:01',
+    energyWaveWithoutHealingRuneCheck, '13/Jun/2026'),
+  // ms boss S25: boss unitario no mesmo segundo de Energy Wave. O boss nao pode
+  // receber dois hits da mesma acao concreta; o primeiro hit fica como AA e o
+  // segundo como Energy Wave.
+  C('ms boss/22:20:35-aa-energy-wave', 'ms boss server log.txt', 'ms boss local chat.txt', '22:20:35',
+    spellWithAaCheck(1, 1, 'Energy Wave (exevo vis hur)'), '13/Jun/2026'),
+  // ms boss S4: pack multi-mob com Using concreto de Great Fireball. O
+  // primeiro cyclursus 1267 ONS é mecanicamente igual a outros hits da runa;
+  // posição isolada não prova AA (H-005/V-017/V-018).
+  C('ms boss/21:37:09-great-fireball-no-aa', 'ms boss server log.txt', 'ms boss local chat.txt', '21:37:09',
+    t => {
+      const c = counts(t);
+      if (!(c.arrow === 0 && c.spell === 0 && c.rune === 13 && c.grenade === 0)) {
+        return `esperado A0 R13; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const rune = (t.components || []).find(component => component.comp === 'rune');
+      return rune && String(rune.actionLabel || '').includes('Great Fireball')
+        ? null
+        : `esperado Great Fireball; got ${rune && rune.actionLabel || '-'}`;
+    }, '10/Jun/2026'),
+  // D-022a: o +2% de Mana Leech dos hits com EW fecha o bloco inteiro em
+  // N_leech=8; o primeiro hit sem EW nao deve virar AA por score parcial.
+  C('ms boss/17:10:31-great-fireball-ew-mana-leech', 'ms boss server log.txt', 'ms boss local chat.txt', '17:10:31',
+    t => {
+      const c = counts(t);
+      const rune = (t.components || []).find(component => component.comp === 'rune');
+      return c.arrow === 0 && c.spell === 0 && c.rune === 8 && c.grenade === 0
+        && rune && String(rune.actionLabel || '').includes('Great Fireball')
+        ? null
+        : `esperado A0 R8 Great Fireball; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }, '11/Jun/2026'),
+  // S-014e/C-008/M-031/M-032: com AA visivel, o AA single-target esta saturado
+  // e o charm-kill real pertence a acao de area, mesmo quando o leech do bloco
+  // nao fecha nenhum N. Sao 7 hits visiveis + 1 virtual = 8.
+  C('mrowdy 2/18:26:55-energy-wave-virtual-charm-kill', 'Mrowdy Server Log 2.txt', 'Mrowdy Local Chat 2.txt', '18:26:55',
+    t => {
+      const c = counts(t);
+      const spell = (t.components || []).find(component => component.comp === 'spell');
+      const virtuals = ((spell && spell.hits) || []).filter(hit => hit.virtual).length;
+      if (!(c.arrow === 1 && c.spell === 8 && c.rune === 0 && c.grenade === 0)) {
+        return `esperado A1 S8; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      if (virtuals !== 1) return `esperado 1 hit virtual na spell; got ${virtuals}`;
+      return String(spell.actionLabel || '').includes('Energy Wave')
+        ? null
+        : `esperado Energy Wave; got ${spell.actionLabel || '-'}`;
+    }, '11/Jun/2026'),
+  // Controle positivo: o primeiro hit sem EW confirma N=1 por mana e rejeita
+  // N=8; D-022a nao apaga um AA realmente sustentado.
+  C('ms boss/17:10:33-aa-great-fireball-ew-mana-leech', 'ms boss server log.txt', 'ms boss local chat.txt', '17:10:33',
+    t => {
+      const c = counts(t);
+      return c.arrow === 1 && c.spell === 0 && c.rune === 7 && c.grenade === 0
+        ? null
+        : `esperado A1 R7; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }, '11/Jun/2026'),
+  // Segundo caso real em que o bonus pre-cutoff de EW remove o AA fantasma.
+  C('ms boss/19:00:26-great-fireball-ew-mana-leech', 'ms boss server log.txt', 'ms boss local chat.txt', '19:00:26',
+    t => {
+      const c = counts(t);
+      const rune = (t.components || []).find(component => component.comp === 'rune');
+      return c.arrow === 0 && c.spell === 0 && c.rune === 6 && c.grenade === 0
+        && rune && String(rune.actionLabel || '').includes('Great Fireball')
+        ? null
+        : `esperado A0 R6 Great Fireball; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }, '11/Jun/2026'),
+  // H-005/V-018a: D-022a melhora um hit EW do sufixo, mas o primeiro hit
+  // continua capped_low e a particao A1 S5 ainda possui quatro contradicoes.
+  // Reducao parcial de contradicoes nao e evidencia positiva de AA.
+  C('ms boss/18:12:59-energy-wave-ew-mana-no-aa', 'ms boss server log.txt', 'ms boss local chat.txt', '18:12:59',
+    t => {
+      const c = counts(t);
+      const spell = (t.components || []).find(component => component.comp === 'spell');
+      return c.arrow === 0 && c.spell === 6 && c.rune === 0 && c.grenade === 0
+        && spell && String(spell.actionLabel || '').includes('Energy Wave')
+        ? null
+        : `esperado A0 S6 Energy Wave; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }, '11/Jun/2026'),
   // essence/Echo of Ichgahal: boss unitario, sem cast ofensivo e sem Using de
   // runa no turno; o unico hit observado so pode ser AA.
   C('essence/00:21:12', 'essence server log.txt', 'essence local chat.txt', '00:21:12',
@@ -306,11 +283,24 @@ const CASES = [
   // resolver das 4 vocações single-target (hits.length>=2). => S5 (4 visíveis + 1 virtual).
   C('bastion/15:23:16', 'bastion server log ek.txt', 'bastion local chat ek.txt', '15:23:16',
     t => { const c = counts(t); return (c.arrow === 0 && c.spell === 5 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S5; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // M-004/H-005/D-019: com duas hipoteses igualmente compativeis, a acao
+  // fisica declarada preserva a ordem mecanica AA -> spell. O overkill impede
+  // usar proporcao de leech, mas nao apaga o desempate fisico canonico.
+  C('bastion/15:19:17-aa-before-executioners-throw', 'bastion server log ek.txt', 'bastion local chat ek.txt', '15:19:17',
+    spellWithAaCheck(1, 1, "Executioner's Throw"), '13/Jun/2026'),
   // monk 2 07:20:18 (S-014e/C-008): o enflame charm mata um skirmisher (killedTarget) que
   // a Flurry of Blows de área varreu; o AA single-target (707) já gastou seu hit visível no
   // marksman, então o alvo varrido a mais pertence à Flurry. => A1 S2 (612 + 1 virtual).
   C('monk2/07:20:18', 'monk 2 server log.txt', 'monk 2 local chat.txt', '07:20:18',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 2 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S2; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // M-037: a diferença entre os originais do primeiro hit e do sufixo não
+  // prova AA em Chained Penance, pois a própria ação declara decay por salto.
+  C('monk2/07:19:24', 'monk 2 server log.txt', 'monk 2 local chat.txt', '07:19:24',
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 4 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // D-023/S-014: os hits 624 e 711 fecham separadamente em N=1, enquanto
+  // o bloco fundido em N=2 é contradito. Área unitária continua válida (M-008).
+  C('monk2/07:19:31', 'monk 2 server log.txt', 'monk 2 local chat.txt', '07:19:31',
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 1 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S1; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // Spiritual Outburst (exori gran mas nia, M-016e): estágio atrasado multiestágio com
   // confirmação por cluster de leech (atribuição tardia). Isento do veto same-mob pela
   // change exempt-late-stage-multistage-from-samemob-veto: o mesmo raubritter leva blast
@@ -556,11 +546,154 @@ const CASES = [
   // concreta deve impedir o filtro de missing evidence.
   C('uhax3/20:51:47', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '20:51:47',
     t => { const c = counts(t); return (c.arrow === 0 && c.spell === 0 && c.rune === 8 && c.grenade === 0 && !t.partialEdgeMissingEvidence) ? null : `esperado R8 (Great Fireball), sem filtro de borda; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade} partialEdgeMissingEvidence=${t.partialEdgeMissingEvidence}`; }),
+  // S-014e/M-004/M-031/M-032: Poison Charm mata um walking pillar antes dos
+  // 12 hits visíveis de Wrath. Wrath fecha N=12 e contradiz N=13; portanto o
+  // virtual pertence ao único AA single-target do ciclo, não a Wrath.
+  C('uhax3/20:54:20-virtual-aa-before-wrath', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '20:54:20',
+    t => {
+      const c = counts(t);
+      if (!(c.arrow === 1 && c.spell === 12 && c.rune === 0 && c.grenade === 0)) {
+        return `esperado A1 S12; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const arrow = (t.components || []).find(comp => comp.comp === 'arrow');
+      const spell = (t.components || []).find(comp => comp.comp === 'spell');
+      const virtualArrow = arrow && (arrow.hits || []).length === 1
+        && arrow.hits[0].virtual === true && arrow.hits[0].dmg === 0;
+      const spellHasVirtual = spell && (spell.hits || []).some(hit => hit.virtual);
+      if (!virtualArrow || spellHasVirtual) {
+        return `esperado AA virtual de dano zero e Wrath sem virtual; virtualArrow=${virtualArrow} spellHasVirtual=${spellHasVirtual}`;
+      }
+      const virtual = arrow.hits[0];
+      const firstSpellSeq = Math.min(...spell.hits.map(hit => hit.seq));
+      if (virtual.clock !== '20:54:20' || !(virtual.seq < firstSpellSeq)) {
+        return `esperado virtual em 20:54:20 antes de Wrath; clock=${virtual.clock} seq=${virtual.seq} firstSpellSeq=${firstSpellSeq}`;
+      }
+      return spell && String(spell.actionLabel || '').includes('Wrath of Nature')
+        ? null
+        : `esperado Wrath of Nature; got ${spell && spell.actionLabel || '-'}`;
+    }, '30/Jun/2026'),
+  // M-017/M-018a/M-031/M-032: o hit 110 ocorre antes da linha observada
+  // `Using ... great fireball runes`; os nove hits visiveis posteriores formam
+  // a runa e o overflux kill confirma o decimo hit virtual. Using e a borda
+  // positiva AA -> runa, antes do pruning de leech.
+  C('uhax3/13:33:17-using-boundary-aa-rune-virtual', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:33:17',
+    t => {
+      const c = counts(t);
+      if (!(c.arrow === 1 && c.spell === 0 && c.rune === 10 && c.grenade === 0)) {
+        return `esperado A1 R10; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const arrow = (t.components || []).find(comp => comp.comp === 'arrow');
+      const rune = (t.components || []).find(comp => comp.comp === 'rune');
+      const arrowHits = arrow && arrow.hits || [];
+      const runeHits = rune && rune.hits || [];
+      const visibleRuneHits = runeHits.filter(hit => !hit.virtual);
+      const virtualRuneHits = runeHits.filter(hit => hit.virtual);
+      if (!(arrowHits.length === 1 && !arrowHits[0].virtual && arrowHits[0].dmg === 110)) {
+        return `esperado AA visivel unico de 110; got ${arrowHits.map(hit => `${hit.dmg}${hit.virtual ? 'v' : ''}`).join(',')}`;
+      }
+      if (!(visibleRuneHits.length === 9
+        && virtualRuneHits.length === 1
+        && virtualRuneHits[0].dmg === 0)) {
+        return `esperado runa com 9 hits visiveis + 1 virtual; visible=${visibleRuneHits.length} virtual=${virtualRuneHits.length}`;
+      }
+      const firstRuneSeq = Math.min(...visibleRuneHits.map(hit => hit.seq));
+      const usingSeq = rune && rune.action && rune.action.seq;
+      if (!(arrowHits[0].seq < usingSeq && usingSeq < firstRuneSeq)) {
+        return `esperado ordem AA -> Using -> runa; aaSeq=${arrowHits[0].seq} usingSeq=${usingSeq} firstRuneSeq=${firstRuneSeq}`;
+      }
+      return rune && String(rune.actionLabel || '').includes('Great Fireball')
+        ? null
+        : `esperado Great Fireball; got ${rune && rune.actionLabel || '-'}`;
+    }, '03/Jul/2026'),
+  // M-017/M-018a/S-014e: o enflame kill seguido de XP ocorre antes do
+  // `Using ... great fireball runes` e ocupa o único AA virtual do ciclo. Os
+  // sete hits visíveis e o overflux kill posteriores pertencem à runa.
+  C('uhax3/13:33:44-using-boundary-virtual-aa-rune-virtual', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:33:44',
+    t => {
+      const c = counts(t);
+      if (!(c.arrow === 1 && c.spell === 0 && c.rune === 8 && c.grenade === 0)) {
+        return `esperado A1 R8; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const arrow = (t.components || []).find(comp => comp.comp === 'arrow');
+      const rune = (t.components || []).find(comp => comp.comp === 'rune');
+      const arrowHits = arrow && arrow.hits || [];
+      const runeHits = rune && rune.hits || [];
+      const visibleRuneHits = runeHits.filter(hit => !hit.virtual);
+      const virtualRuneHits = runeHits.filter(hit => hit.virtual);
+      if (!(arrowHits.length === 1 && arrowHits[0].virtual && arrowHits[0].dmg === 0)) {
+        return `esperado AA virtual único; hits=${arrowHits.length} virtual=${arrowHits[0] && arrowHits[0].virtual} dmg=${arrowHits[0] && arrowHits[0].dmg}`;
+      }
+      if (!(visibleRuneHits.length === 7 && virtualRuneHits.length === 1)) {
+        return `esperado runa com 7 visíveis + 1 virtual; visíveis=${visibleRuneHits.length} virtuais=${virtualRuneHits.length}`;
+      }
+      const usingSeq = rune && rune.action && rune.action.seq;
+      const arrowSourceSeq = arrowHits[0].sourceCharm && arrowHits[0].sourceCharm.seq;
+      const runeSourceSeq = virtualRuneHits[0].sourceCharm && virtualRuneHits[0].sourceCharm.seq;
+      if (!(arrowSourceSeq < usingSeq && runeSourceSeq > usingSeq)) {
+        return `esperado virtual AA antes e virtual da runa depois do Using; aaSourceSeq=${arrowSourceSeq} usingSeq=${usingSeq} runeSourceSeq=${runeSourceSeq}`;
+      }
+      return rune && String(rune.actionLabel || '').includes('Great Fireball')
+        ? null
+        : `esperado Great Fireball; got ${rune && rune.actionLabel || '-'}`;
+    }, '03/Jul/2026'),
+  // D-010g/D-022b/S-014e: Bounty Talisman e inferido por sessao em dois
+  // eixos independentes (dano nivel 26, Life Leech nivel 15). Com esse setup,
+  // os 11 hits visiveis de Great Fireball exigem N_leech=12 e o Overflux kill
+  // do mesmo bloco explica exatamente um hit virtual.
+  C('uhax3/13:34:21-bounty-rune-virtual', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:34:21',
+    t => {
+      const c = counts(t);
+      if (!(c.arrow === 0 && c.spell === 0 && c.rune === 12 && c.grenade === 0)) {
+        return `esperado A0 S0 R12 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const rune = (t.components || []).find(comp => comp.comp === 'rune');
+      const runeHits = rune && rune.hits || [];
+      const visible = runeHits.filter(hit => !hit.virtual);
+      const virtual = runeHits.filter(hit => hit.virtual);
+      if (!(visible.length === 11 && virtual.length === 1 && virtual[0].dmg === 0)) {
+        return `esperado Great Fireball com 11 hits visiveis + 1 virtual; visible=${visible.length} virtual=${virtual.length} virtualDmg=${virtual[0] && virtual[0].dmg}`;
+      }
+      return rune && String(rune.actionLabel || '').includes('Great Fireball')
+        ? null
+        : `esperado Great Fireball; got ${rune && rune.actionLabel || '-'}`;
+    }, '03/Jul/2026'),
   // exempt-burst-and-chain-from-samemob-veto: Terra Burst (exevo ulus tera) tem bonus
   // condicional por-alvo (x1.6), mecanica declarada -> isenta do veto same-mob. O turno
   // 13:33:14 (darklight striker 3760/2351, razao 1.60) resolve A1 S7.
   C('uhax3/13:33:14', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:33:14',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 7 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S7; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // S-014e/M-025/D-021a: o turno tem DOIS charm-kills reais — enflame mata um darklight
+  // matter antes do bloco visivel, e poison charm mata um walking pillar dentro dele. Wrath
+  // aceita N=10 (k=8 + 2), entao os dois virtuais pertencem a acao e NAO existe auto ataque.
+  // Contrasta com 20:54:20 (S0), onde ha UM kill e Wrath contradiz N=13: la o virtual vira o
+  // AA unico do ciclo. Testar apenas `k+1`, como o codigo fazia, criava aqui um AA virtual
+  // espurio que contava o kill do darklight matter duas vezes (uma no AA, outra na acao).
+  // Depende tambem do Vampiric Embrace +3,2% em darklight matter ser inferido em S1.
+  C('uhax3/13:33:46-two-charm-kills-belong-to-action', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:33:46',
+    t => {
+      const c = counts(t);
+      if (!(c.arrow === 0 && c.spell === 10 && c.rune === 0 && c.grenade === 0)) {
+        return `esperado A0 S10; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const spell = (t.components || []).find(comp => comp.comp === 'spell');
+      if (!spell || !String(spell.actionLabel || '').includes('Wrath of Nature')) {
+        return `esperado Wrath of Nature; got ${spell && spell.actionLabel || '-'}`;
+      }
+      const hits = spell.hits || [];
+      const virtuals = hits.filter(hit => hit.virtual);
+      const visible = hits.filter(hit => !hit.virtual);
+      if (visible.length !== 8 || virtuals.length !== 2) {
+        return `esperado 8 hits visiveis + 2 virtuais; got ${visible.length} + ${virtuals.length}`;
+      }
+      if (virtuals.some(hit => hit.dmg !== 0)) {
+        return `hits virtuais devem ter dano 0; got ${virtuals.map(h => h.dmg).join(',')}`;
+      }
+      const virtualMobs = virtuals.map(hit => String(hit.mob)).sort().join('|');
+      if (virtualMobs !== 'darklight matter|walking pillar') {
+        return `esperado virtuais em darklight matter e walking pillar; got ${virtualMobs}`;
+      }
+      return null;
+    }, '03/Jul/2026'),
   // Chained Penance (M-037): caso representativo com fronteira de timestamp AA->spell.
   C('monk/11:54:44', 'monk server log.txt', 'monk localchat.txt', '11:54:44',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 4 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
@@ -589,9 +722,10 @@ const CASES = [
   // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog6/07:11:00', 'serverlog6.txt', 'localchat6.txt', '07:11:00',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // serverlog6/localchat6 07:11:02: era unresolved antes de generalize-single-target-aa-resolver.
+  // serverlog6/localchat6 07:11:02: o primeiro hit é apenas capped_low em N=1
+  // e o sufixo mantém oito contradições; redução parcial não prova AA (H-005).
   C('serverlog6/07:11:02', 'serverlog6.txt', 'localchat6.txt', '07:11:02',
-    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 8 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S8 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 9 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S9 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // Chained Penance (exori med pug, M-037): o decay de cadeia (~5%/pulo) e mecanica
   // DECLARADA, entao a divergencia same-mob nao e contradicao -- a acao e isenta do
   // veto same_mob_state_exact_original_mismatch (exempt-burst-and-chain-from-samemob-veto).
@@ -612,6 +746,10 @@ const CASES = [
   // realidade do motor.
   C('serverlog6/07:11:12', 'serverlog6.txt', 'localchat6.txt', '07:11:12',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 16 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S16; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // Controle M-037/H-005: dois hits do Chained Penance sem evidência positiva
+  // independente de AA permanecem no mesmo componente.
+  C('serverlog6/07:11:37', 'serverlog6.txt', 'localchat6.txt', '07:11:37',
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 2 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S2; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog6/localchat6 07:11:14: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog6/07:11:14', 'serverlog6.txt', 'localchat6.txt', '07:11:14',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S6 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
@@ -821,9 +959,11 @@ const CASES = [
   // para baixo (limitacao aceita, ver memoria chained-penance-chain-decay-unmodeled).
   C('serverlog8/07:23:24', 'serverlog8.txt', 'localchat8.txt', '07:23:24',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 3 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S3; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // serverlog9/localchat9 07:48:35: era unresolved antes de generalize-single-target-aa-resolver.
+  // M-037/H-005: os três hits de Chained Penance estão no mesmo segundo e
+  // crit-state; o leech é apenas capped_low. A diferença same-mob entre os
+  // originais é explicada pelo decay da ação e não constitui prova de AA.
   C('serverlog9/07:48:35', 'serverlog9.txt', 'localchat9.txt', '07:48:35',
-    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 2 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S2 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+    t => { const c = counts(t); return (c.arrow === 0 && c.spell === 3 && c.rune === 0 && c.grenade === 0) ? null : `esperado A0 S3 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // serverlog9/localchat9 07:48:37: era unresolved antes de generalize-single-target-aa-resolver.
   C('serverlog9/07:48:37', 'serverlog9.txt', 'localchat9.txt', '07:48:37',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 7 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1 S7 R0 G0; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
@@ -1059,6 +1199,19 @@ const CASES = [
     beamNoAaCheck(7, 'Great Death Beam'), '17/Jul/2026'),
   C('dlc-ms-beam/21:44:27-ratio-0872', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:44:27',
     beamNoAaCheck(6, 'Great Death Beam'), '17/Jul/2026'),
+  // M-035/C-007/S-014e: as sub-linhas de beam tem cardinalidades
+  // independentes. A ausencia de tres ancoras nao transforma o primeiro hit em
+  // AA; o charm-kill observado continua como hit virtual do Great Death Beam.
+  C('dlc-ms-beam/21:56:30-virtual-no-aa', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:56:30',
+    t => {
+      const base = spellNoAaCheck(4, 'Great Death Beam')(t);
+      if (base) return base;
+      const spell = (t.components || []).find(comp => comp.comp === 'spell');
+      const virtuals = (spell && spell.hits || []).filter(hit => hit.virtual || hit.type === 'virtual');
+      return virtuals.length === 1 && virtuals[0].dmg === 0
+        ? null
+        : `esperado 1 hit virtual de dano 0 no Great Death Beam; got ${virtuals.length}`;
+    }, '17/Jul/2026'),
   // dlc ms 17/Jul/2026 21:41:33: o blast primario de Death Echo atravessa a borda
   // :33 -> :34 (M-005) e o eco em :35 confirma M-016d-1a; a fronteira de timestamp
   // nao e evidência independente de AA.
@@ -1097,28 +1250,91 @@ const CASES = [
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 
-const argv = process.argv.slice(2);
-const onlyIdx = argv.indexOf('--only');
-const onlyStr = onlyIdx >= 0 ? (argv[onlyIdx+1]||'') : null;
-const cases = CASES.filter(c => !onlyStr || c.id.includes(onlyStr));
-
-let pass = 0, fail = 0;
-for (const c of cases) {
-  const { missing, turns } = findTurns(c.sv, c.lc, c.ts, c.date);
-  if (missing) { console.log(`SKIP ${c.id} (arquivo ausente)`); continue; }
-  const pick = turns[0];
-  if (!pick) {
-    if (c.noTurn) { console.log(`PASS ${c.id}`); pass++; continue; }
-    console.log(`FAIL ${c.id}: nenhum turno alinhado em ${c.tsRaw}`); fail++; continue;
+export function runUnifiedGabarito({
+  only = null,
+  showFingerprints = false,
+  showCacheStats = false,
+  cacheEnabled = true,
+  corpus = new UnifiedCorpus({
+    cacheEnabled,
+    persistentCacheDir: cacheEnabled ? 'reports/unified-cache' : null,
+  }),
+  write = line => console.log(line),
+} = {}) {
+  const cases = CASES.filter(c => !only || c.id.includes(only));
+  if (!cases.length) {
+    return { pass: 0, fail: 0, skipped: 0, empty: true, corpus };
   }
-  if (SHOW_FINGERPRINTS) console.log(`FINGERPRINT ${c.id} ${classificationFingerprint(pick)}`);
-  if (c.noTurn) { console.log(`FAIL ${c.id}: turno alinhado inesperado em ${c.tsRaw}`); fail++; continue; }
-  let reason = null; try { reason = c.check(pick); } catch (e) { reason = 'throw: ' + e.message; }
-  if (reason) { console.log(`FAIL ${c.id}: ${reason}`); fail++; }
-  else { console.log(`PASS ${c.id}`); pass++; }
+
+  let pass = 0;
+  let fail = 0;
+  let skipped = 0;
+  for (const c of cases) {
+    const { missing, turns } = corpus.findTurns(c.sv, c.lc, c.ts, c.date, {
+      profile: 'gabarito',
+      includeExcluded: true,
+    });
+    if (missing) {
+      write(`SKIP ${c.id} (arquivo ausente)`);
+      skipped++;
+      continue;
+    }
+    const pick = turns[0];
+    if (!pick) {
+      if (c.noTurn) {
+        write(`PASS ${c.id}`);
+        pass++;
+        continue;
+      }
+      write(`FAIL ${c.id}: nenhum turno alinhado em ${c.tsRaw}`);
+      fail++;
+      continue;
+    }
+    if (showFingerprints) write(`FINGERPRINT ${c.id} ${classificationFingerprint(pick)}`);
+    if (c.noTurn) {
+      write(`FAIL ${c.id}: turno alinhado inesperado em ${c.tsRaw}`);
+      fail++;
+      continue;
+    }
+    let reason = null;
+    try {
+      reason = c.check(pick);
+    } catch (error) {
+      reason = `throw: ${error.message}`;
+    }
+    if (reason) {
+      write(`FAIL ${c.id}: ${reason}`);
+      fail++;
+    } else {
+      write(`PASS ${c.id}`);
+      pass++;
+    }
+  }
+
+  write(`\n${pass}/${pass + fail} gabarito-unified ok${fail ? `  (${fail} falha(s))` : ''}`);
+  if (showCacheStats) {
+    const stats = corpus.cacheStats();
+    write(`CACHE enabled=${cacheEnabled} requests=${stats.requests} classifications=${stats.classifications} hits=${stats.hits} persistentHits=${stats.persistentHits} persistentWrites=${stats.persistentWrites} skippedWithoutTimestamp=${stats.skippedWithoutTimestamp} pairedFixtures=${stats.pairedFixtures}`);
+  }
+  return { pass, fail, skipped, empty: false, corpus };
 }
-console.log(`\n${pass}/${pass+fail} gabarito-unified ok` + (fail ? `  (${fail} falha(s))` : ''));
-if (SHOW_CACHE_STATS) {
-  console.log(`CACHE enabled=${CACHE_ENABLED} requests=${cacheStats.requests} classifications=${cacheStats.classifications} hits=${cacheStats.hits} skippedWithoutTimestamp=${cacheStats.skippedWithoutTimestamp} pairedFixtures=${sessionPairsCache.size}`);
+
+function parseCli(argv) {
+  const onlyIndex = argv.indexOf('--only');
+  return {
+    only: onlyIndex >= 0 ? (argv[onlyIndex + 1] || '') : null,
+    showFingerprints: argv.includes('--fingerprints'),
+    showCacheStats: argv.includes('--cache-stats'),
+    cacheEnabled: !argv.includes('--no-cache'),
+  };
 }
-process.exit(fail ? 1 : 0);
+
+const isCli = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isCli) {
+  const result = runUnifiedGabarito(parseCli(process.argv.slice(2)));
+  if (result.empty) {
+    console.error('Nenhum caso de gabarito corresponde ao filtro.');
+    process.exit(2);
+  }
+  process.exit(result.fail ? 1 : 0);
+}

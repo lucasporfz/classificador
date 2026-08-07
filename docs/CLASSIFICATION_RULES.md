@@ -181,7 +181,7 @@
 
 - **M-017 — Sinal de execução:** `Using one of N … runes` é sinal **primário** de classificação, no mesmo nível da mudança de crit-state (D-007). Comprova a execução da runa; não inventa dano onde não existe bloco determinístico compatível.
 - **M-018 — Dano confirmado:** uma runa só recebe dano quando existe componente compatível em elemento, topologia, cardinalidade, ordem e timing.
-- **M-018a — Precedência do `Using`:** quando uma execução de runa está confirmada por `Using` e existe um run contíguo de hits deterministicamente consistente com o elemento e a topologia dessa runa, esse run é classificado como runa, **com precedência sobre a leitura física coincidente** (D-005/V-002) — ainda que o original físico de algum desses hits caia dentro do intervalo do AA. Onde os hits forem fisicamente variáveis e não formarem bloco elemental compatível, o `Using` permanece apenas execução/uptime (A-004) e os hits seguem AA. Como `Using` é sinal primário, uma linha de runa observada dentro do turno também deve gerar a fronteira candidata imediatamente anterior à runa antes de podas por leech, desde que existam hits antes e depois dela no turno. Esta precedência não conta repetições nem usa limiar numérico: o critério é a consistência determinística do original elemental, não a quantidade de hits.
+- **M-018a — Precedência do `Using`:** quando uma execução de runa está confirmada por `Using` e existe um run contíguo de hits deterministicamente consistente com o elemento e a topologia dessa runa, esse run é classificado como runa, **com precedência sobre a leitura física coincidente** (D-005/V-002) — ainda que o original físico de algum desses hits caia dentro do intervalo do AA. Onde os hits forem fisicamente variáveis e não formarem bloco elemental compatível, o `Using` permanece apenas execução/uptime (A-004) e os hits seguem AA. Como `Using` é sinal primário, uma linha de runa observada dentro do turno também deve gerar a fronteira candidata imediatamente anterior à runa antes de podas por leech, desde que existam hits antes e depois dela no turno. Para essa fronteira, um charm-kill real seguido de XP e reconhecido por S-014e conta como hit virtual na posição original do evento: se ocorrer antes do `Using`, pode ocupar o único AA single-target; se ocorrer depois, pertence ao run compatível da runa. Esta precedência não conta repetições nem usa limiar numérico: o critério é a consistência determinística do original elemental e a ordem observada, não a quantidade de hits.
 - **M-019 — Conflito com spell:** spell e runa não podem coexistir no mesmo turno. Quando uma spell ofensiva estiver confirmada, `Using` não pode retirar hits dela.
 - **M-020 — Tentativa sem dano:** runa usada sem componente compatível deve ser registrada como tentativa sem dano.
 - **M-021 — Runas ignoradas:** nomes contendo `wall`, `bomb` ou `field` não participam da classificação nem das métricas.
@@ -344,6 +344,71 @@ Expose Weakness adiciona `0,08` de pierce a todos os elementos e ao físico ante
   Toda memoização de reversão deve distinguir hits com e sem o bônus. Dois hits de mesmo dano exibido, mesmo mob e mesmo estado de modificadores — um marcado e outro não — têm originais **diferentes** e não podem compartilhar entrada de cache.
 
   Caso-prova: `thunder arrow` (sessão `21/Jul/2026`, munição de área elemental) turno `18:57:18` — o hit `oozing corpus 615 (perfect shot, increased damage by Expose Weakness)` reverte no eixo de energy para `O=503` sem a reversão, contra `O ∈ [485,488]` de dois `oozing corpus 595 (increased damage by Expose Weakness)` do **mesmo mob e mesmo estado**. Por S-004a isso é fronteira obrigatória e mata a partição. Com a reversão, o hit marcado vai para `O=487`, dentro de `[485,488]`, e a violação same-mob desaparece. Medido sobre os 24 turnos de AA-puro do fixture: os blocos que fecham no eixo de energy sobem de **10 para 14**. Enquanto todo AA de RP foi físico a omissão foi invisível, porque Perfect Shot só marca hits de AA e o AA nunca passava pelo eixo elemental (S-007).
+
+- **D-010g — Bounty Talisman: fato, grade e bônus de dano pós-mitigation:** o
+  sufixo observado `Bounty Talisman Effect: More Damage Dealt` é um fato
+  próprio do hit e NÃO é `active prey bonus`. `isPrey` continua significando
+  somente Prey; o Bounty deve possuir flag separado e não pode ativar o
+  multiplicador fixo `1,25` de Prey.
+
+  O efeito `Bonus Damage Against Task Creatures` usa nível inteiro `L >= 0` e
+  a grade oficial abaixo. O nível 0 já concede `2,5%`; não existe candidato de
+  Bounty ativo com bônus zero.
+
+```text
+bountyBonus(L) =
+    0,025
+    + 0,005 × MIN(L, 15)
+    + 0,0025 × MAX(L - 15, 0)
+
+L=0  -> 2,5%
+L=14 -> 9,5%
+L=15 -> 10%
+L=16 -> 10,25%
+L=25 -> 12,5%
+L=26 -> 12,75%
+```
+
+  O nível de dano é inferido por sessão antes da classificação local. Quando
+  houver proc determinístico comparável do mesmo `(mob, charm, estado de
+  Expose Weakness e demais modificadores conhecidos)`, com e sem Bounty, essa é
+  a testemunha primária: cada lado precisa do mesmo piso de `>=3` procs de
+  C-012a/M-036, o cluster dominante protege contra truncamento por vida
+  restante e o candidato deve reproduzir o valor marcado pelo round-trip
+  discreto de D-010a. Prey+Bounty continua excluído dessa prova enquanto sua
+  composição não estiver comprovada. Procs dentro de janela ainda não resolvida
+  de `utevo grav san` também não podem votar.
+
+  O veredito exige vencedor único e unanimidade entre todas as linhas
+  discriminantes. Se não existir testemunha comparável suficiente, o fallback
+  pode usar somente componentes determinísticos ou Mana Leech cujo `N_leech`
+  já esteja congelado por evidência independente do candidato. Aplicar um nível
+  não pode mover fronteira, alterar cardinalidade ou promover a própria
+  observação a “ouro” para depois votar nesse mesmo nível. Capped-low e
+  overkill não fixam nível. A grade não recebe teto arbitrário: somente níveis
+  contidos num intervalo finito imposto por evidência limpa podem ser
+  enumerados. Empate, conflito, ausência de intervalo finito ou evidência
+  insuficiente deixam o nível `unknown`.
+
+  Com nível conhecido, o multiplicador `1 + bountyBonus(L)` entra em `P` de
+  D-010a/D-010b somente para o hit marcado. O mesmo multiplicador é removido do
+  dano exibido antes de usar esse dano como base de D-023/D-024: o bônus
+  aumenta o dano final, não a taxa base de leech. Hit sem o sufixo não recebe o
+  efeito, ainda que seja do mesmo mob de hits marcados. Se o nível estiver
+  `unknown`, o original que depende dessa reversão é evidência ausente
+  (D-006), nunca calculado silenciosamente com `P=1` ou `P=1,25`.
+
+  Prey e Bounty simultâneos devem permanecer como dois fatos observados, mas,
+  enquanto não houver regra de composição comprovada, esses hits não podem
+  fixar o nível do Bounty nem sustentar veto determinístico baseado na
+  composição dos dois multiplicadores.
+
+  Decisão de domínio confirmada pelo usuário em `04/Aug/2026`. Caso-prova:
+  `uhax 3` S1, salva em `03/Jul/2026`, infere dano nível 26 (`+12,75%`):
+  poison charm sem EW `2089 -> 2355` e com EW `2161 -> 2436`; níveis
+  25 e 27 não reproduzem nenhum dos dois pares. O Terra Wave `13:39:15`
+  confirma o mesmo nível por original comum 1290. S0, salva em `30/Jun/2026`,
+  não contém Bounty e não herda esse setup.
 - **D-011 — Overkill:** não participa de interseções, médias, magnitude ou comparação de leech. A proibição de leech aqui se refere à *razão* leech/dano; o leech **absoluto** permanece válido em overkill conforme D-019.
 - **D-011a — Atribuição de XP exige continuidade causal:** uma linha de XP só
   prova overkill do hit anterior quando a relação permanece contínua na ordem
@@ -410,7 +475,40 @@ Expose Weakness adiciona `0,08` de pierce a todos os elementos e ao físico ante
 
 - **D-021 — Minor charms de leech por mob:** bônus de leech a nível de mob só pode vir de `Vampiric Embrace` ou `Void’s Call`. `Vampiric Embrace` aumenta Life Leech em +1,6%, +2,4% ou +3,2%. `Void’s Call` aumenta Mana Leech em +0,8%, +1,2% ou +1,6%. Somente um mob pode possuir bônus de Life Leech e somente um mob pode possuir bônus de Mana Leech. O mesmo mob nunca pode possuir os dois bônus ao mesmo tempo: se um mob tem `Vampiric Embrace`, ele não tem `Void’s Call`; se tem `Void’s Call`, ele não tem `Vampiric Embrace`. Uma hipótese que exige os dois bônus no mesmo mob é mecanicamente inválida.
 
-- **D-021a — Detecção de mob candidato a minor charm por evidência turn-local:** qual mob é candidato a minor charm (D-021) deve ser determinado por evidência turn-local, não por uma varredura cega a mob na sessão inteira: para cada turno já resolvido sem depender de leech (turno-ouro) cujo componente atinge 2 ou mais mobs distintos, comparar a razão `leech / leechDamageBasis(hit)` de cada mob contra a mediana dessa razão nos demais mobs do MESMO turno/componente (leave-one-mob-out — dentro do mesmo turno/componente, `N_leech` e a taxa base do personagem são idênticos para todos os hits por construção, então qualquer desvio só pode vir de um bônus de mob real). A razão DEVE usar `leechDamageBasis` (que já divide por Prey Bonus e `utevo grav san`), nunca o dano exibido bruto — um mob com Prey Bonus ativo na maioria dos hits produz um desvio de razão que não é minor charm se comparado por dano bruto. Um mob cujo desvio agregado (mediana dos deltas turno-a-turno, com evidência mínima de hits e turnos distintos) é consistentemente positivo e destacado num canal é candidato a minor charm daquele canal; a busca de base×bônus (D-020/D-021) testa bônus apenas nos mobs candidatos identificados, não em todo mob presente na sessão. Quando nenhum mob atende ao limiar mínimo de evidência (incluindo sessões sem turnos co-localizados possíveis, como boss único), o resultado é ausência de `vampiricMob`/`voidsMob`, não um candidato forçado. Um mob só é elegível como candidato se estiver presente na tabela de mods do regime da sessão (D-016) — isso exclui bosses (nunca presentes nessas tabelas, D-006) — e `bloodjaw` é excluído explicitamente mesmo estando presente na tabela pós-cutoff (entrada manual, não vem do bestiário real).
+- **D-021a — Detecção de mob candidato a minor charm por evidência turn-local:** qual mob é candidato a minor charm (D-021) deve ser determinado por evidência turn-local, não por uma varredura cega a mob na sessão inteira: para cada turno já resolvido sem depender de leech (turno-ouro) cujo componente atinge 2 ou mais mobs distintos, comparar a razão `leech / leechDamageBasis(hit)` de cada mob contra a mediana dessa razão nos demais mobs do MESMO turno/componente (leave-one-mob-out — dentro do mesmo turno/componente, `N_leech` e a taxa base do personagem são idênticos para todos os hits por construção, então qualquer desvio só pode vir de um bônus de mob real). A razão DEVE usar `leechDamageBasis` (que já divide por Prey Bonus e `utevo grav san`), nunca o dano exibido bruto — um mob com Prey Bonus ativo na maioria dos hits produz um desvio de razão que não é minor charm se comparado por dano bruto. Um mob cujo desvio agregado (mediana dos deltas turno-a-turno, com evidência mínima de hits e turnos distintos) é consistentemente positivo e destacado num canal é candidato a minor charm daquele canal; a busca de base×bônus (D-020/D-021) testa bônus apenas nos mobs candidatos identificados, não em todo mob presente na sessão. **Uma vez satisfeito esse gate turn-local, a busca conjunta de C-006 deve avaliar o candidato na grade oficial de base×bônus contra a sessão inteira; ela não pode reaplicar um segundo piso fixo de quantidade de contradições corrigidas para descartar o candidato.** Quando nenhum mob atende ao limiar mínimo de evidência (incluindo sessões sem turnos co-localizados possíveis, como boss único), o resultado é ausência de `vampiricMob`/`voidsMob`, não um candidato forçado. Um mob só é elegível como candidato se estiver presente na tabela de mods do regime da sessão (D-016) — isso exclui bosses (nunca presentes nessas tabelas, D-006) — e `bloodjaw` é excluído explicitamente mesmo estando presente na tabela pós-cutoff (entrada manual, não vem do bestiário real). Casos-prova do gate único: em `serverlog6 07:11:12`, `Vampiric Embrace +3,2%` no raubritter skirmisher faz `724`/Life `400` fechar `N=1`; em `serverlog8 07:22:57`, o mesmo charm faz `813`/Life `449` fechar `N=1`.
+
+  **Candidato aprovado no gate não pode ser descartado por falta de observação-ouro
+  própria.** O gate turn-local e a observação-ouro com `N` conhecido são canais de evidência
+  distintos e de densidades muito diferentes: o primeiro consome qualquer componente
+  co-localizado de turno resolvido; o segundo exige turno-ouro. Uma sessão pobre em
+  turnos-ouro pode aprovar um mob no gate e mesmo assim não ter nenhuma observação-ouro
+  daquele mob — e nesse caso a busca conjunta é **cega**, porque todo bônus da grade empata
+  em zero melhoria. O motor não pode cruzar os candidatos do gate com os mobs observados e
+  deixar o candidato cair silenciosamente. Quando o mob candidato não tem observação-ouro, o
+  nível do bônus vem do próprio delta turn-local, convertido **por observação** —
+  `bônus ≈ delta_i / areaFactor(N_i)`, agregado pela mediana, nunca com um `N` fixo, porque
+  `areaFactor` varia de `0,25` (N=4) a `0,136` (N=25) dentro da mesma sessão e um `N` único
+  desloca a estimativa em um degrau inteiro da grade. A estimativa só fixa nível quando está
+  a no máximo metade da distância até a fronteira de decisão entre os dois valores vizinhos
+  da grade (`|b − g₁| ≤ |g₁ − g₂| / 4`); fora disso o nível fica **indeterminado** e nenhum
+  charm é fixado. Ausência de charm deve registrar qual dos dois motivos ocorreu: candidato
+  ausente ou nível indeterminado. Caso-prova: `uhax 3` tem duas sessões do mesmo personagem
+  na mesma hunt; S0 (226 turnos-ouro) infere `Vampiric Embrace +3,2%` em `darklight matter`
+  por pontuação, e S1 (46 turnos-ouro) aprova o mesmo mob no gate (delta `0,00606` contra
+  `0,00616` de S0) mas não tem observação-ouro dele. A conversão por observação dá `0,03176`
+  em S0 e `0,03197` em S1 — ambas a menos de `0,0003` do valor `0,032` da grade, contra
+  `0,008` até o vizinho `+2,4%`. Sem esta regra, S1 reportava ausência de charm e subestimava
+  o Life Leech de `darklight matter` em 3,2 pontos percentuais.
+
+  Duas hipóteses foram levantadas e **refutadas** nessa investigação; não repetir. (1)
+  `manaBase = 0,1725` em vez de `0,17` para `uhax 3`, que faria um turno isolado fechar sem
+  o `+1` de mana: o ranking do próprio pipeline mostra `0,17` com **1507 exatos / 73
+  contradições** em S0 (1714 observações) contra `0,1725` com **664 exatos / 49
+  contradições**, e em S1 `0,17` com 199 exatos / 0 contradições contra 77 exatos — era
+  overfit de um turno contra 1941 observações. (2) Medir o efeito de um setup injetando
+  `options.leechSetup` no motor: **método inválido**, porque essa opção desliga o pipeline de
+  leech-ouro (`shouldGoldInferLeech`), mudando duas coisas ao mesmo tempo e reportando
+  falsamente "zero turnos alterados".
 
 - **D-022 — Leech efetivo por hit:** para cada hit, o classificador deve calcular separadamente `lifeLeechEfetivo` e `manaLeechEfetivo`. O `lifeLeechEfetivo` é igual ao Life Leech base do personagem somado ao bônus de `Vampiric Embrace` apenas se o mob atingido for o mob marcado por esse minor charm. O `manaLeechEfetivo` é igual ao Mana Leech base do personagem somado ao bônus de `Void’s Call` apenas se o mob atingido for o mob marcado por esse minor charm. Vida e mana devem ser avaliadas separadamente; a soma `lifeLeech + manaLeech` pode ser usada apenas como fallback diagnóstico, pois os bônus de mob podem afetar vida e mana em mobs diferentes.
 
@@ -424,6 +522,102 @@ se bonusVampiricEmbrace(mob) > 0:
 se bonusVoidsCall(mob) > 0:
     bonusVampiricEmbrace(mob) = 0
 ```
+
+- **D-022a — Perk pré-cutoff de Mana Leech em hits com Expose Weakness:** existe
+  um perk **opcional** que, em sessões anteriores a `16/Jun/2026`, dá `+2` pontos
+  percentuais na taxa efetiva de Mana Leech de cada hit marcado no Server Log com
+  `increased damage by Expose Weakness`. O bônus é somado depois da base do
+  personagem e do eventual `Void's Call`, antes da diluição por
+  `areaFactor(N_leech)`. Ele não altera Life Leech e não existe em `16/Jun/2026`
+  ou depois.
+
+  **O perk é opcional, então sua presença é INFERIDA por sessão**, junto com a
+  base e o minor charm, na mesma busca conjunta e com o mesmo comparador
+  (`ok` decrescente, depois `exact`) — nunca por data, vocação, fixture ou limiar
+  próprio. As duas hipóteses (`com perk` e `sem perk`) são pontuadas contra as
+  observações-ouro da sessão e a melhor vence. A **hipótese neutra é `sem perk`**:
+  leech observado pode ser truncado para baixo, nunca para cima, portanto só
+  "observado ACIMA do esperado pela base" é prova positiva do perk, e empate exato
+  mantém o perk desligado. Setup desconhecido implica `sem perk`.
+
+  A base inferida e a validação por hit precisam usar **o mesmo modelo de taxa**:
+  se a inferência escolhe `com perk`, a validação cobra o bônus; se escolhe
+  `sem perk`, não cobra. Inferir a base sem o bônus e cobrá-lo na validação faz a
+  base absorver o efeito do perk e o hit ser cobrado duas vezes.
+
+```text
+se dataSessao < 16/Jun/2026 e sessao.perkManaLeechEW e hit.exposeWeakness:
+    manaLeechEfetivo(hit) =
+        manaLeechPersonagem + bonusVoidsCall(mobDoHit) + 0.02
+senão:
+    manaLeechEfetivo(hit) =
+        manaLeechPersonagem + bonusVoidsCall(mobDoHit)
+```
+
+  Decisão de domínio confirmada pelo usuário em `31/Jul/2026` (existência do
+  bônus) e em `06/Ago/2026` (o bônus vem de perk opcional e precisa ser
+  inferido). Casos-prova do **perk presente**: `essence` S0, onde `com perk`
+  vence com base `20,25%`, `ok=211` e `high=34`, contra `ok=96` e `high=152` de
+  `sem perk`. Casos-prova do **perk ausente**: `bakradrone` S0, onde `sem perk`
+  vence com base `16,50%`, `ok=396`/`exact=290`, contra `ok=150`/`exact=101` de
+  `com perk`; e `jaded` S6, `ok=698` contra `ok=356`. Note que em `bakradrone` a
+  hipótese `com perk` produz MENOS contradições (`high=0` contra `15`) e ainda
+  assim perde: contradição não é o critério, confirmação positiva é.
+
+  Casos-prova de classificação: `ms boss` S14 `17:10:31` permanece
+  `A0 + Great Fireball 8` e S22 `19:00:26` permanece `A0 + Great Fireball 6`;
+  S14 `17:10:33` continua `A1 + Great Fireball 7`, porque o primeiro hit sem EW
+  confirma `N_leech=1` por mana (`18` observado/esperado) e contradiz
+  `N_leech=8`, enquanto o sufixo confirma `N_leech=7`. Em `uhax 3` S1
+  `13:36:13`, o AA marcado tem EW; a taxa efetiva de Mana só é 19% se o perk
+  tiver sido inferido nessa sessão, e Mana 24 observado é capped-low de qualquer
+  forma, portanto não discrimina nível de Bounty.
+
+- **D-022b — Bounty Talisman: multiplicador de Life Leech por hit:** o efeito
+  `Life Leech From Task Creatures` usa a mesma grade discreta de D-010g, mas
+  possui nível de sessão próprio. O nível de Life Leech NÃO é copiado,
+  restringido nem desempatado pelo nível de dano.
+
+  Para hit marcado com Bounty e nível de Life Leech conhecido, o bônus
+  multiplica a taxa efetiva de vida depois da base e do eventual
+  `Vampiric Embrace`, antes de `areaFactor(N_leech)` e do `CEIL`:
+
+```text
+lifeLeechEfetivo(hit marcado) =
+    (lifeLeechPersonagem + bonusVampiricEmbrace(mobDoHit))
+    × (1 + bountyLifeBonus)
+
+lifeLeechEfetivo(hit sem marca) =
+    lifeLeechPersonagem + bonusVampiricEmbrace(mobDoHit)
+```
+
+  O efeito não altera `lifeBase`, `manaBase`, `Void's Call`, Mana Leech nem o
+  bônus pré-cutoff de EW. A inferência global deve avaliar conjuntamente
+  `(lifeBase, Vampiric por mob, bountyLifeLevel)` sobre dano já normalizado por
+  D-010g; o gate turn-local de D-021a deve consumir razões normalizadas ou
+  excluir temporariamente hits marcados, para não converter Bounty em minor
+  charm falso.
+
+  Empate, evidência apenas capped-low/overkill ou ausência de intervalo finito
+  deixam o nível `unknown`. Nesse estado o Bounty não pode ser usado como veto
+  duro de cardinalidade. Caso-prova: depois de fixar Damage nível 26,
+  `uhax 3` S1 infere Life nível 15 (`+10%`) pelos quatro AAs unitários
+  `(dano, vida) = (155,47), (246,75), (136,42), (218,66)`;
+  níveis 14/15/16 preveem respectivamente
+  `(47,75,41,66)`, `(47,75,42,66)` e `(47,75,42,67)`.
+  O restante do setup permanece `lifeBase=31%`, `manaBase=17%`,
+  `Void's Call +1,6%` em `darklight striker` e `Vampiric Embrace +3,2%` em
+  `darklight matter`. O mob marcado por Bounty, `walking pillar`, **não** tem
+  minor charm algum — é isso que este caso-prova fixa, e não a ausência de
+  `Vampiric Embrace` na sessão. (A redação anterior dizia apenas "nenhum
+  `Vampiric Embrace` em `walking pillar`" e foi lida por engano como se S1 não
+  tivesse o charm em mob nenhum; ver D-021a.) O AA
+  marcado `13:36:13`, dano exibido 155, fecha
+  `CEIL((155/1,1275) × 0,31 × 1,10)=47` de vida. O hit possui EW, então a Mana
+  efetiva é 19% se o perk de D-022a tiver sido inferido nessa sessão e 17% caso
+  contrário; nos dois casos Mana 24 observado é capped-low
+  (`CEIL((155/1,1275) × 0,19)=27` e `CEIL((155/1,1275) × 0,17)=24`), portanto
+  compatível mas não discriminante de nível de Bounty.
 
 - **D-023 — Fórmula de diluição do leech por quantidade de hits:** para um componente que produziu `N_leech` hits principais elegíveis, o leech de cada hit deve ser calculado com o fator `areaFactor(N_leech) = (0,1 × N_leech + 0,9) / N_leech`, equivalente a `0,1 + 0,9 / N_leech`. O resultado de vida e mana é sempre arredondado para cima. Para `N_leech = 1`, o fator é `1`. `N_leech` é a quantidade de hits principais elegíveis do componente, independentemente de esses hits estarem em mobs diferentes ou no mesmo mob. É proibido interpretar `N_leech` como quantidade de mobs distintos.
 
@@ -735,7 +929,59 @@ A escolha entre A e B usa vida e mana separadamente (D-022), reconstrução de d
 
 - **S-014d — Anomalia de leech deve ser demonstrada mecanicamente:** quando um hit apresenta um canal (vida ou mana) muito acima do esperado, não basta atribuir a um minor charm sem prova. `Void’s Call` adiciona no máximo +0,8%, +1,2% ou +1,6% de Mana Leech, e `Vampiric Embrace` no máximo +1,6%, +2,4% ou +3,2% de Life Leech (D-021). A hipótese de charm só é válida se o bônus permitido fizer os `Dreal` de vida e mana voltarem a intersectar. Como cada charm é por mob e exclusivo (somente um mob tem cada bônus, D-021), um charm já comprovado em outro mob não pode ser reusado para explicar a anomalia. Se nem o bônus máximo permitido reconcilia os canais, a anomalia não é explicada por charm: o canal anômalo é descartado como evidência e, se for o sinal decisivo da partição, o turno é ambíguo.
 
-- **S-014e — N_leech é o maior N sem contradição; virtual-zero só até lá e só com kill real:** o `N_leech` de um bloco é o **maior** `N` em que **todos** os hits principais visíveis permanecem consistentes (observado ≤ esperado por D-023; *capped-low*, isto é, observado abaixo do esperado por cap de HP, é consistente e nunca é contradição — V-014/D-025). É **proibido** adicionar hit virtual (invisível, dano 0) para forçar `N` além desse ponto, porque `N` maior reduz `areaFactor(N)` e transforma o *capped-low* consistente em **contradição** (observado > esperado). Um bloco holy determinístico cujos `k` hits visíveis já são o maior `N` consistente (`N=k` consistente, `N=k+1` contradito) **fecha em `N=k`**, sem virtual. Hits virtuais só são válidos quando `N>k` é ele próprio consistente **e** há evidência de que um charm/proc **matou** o alvo (overkill/kill) antes do dano principal aparecer — a mera existência de um proc de charm de dano no turno **não** basta (C-008). Caso-prova espúrio: `mk 05:43:59` — granada com 8 hits visíveis; N=8 consistente (esperado 118 ≥ 114 observado) e N=10 **contradito** (esperado 106 < 114); os 2 hits virtuais atribuídos a `curse`/`wound charm` (procs que não matam) são inválidos ⇒ `N_leech = 8`. Guarda legítima: `darklight e vemiath 22:20:24` — N=7 consistente > 6 visíveis, com `enflame charm` que matou o alvo ⇒ A6 visível + A0 virtual (N_leech=7) permanece válido.
+- **S-014e — N_leech é o maior N sem contradição; virtual-zero só até lá e só com kill real:** o `N_leech` de um bloco é o **maior** `N` em que **todos** os hits principais visíveis permanecem consistentes (observado ≤ esperado por D-023; *capped-low*, isto é, observado abaixo do esperado por cap de HP, é consistente e nunca é contradição — V-014/D-025). É **proibido** adicionar hit virtual (invisível, dano 0) para forçar `N` além desse ponto, porque `N` maior reduz `areaFactor(N)` e transforma o *capped-low* consistente em **contradição** (observado > esperado). Um bloco holy determinístico cujos `k` hits visíveis já são o maior `N` consistente (`N=k` consistente, `N=k+1` contradito) **fecha em `N=k`**, sem virtual. Hits virtuais só são válidos quando `N>k` é ele próprio consistente **e** há evidência de que um charm/proc **matou** o alvo (overkill/kill) antes do dano principal aparecer — a mera existência de um proc de charm de dano no turno **não** basta (C-008). O teste de `N>k` precisa ocorrer **antes** da escolha final entre partições, mesmo quando `N=k` já é consistente; depois da escolha, o hit virtual só pode ser anexado ao bloco cuja própria cardinalidade mecânica `N>k` foi aceita. Caso-prova espúrio: `mk 05:43:59` — granada com 8 hits visíveis; N=8 consistente (esperado 118 ≥ 114 observado) e N=10 **contradito** (esperado 106 < 114); os 2 hits virtuais atribuídos a `curse`/`wound charm` (procs que não matam) são inválidos ⇒ `N_leech = 8`. Guardas legítimas: `darklight e vemiath 22:20:24` — N=7 consistente > 6 visíveis, com `enflame charm` que matou o alvo ⇒ A6 visível + A0 virtual (N_leech=7); `monk 2 07:20:18` — a Flurry com `612` visível + skirmisher morto por `enflame charm` fecha `N=2`, enquanto a hipótese fundida exigiria `N=3` e não fecha ⇒ A1 + Flurry 2, com o virtual de dano zero na Flurry.
+
+  Quando o kill real por charm precede o bloco visível de uma ação concreta de
+  área ordinária em turno de AA exclusivamente single-target (M-031/M-032), a
+  propriedade do virtual também deve respeitar a cardinalidade. Se os `k` hits
+  visíveis da ação fecham em `N=k` e `N=k+1` é contradito, o virtual **não**
+  pertence à ação. Se não há AA visível no turno, esse kill observado constitui
+  o único AA do ciclo como hit virtual de dano zero, antes da ação: `A1 virtual
+  + ação(k)`. Se a própria ação aceita `N=k+1`, o virtual permanece nela; se já
+  existe AA visível, M-032 impede criar um segundo AA. Caso-prova: `uhax 3` S0
+  `20:54:20` — Poison Charm mata um walking pillar antes dos 12 hits visíveis de
+  Wrath of Nature; Wrath fecha em `N=12` e contradiz `N=13` ⇒ `A1 virtual +
+  Wrath of Nature 12`, nunca `A0 S13` nem `A0 S12`.
+
+  O `k+1` acima descreve o caso de **um** charm-kill. O critério real é "a ação
+  aceita algum `N` acima dos hits visíveis": com dois ou mais charm-kills no
+  bloco, a ação pode aceitar `k+2`, `k+3`… e continua sendo dona de **todos**
+  eles. O teste DEVE varrer de `k+1` até `k + (quantidade de charm-kills
+  elegíveis do bloco)`, e o AA virtual só é criado quando algum `N` testado é
+  utilizável e **nenhum** é aceito. Testar apenas `k+1` num turno com dois kills
+  cria um AA virtual espúrio que conta o mesmo kill duas vezes — uma no AA e
+  outra na ação — violando M-025. Caso-prova: `uhax 3` S1 `13:33:46` — enflame
+  mata um darklight matter antes do bloco e poison charm mata um walking pillar
+  dentro dele; Wrath tem 8 hits visíveis e aceita `N=10` ⇒ `A0 + Wrath of
+  Nature 10` (8 visíveis + 2 virtuais), nunca `A1 S10` nem `A1 S9`.
+
+  **Divergência de um único canal não é contradição.** Ao decidir o maior `N`
+  consistente, vale D-024 literalmente: o hit aceita `N` quando vida **e/ou**
+  mana fecha. Em `uhax 3` S1 `13:33:46` a mana de `darklight matter` fica 1
+  acima do esperado em `N=10` (53 contra 52), enquanto a vida fecha **exata nos
+  8 hits**; o turno fecha `N=10`. Tratar aquele `+1` de mana como contradição
+  dura levou, durante a investigação, ao alvo errado `A1 + S9`.
+
+  Quando a propriedade temporal é determinada por uma fronteira explícita
+  `AA -> Using -> runa` de M-018a, um charm-kill real observado depois do
+  `Using` e dentro do run contíguo da runa pertence à própria runa. Nesse caso,
+  o fato estrutural do kill MUST ser preservado como hit virtual da runa mesmo
+  quando a validação plana de `N=k+1` fica inconclusiva ou contradita apenas
+  pela dispersão cross-mob já neutralizada por V-015d; a falha do modelo de
+  leech não pode apagar um hit cuja ação proprietária é conhecida por ordem.
+  Esta exceção exige simultaneamente o `Using` entre AA e runa e o kill real
+  seguido de XP; um proc sem kill continua proibido por C-008. Caso-prova:
+  `uhax 3` S1 `13:33:17` — overflux mata um darklight striker depois do
+  `Using` de Great Fireball ⇒ `A1 + R10` (9 visíveis + 1 virtual).
+
+  A mesma fronteira é simétrica para hit virtual anterior. Quando não há AA
+  visível, mas existe exatamente um charm-kill real seguido de XP antes do
+  `Using`, ele ocupa o único AA virtual permitido por M-031/M-032; charm-kills
+  posteriores continuam na runa. A cardinalidade plana não pode mover o
+  virtual anterior através do `Using` nem apagar o posterior. Caso-prova:
+  `uhax 3` S1 `13:33:44` — enflame mata darklight matter antes do `Using`, e
+  overflux mata darklight striker depois ⇒ `A1 virtual + R8` (7 visíveis + 1
+  virtual pós-`Using`).
 
 - **S-015 — Dano parecido com cardinalidade distinta:** quando dois componentes possuem magnitudes de dano semelhantes, ou quando o overkill torna as magnitudes exibidas pouco confiáveis, a segmentação não deve depender apenas de médias ou clusters de dano exibido. Nesses casos, a cardinalidade por leech deve ser usada para decidir quantos hits procurar em cada componente. Um bloco com dano parecido só pode ser fundido se a cardinalidade por leech aceitar o tamanho fundido; se a fusão exigir `N_leech` incompatível com os hits, uma fronteira deve ser mantida.
 
@@ -1112,6 +1358,36 @@ Verificar que:
 - todos os turnos problemáticos permanecem documentados;
 - `bakra/09:23:47` continua bloqueador enquanto não tiver explicação mecânica.
 
+### Protocolo operacional de validação
+
+Este protocolo não cria regra de classificação; ele determina como provar que uma
+mudança respeitou as regras acima:
+
+1. `tools/gabarito-unified.mjs` é a única porta prioritária de turnos curados. O
+   conjunto atual tem 174 casos. Ele deve rodar antes de invariantes, dump completo
+   ou testes amplos.
+2. `tools/unified-invariants.mjs` verifica o corpus pre-cutoff usando os mesmos
+   resultados canônicos já classificados no processo. Para M-024, dois timestamps
+   de impacto só são válidos quando são consecutivos, pertencem ao mesmo turno e
+   já foram consolidados pelo motor como rollover da mesma granada. M-025 continua
+   proibindo o mesmo cast em turnos distintos.
+3. `tools/dump-unified.mjs` registra todos os turnos de todas as sessões incluídas.
+   As exclusões autorizadas são explícitas e canônicas: o par completo
+   `Server Log drome.txt` e somente a sessão de `jaded Server Log.txt` salva em
+   `09/Jun/2026 09:30:47`.
+4. `--write-candidate` gera `dump-unified.txt`, `summary.json` e `manifest.json`
+   sem alterar o último resultado aceito. `--promote-candidate` é uma operação
+   separada, não classifica e só deve ocorrer depois da validação e da revisão do
+   diff.
+5. Perguntas sobre a quantidade ou a lista atual de turnos sem classificação usam
+   `node tools/query-unified-dump.mjs [--list-unclassified]`. Essa consulta lê
+   exclusivamente o `latest` promovido e nunca pode disparar uma nova
+   classificação de forma implícita.
+6. `tools/unified-experimental.mjs` é compatibilidade histórica temporária. Seus
+   64 turnos ainda únicos estão inventariados por teste; casos novos entram apenas
+   em `gabarito-unified.mjs`, e invariantes novas entram apenas em
+   `unified-invariants.mjs`.
+
 
 **Regra curta do leech:** o leech não existe para nomear o componente; ele existe para validar a cardinalidade do componente. Se um bloco tem `k` hits, o leech deve aceitar `N = k`. Quando o dano exibido está truncado por overkill, o leech reconstrói o dano real possível. Essa evidência é especialmente importante quando componentes diferentes possuem danos parecidos e a separação por magnitude não é suficiente.
 
@@ -1179,6 +1455,7 @@ Os casos abaixo são normativos. As contagens usam `A=arrow`, `S=spell`, `R=rune
 | 41 | mazzerinbarrage `23:21:27` (sessão salva `09/Jun/2026 00:00:54`) | `partial_edge_missing_evidence` (T-001a + T-007/A-009). Primeiro turno **do log** (`seq 1`) numa sessão que atravessa a meia-noite (`23:21:27` → `00:00:50`): 6 hits críticos de Royal Paladin, sem spell/runa/granada concreta no recorte, e a única hipótese `arrow[6]` cai por `physical_intersection_empty` (o `darklight striker` reverte `O∈[730,789]` contra o cluster `[607,619]`). Equivalente em RP do caso 34 (druid) — a vocação e a razão de rejeição mudam, a causa não. Confirmação independente de que a borda levou hits: o leech dos 6 visíveis fecha **exato** em `N_leech = 9` nos dois canais e nos quatro mobs (source `1042→106/34`, pillar `1047→107/35`, matter `1131→115/41` com Void's Call, striker `1133→123/37` com Vampiric Embrace); `N=10` é contradito. | Ordenar por segundos do dia e marcar `partialEdge` em `00:00:00` (o último turno cronológico); exigir vocação de AA single-target ou a razão `multiple_arrow_hits_not_allowed` para reconhecer perda de informação de borda; ou classificar os 6 hits inventando componente. |
 | 42 | mazzerinbarrage `01:21:04` (sessão salva `09/Jul/2026 01:26:16`) | `A8 + Ethereal Barrage 8 + Divine Grenade 9` (T-005/U-004 + T-003). Três blocos coerentes num turno de 2s: 8 hits não-crit em `:04` (AA, interseção física `[854,856]`), 8 críticos em `:04` (`exori dir moe`, interseção `[981,983]`) e 9 em `:05` com `O_holy` homogêneo `[1012,1013]` em **quatro mobs distintos** — a granada do cast `exevo tempo mas san` de `01:21:02`, explodindo em `cast+3` (M-023). O leech confirma os três: `N=8/8/9`, com **18 de 18** encaixes exatos no bloco de granada. `AA + spell + granada` é combinação permitida por T-005 e a única forma prevista por U-004 de duas ações com natureza de spell no mesmo turno. O cast era disputado com `01:21:06`; como este resolve sem ele (`A8 + Caldera 13`) e `01:21:04` não resolve de forma alguma, o cast pertence a `01:21:04`. | Descartar o cast por empate de desempate, deixando os 25 hits sem componente (T-003) e perdendo o cast até como execução (M-020/A-004); ou desempatar por contagem de hits do bloco de granada (aqui o vencedor tem 9 contra 12 do concorrente). |
 | 43 | mazzerinbarrage `16:24:10` (sessão salva `17/Jun/2026 16:35:46`) | `A0 S2` — `Ethereal Barrage (exori dir moe)` (D-011/D-012a). Os dois hits são overkill, no mesmo segundo e com o mesmo crit-state (`orclops bloodbreaker 284 OK`, `norcferatu nightweaver 702 OK`), então a fronteira `A1|S1` era criada exclusivamente entre hits de overkill — sem mudança de segundo, de crit-state, `Using` de runa ou janela de granada que a sustentasse. O leech corrobora dano real parecido apesar dos exibidos divergentes: vida `220`/`232`, mana `71`/`75`. | Cravar um corte AA×spell apoiado só na posição de hits cujo dano exibido está truncado (D-011), em vez de manter o componente único que a evidência sustenta. |
+| 44 | uhax 3 S1 `13:34:21` (sessão salva `03/Jul/2026 13:46:53`) | `A0 S0 R12 G0` — Great Fireball com 11 hits visíveis e um virtual comprovado. O setup global infere Bounty Damage nível 26 (`+12,75%`) pelos pares de Poison Charm `2089→2355` e `2161→2436`, confirmado pelo original comum 1290 do Terra Wave `13:39:15`; depois infere Bounty Life nível 15 (`+10%`) pelos AAs unitários independentes. No `walking pillar 939`, Life 50/Mana 25 fecham `N_leech=12`; `N=13` é contradito por vida. (D-010g/D-022b/D-023/D-024/S-014e/C-006) | Tratar Bounty como Prey fixo `1,25`, copiar o nível de dano para Life, usar uma partição criada pelo próprio candidato como evidência, inventar `Vampiric Embrace` no walking pillar ou reduzir a runa para 11 hits. |
 
 ### Casos novos obrigatórios
 
@@ -1251,6 +1528,18 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   Quando houver dois caminhos de inferência dentro da mesma sessão, como voto geral multi-`N` e componentes confiáveis por `Using`, o caminho mais específico só deve substituir o fallback se sua cobertura de evidência for ao menos tão consistente quanto a do fallback no mesmo canal. Evidência parcial de runa não pode impor um leech base global que contradiz a maioria dos hits utilizáveis da própria porção.
   A votação do candidato de rate base do personagem (life/mana) deve seguir o mesmo princípio de D-025/S-014e: uma observação com `observado < esperado` (capped-low, leech truncado por cap de HP) é sempre consistente e **nunca** pode penalizar um candidato de rate na pontuação ou no desempate. Só `observado > esperado` além da tolerância é contradição real contra um candidato. Um candidato vencedor deve ser o que melhor explica o cluster majoritário de observações dentro da tolerância (D-024), nunca o que apenas minimiza quantas observações caem abaixo dele.
   A rate base do personagem e o minor charm por-mob (D-021) devem ser resolvidos **conjuntamente**, nunca em duas etapas sequenciais onde a base é votada cega a mob e o charm só é testado depois, em cima da base já fixada. Um mob com minor charm real não pode distorcer a base votada para os demais mobs só porque domina o volume de observações da sessão, e um bônus de charm real não pode ser descartado só porque, testado sobre uma base ainda errada, parece piorar o ajuste — a busca deve avaliar a combinação `(base, bônus por mob)` que melhor explica a sessão inteira, sempre restrita à grade de D-020 e aos charms de D-021.
+  Quando houver Bounty Talisman (D-010g/D-022b), o setup da sessão deve
+  carregar dois candidatos independentes: nível de dano e nível de Life Leech.
+  O dano deve ser inferido primeiro pela testemunha determinística de charm
+  comparável de D-010g, quando ela existir. Somente na ausência real dessa
+  testemunha o fallback pode usar componentes-ouro ou Mana Leech de `N`
+  conhecido, sempre congelados antes de testar o nível. Depois de normalizar o
+  dano, a vida deve ser resolvida conjuntamente com base e minor charm. O alvo
+  local não pode criar a evidência de seu próprio setup, e observação cuja
+  classificação/cardinalidade muda sob o candidato não pode votar nele. Hits
+  marcados e controles não marcados pertencem à mesma sessão, mas os
+  multiplicadores só se aplicam aos marcados. Sessões sem o sufixo preservam o
+  comportamento anterior e não herdam níveis de outra porção do mesmo arquivo.
 - **C-007 — Ausência de evidência não é contradição:** `no_leech_evidence`, mob sem mod conhecido, sessão pós-corte sem tabela preenchida ou falta de canal de vida/mana geram evidência ausente. Evidência ausente não autoriza fusão de componentes nem reuso de ação.
 - **C-008 — Procs não são hits principais:** `damage reflection`, `wound charm`, `overpower charm` e procs anexos podem ser diagnósticos, mas não incrementam `N_leech`, não consomem cast, não viram componente e não criam AA virtual sem regra de borda/parcial aplicável.
 - **C-009 — Runa confirmada preserva fronteira, não turno novo:** `Using` pode confirmar execução e precedência de bloco compatível, mas não separa turno. Turno permanece bloco mecânico de ciclo conforme T-002 e combinações de T-005/T-006.

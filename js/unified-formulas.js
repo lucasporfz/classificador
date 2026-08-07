@@ -13,6 +13,7 @@
   'use strict';
   const VERSION = 'unified-v28-ew-bm-pierce-detection';
   const CUTOFF_KEY = 20260616;
+  const PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS = 0.02;
   const ELEMENT_KEYS = {
     physical: 'physicalDmgMod',
     holy: 'holyDmgMod',
@@ -199,6 +200,24 @@
   const MANA_BASE_CANDIDATES = buildLeechBaseCandidates(MANA_IMBUEMENT_SLOTS, 2, [MANA_CONVICTION, MANA_WEAPON_PERK]);
   const VAMPIRIC_BONUSES = [0, 0.016, 0.024, 0.032];
   const VOIDS_BONUSES = [0, 0.008, 0.012, 0.016];
+  // D-010g/D-022b: Bounty Talisman possui a mesma grade discreta nos eixos
+  // independentes de dano e Life Leech. O nível zero já concede 2,5%;
+  // níveis 1..15 somam 0,5 p.p.; depois disso, 0,25 p.p. por nível.
+  function bountyTalismanBonusForLevel(level) {
+    if (!Number.isInteger(level) || level < 0) return null;
+    const bonus = 0.025
+      + 0.005 * Math.min(level, 15)
+      + 0.0025 * Math.max(level - 15, 0);
+    return Math.round(bonus * 1e6) / 1e6;
+  }
+  function bountyTalismanLevelsWithinBonus(maxBonus) {
+    if (!Number.isFinite(maxBonus) || maxBonus < bountyTalismanBonusForLevel(0)) return [];
+    const levels = [];
+    for (let level = 0; bountyTalismanBonusForLevel(level) <= maxBonus + Number.EPSILON; level++) {
+      levels.push(level);
+    }
+    return levels;
+  }
   const WEAPON_LEECH_BONUS = 0.005;
   const MAX_WEAPON_LEECH_BONUSES = 10;
 
@@ -406,7 +425,7 @@
 
   function elementalStateKey(h) {
     return normalizeName(h.mob) + '|' + (h.exposeWeakness ? 1 : 0) + '|' + (h.isPrey ? 1 : 0) +
-      '|' + (h.elementalAmplification ? 1 : 0) + '|' + (h.perfectShot ? 1 : 0) +
+      '|' + (h.bountyTalisman ? 1 : 0) + '|' + (h.elementalAmplification ? 1 : 0) + '|' + (h.perfectShot ? 1 : 0) +
       '|' + (h.type || '') + '|' + (h.realCrit ? 1 : 0) +
       '|' + (h.lowBlow ? 1 : 0) + '|' + (h.savageBlow ? 1 : 0) + '|' + (h.onslaught ? 1 : 0);
   }
@@ -609,10 +628,15 @@
   }
 
   function postMultiplier(hit, context) {
-    // Prey/Bounty Talisman e utevo grav san ampliam o dano final exibido.
+    // Prey, Bounty Talisman e utevo grav san ampliam o dano final exibido.
     // Para reconstruÃ§Ã£o determinÃ­stica, eles entram como multiplicadores pÃ³s-mit.
     let m = 1;
     if (hit && hit.isPrey) m *= 1.25;
+    if (hit && hit.bountyTalisman) {
+      const damage = context && context.bountyTalismanSetup && context.bountyTalismanSetup.damage;
+      if (!damage || damage.confidence === 'unknown' || !(damage.multiplier > 1)) return null;
+      m *= damage.multiplier;
+    }
     m *= gravSanMultiplierAtTs(context, hit && hit.ts, hit);
     m *= bestiaryClassMultiplierForHit(hit, context);
     return m;
@@ -796,6 +820,7 @@
       mit = mitigationMultiplier(mods, context);
     }
     const post = postMultiplier(hit, context);
+    if (post == null) return { known: false, originals: [], reason: 'bounty_talisman_damage_level_unknown' };
     const terraBurstBonusMultiplier = options && options.terraBurstBonusMultiplier > 1 ? +options.terraBurstBonusMultiplier : 1;
     const crit = criticalMultiplierForHit(hit, context);
     // D-010f: Perfect Shot e bonus ADITIVO em dano, somado depois do critico e antes
@@ -882,6 +907,7 @@
     const mod = effectiveMod(+mods.physicalDmgMod, pierceForElement('physical', hit, context));
     const mit = mitigationMultiplier(mods, context);
     const post = postMultiplier(hit, context);
+    if (post == null) return { known: false, interval: null, reason: 'bounty_talisman_damage_level_unknown' };
     const armorEff = Math.round(((+mods.armor) || 0) * (1 - ((context && context.armorPenetration) || 0)));
     const armorLow = Math.max(Math.floor(armorEff / 2), 0);
     const armorHigh = Math.max(Math.floor(armorEff / 2) * 2 - 1, 0);
@@ -977,6 +1003,7 @@
     gravSanMultiplierAtTs,
     VERSION,
     CUTOFF_KEY,
+    PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS,
     ELEMENT_KEYS,
     ELEMENTS,
     SINGLE_TARGET_RUNES,
@@ -997,6 +1024,8 @@
     MANA_BASE_CANDIDATES,
     VAMPIRIC_BONUSES,
     VOIDS_BONUSES,
+    bountyTalismanBonusForLevel,
+    bountyTalismanLevelsWithinBonus,
     WEAPON_LEECH_BONUS,
     MAX_WEAPON_LEECH_BONUSES,
     SPELL_LEECH_BONUS_CANDIDATES,

@@ -48,6 +48,8 @@
     MANA_BASE_CANDIDATES,
     VAMPIRIC_BONUSES,
     VOIDS_BONUSES,
+    bountyTalismanBonusForLevel,
+    bountyTalismanLevelsWithinBonus,
     WEAPON_LEECH_BONUS,
     MAX_WEAPON_LEECH_BONUSES,
     SPELL_LEECH_BONUS_CANDIDATES,
@@ -139,6 +141,7 @@
     leechDamageBasis,
     inferLeechSetup,
     unknownLeechSetup,
+    unknownBountyTalismanSetup,
     leechSetupConfidence,
     canUseLeechAsHardReject,
     canScoreLeech,
@@ -155,6 +158,7 @@
     detectCharmCandidateMobsFromColocatedTurns,
     inferLeechSetupJointBaseAndCharm,
     inferLeechSetupFromGoldObservations,
+    inferBountyDamageFromFrozenComponents,
     inferLeechSetupFallback,
     inferAaElementForSession,
     collectTrustedLeechObservationsFromRuneUses,
@@ -379,6 +383,209 @@
     return raw.includes('charm') ? 'charm' : 'proc';
   }
 
+  function comparableCharmRepresentative(
+    events,
+    minimumSamples,
+    strategy,
+    excludeKilledTarget,
+  ) {
+    const usable = (events || []).filter(ev =>
+      ev && ev.dmg > 0 && (!excludeKilledTarget || !ev.killedTarget)
+    );
+    if (usable.length < minimumSamples) return null;
+    if (strategy === 'median') {
+      return {
+        damage: median(usable.map(ev => ev.dmg)),
+        count: usable.length,
+        events: usable,
+      };
+    }
+    const counts = new Map();
+    for (const ev of usable) counts.set(ev.dmg, (counts.get(ev.dmg) || 0) + 1);
+    const ranked = Array.from(counts, ([damage, count]) => ({ damage, count }))
+      .sort((a, b) => b.count - a.count || a.damage - b.damage);
+    if (!ranked.length || ranked[0].count < minimumSamples) return null;
+    if (ranked[1] && ranked[1].count === ranked[0].count) return null;
+    return {
+      damage: ranked[0].damage,
+      count: ranked[0].count,
+      events: usable.filter(ev => ev.dmg === ranked[0].damage),
+    };
+  }
+
+  // D-010g/D-030: um único avaliador canônico compara o mesmo proc de charm
+  // sob dois estados observados. O chamador define apenas qual fato separa os
+  // lados e como cada candidato faz o round-trip discreto.
+  function evaluateComparableCharmWitnesses(events, {
+    keyOf,
+    isAffected,
+    minimumControlSamples = 1,
+    minimumAffectedSamples = 1,
+    representative = 'mode',
+    excludeKilledTarget = true,
+    candidatesForRows,
+    matchCandidate,
+  }) {
+    const groups = new Map();
+    for (const ev of events || []) {
+      if (!ev || ev.dmg <= 0 || (excludeKilledTarget && ev.killedTarget)) continue;
+      const key = keyOf(ev);
+      if (!groups.has(key)) groups.set(key, { key, control: [], affected: [] });
+      groups.get(key)[isAffected(ev) ? 'affected' : 'control'].push(ev);
+    }
+    const rows = [];
+    for (const group of groups.values()) {
+      const control = comparableCharmRepresentative(
+        group.control,
+        minimumControlSamples,
+        representative === 'affected_each' ? 'median' : representative,
+        excludeKilledTarget,
+      );
+      if (representative === 'affected_each') {
+        if (!control) continue;
+        for (const ev of group.affected.filter(item =>
+          item && item.dmg > 0 && (!excludeKilledTarget || !item.killedTarget)
+        )) {
+          rows.push({
+            key: group.key,
+            controlDamage: control.damage,
+            affectedDamage: ev.dmg,
+            controlCount: control.count,
+            affectedCount: 1,
+            controlEvents: control.events,
+            affectedEvents: [ev],
+          });
+        }
+        continue;
+      }
+      const affected = comparableCharmRepresentative(
+        group.affected,
+        minimumAffectedSamples,
+        representative,
+        excludeKilledTarget,
+      );
+      if (!control || !affected) continue;
+      rows.push({
+        key: group.key,
+        controlDamage: control.damage,
+        affectedDamage: affected.damage,
+        controlCount: control.count,
+        affectedCount: affected.count,
+        controlEvents: control.events,
+        affectedEvents: affected.events,
+      });
+    }
+    const candidates = candidatesForRows(rows) || [];
+    const ranked = candidates.map(candidate => {
+      const matches = rows.map(row => matchCandidate(row, candidate));
+      return {
+        candidate,
+        votes: matches.filter(match => match && match.ok).length,
+        error: matches.reduce((sum, match) => sum + (match && match.error || 0), 0),
+        matches,
+      };
+    }).sort((a, b) => b.votes - a.votes || a.error - b.error);
+    const unanimous = ranked.filter(entry => rows.length > 0 && entry.votes === rows.length);
+    return { rows, ranked, unanimous };
+  }
+
+  function bountyCharmStateKey(ev) {
+    return [
+      normalizeName(ev.mob),
+      charmSignature(ev),
+      ev.exposeWeakness ? 'ew' : 'no_ew',
+      ev.isPrey ? 'prey' : 'no_prey',
+      ev.elementalAmplification ? 'amplified' : 'not_amplified',
+      ev.realCrit ? 'crit' : 'not_crit',
+      ev.onslaught ? 'onslaught' : 'no_onslaught',
+    ].join('|');
+  }
+
+  function inferBountyTalismanDamageSetup(serverFacts, gravSanSetup) {
+    const allCharmEvents = ((serverFacts && serverFacts.events) || [])
+      .filter(ev => ev && ev.kind === 'charm' && ev.dmg > 0)
+      .filter(ev => !ev.killedTarget && !ev.overpowerCharm)
+      .filter(ev => !ev.isPrey && !ev.elementalAmplification)
+      .filter(ev => !isWithinAnyWindow(ev.ts, gravSanSetup && gravSanSetup.windows));
+    if (!allCharmEvents.some(ev => ev.bountyTalisman)) {
+      return unknownBountyTalismanSetup('no_bounty_talisman_damage_fact');
+    }
+    const evaluation = evaluateComparableCharmWitnesses(allCharmEvents, {
+      keyOf: bountyCharmStateKey,
+      isAffected: ev => !!ev.bountyTalisman,
+      minimumControlSamples: 3,
+      minimumAffectedSamples: 3,
+      representative: 'mode',
+      candidatesForRows: rows => {
+        if (!rows.length) return [];
+        const maxMultiplier = Math.max(...rows.map(row =>
+          (row.affectedDamage + 1) / row.controlDamage
+        ));
+        return bountyTalismanLevelsWithinBonus(maxMultiplier - 1)
+          .map(level => ({
+            level,
+            bonus: bountyTalismanBonusForLevel(level),
+            multiplier: 1 + bountyTalismanBonusForLevel(level),
+          }));
+      },
+      matchCandidate: (row, candidate) => {
+        const intervals = inversePostMultiplierIntervals(
+          row.affectedDamage,
+          candidate.multiplier,
+        );
+        const ok = intervals.some(([lo, hi]) =>
+          row.controlDamage >= lo && row.controlDamage <= hi
+        );
+        const error = Math.min(...intervals.map(([lo, hi]) =>
+          row.controlDamage < lo ? lo - row.controlDamage
+            : (row.controlDamage > hi ? row.controlDamage - hi : 0)
+        ));
+        return { ok, error, intervals };
+      },
+    });
+    const winner = evaluation.unanimous.length === 1
+      ? evaluation.unanimous[0]
+      : null;
+    const setup = unknownBountyTalismanSetup(
+      evaluation.rows.length
+        ? 'comparable_charm_damage_conflict'
+        : 'comparable_charm_damage_insufficient',
+    );
+    if (!winner) {
+      setup.damage.evidenceCount = evaluation.rows.length;
+      setup.damage.ranked = evaluation.ranked.slice(0, 12).map(entry => ({
+        level: entry.candidate.level,
+        bonus: entry.candidate.bonus,
+        votes: entry.votes,
+        witnessCount: evaluation.rows.length,
+      }));
+      return setup;
+    }
+    setup.damage = {
+      level: winner.candidate.level,
+      bonus: winner.candidate.bonus,
+      multiplier: winner.candidate.multiplier,
+      confidence: 'strong',
+      source: 'comparable_charm_damage',
+      evidenceCount: evaluation.rows.length,
+      contradictions: 0,
+      witnesses: evaluation.rows.map(row => ({
+        key: row.key,
+        controlDamage: row.controlDamage,
+        affectedDamage: row.affectedDamage,
+        controlCount: row.controlCount,
+        affectedCount: row.affectedCount,
+      })),
+      ranked: evaluation.ranked.slice(0, 12).map(entry => ({
+        level: entry.candidate.level,
+        bonus: entry.candidate.bonus,
+        votes: entry.votes,
+        witnessCount: evaluation.rows.length,
+      })),
+    };
+    return setup;
+  }
+
   function inferGravSanSetup(serverFacts, localFacts, options, fallbackState) {
     if (options && options.gravSanBonus != null) {
       const bonus = +options.gravSanBonus || 0;
@@ -399,50 +606,55 @@
     const charmEvents = ((serverFacts && serverFacts.events) || [])
       .filter(ev => ev && (ev.kind === 'charm' || ev.kind === 'reflect') && ev.dmg > 0)
       .filter(ev => /charm/i.test(ev.rawLine || '') || ev.overpowerCharm || ev.woundCharm);
-    const keyOf = ev => [normalizeName(ev.mob), ev.isPrey ? 'prey' : 'no_prey', charmSignature(ev)].join('|');
-    const outsideByKey = new Map();
-    for (const ev of charmEvents) {
-      if (isWithinAnyWindow(ev.ts, windows)) continue;
-      const key = keyOf(ev);
-      const arr = outsideByKey.get(key) || [];
-      arr.push(ev.dmg);
-      outsideByKey.set(key, arr);
-    }
-    const baselines = new Map();
-    for (const [key, arr] of outsideByKey.entries()) {
-      if (arr.length) baselines.set(key, median(arr));
-    }
-
-    const scores = GRAV_SAN_BONUS_CANDIDATES.map(b => ({ bonus: b, multiplier: 1 + b, votes: 0, error: 0, examples: [] }));
+    const keyOf = ev => [
+      normalizeName(ev.mob),
+      ev.isPrey ? 'prey' : 'no_prey',
+      ev.bountyTalisman ? 'bounty' : 'no_bounty',
+      charmSignature(ev),
+    ].join('|');
+    const evaluation = evaluateComparableCharmWitnesses(charmEvents, {
+      keyOf,
+      isAffected: ev => isWithinAnyWindow(ev.ts, windows),
+      representative: 'affected_each',
+      excludeKilledTarget: false,
+      candidatesForRows: () => GRAV_SAN_BONUS_CANDIDATES.map(bonus => ({
+        bonus,
+        multiplier: 1 + bonus,
+      })),
+      matchCandidate: (row, candidate) => {
+        const expected = row.controlDamage * candidate.multiplier;
+        const delta = Math.abs(row.affectedDamage - expected);
+        const tolerance = Math.max(2, row.controlDamage * 0.0125);
+        const ok = delta <= tolerance;
+        return { ok, error: ok ? delta : 0, expected };
+      },
+    });
     const inside = charmEvents.filter(ev => isWithinAnyWindow(ev.ts, windows));
-    let comparableCharmCount = 0;
-    for (const ev of inside) {
-      const key = keyOf(ev);
-      const baseline = baselines.get(key);
-      if (!(baseline > 0)) continue;
-      comparableCharmCount++;
-      for (const cand of scores) {
-        const expected = baseline * cand.multiplier;
-        const delta = Math.abs(ev.dmg - expected);
-        const tolerance = Math.max(2, baseline * 0.0125);
-        if (delta <= tolerance) {
-          cand.votes++;
-          cand.error += delta;
-          if (cand.examples.length < 8) cand.examples.push({
-            ts: ev.ts,
-            clock: ev.clock,
-            mob: ev.mob,
-            charm: charmSignature(ev),
-            prey: !!ev.isPrey,
-            observed: ev.dmg,
-            baseline,
-            expected: Math.round(expected * 1000) / 1000,
-            ratio: Math.round((ev.dmg / baseline) * 10000) / 10000,
-            rawLine: ev.rawLine,
-          });
-        }
-      }
-    }
+    const comparableCharmCount = evaluation.rows
+      .reduce((sum, row) => sum + row.affectedCount, 0);
+    const scores = evaluation.ranked.map(entry => ({
+      bonus: entry.candidate.bonus,
+      multiplier: entry.candidate.multiplier,
+      votes: entry.votes,
+      error: entry.error,
+      examples: evaluation.rows.flatMap((row, index) => {
+        const match = entry.matches[index];
+        if (!match || !match.ok) return [];
+        const ev = row.affectedEvents[0];
+        return [{
+          ts: ev.ts,
+          clock: ev.clock,
+          mob: ev.mob,
+          charm: charmSignature(ev),
+          prey: !!ev.isPrey,
+          observed: row.affectedDamage,
+          baseline: row.controlDamage,
+          expected: Math.round(match.expected * 1000) / 1000,
+          ratio: Math.round((row.affectedDamage / row.controlDamage) * 10000) / 10000,
+          rawLine: ev.rawLine,
+        }];
+      }).slice(0, 8),
+    }));
     scores.sort((a, b) => b.votes - a.votes || a.error - b.error || b.bonus - a.bonus);
     const best = scores[0];
     if (comparableCharmCount > 0) {
@@ -615,7 +827,7 @@
             for (const channel of ['life', 'mana']) {
               const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
               if (!(observed > 0)) continue;
-              const rates = leechEffectiveRateCandidates(context.leechSetup, channel, comp, hit);
+              const rates = leechEffectiveRateCandidates(context.leechSetup, channel, comp, hit, context);
               if (!rates.length) setupUnknown = true;
               else if (rates.length !== 1) indeterminateActionBonus = true;
             }
@@ -772,7 +984,7 @@
     const events = (serverFacts && serverFacts.events) || [];
     const byKey = new Map();
     for (const ev of events) {
-      if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey) continue;
+      if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey || ev.bountyTalisman) continue;
       if (isWithinAnyWindow(ev.ts, windows)) continue;
       const sig = charmSignature(ev);
       const element = CHARM_ELEMENT_MAP[sig];
@@ -854,7 +1066,7 @@
     const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
     const events = (serverFacts && serverFacts.events) || [];
     const charmEvents = events
-      .filter(ev => ev && ev.kind === 'charm' && ev.dmg > 0 && !ev.isPrey)
+      .filter(ev => ev && ev.kind === 'charm' && ev.dmg > 0 && !ev.isPrey && !ev.bountyTalisman)
       .filter(ev => !isWithinAnyWindow(ev.ts, windows))
       .map(ev => ({ ev, element: CHARM_ELEMENT_MAP[charmSignature(ev)], ew: /expose weakness/i.test(ev.rawLine || '') }))
       .filter(x => !!x.element);
@@ -959,6 +1171,11 @@
       let dmg = +h.dmg || 0;
       if (!key || !(dmg > 0)) continue;
       if (h.isPrey) dmg /= 1.25;
+      if (h.bountyTalisman) {
+        const damage = context && context.bountyTalismanSetup && context.bountyTalismanSetup.damage;
+        if (!damage || damage.confidence === 'unknown' || !(damage.multiplier > 1)) continue;
+        dmg /= damage.multiplier;
+      }
       if (gravBonus > 0 && h.gravSanActive !== false && gravSanHitInWindow(context, h.ts)) dmg /= 1 + gravBonus;
       if (h.onslaught && !h.realCrit) dmg /= ONSLAUGHT_DAMAGE_MULTIPLIER;
       if (!groups.has(key)) groups.set(key, new Map());
@@ -1004,7 +1221,7 @@
   function inferCoarseGlobalCrit(hits) {
     const byMob = new Map();
     for (const h of hits || []) {
-      if (!isMainHit(h) || h.overkill || h.isPrey) continue;
+      if (!isMainHit(h) || h.overkill || h.isPrey || h.bountyTalisman) continue;
       if (h.savageBlow) continue;
       const d = +h.dmg || 0; if (!(d > 0)) continue;
       const mob = normalizeName(h.mob);
@@ -1044,7 +1261,7 @@
           if (!h) continue;
           out.push({
             compKey: key, mob: h.mob, dmg: h.dmg, realCrit: !!h.realCrit,
-            overkill: !!h.overkill, isPrey: !!h.isPrey, ts: h.ts,
+            overkill: !!h.overkill, isPrey: !!h.isPrey, bountyTalisman: !!h.bountyTalisman, ts: h.ts,
             onslaught: !!h.onslaught, savageBlow: !!h.savageBlow, exposeWeakness: !!h.exposeWeakness,
             gravSanActive: comp.gravSanActive,
           });
@@ -1069,8 +1286,19 @@
     context.serverEvents = serverFacts.events || [];
     context.serverFacts = serverFacts;
     context.localFacts = localFacts;
+    const explicitBountyTalismanSetup = (options && options.bountyTalismanSetup)
+      || (options && options.leechSetup && options.leechSetup.bountyTalismanSetup)
+      || null;
+    context.bountyTalismanSetup = explicitBountyTalismanSetup
+      || unknownBountyTalismanSetup('first_pass_without_bounty_setup');
     context.transcendenceWindows = (serverFacts.transcendenceTriggers || []).map(t => [t.ts, t.ts + TRANSCENDENCE_WINDOW_SECONDS]);
     context.gravSanSetup = inferGravSanSetup(serverFacts, localFacts, options || {});
+    if (!explicitBountyTalismanSetup) {
+      context.bountyTalismanSetup = inferBountyTalismanDamageSetup(
+        serverFacts,
+        context.gravSanSetup,
+      );
+    }
     context.bestiaryClassBonus = inferBestiaryClassDamageBonus(serverFacts, context);
     // CrÃ­tico por-componente: aqui sÃ³ o BOOTSTRAP (pass-1). Se `options.critMultiplier`
     // for dado, respeita como fallback fixo; senÃ£o usa o global grosso crit-independente
@@ -1257,9 +1485,32 @@
       context.consolidatedGrenadeCasts = new Set();
       resolvedWithoutLeech = turns.map(t => resolveTurn(t, facts, context));
       refineCritByComponent(resolvedWithoutLeech);
+      const frozenBountyDamage = inferBountyDamageFromFrozenComponents(
+        resolvedWithoutLeech,
+        context,
+      );
+      if (context.bountyTalismanSetup.damage.confidence === 'unknown'
+        && frozenBountyDamage.confidence !== 'unknown') {
+        context.bountyTalismanSetup.damage = frozenBountyDamage;
+        if (context._revCache) context._revCache.clear();
+        context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
+        context.consolidatedGrenadeCasts = new Set();
+        resolvedWithoutLeech = turns.map(t => resolveTurn(t, facts, context));
+        refineCritByComponent(resolvedWithoutLeech);
+      } else {
+        context.bountyTalismanSetup.damage.fallbackConfirmation = frozenBountyDamage;
+      }
       goldLeechObservations = collectGoldLeechObservations(resolvedWithoutLeech, context);
       const charmCandidates = detectCharmCandidateMobsFromColocatedTurns(resolvedWithoutLeech, context);
-      context.leechSetup = inferLeechSetupFromGoldObservations(goldLeechObservations, context, charmCandidates);
+      context.leechSetup = inferLeechSetupFromGoldObservations(
+        goldLeechObservations,
+        context,
+        charmCandidates,
+        resolvedWithoutLeech,
+      );
+      context.bountyTalismanSetup = context.leechSetup.bountyTalismanSetup
+        || unknownBountyTalismanSetup('gold_observations_without_bounty_setup');
+      if (context._revCache) context._revCache.clear();
       context.gravSanSetup = inferGravSanSetup(server, local, options || {}, {
         context,
         resolvedTurns: resolvedWithoutLeech,
@@ -1321,8 +1572,12 @@
       bmPierce: context.bmPierce || 0,
       bmPierceDetection: bmDetection || { pierce: context.bmPierce || 0, active: !!(context.bmPierce > 0), source: explicitBmPierceOption(options) == null ? 'not_run' : 'option_bmPierce' },
       leechSetup: context.leechSetup,
+      bountyTalismanSetup: context.bountyTalismanSetup,
       resolvedWithoutLeech: resolvedWithoutLeech ? summarizeResolutionStatuses(resolvedWithoutLeech) : null,
       goldLeechObservationCount: goldLeechObservations.length,
+      goldLeechObservationTurns: Array.from(new Set(
+        goldLeechObservations.map(observation => observation.clock).filter(Boolean),
+      )).sort(),
       goldLeechObservationsSample: goldLeechObservations.slice(0, 20),
       gravSanSetup: context.gravSanSetup,
       aaElement: context.aaElement || 'physical',

@@ -6,8 +6,10 @@ import path from 'node:path';
 import process from 'node:process';
 import vm from 'node:vm';
 import { pathToFileURL } from 'node:url';
+import { CASES as CANONICAL_CASES, runUnifiedGabarito } from './gabarito-unified.mjs';
 import { selectMobElementModsRegime } from './mob-element-mod-regime.mjs';
 import { SHARED_UNIFIED_GOLDEN_CASES } from './unified-golden-cases.mjs';
+import { runUnifiedInvariants } from './unified-invariants.mjs';
 
 const ROOT = process.cwd();
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -220,7 +222,7 @@ const C = (id, sv, lc, ts, expect, fp) => ({ id, sv, lc, ts:toSec(ts), tsRaw:ts,
 // (D-020) por sessao, nao de modificadores de mob.
 const CL = (id, sv, lc, ts, expect, fp) => ({ ...C(id, sv, lc, ts, expect, fp), regimeIndependent:true });
 
-const CASES = [
+export const EXPERIMENTAL_CASES = [
   // M-016d/T-002: Death Echo é uma única ação com blast integral e echo 1/2.
   // O echo de :10 pertence ao cast de :09 e não ancora o ciclo seguinte.
   CL('death-echo/11:06:08','death echo server log.txt','death echo local chat.txt','11:06:08',countIs({arrow:1,spell:21,rune:0,grenade:0})),
@@ -450,8 +452,16 @@ function printModelStats() {
 
 function runGabarito() {
   let pass = 0, fail = 0, skipped = 0;
-  const selectedCases = CASES.filter(c => selectedByFilter(c.id));
+  const canonicalTurns = new Set(CANONICAL_CASES.map(c => `${c.sv}\n${c.lc}\n${c.ts}`.toLowerCase()));
+  const selectedCases = EXPERIMENTAL_CASES.filter(c => {
+    const key = `${c.sv}\n${c.lc}\n${c.ts}`.toLowerCase();
+    return !canonicalTurns.has(key) && selectedByFilter(c.id);
+  });
   if (!selectedCases.length) {
+    if (onlyFilter && CANONICAL_CASES.some(c => c.id.includes(onlyFilter))) {
+      const result = runUnifiedGabarito({ only: onlyFilter });
+      process.exit(result.fail ? 1 : 0);
+    }
     console.error(`Nenhum caso de gabarito corresponde a: ${onlyFilter}`);
     process.exit(2);
   }
@@ -514,89 +524,10 @@ const FIXTURES = [
   ['barrage', 'barrage Server Log.txt', 'barrage local chat.txt'],
 ];
 
-// M-024 (uma granada = um timestamp de impacto) e M-025 (o mesmo cast nao
-// pode explicar hits em dois timestamps). Invariante CROSS-TURNO: agrupa os
-// hits rotulados `grenade` da sessao pelo cast que os explica e exige <=1
-// turno e <=1 timestamp de impacto por cast.
-function grenadeImpactViolations(rows) {
-  const byCast = new Map();
-  for (const row of rows) {
-    const grenLines = row.resolved.lines.filter(line => line.comp === 'grenade');
-    if (!grenLines.length) continue;
-    const key = row.ev.grenadeCast ? row.ev.grenadeCast.ts : `sem-cast@${row.ev.ts}`;
-    if (!byCast.has(key)) byCast.set(key, { turns: new Set(), impacts: new Set() });
-    const group = byCast.get(key);
-    group.turns.add(row.ev.ts);
-    for (const line of grenLines) group.impacts.add(line.ts);
-  }
-  const out = [];
-  for (const [key, group] of byCast) {
-    const castLabel = typeof key === 'number' ? fmtSec(key) : key;
-    const anchor = Math.min(...group.turns);
-    if (group.turns.size > 1) {
-      out.push({ ts: anchor, rule: 'M-025', msg: `cast ${castLabel} explica granada em ${group.turns.size} turnos (${[...group.turns].sort((a, b) => a - b).map(fmtSec).join(', ')})` });
-    }
-    if (group.impacts.size > 1) {
-      out.push({ ts: anchor, rule: 'M-024', msg: `cast ${castLabel} tem ${group.impacts.size} timestamps de impacto (${[...group.impacts].sort((a, b) => a - b).map(fmtSec).join(', ')})` });
-    }
-  }
-  return out;
-}
-
-// Invariantes mecanicos por-turno aplicaveis a qualquer turno (nao so aos
-// gabaritados): T-003 (nenhum hit perdido), M-032 (AA <=1 fora de RP),
-// M-009 (boss nao reusa acao), M-006 (single-target <=1 hit) para spell/runa,
-// T-006/V-003 (spell e runa nao coexistem) e N-010 (sem rotulo generico).
-function turnInvariantViolations(row) {
-  const got = lineSummary(row);
-  const out = [];
-  if (row.resolved.lines.length !== row.ev.lines.length) out.push({ ts: row.ev.ts, rule: 'T-003', msg: 'hits observados perdidos no turno' });
-  if (!row.ev.isRpRegime && got.arrow > 1) out.push({ ts: row.ev.ts, rule: 'M-032', msg: `AA=${got.arrow} fora de RP` });
-  if (row.ev.uniqueBossTarget && [got.arrow, got.spell, got.rune, got.grenade].some(count => count > 1)) out.push({ ts: row.ev.ts, rule: 'M-009', msg: 'boss reusou uma acao concreta' });
-  if (row.ev.spellCast && isRpSingleTargetSpell(row.ev.spellCast.text) && got.spell > 1) out.push({ ts: row.ev.ts, rule: 'M-006', msg: `spell single-target com ${got.spell} hits` });
-  if (row.ev.runeUse && isSingleTargetRune(row.ev.runeUse.name) && got.rune > 1) out.push({ ts: row.ev.ts, rule: 'M-033', msg: `runa single-target com ${got.rune} hits` });
-  if (got.spell > 0 && got.rune > 0) out.push({ ts: row.ev.ts, rule: 'T-006', msg: 'spell e runa coexistem no mesmo turno' });
-  const labelReason = concreteLabels(row);
-  if (labelReason) out.push({ ts: row.ev.ts, rule: 'N-010', msg: labelReason });
-  return out;
-}
-
 function runInvariants() {
-  let pass = 0, fail = 0, skipped = 0;
-  const selectedFixtures = FIXTURES.filter(([id]) => selectedByFilter(`invariants/${id}`));
-  if (!selectedFixtures.length) {
-    console.error(`Nenhuma fixture de invariantes corresponde a: ${onlyFilter}`);
-    process.exit(2);
-  }
-  for (const [id, sv, lc] of selectedFixtures) {
-    let rows;
-    try {
-      rows = modelForPair(`logs/${sv}`, `logs/${lc}`).filter(row => row.mobElementRegime.id === 'pre-2026-06-16');
-    } catch (err) {
-      console.log(`SKIP invariants/${id}: ${err.message}`);
-      skipped++;
-      continue;
-    }
-    if (!rows.length) {
-      console.log(`SKIP invariants/${id}: nenhuma sessao pre-2026-06-16 em escopo (D-017)`);
-      skipped++;
-      continue;
-    }
-    const violations = grenadeImpactViolations(rows);
-    for (const row of rows) violations.push(...turnInvariantViolations(row));
-    violations.sort((a, b) => a.ts - b.ts);
-    if (violations.length) {
-      const shown = violations.slice(0, 6).map(v => `${fmtSec(v.ts)} ${v.rule}: ${v.msg}`).join('; ');
-      console.log(`FAIL invariants/${id}: ${shown}${violations.length > 6 ? ` (+${violations.length - 6})` : ''}`);
-      fail++;
-    } else {
-      console.log(`PASS invariants/${id}: ${rows.length} turnos pre-corte respeitam M-024/M-025, cardinalidade, T-006 e rotulos concretos`);
-      pass++;
-    }
-  }
-  console.log(`\n${pass}/${pass + fail} fixtures pre-2026-06-16 sem violacao de invariante mecanico; ${skipped} fora do escopo D-017`);
-  printModelStats();
-  process.exit(fail ? 1 : 0);
+  const result = runUnifiedInvariants({ only: onlyFilter });
+  if (result.empty) process.exit(2);
+  process.exit(result.fail ? 1 : 0);
 }
 
 // H-001..H-004 (auditoria global). Lista TODOS os turnos com bloco único de

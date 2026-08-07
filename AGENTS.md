@@ -26,10 +26,17 @@ Se uma implementação contradiz `docs/CLASSIFICATION_RULES.md`, a implementaç�
 ## Arquivos importantes
 
 - `docs/CLASSIFICATION_RULES.md`: regras do domínio e critérios de validação.
-- `tools/run-unified-checks.mjs`: executor da validação obrigatória (gabarito +
-  invariantes + todos os `tests/*.test.mjs`).
-- `tools/unified-experimental.mjs`: harness do gabarito curado (`--gabarito`) e da
-  varredura exaustiva de invariantes mecânicos (`--invariants`).
+- `tools/run-unified-checks.mjs`: executor da validação obrigatória (gabarito
+  prioritário + invariantes + todos os `tests/*.test.mjs`).
+- `tools/gabarito-unified.mjs`: única porta prioritária de turnos curados.
+- `tools/unified-invariants.mjs`: invariantes mecânicas sobre os resultados
+  canônicos já classificados.
+- `tools/dump-unified.mjs`: dump completo, artefatos candidate e promoção
+  explícita para latest.
+- `tools/query-unified-dump.mjs`: consulta somente o latest aceito; nunca
+  classifica.
+- `tools/unified-experimental.mjs`: compatibilidade histórica temporária para os
+  casos únicos inventariados; não faz parte do runner obrigatório.
 - `tests/*.test.mjs`: testes derivados das regras (descobertos do disco pelo runner).
 - `reports/reviewer_report.md`: relatório do agente revisor.
 
@@ -52,7 +59,8 @@ classificacao/drift do Unified e feita pelas ferramentas Node do proprio motor
 ```bash
 node tools/diag-unified-turn.mjs "logs/<sv>.txt" "logs/<lc>.txt" HH:MM:SS [--session N|DD/Mon/YYYY]
 node tools/gabarito-unified.mjs
-node tools/dump-unified.mjs
+node tools/dump-unified.mjs --write-candidate
+node tools/dump-unified.mjs --promote-candidate
 ```
 
 - `diag-unified-turn.mjs`: diagnostico hit-a-hit do turno alvo.
@@ -60,7 +68,19 @@ node tools/dump-unified.mjs
   pre-existentes, mas a mudanca nao pode introduzir falha nova.
 - `dump-unified.mjs`: dump completo para diff zero-drift antes/depois. Para
   mudancas de escopo claro, rode primeiro com `--pairs "<fixtures>"` e so depois
-  rode o corpus inteiro.
+  rode o corpus inteiro. `--write-candidate` grava dump, resumo e manifest sem
+  substituir o latest; `--promote-candidate` apenas promove o candidate já
+  validado e não classifica.
+- Para responder quantidade/lista atual de turnos sem classificação, use:
+
+```bash
+node tools/query-unified-dump.mjs [--list-unclassified]
+```
+
+  Esta consulta lê o último dump aceito. É proibido gerar um dump silenciosamente
+  para responder essa pergunta. Se o latest não existir, informe isso; para
+  conferir apenas a identidade das fontes, use `--verify-source` (continua sem
+  classificar).
 - Se `dump-unified.mjs` mostrar qualquer alteracao fora do turno alvo, gerar o
   detalhe com:
 
@@ -75,11 +95,19 @@ varredura de invariantes mecanicos + todos os `tests/*.test.mjs`):
 node tools/run-unified-checks.mjs
 ```
 
+O runner executa primeiro o gabarito prioritário atual (160 casos), depois as
+invariantes mecânicas reutilizando classificações compatíveis no mesmo processo,
+e por fim os testes JS. O cache persistente é invalidado pelo conteúdo do motor,
+das sessões e das opções; cache nunca substitui dump ou gabarito.
+
 **Nao usar `python`/`pytest`** — este repo e 100% Unified/JS e os wrappers Python
 foram removidos (nao tinham logica propria: eram `subprocess.run(["node", ...])`
 sobre estes mesmos alvos, e cobriam a menos que o runner atual). Falhas
 pre-existentes conhecidas, que falham em `HEAD` limpo: `experimental-ui-parity`,
 `mob-element-regime`, `unified-spiritual-outburst-multistage`.
+Com a cobertura canônica ampliada para todas as fixtures, a invariante também
+expõe o achado preexistente `invariants/ms boss` em `22:20:35` (M-009); não
+alterar a classificação apenas para esconder esse achado.
 
 ## Motor único e protocolo de correção
 

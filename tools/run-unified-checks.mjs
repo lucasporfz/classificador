@@ -27,16 +27,22 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const HEAP = '--max-old-space-size=8192';
 
+const WORKFLOW = {
+  name: 'gabarito prioritario + invariantes mecanicas',
+  args: ['tools/unified-validation-workflow.mjs', '--gabarito', '--invariants'],
+  expect: 'fixtures pre-2026-06-16 sem violacao de invariante mecanico',
+};
+
 const GABARITO = {
-  name: 'gabarito curado (pre-2026-06-16)',
-  args: ['tools/unified-experimental.mjs', '--gabarito'],
-  expect: 'pre-2026-06-16 experimental gabarito/problem turns ok',
+  name: 'gabarito curado prioritario',
+  args: ['tools/unified-validation-workflow.mjs', '--gabarito'],
+  expect: 'gabarito-unified ok',
 };
 
 const INVARIANTS = {
-  name: 'invariantes mecanicos (todas as fixtures pre-corte)',
-  args: ['tools/unified-experimental.mjs', '--invariants'],
-  expect: 'sem violacao de invariante mecanico',
+  name: 'invariantes mecanicas (corpus pre-corte)',
+  args: ['tools/unified-validation-workflow.mjs', '--invariants'],
+  expect: 'fixtures pre-2026-06-16 sem violacao de invariante mecanico',
 };
 
 // Todo tests/*.test.mjs, descoberto do disco em vez de lista fixa — era assim que o
@@ -95,8 +101,13 @@ const all = modes.size === 0;
 const scoped = target => match === null ? target : { ...target, args: [...target.args, '--only', match] };
 
 const targets = [];
-if (all || modes.has('gabarito')) targets.push(scoped(GABARITO));
-if (all || modes.has('invariants')) targets.push(scoped(INVARIANTS));
+if (all || (modes.has('gabarito') && modes.has('invariants'))) {
+  targets.push(scoped(WORKFLOW));
+} else if (modes.has('gabarito')) {
+  targets.push(scoped(GABARITO));
+} else if (modes.has('invariants')) {
+  targets.push(scoped(INVARIANTS));
+}
 if (all || modes.has('tests')) {
   targets.push(...discoverTests().filter(target => match === null || target.name.includes(match)));
 }

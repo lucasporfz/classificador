@@ -24,7 +24,7 @@
 // exige rodar duas vezes (uma antes de editar ou com git stash), igual ao próprio
 // dump-unified.mjs já exige para o diff compacto.
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import process from 'node:process';
-import { discoverFixturePairs } from './fixture-pairs.mjs';
+import { UnifiedCorpus } from './unified-corpus.mjs';
 const ROOT = process.cwd(); const read = p => fs.readFileSync(p, 'utf8');
 const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
 function freshCtx() {
@@ -36,66 +36,39 @@ function freshCtx() {
   return ctx;
 }
 
-const HEADER_RE = /^Channel .+ saved \w+ (\w+) +(\d+) (\d+:\d+:\d+) (\d{4})/;
-const MONTHS = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Sept:8,Oct:9,Nov:10,Dec:11 };
-function splitSessions(text) {
-  const sessions = []; let cur = null;
-  for (const line of text.replace(/^﻿/, '').split(/\r?\n/)) {
-    const m = line.match(HEADER_RE);
-    if (m) {
-      if (cur) { cur.text = cur.lines.join('\n'); sessions.push(cur); }
-      const [, mon, day, time, year] = m; const [h, mi, s] = time.split(':').map(Number);
-      cur = { header: line.trim(), year:+year, month: MONTHS[mon] ?? -1, day:+day, saveSec: h*3600+mi*60+s, lines:[line] };
-    } else { if (!cur) cur = { header:'', year:0, month:0, day:0, saveSec:0, lines:[] }; cur.lines.push(line); }
-  }
-  if (cur) { cur.text = cur.lines.join('\n'); sessions.push(cur); }
-  return sessions;
-}
-function buildPairs(svS, lcS) {
-  const pairs = [];
-  for (const sv of svS) {
-    if (!sv.header) { if (svS.length === 1) pairs.push({ sv, lc: lcS[0] }); continue; }
-    const cands = lcS.filter(lc => lc.header && lc.year===sv.year && lc.month===sv.month && lc.day===sv.day && Math.abs(lc.saveSec-sv.saveSec)<=3600);
-    if (!cands.length) continue;
-    cands.sort((a,b)=>Math.abs(a.saveSec-sv.saveSec)-Math.abs(b.saveSec-sv.saveSec));
-    pairs.push({ sv, lc: cands[0] });
-  }
-  return pairs;
-}
-// tools/dump-unified.mjs exclui uma sessão específica de "jaded Server Log.txt"
-// (09/Jun/2026, problema conhecido à parte) ANTES de numerar S0/S1/S2... — sem
-// replicar esse filtro aqui, o S<N> extraído do diff apontaria pra sessão errada
-// pra esse fixture. Se outro fixture ganhar um filtro ad-hoc parecido em
-// dump-unified.mjs, replicar aqui também (ou extrair pra um módulo compartilhado).
-const isTempExcludedJadedSession = sv => sv.year === 2026 && sv.month === 5 && sv.day === 9;
-function applyKnownFixtureExclusions(svN, pairs) {
-  if (svN === 'jaded Server Log.txt') return pairs.filter(p => !isTempExcludedJadedSession(p.sv));
-  return pairs;
-}
 const fmt = s => `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 const pct = v => v == null ? '-' : `${(v*100).toFixed(2)}%`;
 
 // svFileName -> lcFileName, pra resolver o nome de arquivo que aparece nas linhas do
-// diff de volta no par de logs certo. Descoberto de logs/ (ver tools/fixture-pairs.mjs),
-// igual a tools/report-unified-unclassified.mjs e tools/find-fixtures-by-owner-cast.mjs.
+// diff de volta no par de logs certo. Descoberto pela mesma abstração canônica do
+// dump, incluindo pareamento, normalização dos índices e exclusões do corpus.
 // A lista hardcoded anterior estava atrás do corpus (sem `uhax 3`, `serverlog6..9`,
 // `monk 2`, `kim`, `death echo`, `dlc ms`...) e o efeito era SILENCIOSO: turnos desses
 // fixtures apareciam no diff mas eram pulados pelo `continue` do loop, produzindo um
 // review incompleto sem nenhum aviso. Não voltar a hardcodar.
+const corpus = new UnifiedCorpus({ cacheEnabled: false, persistentCacheDir: null });
 const PAIRS_BY_SV = Object.fromEntries(
-  discoverFixturePairs({ logDir: path.join(ROOT, 'logs') }).map(p => [p.server, p.local])
+  corpus.discoverPairs().map(p => [p.server, p.local])
 );
 
 // Parseia linhas no formato que dump-unified.mjs emite:
 // "<svFileName> S<N> ts=<ts> st=..." (aparecem em ambos os lados '<'/'>' de um diff -u
-// ou diff comum; aceitamos as duas variantes, com ou sem prefixo de diff).
-const LINE_RE = /^[<>]?\s*(.+?\.txt) S(\d+) ts=(\d+) st=/;
+// ou git diff; aceitamos as variantes <, >, + e -, além de listas simples sem
+// prefixo. Quando há ao menos um alvo prefixado, linhas sem prefixo são contexto
+// do diff e não representam turnos alterados.
+const LINE_RE = /^([<>+-]?)\s*(.+?\.txt) S(\d+) ts=(\d+) st=/;
 function parseDiffTargets(diffText) {
   const targets = new Map(); // svFileName -> Map(sessionIndex -> Set(ts))
-  for (const line of diffText.split(/\r?\n/)) {
+  const lines = diffText.split(/\r?\n/);
+  const hasPrefixedTargets = lines.some(line => {
+    const match = LINE_RE.exec(line);
+    return match && match[1];
+  });
+  for (const line of lines) {
     const m = LINE_RE.exec(line);
     if (!m) continue;
-    const [, svN, sIdx, ts] = m;
+    const [, prefix, svN, sIdx, ts] = m;
+    if (hasPrefixedTargets && !prefix) continue;
     if (!PAIRS_BY_SV[svN]) continue;
     if (!targets.has(svN)) targets.set(svN, new Map());
     const bySession = targets.get(svN);
@@ -157,10 +130,7 @@ if (!targets.size) {
 
 for (const [svN, bySession] of targets) {
   const lcN = PAIRS_BY_SV[svN];
-  const svP = path.join(ROOT, 'logs', svN), lcP = path.join(ROOT, 'logs', lcN);
-  const svS = splitSessions(read(svP)), lcS = splitSessions(read(lcP));
-  let pairs = (svS.length === 1 && lcS.length === 1) ? [{ sv: svS[0], lc: lcS[0] }] : buildPairs(svS, lcS);
-  pairs = applyKnownFixtureExclusions(svN, pairs);
+  const pairs = corpus.sessionsFor(svN, lcN);
   for (const [sIdx, tsSet] of bySession) {
     const pair = pairs[sIdx];
     console.log(`\n################ ${svN} S${sIdx} ################`);

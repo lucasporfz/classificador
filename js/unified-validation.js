@@ -27,6 +27,7 @@
     intersectIntervalTol,
     sortedUnique,
     isTerraBurstBlock,
+    isChainedPenanceAction,
     elementalOriginalCandidates,
     intersectSets,
     elementalStateKey,
@@ -40,6 +41,8 @@
     SPELL_LEECH_BONUS_CANDIDATES,
     TERRA_BURST_BONUS_LEVELS,
     ELEMENTS,
+    CUTOFF_KEY,
+    PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS,
   } = root.UnifiedFormulas;
 
   const {
@@ -53,8 +56,16 @@
   } = root.UnifiedSetupInference;
   function effectiveLifeLeech(hit, setup) {
     const base = setup && setup.lifeBase ? setup.lifeBase : 0;
-    if (!setup || !setup.vampiricMob) return base;
-    return normalizeName(hit.mob) === normalizeName(setup.vampiricMob) ? base + (setup.vampiricBonus || 0) : base;
+    const withMinor = setup && setup.vampiricMob
+      && normalizeName(hit.mob) === normalizeName(setup.vampiricMob)
+      ? base + (setup.vampiricBonus || 0)
+      : base;
+    const bountyMultiplier = hit && hit.bountyTalisman
+      && setup && setup.bountyTalismanLifeConfidence !== 'unknown'
+      && setup.bountyTalismanLifeBonus > 0
+      ? 1 + setup.bountyTalismanLifeBonus
+      : 1;
+    return withMinor * bountyMultiplier;
   }
   function effectiveManaLeech(hit, setup) {
     const base = setup && setup.manaBase ? setup.manaBase : 0;
@@ -129,7 +140,13 @@
     const firstTs = Math.min(...turn.hits.map(h => h.ts));
     const lastTs = Math.max(...turn.hits.map(h => h.ts));
     const spellCasts = facts.local.spellCasts.filter(c => c.ts >= firstTs - 1 && c.ts <= lastTs + 1);
-    const runeUses = facts.server.runeUses.filter(r => r.ts >= firstTs - 1 && r.ts <= lastTs + 1);
+    const runeUses = facts.server.runeUses.filter(r =>
+      r.ts >= firstTs - 1
+      && r.ts <= lastTs + 1
+      && !r.ignored
+      && r.profile
+      && r.profile.element !== 'unknown'
+      && (r.profile.topology === 'single' || r.profile.topology === 'area'));
     // M-024/M-025: uma granada possui um único evento de impacto (um timestamp ou
     // dois timestamps cronologicamente consecutivos comprovados) e o mesmo cast não
     // pode explicar hits em dois turnos consolidados. Um cast cuja explosão já foi
@@ -800,11 +817,19 @@
     }
     for (const group of stateGroups.values()) {
       if (group.length < 2) continue;
-      const exact = intersectSets(group.map(x => x.originals), 0);
-      if (!exact.length) {
+      const physical = group.every(x => x.interval);
+      const exact = physical
+        ? intersectIntervals(group.map(x => x.interval), 0)
+        : intersectSets(group.map(x => x.originals), 0);
+      if (!exact || !exact.length) {
         return {
           violated: true,
-          group: group.map(x => ({ mob: x.hit.mob, dmg: x.hit.dmg, originals: x.originals })),
+          group: group.map(x => ({
+            mob: x.hit.mob,
+            dmg: x.hit.dmg,
+            originals: x.originals,
+            interval: x.interval,
+          })),
         };
       }
     }
@@ -816,10 +841,16 @@
   // evidencia positiva mage/druid (H-005c) para testar o bloco FUNDIDO (AA + spell)
   // contra o SUFIXO (so spell) sem reimplementar a reconstrucao de original.
   function sameMobStateExactnessForHits(hits, element, context) {
-    if (!element || element === 'unknown' || element === 'physical') return { known: 0, violated: false };
+    if (!element || element === 'unknown') return { known: 0, violated: false };
     const perHit = [];
     for (const h of hits || []) {
       if (h.overkill || h.zeroDamageDodge || h.virtual) continue;
+      if (element === 'physical') {
+        const physical = physicalOriginalInterval(h, context);
+        if (!physical || !physical.known || !physical.interval) continue;
+        perHit.push({ hit: h, interval: physical.interval });
+        continue;
+      }
       const ev = elementalOriginalCandidates(h, element, context);
       if (!ev || !ev.known || !ev.originals || !ev.originals.length) continue;
       perHit.push({ hit: h, originals: ev.originals });
@@ -1030,9 +1061,12 @@
 
   function firstHitSeparationFixesSameMobExactness(hits, action, context) {
     const element = action && action.profile && action.profile.element;
-    if (!element || element === 'unknown' || element === 'physical') return false;
+    if (!element || element === 'unknown') return false;
     if (!hits || hits.length < 2) return false;
-    if (isBeamAction(action)) return false;
+    // M-035/M-037: níveis distintos no mesmo mob são parte declarada da
+    // mecânica de beam/chain. A exatidão same-mob não pode virar evidência
+    // positiva de AA quando a própria ação explica essa diferença.
+    if (isBeamAction(action) || isChainedPenanceAction(action)) return false;
     // Terra/Ice Burst tem 2 niveis de bonus legitimos por-mob (bonus ativo/inativo
     // conforme a vida do alvo) -- a checagem crua same-mob (abaixo) nao sabe disso e
     // trataria 2 tiers reais como mismatch. Reusar validateTerraBurstBonusBlock (o
@@ -1178,7 +1212,7 @@
   }
 
 
-  function validateLeechBlock(block, context, turn) {
+  function validateLeechBlock(block, context, turn, allowScoredVirtual) {
     const main = (block.hits || []).filter(isMainHit);
     const k = main.length;
     if (!k) return { ok: true, usable: false, k: 0 };
@@ -1189,7 +1223,9 @@
     // M-016d/D-023: cada explosão de uma ação multiestágio dilui leech pela
     // própria cardinalidade. A agregação pública continua sendo um único spell,
     // mas N_leech nunca é fundido entre primary e echo.
-    const stageIds = sortedUnique(main.map(h => h.multiStageStage).filter(Boolean));
+    // `sortedUnique` is numeric-only: applying it to `primary`/`echo`
+    // converts both labels to NaN and leaves every stage group empty.
+    const stageIds = Array.from(new Set(main.map(h => h.multiStageStage).filter(Boolean)));
     if (stageIds.length) {
       const groups = [];
       const primaryId = stageIds.includes('primary') ? 'primary' : stageIds[0];
@@ -1217,16 +1253,24 @@
     }
 
     const base = validateLeechBlockForN(block, context, k);
-    if (base.ok || !(base.usable)) return base;
+    // Outside the A0-vs-A1 comparison, preserve conservative ownership: a
+    // passing visible block must not claim a charm-kill that may belong to
+    // another component in the same turn. The single-target-AA resolver opts
+    // into the larger-N test because its area action is the only possible owner.
+    if ((base.ok || !base.usable) && !allowScoredVirtual) return base;
 
     // V12: componente de área pode ter hit principal invisível quando um charm/proc
     // entra antes do dano do hit que o ativou e mata o alvo. Nesse caso os hits
     // visíveis dizem que N_leech é maior que K_visível. Só aceitamos N>K se houver
     // charm/proc elegível explicando cada hit virtual. Ex.: S5 visível, mas leech
     // fecha N=6 e há Overpower Charm no mesmo timestamp => S5 S0×1.
-    const virtualEligible = canUseLeechAsHardReject(context) ? eligibleVirtualZeroCharmsForBlock(turn, block, context) : [];
+    const virtualEligible = (canUseLeechAsHardReject(context)
+      || (allowScoredVirtual && canScoreLeech(context)))
+      ? eligibleVirtualZeroCharmsForBlock(turn, block, context)
+      : [];
     if (canUseVirtualZeroForBlock(block) && virtualEligible.length) {
       const maxExtra = Math.min(2, virtualEligible.length);
+      let winner = null;
       for (let extra = 1; extra <= maxExtra; extra++) {
         const nMechanical = k + extra;
         const trial = validateLeechBlockForN(block, context, nMechanical);
@@ -1240,9 +1284,12 @@
           trial.virtualZeroSourceCharms = virtualEligible.slice(0, extra);
           trial.reason = 'leech_requires_virtual_zero_hit_explained_by_charm';
           trial.rule = null;
-          return trial;
+          // S-014e selects the greatest still-consistent N, including when
+          // visible N=k already passes.
+          winner = trial;
         }
       }
+      if (winner) return winner;
     }
 
     return base;
@@ -1455,10 +1502,23 @@
     for (const block of candidate.components) {
       block.action = chooseActionForComponent(block.comp, block.hits, actions);
       if (block.comp === 'spell' && !block.action) violations.push({ rule: 'M-011/N-003', reason: 'spell_without_concrete_cast', block });
-      if (block.comp === 'rune' && !block.action) violations.push({ rule: 'M-017/N-005', reason: 'rune_without_using', block });
-      if (block.comp === 'rune' && block.action) {
-        const runeBoundary = validateRuneUsingBoundary(block, block.action, actions);
-        if (!runeBoundary.ok) violations.push(Object.assign({ block }, runeBoundary));
+      if (block.comp === 'rune') {
+        const profile = block.action && block.action.profile;
+        const offensiveProfile = block.action
+          && !block.action.ignored
+          && profile
+          && profile.element !== 'unknown'
+          && (profile.topology === 'single' || profile.topology === 'area');
+        if (!offensiveProfile) {
+          violations.push({
+            rule: 'M-018/M-022/N-005',
+            reason: block.action ? 'rune_profile_not_offensive' : 'rune_without_eligible_using',
+            block,
+          });
+        } else {
+          const runeBoundary = validateRuneUsingBoundary(block, block.action, actions);
+          if (!runeBoundary.ok) violations.push(Object.assign({ block }, runeBoundary));
+        }
       }
       if (block.comp === 'grenade' && !block.action) violations.push({ rule: 'M-023/N-004', reason: 'grenade_without_cast', block });
       if (block.comp === 'grenade' && block.action) {
@@ -1894,10 +1954,17 @@
   }
 
 
-  function leechPartitionScore(blocks, context) {
+  function leechPartitionScore(blocks, context, turn) {
     const out = { usable: 0, clean: 0, bad: 0, details: [] };
     for (const block of blocks || []) {
-      const leech = validateLeechBlock(block, context);
+      // During this resolver's comparison, the charm-kill virtual belongs to
+      // the concrete area action, not to a positional AA block without action.
+      const leech = validateLeechBlock(
+        block,
+        context,
+        block && block.action ? turn : null,
+        !!(block && block.action && turn)
+      );
       const usable = leech && leech.fits ? leech.fits.filter(x => x.fit && x.fit.usable) : [];
       const bad = leech && leech.failed ? leech.failed : [];
       const ok = leech && leech.fits ? leech.fits.filter(x => x.fit && x.fit.usable && x.fit.ok) : [];
@@ -1981,6 +2048,7 @@
       savageBlow: false,
       onslaught: false,
       isPrey: false,
+      bountyTalisman: false,
       exposeWeakness: false,
       overkill: true,
       lifeLeech: 0,
@@ -2005,10 +2073,11 @@
       for (const h of main) { counts.set(+h.ts, (counts.get(+h.ts) || 0) + 1); lastSeq = Math.max(lastSeq == null ? -Infinity : lastSeq, +h.seq || 0); }
       impactTs = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
     }
-    const ts = Number.isFinite(+impactTs) ? +impactTs : (Number.isFinite(+(charm && charm.ts)) ? +charm.ts : v.ts);
+    const ts = Number.isFinite(impactTs) ? impactTs
+      : (charm && Number.isFinite(+charm.ts) ? +charm.ts : v.ts);
     v.id = 'virtual_zero_charm_' + (charm && charm.seq != null ? charm.seq : (index || 0)) + '_' + ((turn && turn.id) || 'turn');
-    v.seq = Number.isFinite(+lastSeq) ? (+lastSeq + 0.01 + (index || 0) / 100)
-      : (Number.isFinite(+(charm && charm.seq)) ? (+charm.seq + 0.01 + (index || 0) / 100) : v.seq);
+    v.seq = Number.isFinite(lastSeq) ? (lastSeq + 0.01 + (index || 0) / 100)
+      : (charm && Number.isFinite(+charm.seq) ? (+charm.seq + 0.01 + (index || 0) / 100) : v.seq);
     v.ts = ts;
     v.clock = tsToClock(ts);
     v.mob = charm && charm.mob ? charm.mob : v.mob;
@@ -2216,9 +2285,20 @@
     return hitMob === normalizeName(setup.vampiricMob) ? [+setup.vampiricBonus || 0] : [0];
   }
 
-  function leechEffectiveRateCandidates(setup, channel, block, hit) {
+  function leechEffectiveRateCandidates(setup, channel, block, hit, context) {
     const base = setup && channel === 'mana' ? (+setup.manaBase || 0) : (+setup.lifeBase || 0);
     const minorBonuses = leechMinorBonusOptionsForHit(setup, channel, hit);
+    // D-022a: bônus de perk OPCIONAL, inferido por sessão junto com base e minor charm
+    // (`setup.exposeWeaknessManaPerk`). Sem perk inferido — inclusive quando o setup é
+    // desconhecido — a hipótese neutra é "sem bônus". O gate de data permanece porque o
+    // perk só existe no regime pré-cutoff.
+    const exposeWeaknessManaBonus = channel === 'mana'
+      && hit && hit.exposeWeakness
+      && setup && setup.exposeWeaknessManaPerk === true
+      && context && context.sessionDateKey > 0
+      && context.sessionDateKey < CUTOFF_KEY
+      ? PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS
+      : 0;
     let spellBonusEntry = null;
     let spellBonuses = [0];
     if (block && block.comp === 'spell') {
@@ -2228,12 +2308,21 @@
     const out = [];
     for (const minorBonus of minorBonuses || [0]) {
       for (const spellBonus of spellBonuses || [0]) {
-        const rate = base + (+minorBonus || 0) + (+spellBonus || 0);
+        const bountyLifeMultiplier = channel === 'life'
+          && hit && hit.bountyTalisman
+          && setup && setup.bountyTalismanLifeConfidence !== 'unknown'
+          && setup.bountyTalismanLifeBonus > 0
+          ? 1 + setup.bountyTalismanLifeBonus
+          : 1;
+        const rate = (base + (+minorBonus || 0)) * bountyLifeMultiplier
+          + (+spellBonus || 0)
+          + exposeWeaknessManaBonus;
         if (rate > 0) out.push({
           rate: Math.round(rate * 1e6) / 1e6,
           minorBonus: +minorBonus || 0,
           minorMob: +minorBonus ? (channel === 'mana' ? setup.voidsMob : setup.vampiricMob) : null,
           spellBonus: +spellBonus || 0,
+          bountyLifeBonus: bountyLifeMultiplier > 1 ? setup.bountyTalismanLifeBonus : 0,
           spellBonusEntry,
         });
       }
@@ -2242,7 +2331,7 @@
     return out
       .sort((a, b) => a.rate - b.rate || a.spellBonus - b.spellBonus || a.minorBonus - b.minorBonus)
       .filter(x => {
-        const key = [x.rate, x.minorBonus, x.spellBonus].join('|');
+        const key = [x.rate, x.minorBonus, x.spellBonus, x.bountyLifeBonus || 0].join('|');
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -2253,7 +2342,7 @@
     if (!hit || !isMainHit(hit) || !(n >= 1)) return { usable: false, ok: true, reason: 'not_main_or_invalid_n' };
     const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
     if (!(observed > 0)) return { usable: false, ok: true, reason: 'no_' + channel + '_leech' };
-    const rates = leechEffectiveRateCandidates(setup, channel, block, hit);
+    const rates = leechEffectiveRateCandidates(setup, channel, block, hit, context);
     if (!rates.length) return { usable: false, ok: true, reason: channel + '_setup_unknown' };
     const matches = [];
     const expectations = [];
@@ -2561,7 +2650,8 @@
   // textual idêntica usada apenas para bloquear AA posicional fantasma.
   function hitStateKey(h) {
     return normalizeName(h.mob) + '|' + (h.exposeWeakness ? 1 : 0) + '|' + (h.isPrey ? 1 : 0) + '|' +
-      (h.realCrit ? 1 : 0) + '|' + (h.onslaught ? 1 : 0) + '|' + (h.lowBlow ? 1 : 0) + '|' + (h.savageBlow ? 1 : 0);
+      (h.bountyTalisman ? 1 : 0) + '|' + (h.realCrit ? 1 : 0) + '|' + (h.onslaught ? 1 : 0) + '|' +
+      (h.lowBlow ? 1 : 0) + '|' + (h.savageBlow ? 1 : 0);
   }
   function firstHitSharesExactOriginalWithRest(hits) {
     const first = hits[0];

@@ -30,6 +30,9 @@
     MANA_BASE_CANDIDATES,
     VAMPIRIC_BONUSES,
     VOIDS_BONUSES,
+    PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS,
+    bountyTalismanBonusForLevel,
+    bountyTalismanLevelsWithinBonus,
     leechValueToleranceForN,
     distinctMainMobCount,
     isMainHit,
@@ -40,6 +43,8 @@
     percentile,
     physicalOriginalInterval,
     elementalOriginalCandidates,
+    isTerraBurstAction,
+    isChainedPenanceAction,
   } = root.UnifiedFormulas;
 
   const {
@@ -57,13 +62,21 @@
     if (!(damage > 0) || !(effLeech > 0)) return null;
     return Math.ceil(damage * effLeech * areaFactor(n));
   }
-  function leechDamageBasis(hit, context) {
+  function leechDamageBasis(hit, context, preserveUnknownBounty) {
     // Leech é calculado sobre o dano real antes de multiplicadores finais que
     // aumentam dano exibido sem aumentar leech: active prey/Bounty e utevo grav san.
     let dmg = +(hit && hit.dmg) || 0;
     if (!(dmg > 0)) return 0;
     let divisor = 1;
     if (hit && hit.isPrey) divisor *= 1.25;
+    if (hit && hit.bountyTalisman) {
+      const damage = context && context.bountyTalismanSetup && context.bountyTalismanSetup.damage;
+      if (!damage || damage.confidence === 'unknown' || !(damage.multiplier > 1)) {
+        if (!preserveUnknownBounty) return 0;
+      } else {
+        divisor *= damage.multiplier;
+      }
+    }
     divisor *= gravSanMultiplierAtTs(context, hit && hit.ts, hit);
     return divisor > 0 ? dmg / divisor : dmg;
   }
@@ -122,6 +135,25 @@
     };
   }
 
+  function unknownBountyTalismanAxis(source) {
+    return {
+      level: null,
+      bonus: null,
+      multiplier: null,
+      confidence: 'unknown',
+      source: source || 'unknown',
+      evidenceCount: 0,
+      contradictions: 0,
+    };
+  }
+
+  function unknownBountyTalismanSetup(source) {
+    return {
+      damage: unknownBountyTalismanAxis(source),
+      life: unknownBountyTalismanAxis(source),
+    };
+  }
+
   function leechSetupConfidence(setup) {
     const c = setup && setup.confidence;
     if (c === 'strong' || c === 'weak' || c === 'unknown') return c;
@@ -150,7 +182,13 @@
   }
 
   function cloneHitForGoldObservation(hit, channel, observed, n, source, context) {
-    const damage = leechDamageBasis(hit, context);
+    const bountyDamage = context && context.bountyTalismanSetup
+      && context.bountyTalismanSetup.damage;
+    const bountyDamageKnown = !hit.bountyTalisman
+      || (bountyDamage && bountyDamage.confidence !== 'unknown'
+        && bountyDamage.multiplier > 1);
+    if (!bountyDamageKnown) return null;
+    const damage = leechDamageBasis(hit, context, false);
     if (!(observed > 0) || !(damage > 0)) return null;
     if (isLeechChannelContaminated(channel, hit.ts, context)) return null;
     return {
@@ -161,6 +199,9 @@
       mob: normalizeName(hit.mob),
       n,
       isPrey: !!hit.isPrey,
+      bountyTalisman: !!hit.bountyTalisman,
+      bountyDamageNormalized: bountyDamageKnown,
+      exposeWeakness: !!hit.exposeWeakness,
       source,
       confidence: 'gold',
       ts: hit.ts,
@@ -191,6 +232,13 @@
     const profile = action && action.profile || {};
     const source = componentGoldSource(comp);
     if (!source) return null;
+    const eligibleVirtuals = root.UnifiedValidation
+      && root.UnifiedValidation.eligibleVirtualZeroCharmsForBlock
+      ? root.UnifiedValidation.eligibleVirtualZeroCharmsForBlock(turn, comp, context)
+      : [];
+    // S-014e/C-006: enquanto um charm-kill real pode aumentar a cardinalidade,
+    // a partição corrente não é independente o bastante para virar ouro.
+    if (main.some(hit => hit.bountyTalisman) && eligibleVirtuals.length) return null;
 
     if (comp.comp === 'arrow') {
       if (context && context.vocation === 'paladin') return null;
@@ -340,13 +388,56 @@
   // Como scoreGoldBase, mas um único mob (`bonusMob`) usa `base + bonusRate` em vez de
   // `base` puro. Usado pra agregar, num único score de sessão, um candidato de base
   // testado JUNTO com o minor charm que o acompanha (ver inferLeechSetupJointBaseAndCharm).
-  function scoreGoldBaseWithMobException(observations, channel, base, bonusMob, bonusRate) {
+  function goldObservationDamage(o, options) {
+    const damage = +(o && o.damage) || 0;
+    if (!(damage > 0)) return 0;
+    if (o && o.bountyTalisman && !o.bountyDamageNormalized) return 0;
+    return damage;
+  }
+
+  function goldObservationRate(o, channel, base, bonusMob, bonusRate, options) {
+    let rate = base + ((bonusMob && o.mob === bonusMob) ? bonusRate : 0);
+    if (channel === 'life' && o.bountyTalisman) {
+      const lifeBonus = options && options.bountyLifeBonus;
+      if (!(lifeBonus >= 0)) return 0;
+      rate *= 1 + lifeBonus;
+    }
+    if (channel === 'mana'
+      && o.exposeWeakness
+      && options && options.exposeWeaknessManaPerk
+      && options.context
+      && options.context.sessionDateKey > 0
+      && options.context.sessionDateKey < CUTOFF_KEY) {
+      rate += PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS;
+    }
+    return rate;
+  }
+
+  // D-022a: o bônus de Mana Leech em hits com Expose Weakness vem de um perk OPCIONAL,
+  // disponível apenas no regime pré-cutoff. Ele não é propriedade da data: existe em
+  // sessões cujo personagem pegou o perk e não existe nas demais. Por isso a busca
+  // conjunta testa as duas hipóteses e deixa o mesmo comparador de sempre decidir, do
+  // mesmo jeito que já decide base e minor charm — sem limiar próprio.
+  //
+  // A hipótese neutra é "sem perk": leech observado pode ser truncado para baixo, nunca
+  // para cima, então só "observado ACIMA do esperado pela base" é prova positiva do
+  // bônus. Empate exato mantém o perk desligado.
+  function exposeWeaknessManaPerkHypotheses(cfg, options) {
+    if (!cfg || cfg.channel !== 'mana') return [false];
+    const dateKey = options && options.context ? options.context.sessionDateKey : 0;
+    if (!(dateKey > 0) || dateKey >= CUTOFF_KEY) return [false];
+    return [false, true];
+  }
+
+  function scoreGoldBaseWithMobException(observations, channel, base, bonusMob, bonusRate, options) {
     let ok = 0, exact = 0, high = 0, low = 0;
     const turns = new Set(), mobs = new Set(), highMobs = new Set(), lowMobs = new Set(), examples = [], contradictions = [];
     for (const o of observations || []) {
       if (!o || o.channel !== channel || !(o.observed > 0) || !(o.damage > 0) || !(o.n >= 1)) continue;
-      const rate = (bonusMob && o.mob === bonusMob) ? base + bonusRate : base;
-      const expected = expectedLeech(o.damage, rate, o.n);
+      const damage = goldObservationDamage(o, options);
+      const rate = goldObservationRate(o, channel, base, bonusMob, bonusRate, options);
+      if (!(damage > 0) || !(rate > 0)) continue;
+      const expected = expectedLeech(damage, rate, o.n);
       if (expected == null) continue;
       const delta = o.observed - expected;
       const tolerance = leechValueToleranceForN(o.n);
@@ -355,11 +446,11 @@
       if (Math.abs(delta) <= tolerance) {
         ok++;
         if (delta === 0) exact++;
-        if (examples.length < 8) examples.push({ mob: o.mob, ts: o.ts, observed: o.observed, expected, n: o.n, damage: o.damage, delta });
+        if (examples.length < 8) examples.push({ mob: o.mob, ts: o.ts, observed: o.observed, expected, n: o.n, damage, delta });
       } else if (delta > 0) {
         high++;
         if (o.mob) highMobs.add(o.mob);
-        if (contradictions.length < 8) contradictions.push({ mob: o.mob, ts: o.ts, observed: o.observed, expected, n: o.n, damage: o.damage, delta });
+        if (contradictions.length < 8) contradictions.push({ mob: o.mob, ts: o.ts, observed: o.observed, expected, n: o.n, damage, delta });
       } else {
         // capped-low: sempre consistente, nunca contradição (D-025/S-014e/C-006).
         low++;
@@ -419,15 +510,22 @@
   // testa bônus D-021 restrita a essa lista, não mais a todo mob presente na sessão.
   function detectCharmCandidateMobsFromColocatedTurns(turns, context) {
     const perChannel = {
-      life: { key: 'lifeLeech', deltas: new Map(), turnSets: new Map() },
-      mana: { key: 'manaLeech', deltas: new Map(), turnSets: new Map() },
+      life: { key: 'lifeLeech', deltas: new Map(), turnSets: new Map(), bonusEstimates: new Map() },
+      mana: { key: 'manaLeech', deltas: new Map(), turnSets: new Map(), bonusEstimates: new Map() },
     };
     for (const turn of turns || []) {
       if (!turn || turn.status === 'unresolved') continue;
       for (const comp of turn.components || []) {
         if (!comp || comp.comp === 'unresolved') continue;
-        const hits = (comp.hits || []).filter(h => isMainHit(h) && !h.overkill && h.dmg > 0);
+        // Enquanto o nível de dano Bounty ainda é unknown, a razão leech/dano
+        // desse hit não é comparável aos demais mobs do componente.
+        const hits = (comp.hits || []).filter(h => isMainHit(h) && !h.overkill && h.dmg > 0 && !h.bountyTalisman);
         if (new Set(hits.map(h => normalizeName(h.mob))).size < 2) continue;
+        // D-023: a razão leech/dano de cada hit já vem diluída por areaFactor(N) do
+        // componente. Guardar esse N permite converter o delta em bônus por observação
+        // (`delta / areaFactor(N)`), com o N REAL de cada componente — um N fixo chega a
+        // mover a estimativa de um degrau da grade de D-021 para o vizinho.
+        const compMainHits = (comp.hits || []).filter(isMainHit).length;
         for (const channel of ['life', 'mana']) {
           const cfg = perChannel[channel];
           const byMob = new Map();
@@ -446,14 +544,18 @@
             for (const [otherMob, otherRatios] of byMob) if (otherMob !== mob) others.push(...otherRatios);
             if (!others.length) continue;
             const othersMedian = median(others);
-            if (!cfg.deltas.has(mob)) { cfg.deltas.set(mob, []); cfg.turnSets.set(mob, new Set()); }
+            if (!cfg.deltas.has(mob)) { cfg.deltas.set(mob, []); cfg.turnSets.set(mob, new Set()); cfg.bonusEstimates.set(mob, []); }
             for (const ratio of ratios) cfg.deltas.get(mob).push(ratio - othersMedian);
+            if (compMainHits >= 1) {
+              const af = areaFactor(compMainHits);
+              if (af > 0) for (const ratio of ratios) cfg.bonusEstimates.get(mob).push((ratio - othersMedian) / af);
+            }
             cfg.turnSets.get(mob).add(comp);
           }
         }
       }
     }
-    const out = { life: [], mana: [] };
+    const out = { life: [], mana: [], bonusEstimates: { life: {}, mana: {} } };
     for (const channel of ['life', 'mana']) {
       const cfg = perChannel[channel];
       const candidates = [];
@@ -464,11 +566,39 @@
         const delta = median(deltas);
         if (!(delta >= CHARM_DETECTOR_MIN_DELTA)) continue;
         candidates.push({ mob, delta, n: deltas.length });
+        const estimates = cfg.bonusEstimates.get(mob) || [];
+        if (estimates.length) out.bonusEstimates[channel][mob] = median(estimates);
       }
       candidates.sort((a, b) => b.delta - a.delta);
       out[channel] = candidates.map(c => c.mob);
     }
     return out;
+  }
+
+  // D-021/D-021a: um candidato aprovado no gate turn-local pode não ter NENHUMA
+  // observação-ouro própria na sessão (turnos-ouro são muito mais escassos que
+  // componentes co-localizados). Nesse caso a pontuação por observação é cega — todo
+  // bônus da grade empata em zero — e o nível precisa vir do próprio delta turn-local,
+  // que já é o canal normativo que provou o candidato.
+  //
+  // A guarda contra chute usa a própria grade, sem constante nova: a fronteira de decisão
+  // entre dois valores vizinhos fica no meio deles, então só aceitamos a estimativa quando
+  // ela está a no máximo METADE da distância até essa fronteira (|g1-g2|/4). Fora disso o
+  // nível fica indeterminado e nenhum charm é fixado.
+  function snapMinorCharmBonusToGrid(estimate, bonuses) {
+    const grid = (bonuses || []).filter(b => b > 0).sort((a, b) => a - b);
+    if (!grid.length || !(estimate > 0)) return { bonus: 0, reason: 'no_grid_or_estimate' };
+    let nearest = grid[0];
+    for (const g of grid) if (Math.abs(g - estimate) < Math.abs(nearest - estimate)) nearest = g;
+    const others = grid.filter(g => g !== nearest);
+    if (!others.length) return { bonus: nearest, reason: 'single_grid_value' };
+    let second = others[0];
+    for (const g of others) if (Math.abs(g - estimate) < Math.abs(second - estimate)) second = g;
+    const tolerance = Math.abs(nearest - second) / 4;
+    if (Math.abs(estimate - nearest) > tolerance) {
+      return { bonus: 0, reason: 'turn_local_bonus_level_undetermined' };
+    }
+    return { bonus: nearest, reason: 'turn_local_delta' };
   }
 
   // Base do personagem (D-020) e minor charm por-mob (D-021) são inferidos JUNTOS: para
@@ -482,27 +612,26 @@
   // (`detectCharmCandidateMobsFromColocatedTurns`), não de toda sessão cega a mob — isso
   // evita que a busca convirja num mob errado por coincidência de arredondamento quando
   // dois mobs têm volume de evidência parecido (ver docs/CLASSIFICATION_RULES.md, D-021).
-  function inferLeechSetupJointBaseAndCharm(goldObservations, charmCandidates) {
-    const observations = goldObservations || [];
-    const out = { life: null, mana: null };
-    const minorResult = {};
-    const byChannel = [
-      { channel: 'life', bases: LIFE_BASE_CANDIDATES, bonuses: VAMPIRIC_BONUSES, mobKey: 'vampiricMob', bonusKey: 'vampiricBonus', votesKey: 'vampiricVotes' },
-      { channel: 'mana', bases: MANA_BASE_CANDIDATES, bonuses: VOIDS_BONUSES, mobKey: 'voidsMob', bonusKey: 'voidsBonus', votesKey: 'voidsVotes' },
-    ];
-    for (const cfg of byChannel) {
-      const candidateMobs = (charmCandidates && charmCandidates[cfg.channel]) || [];
-      const observedMobs = new Set(observations.filter(o => o.channel === cfg.channel && o.mob).map(o => o.mob));
-      const mobs = candidateMobs.filter(m => observedMobs.has(m));
-      const rows = [];
+  function rankGoldChannelCandidates(observations, cfg, charmCandidates, options) {
+    const candidateMobs = (charmCandidates && charmCandidates[cfg.channel]) || [];
+    const observedMobs = new Set(observations.filter(o => o.channel === cfg.channel && o.mob).map(o => o.mob));
+    const mobs = candidateMobs.filter(m => observedMobs.has(m));
+    // D-021a: candidato aprovado no gate turn-local que não possui observação-ouro própria
+    // NÃO é descartado — a pontuação por observação não consegue vê-lo (todo bônus empata em
+    // zero), então o nível vem do delta turn-local mais abaixo. Sem isto, um charm real
+    // ficava invisível só porque a sessão produziu poucos turnos-ouro.
+    const unobservedCandidates = candidateMobs.filter(m => !observedMobs.has(m));
+    const rows = [];
+    for (const perk of exposeWeaknessManaPerkHypotheses(cfg, options)) {
+      const perkOptions = Object.assign({}, options, { exposeWeaknessManaPerk: perk });
       for (const B of cfg.bases) {
         let bestPick = null;
         for (const mob of mobs) {
           const scoped = observations.filter(o => o.channel === cfg.channel && o.mob === mob);
-          const baseScore = scoreGoldBase(scoped, cfg.channel, B);
+          const baseScore = scoreGoldBaseWithMobException(scoped, cfg.channel, B, null, 0, perkOptions);
           for (const bonus of cfg.bonuses || []) {
             if (!(bonus > 0)) continue;
-            const score = scoreGoldBase(scoped, cfg.channel, B + bonus);
+            const score = scoreGoldBaseWithMobException(scoped, cfg.channel, B, mob, bonus, perkOptions);
             const candidate = {
               mob,
               bonus,
@@ -519,24 +648,375 @@
             }
           }
         }
-        const gatePassed = !!(bestPick && bestPick.baseHigh >= 4 && bestPick.fixedHigh >= 4 && bestPick.improvement >= 4);
-        const aggregate = gatePassed
-          ? scoreGoldBaseWithMobException(observations, cfg.channel, B, bestPick.mob, bestPick.bonus)
-          : scoreGoldBaseWithMobException(observations, cfg.channel, B, null, 0);
+        const aggregate = bestPick
+          ? scoreGoldBaseWithMobException(observations, cfg.channel, B, bestPick.mob, bestPick.bonus, perkOptions)
+          : scoreGoldBaseWithMobException(observations, cfg.channel, B, null, 0, perkOptions);
+        aggregate.exposeWeaknessManaPerk = perk;
         rows.push(aggregate);
       }
-      rows.sort(compareGoldBaseScores);
-      const best = rows[0] || null;
-      if (!best || best.ok < 3) {
-        out[cfg.channel] = { channel: cfg.channel, base: 0, confidence: 'unknown', observed: best ? best.observed : 0, ranked: rows.slice(0, 8), contradictions: best ? best.high : 0 };
-      } else {
-        const strong = best.ok >= 30 && best.independentTurns >= 20;
-        out[cfg.channel] = Object.assign({}, best, { confidence: strong ? 'strong' : 'weak', ranked: rows.slice(0, 8), contradictions: best.high });
-        if (best.candidateMob) {
-          minorResult[cfg.mobKey] = best.candidateMob;
-          minorResult[cfg.bonusKey] = best.candidateBonus;
-          minorResult[cfg.votesKey] = best.ok;
+    }
+    // Empate exato entre as duas hipóteses de perk mantém a neutra (sem perk).
+    rows.sort((a, b) => compareGoldBaseScores(a, b)
+      || (Number(!!a.exposeWeaknessManaPerk) - Number(!!b.exposeWeaknessManaPerk)));
+    const best = rows[0] || null;
+    if (!best || best.ok < 3) {
+      return {
+        channel: cfg.channel,
+        base: 0,
+        confidence: 'unknown',
+        observed: best ? best.observed : 0,
+        ranked: rows.slice(0, 8),
+        contradictions: best ? best.high : 0,
+        exposeWeaknessManaPerk: false,
+      };
+    }
+    const strong = best.ok >= 30 && best.independentTurns >= 20;
+    const result = Object.assign({}, best, {
+      confidence: strong ? 'strong' : 'weak',
+      ranked: rows.slice(0, 8),
+      contradictions: best.high,
+    });
+    // Só entra aqui quando a pontuação por observação não elegeu charm neste canal. Um
+    // candidato COM observação-ouro sempre tem precedência: ele foi medido contra a sessão,
+    // e o delta turn-local é apenas estimativa agregada.
+    if (!result.candidateMob && unobservedCandidates.length) {
+      const estimates = (charmCandidates && charmCandidates.bonusEstimates
+        && charmCandidates.bonusEstimates[cfg.channel]) || {};
+      // Os candidatos vêm ordenados por delta decrescente pelo detector; o primeiro com
+      // nível determinável vence. Ambiguidade não vira chute: fica registrada como motivo.
+      for (const mob of unobservedCandidates) {
+        const snapped = snapMinorCharmBonusToGrid(estimates[mob], cfg.bonuses);
+        if (snapped.bonus > 0) {
+          result.candidateMob = mob;
+          result.candidateBonus = snapped.bonus;
+          result.candidateSource = snapped.reason;
+          result.candidateBonusEstimate = estimates[mob];
+          break;
         }
+        result.minorCharmAbsenceReason = snapped.reason;
+        result.minorCharmAbsenceMob = mob;
+        result.minorCharmAbsenceEstimate = estimates[mob];
+      }
+    }
+    if (!result.candidateMob && !result.minorCharmAbsenceReason) {
+      result.minorCharmAbsenceReason = candidateMobs.length
+        ? 'no_charm_improved_gold_score'
+        : 'no_turn_local_candidate';
+    }
+    return result;
+  }
+
+  function maxBountyLevelWithinBonus(maxBonus) {
+    if (!(maxBonus >= bountyTalismanBonusForLevel(0))) return null;
+    if (maxBonus < bountyTalismanBonusForLevel(15)) {
+      return Math.max(0, Math.floor((maxBonus - 0.025 + 1e-12) / 0.005));
+    }
+    return 15 + Math.max(0, Math.floor((maxBonus - 0.1 + 1e-12) / 0.0025));
+  }
+
+  function minBountyLevelAtBonus(minBonus) {
+    if (!(minBonus > bountyTalismanBonusForLevel(0))) return 0;
+    if (minBonus <= bountyTalismanBonusForLevel(15)) {
+      return Math.min(15, Math.max(0, Math.ceil((minBonus - 0.025 - 1e-12) / 0.005)));
+    }
+    return 15 + Math.max(0, Math.ceil((minBonus - 0.1 - 1e-12) / 0.0025));
+  }
+
+  function addBountyLevelsInBonusInterval(target, minBonus, maxBonus) {
+    const first = minBountyLevelAtBonus(Math.max(0.025, minBonus));
+    const last = maxBountyLevelWithinBonus(maxBonus);
+    if (last == null || last < first) return;
+    for (let level = first; level <= last; level++) target.add(level);
+  }
+
+  function bountyLifeLevelCandidates(observations, baselineLife) {
+    const relevant = observations.filter(o => o.channel === 'life'
+      && o.bountyTalisman && !o.isPrey
+      && o.observed > 0 && o.damage > 0 && o.n >= 1);
+    const baselineBase = baselineLife && baselineLife.confidence !== 'unknown'
+      ? baselineLife.base
+      : 0;
+    const positiveRates = Array.from(new Set(VAMPIRIC_BONUSES
+      .map(minor => Math.round((baselineBase + minor) * 1e6) / 1e6)
+      .filter(rate => rate > 0)));
+    if (!relevant.length || !positiveRates.length) return [];
+    const levels = new Set();
+    for (const o of relevant) {
+      const damage = goldObservationDamage(o);
+      const tolerance = leechValueToleranceForN(o.n);
+      const lowExpected = Math.max(1, o.observed - tolerance);
+      const highExpected = o.observed + tolerance;
+      for (const rate of positiveRates) {
+        const scale = damage * rate * areaFactor(o.n);
+        if (!(scale > 0)) continue;
+        const minMultiplier = lowExpected > 1 ? (lowExpected - 1) / scale : 0;
+        const maxMultiplier = highExpected / scale;
+        addBountyLevelsInBonusInterval(
+          levels,
+          Math.max(0.025, minMultiplier - 1 + 1e-12),
+          maxMultiplier - 1,
+        );
+      }
+    }
+    return Array.from(levels).sort((a, b) => a - b);
+  }
+
+  function compareBountyCandidateEvidence(a, b) {
+    const sa = a.channel, sb = b.channel;
+    if (sa.high !== sb.high) return sa.high - sb.high;
+    if (sa.ok !== sb.ok) return sb.ok - sa.ok;
+    if (sa.exact !== sb.exact) return sb.exact - sa.exact;
+    if (sa.independentTurns !== sb.independentTurns) return sb.independentTurns - sa.independentTurns;
+    if (sa.mobs !== sb.mobs) return sb.mobs - sa.mobs;
+    if (sa.highMobs !== sb.highMobs) return sa.highMobs - sb.highMobs;
+    return 0;
+  }
+
+  // D-010g/C-006: fallback estritamente posterior ao witness de charm. As
+  // fronteiras, a ação e N já vêm congelados de uma passada que não usa este
+  // candidato; cada nível apenas reverte o dano dos mesmos hits.
+  function inferBountyDamageFromFrozenComponents(turns, context) {
+    const components = [];
+    let maxObservedMultiplier = 0;
+    for (const turn of turns || []) {
+      if (!turn || turn.status !== 'resolved' || turn.partialEdge) continue;
+      for (const comp of turn.components || []) {
+        const action = comp && comp.action;
+        const profile = action && action.profile || {};
+        const element = profile.element;
+        const deterministic = comp && comp.deterministic || {};
+        const main = (comp && comp.hits || []).filter(hit =>
+          isMainHit(hit) && !hit.virtual && !hit.overkill
+          && !hit.isPrey && !hit.elementalAmplification
+        );
+        if (!action || !element || element === 'unknown' || element === 'physical') continue;
+        if (isTerraBurstAction(action) || isChainedPenanceAction(action)) continue;
+        if (!deterministic.ok || deterministic.unknown > 0) continue;
+        const marked = main.filter(hit => hit.bountyTalisman);
+        const control = main.filter(hit => !hit.bountyTalisman);
+        if (!marked.length || !control.length) continue;
+        const maxMarked = Math.max(...marked.map(hit => hit.dmg));
+        const minControl = Math.min(...control.map(hit => hit.dmg));
+        if (!(minControl > 0)) continue;
+        maxObservedMultiplier = Math.max(
+          maxObservedMultiplier,
+          (maxMarked + 1) / minControl,
+        );
+        components.push({
+          turn: turn.clock || turn.ts,
+          comp,
+          main,
+          element,
+          action: profile.label || action.text || action.name || comp.comp,
+        });
+      }
+    }
+    if (!components.length || !(maxObservedMultiplier > 1)) {
+      return unknownBountyTalismanAxis('no_frozen_deterministic_bounty_component');
+    }
+    const levels = bountyTalismanLevelsWithinBonus(maxObservedMultiplier - 1);
+    const previous = context && context.bountyTalismanSetup;
+    const ranked = [];
+    try {
+      for (const level of levels) {
+        const bonus = bountyTalismanBonusForLevel(level);
+        if (context) {
+          context.bountyTalismanSetup = {
+            damage: {
+              level,
+              bonus,
+              multiplier: 1 + bonus,
+              confidence: 'weak',
+              source: 'frozen_component_candidate',
+            },
+            life: previous && previous.life
+              || unknownBountyTalismanAxis('frozen_component_candidate'),
+          };
+          if (context._revCache) context._revCache.clear();
+        }
+        const row = {
+          level,
+          bonus,
+          multiplier: 1 + bonus,
+          fits: 0,
+          contradictions: 0,
+          examples: [],
+        };
+        for (const evidence of components) {
+          const candidates = evidence.main.map(hit =>
+            elementalOriginalCandidates(hit, evidence.element, context)
+          );
+          if (candidates.some(result =>
+            !result || !result.known || !result.originals || !result.originals.length
+          )) continue;
+          let common = new Set(candidates[0].originals);
+          for (const result of candidates.slice(1)) {
+            common = new Set(result.originals.filter(original => common.has(original)));
+          }
+          if (common.size) row.fits++;
+          else row.contradictions++;
+          if (row.examples.length < 8) {
+            row.examples.push({
+              turn: evidence.turn,
+              action: evidence.action,
+              markedDamage: evidence.main.filter(hit => hit.bountyTalisman).map(hit => hit.dmg),
+              controlDamage: evidence.main.filter(hit => !hit.bountyTalisman).map(hit => hit.dmg),
+              commonOriginals: Array.from(common).slice(0, 12),
+            });
+          }
+        }
+        ranked.push(row);
+      }
+    } finally {
+      if (context) {
+        context.bountyTalismanSetup = previous;
+        if (context._revCache) context._revCache.clear();
+      }
+    }
+    ranked.sort((a, b) =>
+      a.contradictions - b.contradictions || b.fits - a.fits || a.level - b.level
+    );
+    const best = ranked[0] || null;
+    const tied = best
+      ? ranked.filter(candidate =>
+        candidate.contradictions === best.contradictions
+        && candidate.fits === best.fits
+      )
+      : [];
+    if (!best || best.fits === 0 || tied.length !== 1) {
+      return Object.assign(
+        unknownBountyTalismanAxis('frozen_component_bounty_tie_or_insufficient_evidence'),
+        {
+          evidenceCount: components.length,
+          contradictions: best ? best.contradictions : 0,
+          ranked: ranked.slice(0, 12),
+        },
+      );
+    }
+    return {
+      level: best.level,
+      bonus: best.bonus,
+      multiplier: best.multiplier,
+      confidence: 'strong',
+      source: 'frozen_deterministic_component_original',
+      evidenceCount: best.fits,
+      contradictions: best.contradictions,
+      examples: best.examples,
+      ranked: ranked.slice(0, 12),
+    };
+  }
+
+  function inferBountyLifeAxis(levels, observations, cfg, charmCandidates, context) {
+    const ranked = levels.map(level => {
+      const bonus = bountyTalismanBonusForLevel(level);
+      const options = { bountyLifeBonus: bonus, context };
+      const channel = rankGoldChannelCandidates(
+        observations,
+        cfg,
+        charmCandidates,
+        options,
+      );
+      return {
+        level,
+        bonus,
+        multiplier: 1 + bonus,
+        channel,
+      };
+    }).sort((a, b) => compareBountyCandidateEvidence(a, b) || a.level - b.level);
+    const channelBest = ranked[0] || null;
+    const contenders = channelBest
+      ? ranked.filter(candidate => compareBountyCandidateEvidence(channelBest, candidate) === 0)
+      : [];
+    const best = contenders[0] || channelBest;
+    const tied = best
+      ? contenders.filter(candidate => compareBountyCandidateEvidence(best, candidate) === 0)
+      : [];
+    if (!best || best.channel.ok < 3 || tied.length !== 1) {
+      return Object.assign(unknownBountyTalismanAxis(
+        !levels.length ? 'no_finite_bounty_candidate_interval' : 'bounty_candidate_tie_or_insufficient_evidence',
+      ), {
+        evidenceCount: observations.filter(o => o.channel === cfg.channel && o.bountyTalisman && !o.isPrey).length,
+        contradictions: best ? best.channel.high : 0,
+        ranked: ranked.slice(0, 8).map(candidate => ({
+          level: candidate.level,
+          bonus: candidate.bonus,
+          ok: candidate.channel.ok,
+          exact: candidate.channel.exact,
+          contradictions: candidate.channel.high,
+          base: candidate.channel.base,
+          candidateMob: candidate.channel.candidateMob || null,
+          candidateBonus: candidate.channel.candidateBonus || 0,
+        })),
+      });
+    }
+    return {
+      level: best.level,
+      bonus: best.bonus,
+      multiplier: best.multiplier,
+      confidence: best.channel.confidence,
+      source: 'gold_life_known_n_official_grid',
+      evidenceCount: observations.filter(o => o.channel === cfg.channel && o.bountyTalisman && !o.isPrey).length,
+      contradictions: best.channel.high,
+      channel: best.channel,
+      ranked: ranked.slice(0, 8).map(candidate => ({
+        level: candidate.level,
+        bonus: candidate.bonus,
+        ok: candidate.channel.ok,
+        exact: candidate.channel.exact,
+        contradictions: candidate.channel.high,
+        base: candidate.channel.base,
+        candidateMob: candidate.channel.candidateMob || null,
+        candidateBonus: candidate.channel.candidateBonus || 0,
+      })),
+    };
+  }
+
+  function inferLeechSetupJointBaseAndCharm(goldObservations, charmCandidates, context) {
+    const observations = goldObservations || [];
+    const minorResult = {};
+    const lifeCfg = { channel: 'life', bases: LIFE_BASE_CANDIDATES, bonuses: VAMPIRIC_BONUSES, mobKey: 'vampiricMob', bonusKey: 'vampiricBonus', votesKey: 'vampiricVotes' };
+    const manaCfg = { channel: 'mana', bases: MANA_BASE_CANDIDATES, bonuses: VOIDS_BONUSES, mobKey: 'voidsMob', bonusKey: 'voidsBonus', votesKey: 'voidsVotes' };
+    const damageAxis = context && context.bountyTalismanSetup
+      && context.bountyTalismanSetup.damage
+      || unknownBountyTalismanAxis('bounty_damage_axis_not_inferred_before_leech');
+    const damageKnown = damageAxis.confidence !== 'unknown';
+    const mana = rankGoldChannelCandidates(
+      damageKnown ? observations : observations.filter(o => !o.bountyTalisman),
+      manaCfg,
+      charmCandidates,
+      { context },
+    );
+    const lifeBaseline = rankGoldChannelCandidates(
+      observations.filter(o => !o.bountyTalisman),
+      lifeCfg,
+      charmCandidates,
+    );
+    const lifeAxis = damageKnown
+      ? inferBountyLifeAxis(
+        bountyLifeLevelCandidates(observations, lifeBaseline),
+        observations,
+        lifeCfg,
+        charmCandidates,
+        context,
+      )
+      : unknownBountyTalismanAxis('bounty_damage_axis_unknown');
+    const life = lifeAxis.confidence !== 'unknown'
+      ? lifeAxis.channel
+      : lifeBaseline;
+    const out = { life, mana };
+    for (const cfg of [lifeCfg, manaCfg]) {
+      const best = out[cfg.channel];
+      if (best && best.candidateMob) {
+        minorResult[cfg.mobKey] = best.candidateMob;
+        minorResult[cfg.bonusKey] = best.candidateBonus;
+        minorResult[cfg.votesKey] = best.ok;
+        if (best.candidateSource) minorResult[cfg.channel + 'CharmSource'] = best.candidateSource;
+      } else if (best && best.minorCharmAbsenceReason) {
+        // Ausência de charm com motivo: distingue "não houve candidato aprovado no gate"
+        // de "candidato aprovado, mas sem evidência para fixar o nível". Sem isso, os dois
+        // casos ficam indistinguíveis no setup e a próxima investigação repete a confusão.
+        minorResult[cfg.channel + 'CharmAbsenceReason'] = best.minorCharmAbsenceReason;
+        if (best.minorCharmAbsenceMob) minorResult[cfg.channel + 'CharmAbsenceMob'] = best.minorCharmAbsenceMob;
       }
     }
     if (minorResult.vampiricMob && minorResult.voidsMob && normalizeName(minorResult.vampiricMob) === normalizeName(minorResult.voidsMob)) {
@@ -554,15 +1034,20 @@
     return {
       lifeBase: out.life && out.life.base || 0,
       manaBase: out.mana && out.mana.base || 0,
+      exposeWeaknessManaPerk: !!(out.mana && out.mana.exposeWeaknessManaPerk),
       life: out.life,
       mana: out.mana,
       minor: minorResult,
+      bountyTalismanSetup: {
+        damage: Object.assign({}, damageAxis),
+        life: Object.assign({}, lifeAxis, { channel: undefined }),
+      },
     };
   }
 
-  function inferLeechSetupFromGoldObservations(goldObservations, context, charmCandidates) {
+  function inferLeechSetupFromGoldObservations(goldObservations, context, charmCandidates, turns) {
     const observations = goldObservations || [];
-    const joint = inferLeechSetupJointBaseAndCharm(observations, charmCandidates);
+    const joint = inferLeechSetupJointBaseAndCharm(observations, charmCandidates, context, turns);
     const channelConf = [joint.life && joint.life.confidence, joint.mana && joint.mana.confidence];
     const confidence = channelConf.includes('strong') ? 'strong' : (channelConf.includes('weak') ? 'weak' : 'unknown');
     if (confidence === 'unknown') {
@@ -573,11 +1058,13 @@
         multiNDiagnostic: diagnostic,
         lifeVote: joint.life,
         manaVote: joint.mana,
+        bountyTalismanSetup: joint.bountyTalismanSetup,
       });
     }
     const setup = {
       lifeBase: joint.lifeBase,
       manaBase: joint.manaBase,
+      exposeWeaknessManaPerk: joint.exposeWeaknessManaPerk === true,
       confidence,
       inferred: true,
       source: 'gold_observations_known_n_joint',
@@ -585,6 +1072,9 @@
       contradictions: ((joint.life && joint.life.high) || 0) + ((joint.mana && joint.mana.high) || 0),
       lifeVote: joint.life,
       manaVote: joint.mana,
+      bountyTalismanSetup: joint.bountyTalismanSetup,
+      bountyTalismanLifeBonus: joint.bountyTalismanSetup.life.bonus,
+      bountyTalismanLifeConfidence: joint.bountyTalismanSetup.life.confidence,
     };
     Object.assign(setup, joint.minor);
     return setup;
@@ -1153,7 +1643,7 @@
   // Ethereal Barrage) como prova de BM.
   function physicalRpPierceProbeSubset(block) {
     if (!block || block.comp !== 'arrow' || !block.hits) return null;
-    const clean = block.hits.filter(h => h && !h.overkill && !h.realCrit && !h.onslaught && !h.lowBlow && !h.savageBlow && !h.isPrey && !h.exposeWeakness);
+    const clean = block.hits.filter(h => h && !h.overkill && !h.realCrit && !h.onslaught && !h.lowBlow && !h.savageBlow && !h.isPrey && !h.bountyTalisman && !h.exposeWeakness);
     if (clean.length < 2) return null;
     if (distinctMainMobCount(clean) < 2) return null;
     return { comp: 'arrow', hits: clean };
@@ -1343,6 +1833,8 @@
     leechDamageBasis,
     inferLeechSetup,
     unknownLeechSetup,
+    unknownBountyTalismanAxis,
+    unknownBountyTalismanSetup,
     leechSetupConfidence,
     canUseLeechAsHardReject,
     canScoreLeech,
@@ -1355,10 +1847,12 @@
     scoreGoldBase,
     compareGoldBaseScores,
     scoreGoldBaseWithMobException,
+    exposeWeaknessManaPerkHypotheses,
     isMobEligibleForMinorCharm,
     detectCharmCandidateMobsFromColocatedTurns,
     inferLeechSetupJointBaseAndCharm,
     inferLeechSetupFromGoldObservations,
+    inferBountyDamageFromFrozenComponents,
     inferLeechSetupFallback,
     collectTrustedLeechObservationsFromRuneUses,
     isTrustedLeechVoteCredible,

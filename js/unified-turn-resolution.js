@@ -49,7 +49,9 @@
     validateElementalBlock,
     validatePhysicalBlock,
     validateCritHomogeneity,
+    validateLeechBlockForN,
     validateLeechBlockOfficialRates,
+    observedLeechAcceptsN,
     possibleShapes,
     segmentations,
     guidedCutPositions,
@@ -107,12 +109,11 @@
     const action = spell || rune;
     if (!action) return null;
     const actionComp = spell ? 'spell' : 'rune';
+    const actionProfile = action && action.profile || {};
+    const concreteAreaActionCanExplainTurn = actionProfile.topology === 'area'
+      && !isSingleTargetAction(actionComp, action);
     const hits = turn.hits || [];
     if (!hits.length) return null;
-    const profile = action && action.profile || {};
-    const isMageDruid = context.vocation === 'sorcerer' || context.vocation === 'druid';
-    const concreteAreaActionCanExplainTurn = profile.topology === 'area' && !isSingleTargetAction(actionComp, action);
-
     // Mecânica rara: charm/proc entra antes do dano do hit que o ativou. Se a
     // ação concreta existe, mas o dano principal dela é zero e não aparece como
     // linha normal. Representamos como componente virtual de dano 0.
@@ -120,10 +121,13 @@
       const zero = detectCharmKilledZeroAction(turn, action, facts);
       if (zero && action.ts >= hits[0].ts && action.ts <= hits[0].ts + 1) {
         const virtual = makeVirtualZeroHit(turn, action, zero);
-        if (isMageDruid && concreteAreaActionCanExplainTurn) {
+        // H-005/V-018: um unico hit visivel seguido do alvo virtual morto pelo
+        // charm nao prova AA quando a acao concreta de area pode explicar os
+        // dois alvos. A mesma politica vale para as quatro vocacoes nao-RP.
+        if (concreteAreaActionCanExplainTurn) {
           return finalizeManualTurn(turn, [
-            { comp: actionComp, action, hits: [hits[0], virtual], reason: 'h005_mage_druid_area_action_without_positive_aa_evidence' },
-          ], 'h005_mage_druid_area_action_without_positive_aa_evidence', context);
+            { comp: actionComp, action, hits: [hits[0], virtual], reason: 'single_target_aa_all_action_without_positive_aa_evidence' },
+          ], 'single_target_aa_all_action_without_positive_aa_evidence', context);
         }
         return finalizeManualTurn(turn, [
           { comp: 'arrow', hits: [hits[0]], reason: 'ek_single_visible_aa_before_zero_damage_spell' },
@@ -141,8 +145,84 @@
       { comp: 'arrow', hits: [hits[0]] },
       { comp: actionComp, hits: hits.slice(1), action },
     ];
-    const allScore = leechPartitionScore(allSpell, context);
-    const splitScore = leechPartitionScore(split, context);
+    // M-017/M-018a/A-005/S-014e: uma linha Using observada ENTRE o único AA
+    // (visível ou virtual por charm-kill real) e todo o sufixo cria a borda
+    // candidata imediatamente antes da runa. Para confirmá-la, o sufixo ainda
+    // precisa ser um bloco determinístico compatível e homogêneo em crit-state.
+    // A propriedade vem da ordem observada; a cardinalidade plana não pode
+    // mover um virtual através do Using.
+    const runeSeq = rune && Number.isFinite(+rune.seq) ? +rune.seq : null;
+    const runeUsingVisibleBefore = runeSeq === null
+      ? []
+      : hits.filter(hit => Number.isFinite(+hit.seq) && +hit.seq < runeSeq);
+    const runeUsingVisibleAfter = runeSeq === null
+      ? []
+      : hits.filter(hit => Number.isFinite(+hit.seq) && +hit.seq > runeSeq);
+    const runeUsingAllVisibleOrdered = runeSeq !== null
+      && runeUsingVisibleBefore.length + runeUsingVisibleAfter.length === hits.length
+      && runeUsingVisibleAfter.length > 0;
+    const runeUsingActionBlock = {
+      comp: actionComp,
+      hits: runeUsingVisibleAfter,
+      action,
+    };
+    const runeUsingVirtualBefore = runeUsingAllVisibleOrdered && runeUsingVisibleBefore.length === 0
+      ? eligibleVirtualZeroCharmsForBlock(turn, runeUsingActionBlock, context)
+        .filter(charm => Number.isFinite(+charm.seq) && +charm.seq < runeSeq)
+      : [];
+    const runeUsingHasVisibleAa = runeUsingAllVisibleOrdered
+      && runeUsingVisibleBefore.length === 1;
+    const runeUsingHasVirtualAa = runeUsingAllVisibleOrdered
+      && runeUsingVisibleBefore.length === 0
+      && runeUsingVirtualBefore.length === 1;
+    const runeUsingBetweenAaAndSuffix = runeUsingHasVisibleAa || runeUsingHasVirtualAa;
+    const runeUsingBoundaryCandidate = runeUsingHasVirtualAa
+      ? [
+        {
+          comp: 'arrow',
+          hits: [makeVirtualZeroHitForCharm(turn, null, runeUsingVirtualBefore[0], 0, {
+            comp: 'arrow',
+            hits: [],
+          })],
+        },
+        runeUsingActionBlock,
+      ]
+      : split;
+    const runeUsingSuffixDeterministic = runeUsingBetweenAaAndSuffix
+      ? validateElementalBlock(runeUsingBoundaryCandidate[1], actionProfile.element || 'unknown', context)
+      : null;
+    const runeUsingSuffixCrit = runeUsingBetweenAaAndSuffix
+      ? validateCritHomogeneity(runeUsingBoundaryCandidate[1])
+      : null;
+    // V-015d: dispersão entre mobs distintos é evidência ausente neste
+    // resolvedor, não incompatibilidade da runa concreta. Mantemos como veto
+    // apenas as contradições determinísticas reais; o hard-veto canônico
+    // abaixo continua conferindo same-mob/same-state e crit-state.
+    const runeUsingSuffixCrossMobEvidenceAbsent = runeUsingSuffixDeterministic
+      && (runeUsingSuffixDeterministic.reason === 'elemental_cluster_span_too_wide'
+        || runeUsingSuffixDeterministic.reason === 'elemental_intersection_empty');
+    const runeUsingSuffixCompatible = runeUsingSuffixDeterministic
+      && (runeUsingSuffixDeterministic.ok || runeUsingSuffixCrossMobEvidenceAbsent);
+    const runeUsingBoundaryConfirmed = runeUsingBetweenAaAndSuffix
+      && runeUsingSuffixCompatible
+      && runeUsingSuffixCrit && runeUsingSuffixCrit.ok;
+    const allScore = leechPartitionScore(allSpell, context, turn);
+    const splitScore = leechPartitionScore(split, context, turn);
+    const runeUsingBoundaryScore = runeUsingBoundaryConfirmed && runeUsingBoundaryCandidate !== split
+      ? leechPartitionScore(runeUsingBoundaryCandidate, context, turn)
+      : splitScore;
+    const allActionLeech = allScore.details.find(detail => detail.block && detail.block.comp === actionComp);
+    const splitActionLeech = splitScore.details.find(detail => detail.block && detail.block.comp === actionComp);
+    const splitExplainsRequiredVirtualHit = !!(
+      !isBeamAction(action)
+      && !actionProfile.multiStage
+      && splitActionLeech && splitActionLeech.leech
+      && splitActionLeech.leech.virtualZeroHits
+      && splitActionLeech.leech.virtualZeroHits.length
+      && !(allActionLeech && allActionLeech.leech
+        && allActionLeech.leech.virtualZeroHits
+        && allActionLeech.leech.virtualZeroHits.length)
+    );
     const strongTimestampBoundary = hasStrongTimestampAaSpellBoundary(hits, action);
     const beamSubline = isBeamAction(action) ? validateBeamSublineBlock({ comp: actionComp, hits, action }, context) : null;
     const forceA1 = shouldForceA1ByLeech(hits, context, action, beamSubline);
@@ -167,15 +247,44 @@
       && !strongTimestampBoundary
       && !critStateBoundary
       && !sameMobSeparationEvidence;
-    const deathEchoLeechForceNeutral = deathEchoFirstHitExplained && forceA1.force;
     const timestampBoundaryConfirmed = strongTimestampBoundary && !deathEchoFirstHitExplained;
-    const forceA1Confirmed = evidenceHasMinimalSuffix && forceA1.force && !beamLeechForceNeutral && !deathEchoLeechForceNeutral;
-    const mageDruidHasPositiveAaEvidence = !isMageDruid || !concreteAreaActionCanExplainTurn
-      || timestampBoundaryConfirmed || critStateBoundary || sameMobSeparationEvidence || forceA1Confirmed;
-    let chosen = split;
-    let reason = 'ek_positional_aa_first_hit';
+    // Um sufixo unitário é cardinalidade mecânica válida para uma ação de área
+    // (M-008). O piso de dois hits só é necessário para ações multiestágio,
+    // onde um hit isolado pode ser um estágio órfão e o N plano não se aplica.
+    const forceA1Confirmed = forceA1.force
+      && !beamLeechForceNeutral
+      && (!actionProfile.multiStage || evidenceHasMinimalSuffix);
+    const multiStageFirstHitLeechBoundary = evidenceHasMinimalSuffix
+      && actionProfile.multiStage
+      && forceA1.firstN1
+      && forceA1.firstN1.usable
+      && forceA1.firstN1.ok
+      && forceA1.firstAll
+      && forceA1.firstAll.usable
+      && !forceA1.firstAll.ok
+      && !forceA1.firstAll.cappedLow;
+    // H-005/V-017/V-018: a posição do primeiro hit não prova AA por si só.
+    // M-004/H-005/D-019: só existe empate positivo quando as duas hipóteses
+    // fecham integralmente pela evidência de leech. Nesse empate, uma ação
+    // física preserva a ordem canônica AA -> ação. Ausência/contradição não
+    // vira AA apenas por reduzir uma falha, e qualquer prova discriminante
+    // abaixo ainda prevalece.
+    const physicalActionCleanLeechTie = actionProfile.element === 'physical'
+      && allScore.usable > 0
+      && splitScore.usable > 0
+      && allScore.bad === 0
+      && splitScore.bad === 0
+      && allScore.clean === allScore.usable
+      && splitScore.clean === splitScore.usable;
+    let chosen = physicalActionCleanLeechTie ? split : allSpell;
+    let reason = physicalActionCleanLeechTie
+      ? 'single_target_aa_physical_order_tiebreak_after_clean_leech_tie'
+      : 'single_target_aa_all_action_without_positive_aa_evidence';
 
-    if (timestampBoundaryConfirmed) {
+    if (runeUsingBoundaryConfirmed) {
+      chosen = runeUsingBoundaryCandidate;
+      reason = 'single_target_aa_rune_using_boundary';
+    } else if (timestampBoundaryConfirmed) {
       chosen = split;
       reason = 'ek_timestamp_boundary_aa_then_spell';
     } else if (deathEchoFirstHitExplained) {
@@ -187,7 +296,25 @@
     } else if (beamLeechForceNeutral) {
       chosen = allSpell;
       reason = 'ms_beam_leech_cardinality_not_independent_aa_evidence';
-    } else if (forceA1.force) {
+    } else if (critStateBoundary) {
+      chosen = split;
+      reason = 'ek_positional_aa_confirmed_by_crit_state_boundary';
+    } else if (sameMobSeparationEvidence) {
+      chosen = split;
+      reason = 'ek_positional_aa_confirmed_by_same_mob_exactness_boundary';
+    } else if (multiStageFirstHitLeechBoundary) {
+      // H-005(d)/M-016d/M-016e: o primeiro hit prova N=1 e contradiz a
+      // cardinalidade fundida. Em uma acao multiestagio o sufixo nao pode ser
+      // exigido como um unico N plano antes de seus estagios internos serem
+      // consolidados; essa limitacao da prova do sufixo nao apaga a fronteira.
+      chosen = split;
+      reason = 'single_target_aa_multistage_action_first_hit_leech_signature';
+    } else if (splitExplainsRequiredVirtualHit) {
+      // S-014e/C-008: há kill real por charm e somente o sufixo da ação
+      // concreta aceita a cardinalidade mecânica N=K_visível+virtual.
+      chosen = split;
+      reason = 'single_target_aa_split_required_by_virtual_zero_leech_cardinality';
+    } else if (forceA1Confirmed) {
       chosen = split;
       reason = 'ek_a1_forced_by_leech_cardinality_' + forceA1.reason;
     } else if (allSpellManaLeechHomogeneous(hits)) {
@@ -202,7 +329,19 @@
       } else if (allHasEvidence && splitHasEvidence && allScore.bad === 0 && splitScore.bad === 0 && allScore.clean > splitScore.clean + 1) {
         chosen = allSpell;
         reason = 'ek_all_spell_stronger_leech_cardinality';
-      } else if (splitHasEvidence && splitScore.bad < allScore.bad && splitScore.clean > allScore.clean) {
+      } else if (!isBeamAction(action)
+        && evidenceHasMinimalSuffix
+        && splitHasEvidence
+        && splitScore.bad < allScore.bad
+        && splitScore.clean > allScore.clean
+        // H-005/V-018a: reduzir contradicoes ao isolar o primeiro hit nao
+        // confirma AA quando esse hit ficou apenas capped_low e a propria
+        // particao continua contradita. O corte por leech precisa de prova
+        // positiva N=1 no primeiro hit ou de uma particao inteira sem
+        // contradicoes; a regra e a mesma para todas as vocacoes nao-RP.
+        && forceA1.firstN1
+        && forceA1.firstN1.usable
+        && forceA1.firstN1.ok) {
         chosen = split;
         reason = 'ek_positional_aa_confirmed_by_leech_cardinality';
       }
@@ -212,17 +351,48 @@
     // modificadores (EW/prey/crit/Low Blow/Onslaught) e MESMO dano de algum hit
     // que ficaria no bloco do sufixo, esses dois hits são mecanicamente o mesmo
     // componente determinístico (S-004a) e o split é rejeitado.
-    if (chosen === split && firstHitSharesExactOriginalWithRest(hits)) {
+    if (chosen === split
+      && !runeUsingBoundaryConfirmed
+      && firstHitSharesExactOriginalWithRest(hits)) {
       chosen = allSpell;
       reason = 'h005_same_mob_state_exact_match_blocks_aa_split';
     }
 
+    // D-023/D-024/H-005: prova positiva do bloco fundido vence evidencia posicional.
+    // Um AA single-target tem `areaFactor(1) = 1`, entao seu leech observado precisa
+    // fechar EXATO em N=1 por vida e/ou mana. Quando nenhum canal fecha em N=1 mas
+    // algum fecha exato em N = total de hits, o primeiro hit nao e AA: ele e mais um
+    // alvo do bloco de area, e o corte posicional (exatidao same-mob, fronteira de
+    // crit, timestamp, cardinalidade) estava lendo variacao normal como fronteira.
+    //
+    // Observado ABAIXO do previsto e `capped-low` (V-014/D-025) e NAO discrimina: o
+    // personagem nao cura acima do maximo. Por isso a comparacao exige acerto exato
+    // dos dois lados, nunca "menor que o esperado". Em knight/monk o dano e fisico e
+    // varia por rolagem, entao a exatidao de dano no mesmo mob tambem nao serve de
+    // fronteira — o leech e o unico sinal que separa os dois casos.
+    //
+    // Caso-prova: `night harpy` `15:02:06`/`15:02:23`/`15:02:28` (Groundshaker) — o
+    // hit em raubritter marksman fecha N=5 exato por vida E mana, e nao fecha N=1;
+    // resultado correto `A0 S5`. Contra-prova: `night harpy` `14:58:44`/`14:59:14`/
+    // `14:59:29`, `bastion` `15:17:33`/`15:21:56`, `monk` `11:54:42`/`11:54:47`,
+    // `monk 2` `07:19:48`, `serverlog7` `07:15:00`/`07:15:02`, `serverlog8`
+    // `07:22:34` — a vida esta fora do setup (imbuement expirado), mas a MANA fecha
+    // N=1 exato e o AA e real; estes turnos nao podem mudar.
     if (chosen === split
-      && isMageDruid
-      && concreteAreaActionCanExplainTurn
-      && !mageDruidHasPositiveAaEvidence) {
-      chosen = allSpell;
-      reason = 'h005_mage_druid_area_action_without_positive_aa_evidence';
+      && !runeUsingBoundaryConfirmed
+      && hits.length > 1) {
+      const aaCandidate = hits[0];
+      const setup = context && context.leechSetup;
+      const acceptsExactly = (block, n) => ['life', 'mana'].some(channel => {
+        const verdict = observedLeechAcceptsN(aaCandidate, setup, n, channel, block, context);
+        return !!(verdict && verdict.usable && verdict.ok);
+      });
+      const mergedProven = acceptsExactly(allSpell[0], hits.length);
+      const aaProven = acceptsExactly({ comp: 'arrow', hits: [aaCandidate] }, 1);
+      if (mergedProven && !aaProven) {
+        chosen = allSpell;
+        reason = 'h005_merged_leech_exact_blocks_aa_split';
+      }
     }
 
     // M-033: runa single-target (Sudden Death, Icicle, Holy Missile) recebe no
@@ -235,23 +405,113 @@
       return null;
     }
 
+    // S-014e/M-004/M-031/M-032/V21: um charm-kill real anterior ao bloco
+    // visível não desaparece quando a ação ordinária fecha exatamente em
+    // N=K_visível e contradiz N=K+1. Nesse caso o virtual não pertence à ação;
+    // sem AA visível, ele ocupa o único AA single-target do ciclo. A decisão
+    // reutiliza a ordem observada e os dois trials canônicos de leech, sem
+    // limiar ou exceção por vocação/ação/fixture.
+    if (chosen === allSpell
+      && actionBlock
+      && concreteAreaActionCanExplainTurn
+      && !actionProfile.multiStage
+      && !isBeamAction(action)) {
+      const areaBlock = { comp: actionComp, hits: actionBlock.hits, action };
+      const visibleMain = actionBlock.hits.filter(hit => isMainHit(hit) && !hit.virtual);
+      const firstVisibleSeq = visibleMain.length
+        ? Math.min(...visibleMain.map(hit => Number.isFinite(+hit.seq) ? +hit.seq : Infinity))
+        : Infinity;
+      const blockKills = eligibleVirtualZeroCharmsForBlock(turn, areaBlock, context);
+      const precedingKills = blockKills
+        .filter(charm => Number.isFinite(+charm.seq) && +charm.seq < firstVisibleSeq);
+      const visibleN = allActionLeech && allActionLeech.leech;
+      // S-014e: o virtual permanece na ação sempre que a PRÓPRIA ação aceita um N acima dos
+      // hits visíveis. O texto da regra diz `k+1` porque descreve o caso de UM charm-kill;
+      // com dois ou mais, a ação pode aceitar `k+2`, `k+3`... e continua sendo dona de todos.
+      // Testar apenas `k+1` fazia um turno com dois kills criar um AA virtual espúrio que
+      // contava o mesmo kill duas vezes — uma no AA, outra na ação (M-025, uma atribuição).
+      // Caso-prova: `uhax 3` S1 `13:33:46`, k=8 com 2 kills, aceita N=10 ⇒ A0 + ação(10).
+      // Contra-prova preservada: `uhax 3` S0 `20:54:20`, k=12 com 1 kill, N=13 contradito
+      // ⇒ A1 virtual + ação(12).
+      let higherNUsable = 0;
+      let higherNAccepted = 0;
+      if (visibleMain.length) {
+        const maxN = visibleMain.length + Math.max(1, blockKills.length);
+        for (let n = visibleMain.length + 1; n <= maxN; n += 1) {
+          const check = validateLeechBlockForN(areaBlock, context, n);
+          if (!check || !check.usable) continue;
+          higherNUsable += 1;
+          if (check.ok) higherNAccepted += 1;
+        }
+      }
+      if (precedingKills.length === 1
+        && visibleN && visibleN.usable && visibleN.ok
+        && higherNUsable > 0 && higherNAccepted === 0) {
+        const virtualAa = makeVirtualZeroHitForCharm(turn, null, precedingKills[0], 0, {
+          comp: 'arrow',
+          hits: [],
+        });
+        chosen = [
+          { comp: 'arrow', hits: [virtualAa] },
+          actionBlock,
+        ];
+        reason = 'single_target_aa_virtual_charm_kill_before_area_action';
+      }
+    }
+
     // Hit principal virtual por charm-kill (fato observado, sem leech): uma linha
     // de dano de charm imediatamente seguida por XP (killedTarget) prova que o
     // charm matou o alvo antes da linha de dano principal daquele ataque aparecer
-    // — logo existe um hit de dano 0 daquela ação. Generaliza o atalho
-    // hits.length===1 para k>=2. O dono é o componente de ÁREA do turno: o AA
-    // single-target já saturado por seu hit visível não pode reivindicar um alvo
-    // varrido a mais (canUseVirtualZeroForBlock só habilita spell/rune de área e
-    // arrow). Anexa o virtual a block.hits (dump conta hits.length; isMainHit
-    // exclui type:'virtual' do leech, sem duplicar). Não toca no caminho RP
-    // (validateLeechBlockForNWithVirtual). Regras: S-014e, C-008, T-004.
+    // — logo existe um hit de dano 0. Generaliza o atalho hits.length===1 para
+    // k>=2. Quando a ação aceita N>K, ela é a dona do virtual; se N>K contradiz
+    // e não há AA visível, o ramo anterior preserva o kill como AA virtual. Num
+    // split com AA visível, o AA single-target já está saturado e não pode
+    // reivindicar outro alvo. Anexa o virtual a block.hits (dump conta
+    // hits.length; isMainHit exclui type:'virtual' do leech, sem duplicar). Não
+    // toca no caminho RP (validateLeechBlockForNWithVirtual). Regras: S-014e,
+    // C-008, T-004.
     if (actionBlock && canUseVirtualZeroForBlock({ comp: actionComp, action })) {
-      const areaBlock = { comp: actionComp, hits: actionBlock.hits, action };
-      const charms = eligibleVirtualZeroCharmsForBlock(turn, areaBlock, context);
-      if (charms.length) {
-        const virtuals = charms.map((ch, idx) => makeVirtualZeroHitForCharm(turn, action, ch, idx, areaBlock));
-        actionBlock.hits = actionBlock.hits.concat(virtuals);
+      const chosenScore = runeUsingBoundaryConfirmed && chosen === runeUsingBoundaryCandidate
+        ? runeUsingBoundaryScore
+        : (chosen === split ? splitScore : allScore);
+      const chosenActionLeech = chosenScore.details.find(detail => detail.block && detail.block.comp === actionComp);
+      // A borda explícita tem propriedade temporal mais forte que a escolha
+      // plana de um único virtual por N=K+1. Recoletar abaixo evita que um kill
+      // pré-Using seja anexado à runa e esconda um kill pós-Using.
+      let virtuals = runeUsingBoundaryConfirmed
+        ? []
+        : (chosenActionLeech && chosenActionLeech.leech
+          && chosenActionLeech.leech.virtualZeroHits || []);
+      // M-031/M-032/S-014e/C-008: com AA VISÍVEL na partição escolhida, o AA
+      // single-target já está saturado e não pode reivindicar o alvo varrido a
+      // mais. O charm-kill é fato observado (dano de charm + XP), não inferência
+      // de leech: o leech decide o DONO do virtual quando existe disputa, nunca
+      // se o fato existe. Exigir que o leech aceite `N=K+1` apagava o hit em
+      // bloco cujo leech não fecha nenhum N — por exemplo `Mrowdy 2` S0
+      // `18:26:55`, que perdia `A1 + Energy Wave 8` para `A1 + Energy Wave 7`.
+      // Sem AA visível a decisão continua no ramo anterior (S-014e/V21).
+      const chosenAaBlock = chosen.find(def => def.comp === 'arrow');
+      const chosenHasVisibleAa = !!(chosenAaBlock
+        && chosenAaBlock.hits.some(hit => isMainHit(hit) && !hit.virtual));
+      // M-016d/M-016e/M-035: a cardinalidade plana do componente inteiro não
+      // se aplica a ações com estágios ou sub-linhas independentes. Enquanto o
+      // virtual ainda não é atribuído a um estágio/sub-linha pelo validador,
+      // preservar o charm-kill real no componente declarado, como antes.
+      if (!virtuals.length
+        && (actionProfile.multiStage || isBeamAction(action) || runeUsingBoundaryConfirmed
+          || chosenHasVisibleAa)) {
+        const areaBlock = { comp: actionComp, hits: actionBlock.hits, action };
+        let charms = eligibleVirtualZeroCharmsForBlock(turn, areaBlock, context);
+        // M-018a/C-009/T-003: com borda explícita AA -> Using -> runa, um
+        // charm-kill real observado depois do Using já tem proprietário
+        // temporal inequívoco. V-015d impede que a dispersão cross-mob
+        // conhecida desta runa apague esse hit estrutural.
+        if (runeUsingBoundaryConfirmed) {
+          charms = charms.filter(charm => Number.isFinite(+charm.seq) && +charm.seq > runeSeq);
+        }
+        virtuals = charms.map((charm, index) => makeVirtualZeroHitForCharm(turn, action, charm, index, areaBlock));
       }
+      if (virtuals.length) actionBlock.hits = actionBlock.hits.concat(virtuals);
     }
 
     // V-015b/V-015d: dispersão cross-mob (elemental_cluster_span_too_wide,
@@ -259,6 +519,14 @@
     // contradição. Só quebra de exatidão same-mob/same-estado não explicada (S-004a —
     // validateTerraBurstBonusBlock já tentou explicar por bônus tier antes de chegar
     // nesse veto) e crit-state misto (S-008/D-007) são vetos duros.
+    function violatesUniqueBossSingleAction(def) {
+      const mainHits = (def && def.hits || []).filter(hit => isMainHit(hit) && !hit.virtual);
+      if (mainHits.length <= 1) return false;
+      const mobs = new Set(mainHits.map(hit => normalizeName(hit.mob || '')));
+      if (mobs.size !== 1) return false;
+      return mainHits.every(hit => hit.articleless === true);
+    }
+
     function buildValidatedDefs(candidateDefs, candidateReason) {
       const built = candidateDefs.map(def => {
         const block = { comp: def.comp, hits: def.hits.slice(), action: def.action || null };
@@ -311,9 +579,8 @@
       // ele, a quebra de exatidao same-mob nesses blocos e ESPERADA pela propria regra,
       // nao contradicao — vetar aqui inventaria um problema onde a spec ja explica o
       // fenomeno. Caso-prova normativo: `death echo` 11:06:22 (caso-prova de M-035).
-      // Isto NAO vale para mecanicas ainda nao declaradas (ex.: chain decay de Chained
-      // Penance): sem regra em docs/CLASSIFICATION_RULES.md, o veto permanece e o turno
-      // fica unresolved, que e o comportamento pedido.
+      // Isto NAO vale para mecanicas ainda nao declaradas: sem regra em
+      // docs/CLASSIFICATION_RULES.md, o veto permanece e o turno fica unresolved.
       // M-016d/M-016e: spells multiestágio também produzem múltiplos níveis por-mob (o
       // mesmo mob leva o blast integral E o estágio atrasado a uma fração declarada). A
       // exatidão same-mob já estratifica por `multiStageStage` — mas só depois que os
@@ -340,12 +607,16 @@
       const act = actionDef && actionDef.action;
       const declaredMultiLevelAction = isBeamAction(act) || stagesNotYetAssigned
         || isTerraBurstAction(act) || isChainedPenanceAction(act);
+      const uniqueBossSingleActionViolation = actionDef && violatesUniqueBossSingleAction(actionDef);
       const hardVeto = actionDef && (
-        (!declaredMultiLevelAction && actionDef.deterministic && actionDef.deterministic.ok === false && actionDef.deterministic.reason === 'same_mob_state_exact_original_mismatch')
+        uniqueBossSingleActionViolation
+        || (!declaredMultiLevelAction && actionDef.deterministic && actionDef.deterministic.ok === false && actionDef.deterministic.reason === 'same_mob_state_exact_original_mismatch')
         || (actionDef.critHomogeneity && actionDef.critHomogeneity.ok === false)
       );
       const vetoReason = hardVeto
-        ? ((actionDef.critHomogeneity && actionDef.critHomogeneity.ok === false) ? actionDef.critHomogeneity.reason : actionDef.deterministic.reason)
+        ? (uniqueBossSingleActionViolation
+          ? 'boss_unique_target_single_action_multi_hit'
+          : ((actionDef.critHomogeneity && actionDef.critHomogeneity.ok === false) ? actionDef.critHomogeneity.reason : actionDef.deterministic.reason))
         : null;
       return { defs: built, hardVeto, vetoReason };
     }
@@ -360,22 +631,15 @@
       // e validaria sem contradição (caso-prova: uhax2 21:37:53/21:42:30, onde o ramo
       // de score de leech prefere allSpell por 1 "bad" a menos, mas o sufixo splitado
       // fecha 100% limpo em validateElementalBlock).
-      // Assimétrico por H-005: resgatar MESCLANDO de volta (chosen=split -> allSpell)
-      // é sempre seguro, é só desfazer uma separação sem justificativa. Resgatar
-      // SEPARANDO (chosen=allSpell -> split) só é permitido quando já havia evidência
-      // positiva de AA (mageDruidHasPositiveAaEvidence) — sem isso, "a partição
-      // alternativa validou" não é evidência de AA, é só um subconjunto menor que
-      // escapa por coincidência de uma mecânica ainda não modelada (ex.: M-035 beam
-      // central/side). Caso-prova negativo: `kim` `16:13:26`/`16:22:05` (Great Energy
-      // Beam) — sem essa guarda, o resgate por eliminação separava um "AA" fantasma
-      // porque o sufixo menor validava, mesmo com a evidência (c) desativada de
-      // propósito pra beam.
-      const rescueBySplitting = chosen !== split && mageDruidHasPositiveAaEvidence;
-      const canRescue = chosen === split || rescueBySplitting;
-      const alternate = chosen === split ? allSpell : split;
-      const alternateReason = (chosen === split ? 'ek_all_spell' : 'ek_positional_aa_first_hit')
+      // A alternativa tambem passa pelo mesmo hard-veto canonico. Nao ha excecao
+      // por vocacao: sorcerer, druid, knight e monk usam a mesma alternativa mecanica
+      // quando a escolha inicial viola uma regra dura.
+      const chosenHasAaBoundary = chosen === split
+        || (runeUsingBoundaryConfirmed && chosen === runeUsingBoundaryCandidate);
+      const alternate = chosenHasAaBoundary ? allSpell : split;
+      const alternateReason = (chosenHasAaBoundary ? 'ek_all_spell' : 'ek_positional_aa_first_hit')
         + '_confirmed_by_deterministic_validation_after_hard_veto';
-      const altPicked = canRescue ? buildValidatedDefs(alternate, alternateReason) : null;
+      const altPicked = buildValidatedDefs(alternate, alternateReason);
       if (altPicked && !altPicked.hardVeto) {
         picked = altPicked;
         reason = alternateReason;
