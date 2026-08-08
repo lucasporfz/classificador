@@ -355,6 +355,16 @@ function renderTurnDetail(turns, res, selectedIndex) {
 //
 // O denominador da razão é o hits méd GERAL (que já inclui os turnos de tapete): é o mesmo
 // número que a tabela exibe, o que mantém a coluna reconstruível a partir da tela.
+// Identidade da linha para casar rotação x grav san. NÃO usar `row.key`: o builder
+// (`buildRotationRows` em unified-main.js) faz `delete row.key` antes de publicar, então
+// `row.key` é undefined em TODAS as linhas — casar por ele colapsa a rotação inteira num
+// bucket só e emparelha a última linha com a primeira do grav san. `kind` + `label`
+// reproduz exatamente o `rowKeyFor` do builder (arrow tem label fixo 'Auto ataque'), e as
+// duas tabelas saem do mesmo builder, então a identidade é a mesma dos dois lados.
+function clsGravSanRowIdentity(row) {
+  return String(row && row.kind) + '|' + String(row && row.label);
+}
+
 function clsGravSanAdjustedHits(res) {
   const rows = (res && res.rows) || [];
   const gravSanRows = (res && res.gravSanRows) || [];
@@ -365,14 +375,17 @@ function clsGravSanAdjustedHits(res) {
   const uptimeNumerator = +(res && res.gravSanComponentsUsed) || 0;
   const uptime = uptimeDenominator > 0 ? uptimeNumerator / uptimeDenominator : 0;
 
+  const carpetByIdentity = new Map();
+  gravSanRows.forEach(g => carpetByIdentity.set(clsGravSanRowIdentity(g), g));
+
   const adjustedByKey = {};
   rows.forEach(r => {
     const hitsMean = +r.hitsMean || 0;
-    const carpet = gravSanRows.find(g => g.key === r.key);
+    const carpet = carpetByIdentity.get(clsGravSanRowIdentity(r));
     const carpetHitsMean = carpet ? (+carpet.hitsMean || 0) : null;
     // sem turno de tapete => razão 0 => a coluna repete o hits méd (decisão do autor)
     const ratio = (carpetHitsMean != null && hitsMean > 0) ? carpetHitsMean / hitsMean : 0;
-    adjustedByKey[r.key] = hitsMean * (1 + uptime * carpetBonus * ratio);
+    adjustedByKey[clsGravSanRowIdentity(r)] = hitsMean * (1 + uptime * carpetBonus * ratio);
   });
 
   return {
@@ -432,7 +445,7 @@ function renderClassifier(res) {
   const showAdjustedHits = gravSanAdjusted.showColumn;
   const rowsHtml = res.rows.map(r => {
     const adjustedCell = !showAdjustedHits ? '' :
-      '<td style="text-align:right">' + f2(gravSanAdjusted.adjustedByKey[r.key] || 0) + '</td>';
+      '<td style="text-align:right">' + f2(gravSanAdjusted.adjustedByKey[clsGravSanRowIdentity(r)] || 0) + '</td>';
     const main = '<tr><td>' + (r.kind === 'arrow' ? t('cls_comp_arrow') : r.label) + '</td><td style="text-align:right">' + r.turns +
       '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td>' + adjustedCell + '<td style="text-align:right">' + rowDmg(r, 'base') +
       '</td><td style="text-align:right">' + rowDmg(r, 'eff') + '</td></tr>';
