@@ -343,6 +343,49 @@ function renderTurnDetail(turns, res, selectedIndex) {
   setTimeout(() => document.addEventListener('mousedown', onOutside), 0);
 }
 
+// Hits médios ajustados pelo ganho de `utevo grav san` que a sessão de fato colheu.
+// Derivação PURA sobre saídas já publicadas pelo motor (`rows`, `gravSanRows`,
+// `gravSanComponentsUsed`, `gravSanBonus`) — não relê hits nem reclassifica nada, e a
+// `res.rows` primária não é modificada.
+//
+//   uptime      = componentes de grav san aproveitados / soma dos turnos de todas as rows
+//   razao_c     = hits méd do componente no tapete / hits méd geral do MESMO componente
+//                 (0 quando o componente nunca apareceu num turno de tapete)
+//   ajustado_c  = hits méd_c * (1 + uptime * bônus * razao_c)
+//
+// O denominador da razão é o hits méd GERAL (que já inclui os turnos de tapete): é o mesmo
+// número que a tabela exibe, o que mantém a coluna reconstruível a partir da tela.
+function clsGravSanAdjustedHits(res) {
+  const rows = (res && res.rows) || [];
+  const gravSanRows = (res && res.gravSanRows) || [];
+  const carpetBonus = +(res && res.gravSanBonus) || 0;
+  const componentCount = +(res && res.gravSanComponentCount) || 0;
+
+  const uptimeDenominator = rows.reduce((sum, r) => sum + (+r.turns || 0), 0);
+  const uptimeNumerator = +(res && res.gravSanComponentsUsed) || 0;
+  const uptime = uptimeDenominator > 0 ? uptimeNumerator / uptimeDenominator : 0;
+
+  const adjustedByKey = {};
+  rows.forEach(r => {
+    const hitsMean = +r.hitsMean || 0;
+    const carpet = gravSanRows.find(g => g.key === r.key);
+    const carpetHitsMean = carpet ? (+carpet.hitsMean || 0) : null;
+    // sem turno de tapete => razão 0 => a coluna repete o hits méd (decisão do autor)
+    const ratio = (carpetHitsMean != null && hitsMean > 0) ? carpetHitsMean / hitsMean : 0;
+    adjustedByKey[r.key] = hitsMean * (1 + uptime * carpetBonus * ratio);
+  });
+
+  return {
+    uptime,
+    uptimeNumerator,
+    uptimeDenominator,
+    carpetBonus,
+    // sem tapete confirmado ou sem bônus, a coluna seria cópia idêntica de "hits méd"
+    showColumn: componentCount > 0 && carpetBonus > 0,
+    adjustedByKey,
+  };
+}
+
 function renderClassifier(res) {
   const box = $('clsResults');
   if (!res || res.error) {
@@ -385,9 +428,13 @@ function renderClassifier(res) {
   const gravSanRowDmg = rowDmgFor(clsGravSanDamageMetric);
   const dmgModeSuffix = clsRotationDamageMetric === 'turn' ? t('cls_metric_turn_suffix') : t('cls_metric_hit_suffix');
   const gravSanDmgModeSuffix = clsGravSanDamageMetric === 'turn' ? t('cls_metric_turn_suffix') : t('cls_metric_hit_suffix');
+  const gravSanAdjusted = clsGravSanAdjustedHits(res);
+  const showAdjustedHits = gravSanAdjusted.showColumn;
   const rowsHtml = res.rows.map(r => {
+    const adjustedCell = !showAdjustedHits ? '' :
+      '<td style="text-align:right">' + f2(gravSanAdjusted.adjustedByKey[r.key] || 0) + '</td>';
     const main = '<tr><td>' + (r.kind === 'arrow' ? t('cls_comp_arrow') : r.label) + '</td><td style="text-align:right">' + r.turns +
-      '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td><td style="text-align:right">' + rowDmg(r, 'base') +
+      '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td>' + adjustedCell + '<td style="text-align:right">' + rowDmg(r, 'base') +
       '</td><td style="text-align:right">' + rowDmg(r, 'eff') + '</td></tr>';
     if (!r.tiers || !r.tiers.length) return main;
     const sub = r.tiers.map(tier => {
@@ -398,9 +445,13 @@ function renderClassifier(res) {
       // raw shown damage (not cast-roll-sensitive in the same way) and already shows the
       // expected order.
       const tierBaseCell = (tier.kind === 'tier_base' || tier.kind === 'tier_bonus' || tier.kind === 'tier_primary' || tier.kind === 'tier_echo' || tier.kind === 'tier_central' || tier.kind === 'tier_side') ? '—' : rowDmg(tier, 'base');
+      // A coluna ajustada é por COMPONENTE (a razão vem de `gravSanRows`, que não se
+      // subdivide em tiers), então a sub-linha emite uma célula vazia — mas emite, senão
+      // o tier desalinha das colunas de dano.
+      const tierAdjustedCell = showAdjustedHits ? '<td></td>' : '';
       return '<tr style="color:var(--text-muted);font-size:12px"><td style="padding-left:22px">└ ' + tierLabel(tier, r.bonusMult, r.beamFraction) +
-        '</td><td></td><td style="text-align:right">' + f2(tier.hitsMean) +
-        '</td><td style="text-align:right">' + tierBaseCell + '</td><td style="text-align:right">' + rowDmg(tier, 'eff') + '</td></tr>';
+        '</td><td></td><td style="text-align:right">' + f2(tier.hitsMean) + '</td>' + tierAdjustedCell +
+        '<td style="text-align:right">' + tierBaseCell + '</td><td style="text-align:right">' + rowDmg(tier, 'eff') + '</td></tr>';
     }).join('');
     return main + sub;
   }).join('');
@@ -442,6 +493,13 @@ function renderClassifier(res) {
       color: compPalette[i % compPalette.length],
     }));
   const hasSeries = (res.temporalSeries || []).length > 0;
+  // Larguras travadas: sem isto, trocar Hits<->Turno muda o sufixo do cabeçalho de dano
+  // ("/ hit" <-> "/ turno") e a tabela inteira reflui. "componente" fica sem largura e
+  // absorve a sobra.
+  const rotationColgroup =
+    '<colgroup><col><col style="width:70px"><col style="width:80px">' +
+      (showAdjustedHits ? '<col style="width:200px">' : '') +
+      '<col style="width:185px"><col style="width:195px"></colgroup>';
   const rotationMetricHtml =
     '<div class="cls-component-chart-tools">' +
       '<div class="cls-chart-metric cls-rotation-damage-metric" role="group" aria-label="' + t('cls_rotation_damage_metric') + '">' +
@@ -452,10 +510,20 @@ function renderClassifier(res) {
   const gravSanComponentTotal = res.gravSanComponentCount || 0;
   const gravSanComponentUsed = res.gravSanComponentsUsed || 0;
   const gravSanComponentPct = gravSanComponentTotal > 0 ? Math.round((gravSanComponentUsed / gravSanComponentTotal) * 100) : 0;
+  // Uptime e bônus tornam a coluna "hits médios ajustados" reconstruível a partir da tela.
+  const gsParam = 'font-size:11.5px;color:var(--text-muted);margin:2px 0';
   const gravSanCastsHtml = gravSanComponentTotal > 0 ?
-    '<p style="font-size:11.5px;color:var(--text-muted);margin:2px 0 8px">' +
+    '<p style="' + gsParam + '">' +
       t('cls_gravsan_components').replace('{used}', gravSanComponentUsed).replace('{total}', gravSanComponentTotal).replace('{pct}', gravSanComponentPct) +
-    '</p>' : '';
+    '</p>' +
+    '<p style="' + gsParam + '">' + t('cls_gravsan_uptime') +
+      ' <strong style="color:var(--text)">' + f2(gravSanAdjusted.uptime * 100) + '%</strong> ' +
+      '<span style="color:var(--text-dim)">' + t('cls_gravsan_uptime_detail')
+        .replace('{num}', gravSanAdjusted.uptimeNumerator)
+        .replace('{den}', gravSanAdjusted.uptimeDenominator)
+        .replace('{basis}', t('cls_gravsan_uptime_basis_used')) + '</span></p>' +
+    '<p style="' + gsParam + ';margin-bottom:8px">' + t('cls_gravsan_bonus') +
+      ' <strong style="color:var(--text)">' + f2(gravSanAdjusted.carpetBonus * 100) + '%</strong></p>' : '';
   const gravSanMetricHtml =
     '<div class="cls-component-chart-tools">' +
       '<div class="cls-chart-metric cls-gravsan-damage-metric" role="group" aria-label="' + t('cls_rotation_damage_metric') + '">' +
@@ -500,8 +568,11 @@ function renderClassifier(res) {
     aaMetricHtml +
     '<h3 class="cls-h">' + t('cls_h_rotation') + '</h3>' +
     rotationMetricHtml +
-    '<table class="cls-table"><thead><tr><th>' + t('cls_th_comp') + '</th><th style="text-align:right">' + t('cls_th_turns') +
-      '</th><th style="text-align:right">' + t('cls_th_hits') + '</th><th style="text-align:right">' + t('cls_th_dmg_base') + dmgModeSuffix +
+    '<table class="cls-table cls-rotation-table">' + rotationColgroup +
+      '<thead><tr><th>' + t('cls_th_comp') + '</th><th style="text-align:right">' + t('cls_th_turns') +
+      '</th><th style="text-align:right">' + t('cls_th_hits') + '</th>' +
+      (showAdjustedHits ? '<th style="text-align:right">' + t('cls_th_hits_gravsan_adjusted') + '</th>' : '') +
+      '<th style="text-align:right">' + t('cls_th_dmg_base') + dmgModeSuffix +
       '</th><th style="text-align:right">' + t('cls_th_dmg_eff') + dmgModeSuffix + '</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
     '<p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0">' +
       t('cls_unmatched').replace('{u}', res.excludedTurns).replace('{n}', res.totalTurns) + '</p>' +

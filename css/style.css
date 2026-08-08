@@ -85,6 +85,10 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
 .cls-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .cls-table th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 5px 8px; border-bottom: 1px solid var(--border); }
 .cls-table td { padding: 5px 8px; border-bottom: 0.5px solid var(--border); font-variant-numeric: tabular-nums; }
+/* Só a tabela de rotação: larguras travadas pelo colgroup emitido em app.js. Sem isto,
+   trocar Hits<->Turno altera o sufixo do cabeçalho de dano e reflui a tabela inteira. */
+.cls-rotation-table { table-layout: fixed; }
+.cls-rotation-table th, .cls-rotation-table td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .cls-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 8px 0 14px; }
 .cls-metric { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }

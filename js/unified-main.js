@@ -587,6 +587,7 @@
       gravSanRows,
       gravSanComponentCount: gravSanComponentStats.inWindow,
       gravSanComponentsUsed: gravSanComponentStats.active,
+      gravSanBonus: (gravSanSetup && +gravSanSetup.bonus) || 0,
       turnTrace,
       temporalSeries,
       aaUptime: mkMetric(aaExpected, aaHit),
