@@ -270,7 +270,11 @@ function turnInvariantViolations(turn, result) {
         violations.push({ ts: turn.ts, rule: 'M-023/M-028/N-004', msg: 'granada fora da janela cast+2..cast+4' });
       }
     }
-    if (component.deterministic && component.deterministic.ok === false) {
+    // S-004b: `ok === false` mistura contradicao mecanica com evidencia ausente (D-006).
+    // O motor declara a classe do proprio veredito; a auditoria so le. Fail-loud: um
+    // motivo novo sem classe declarada continua sendo violacao.
+    if (component.deterministic && component.deterministic.ok === false
+      && component.deterministic.evidence !== 'absent') {
       violations.push({ ts: turn.ts, rule: 'S-004/H-001/H-002', msg: `${kind} contradiz diagnostico deterministico` });
     }
     if (component.leech && component.leech.usable === true && component.leech.ok === false) {

@@ -884,6 +884,44 @@
     return (vals[0] + vals[vals.length - 1]) / 2;
   }
 
+  // M-035: a menor fracao side/central que a mecanica declarada consegue produzir. O
+  // bonus de Beam Mastery e por sub-linha e satura em 3 alvos, entao a razao observada
+  // vive em `0,70 x mult(side)/mult(central)`, cujo extremo inferior e o side sem bonus
+  // contra o central saturado. Constante DERIVADA das declaradas acima, nao um limiar
+  // novo: ~0,493.
+  const BEAM_MIN_SUBLINE_FRACTION = BEAM_BASE_SIDE_FRACTION
+    / beamMasteryMultiplier(3, Math.max(...BEAM_MASTERY_TARGET_RATES));
+
+  // S-004a/M-035/H-005c: a isencao de beam da exatidao same-mob existe porque central e
+  // side sao dois niveis declarados no MESMO mob. Ela so vale quando a divergencia
+  // observada cabe na mecanica: uma razao muito abaixo de `BEAM_MIN_SUBLINE_FRACTION`
+  // nao e sub-linha nenhuma, e isentar ali apaga evidencia positiva de AA. Caso-prova:
+  // `Mrowdy 2`/`ms boss` `17:16:37` — `roaming dread` com 112 e 2448 no mesmo estado
+  // (razao 0,046) enquanto o AA da sessao nesse mob tem mediana 124 em 1020 hits; a
+  // sub-linha exigiria ~1714. Contra-exemplo que continua isento: `kim` `16:13:26`,
+  // `stalking stalk` 1155/1650 = 0,700 exato.
+  function beamSublineExplainsSameMobSpread(hits, element, context) {
+    const groups = new Map();
+    for (const h of hits || []) {
+      if (h.overkill || h.zeroDamageDodge || h.virtual) continue;
+      const ev = elementalOriginalCandidates(h, element, context);
+      if (!ev || !ev.known || !ev.originals || !ev.originals.length) continue;
+      const representative = representativeOriginal(ev.originals);
+      if (!Number.isFinite(representative) || representative <= 0) continue;
+      const key = elementalStateKey(h);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(representative);
+    }
+    for (const values of groups.values()) {
+      if (values.length < 2) continue;
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      if (!(max > 0)) continue;
+      if (min / max < BEAM_MIN_SUBLINE_FRACTION) return false;
+    }
+    return true;
+  }
+
   function beamSublineLeechOk(hits, action, context) {
     if (!hits || !hits.length) return false;
     const res = validateLeechBlockOfficialRates({ comp: 'spell', hits, action }, context);
@@ -1065,8 +1103,12 @@
     if (!hits || hits.length < 2) return false;
     // M-035/M-037: níveis distintos no mesmo mob são parte declarada da
     // mecânica de beam/chain. A exatidão same-mob não pode virar evidência
-    // positiva de AA quando a própria ação explica essa diferença.
-    if (isBeamAction(action) || isChainedPenanceAction(action)) return false;
+    // positiva de AA quando a própria ação explica essa diferença — mas só
+    // enquanto ela DE FATO explica: no beam, uma razão same-mob abaixo da menor
+    // fração que central/side conseguem produzir não é sub-linha, e manter a
+    // isenção ali engole o AA de varinha dentro do bloco da spell.
+    if (isChainedPenanceAction(action)) return false;
+    if (isBeamAction(action) && beamSublineExplainsSameMobSpread(hits, element, context)) return false;
     // Terra/Ice Burst tem 2 niveis de bonus legitimos por-mob (bonus ativo/inativo
     // conforme a vida do alvo) -- a checagem crua same-mob (abaixo) nao sabe disso e
     // trataria 2 tiers reais como mismatch. Reusar validateTerraBurstBonusBlock (o
@@ -1200,7 +1242,12 @@
             rule: 'S-004/S-005/H-001-cluster',
           };
         }
-        return { ok: false, rule: 'S-004/S-005/H-001', reason: 'elemental_cluster_span_too_wide', element, known, unknown, tolerance, cluster: { min: cluster.min, max: cluster.max, span: cluster.span, center: cluster.center, tolerance: clusterTolerance, chosenOriginals: cluster.chosen } };
+        // S-004b: dispersão entre mobs distintos é evidência AUSENTE (D-006), não
+        // contradição — V-015b/V-015d proíbem rejeitar o bloco por ela, e o resolvedor
+        // nunca veta por este motivo. A marcação existe para que quem só lê o
+        // diagnóstico (auditoria de invariantes) enxergue a mesma distinção que o
+        // resolvedor já faz, sem manter uma segunda lista de motivos benignos.
+        return { ok: false, rule: 'S-004/S-005/H-001', reason: 'elemental_cluster_span_too_wide', evidence: 'absent', evidenceReason: 'cross_mob_dispersion', element, known, unknown, tolerance, cluster: { min: cluster.min, max: cluster.max, span: cluster.span, center: cluster.center, tolerance: clusterTolerance, chosenOriginals: cluster.chosen } };
       }
     }
 

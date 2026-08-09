@@ -997,8 +997,14 @@
       const mob = normalizeName(ev.mob);
       if (!mob) continue;
       const ew = /expose weakness/i.test(ev.rawLine || '');
-      const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0);
-      if (!byKey.has(key)) byKey.set(key, { mob, sig, element, ew, bmSensitive, values: [] });
+      // D-010c: `active elemental amplification` e fonte de pierce observada na propria
+      // linha, igual a EW. Ela PRECISA entrar na chave: misturar linhas com e sem
+      // amplification na mesma mediana compara o observado de uma populacao contra o
+      // esperado da outra, e o residuo (effectiveMod com amp / sem amp) vira bonus
+      // fantasma. BM fica de fora daqui de proposito -- ele e a hipotese sob teste.
+      const amp = !!ev.elementalAmplification;
+      const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0);
+      if (!byKey.has(key)) byKey.set(key, { mob, sig, element, ew, amp, bmSensitive, values: [] });
       byKey.get(key).values.push(ev.dmg);
     }
 
@@ -1011,10 +1017,18 @@
       if (!key || !(mods[key] > 0)) continue;
       const mit = mitigationMultiplier(mods, context);
       const base = mods.hitpoints * 0.05 * mit;
-      const pierceEw = r.ew ? 0.08 : 0;
-      const expectedNoBm = base * effectiveMod(+mods[key], pierceEw);
+      // Pierce OBSERVADO da linha (EW + amplification), pela mesma funcao canonica que o
+      // dano normal usa. O contexto vai sem `bmPierce` porque BM e a hipotese testada
+      // logo abaixo: somar as duas coisas aqui achataria as hipoteses e as tornaria
+      // indistinguiveis.
+      const pierceObserved = pierceForElement(
+        r.element,
+        { exposeWeakness: r.ew, elementalAmplification: r.amp },
+        null,
+      );
+      const expectedNoBm = base * effectiveMod(+mods[key], pierceObserved);
       const expectedBm = r.bmSensitive
-        ? base * effectiveMod(+mods[key], pierceEw + BM_PIERCE_HYPOTHESIS)
+        ? base * effectiveMod(+mods[key], pierceObserved + BM_PIERCE_HYPOTHESIS)
         : expectedNoBm;
       if (!(expectedNoBm > 0)) continue;
       rows.push({
@@ -1076,26 +1090,31 @@
     for (const { ev, element, ew } of charmEvents) {
       const mob = normalizeName(ev.mob);
       if (!mob) continue;
-      const key = mob + '|' + element + '|' + (ew ? 1 : 0);
-      if (!byKey.has(key)) byKey.set(key, { mob, element, ew, values: [] });
+      // D-010c: mesma razao do detector de BM -- a amplification e estado de pierce da
+      // linha observada e separa populacoes que nao podem dividir mediana.
+      const amp = !!ev.elementalAmplification;
+      const key = mob + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0);
+      if (!byKey.has(key)) byKey.set(key, { mob, element, ew, amp, values: [] });
       byKey.get(key).values.push(ev.dmg);
     }
 
     const rows = [];
-    for (const { mob, element, ew, values } of byKey.values()) {
+    for (const { mob, element, ew, amp, values } of byKey.values()) {
       // Exige repetição: um único proc pode estar truncado pela vida restante do alvo.
       if (values.length < 3) continue;
       const mods = getMobMods(mob, context);
       if (!mods || !mods.bestiaryClass || !(mods.hitpoints > 0)) continue;
       const key = ELEMENT_KEYS[element];
       if (!key || !(mods[key] > 0)) continue;
-      const pierce = pierceForElement(element, { exposeWeakness: ew }, context);
+      // O hit precisa reproduzir TODOS os eixos que `pierceForElement` consome; um
+      // sintetico so com EW deixava a amplification de fora e o resto virava "bonus".
+      const pierce = pierceForElement(element, { exposeWeakness: ew, elementalAmplification: amp }, context);
       const mod = effectiveMod(+mods[key], pierce);
       const mit = mitigationMultiplier(mods, context);
       const expected = mods.hitpoints * 0.05 * mit * mod;
       if (!(expected > 0)) continue;
       const observed = median(values);
-      rows.push({ mob, element, ew, class: normalizeName(mods.bestiaryClass), observed, expected, ratio: observed / expected, n: values.length });
+      rows.push({ mob, element, ew, amp, class: normalizeName(mods.bestiaryClass), observed, expected, ratio: observed / expected, n: values.length });
     }
     if (!rows.length) return { bonus: 0, multiplier: 1, class: null, source: 'no_mob_with_bestiary_class_and_hitpoints', rows };
 
@@ -1119,9 +1138,16 @@
       }
       scores.sort((a, b) => b.votes - a.votes || a.error - b.error);
       const top = scores[0];
-      // Unanime: toda linha (mob×EW) testemunha da classe tem que concordar com o mesmo
-      // candidato, senao a classe fica sem bonus detectado em vez de arriscar um valor
-      // por maioria.
+      // Unanime: toda linha (mob×estado de pierce) testemunha da classe tem que concordar
+      // com o mesmo candidato, senao a classe fica sem bonus detectado em vez de arriscar
+      // um valor por maioria.
+      //
+      // Testemunha UNICA e aceita de proposito. Exigir mobs distintos foi testado e
+      // rejeitado: `ingol ed` S0 tem `harpy` como unica testemunha da classe `bird`, e o
+      // bonus de 5% dali e REAL -- com ele os 251 turnos fecham sem nenhuma violacao de
+      // invariante, sem ele 166 blocos passam a contradizer o diagnostico deterministico.
+      // O bonus fantasma de `uhax 3` nao vinha de testemunha unica: vinha do esperado
+      // ignorar a `active elemental amplification` da linha, corrigido acima.
       if (top && top.votes === clsRows.length && (!best || top.votes > best.votes)) {
         best = { class: cls, bonus: top.bonus, multiplier: top.multiplier, votes: top.votes, rows: clsRows };
       }

@@ -601,6 +601,15 @@ export const CASES = [
       if (!(arrowHits[0].seq < usingSeq && usingSeq < firstRuneSeq)) {
         return `esperado ordem AA -> Using -> runa; aaSeq=${arrowHits[0].seq} usingSeq=${usingSeq} firstRuneSeq=${firstRuneSeq}`;
       }
+      // M-036/D-010c: com o bonus fantasma de classe, `darklight matter` recebia
+      // postMultiplier 1,06 e revertia para 709 enquanto os demais mobs do mesmo cast
+      // revertiam para 750-753, esvaziando a homogeneidade do bloco. A checagem do
+      // `post`/originais por hit vive em `tests/unified-charm-witness-pierce-state.test.mjs`
+      // (o `evidence` do hit nao sobrevive a projecao de cache que este runner usa);
+      // aqui fica o efeito observavel no componente.
+      if (rune.deterministic && rune.deterministic.reason === 'elemental_cluster_span_too_wide') {
+        return 'bloco de Great Fireball nao deveria falhar por elemental_cluster_span_too_wide';
+      }
       return rune && String(rune.actionLabel || '').includes('Great Fireball')
         ? null
         : `esperado Great Fireball; got ${rune && rune.actionLabel || '-'}`;

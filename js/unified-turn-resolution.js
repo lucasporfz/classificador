@@ -605,8 +605,27 @@
       const ms = actionDef && actionDef.action && actionDef.action.profile && actionDef.action.profile.multiStage;
       const stagesNotYetAssigned = !!(ms && ms.confirmation !== 'elemental');
       const act = actionDef && actionDef.action;
-      const declaredMultiLevelAction = isBeamAction(act) || stagesNotYetAssigned
-        || isTerraBurstAction(act) || isChainedPenanceAction(act);
+      const declaredMultiLevel = isBeamAction(act) ? 'beam'
+        : stagesNotYetAssigned ? 'multi_stage_unassigned'
+          : isTerraBurstAction(act) ? 'terra_burst'
+            : isChainedPenanceAction(act) ? 'chained_penance'
+              : null;
+      const declaredMultiLevelAction = !!declaredMultiLevel;
+      // S-004b: quando a isenção acima é o motivo de o bloco sobreviver, o veredito
+      // reprovado passa a ser evidência AUSENTE (D-006), não contradição — é o que a
+      // própria isenção significa. A classe é marcada aqui, no ponto em que a isenção é
+      // decidida: o mesmo motivo continua contradição num bloco cuja ação não declara
+      // múltiplos níveis por-mob. Cópia, não mutação: o diagnóstico original é
+      // compartilhado com outros consumidores.
+      if (declaredMultiLevelAction && actionDef && actionDef.deterministic
+        && actionDef.deterministic.ok === false
+        && actionDef.deterministic.reason === 'same_mob_state_exact_original_mismatch') {
+        actionDef.deterministic = Object.assign({}, actionDef.deterministic, {
+          evidence: 'absent',
+          evidenceReason: 'declared_multi_level_not_yet_labeled',
+          declaredMultiLevel,
+        });
+      }
       const uniqueBossSingleActionViolation = actionDef && violatesUniqueBossSingleAction(actionDef);
       const hardVeto = actionDef && (
         uniqueBossSingleActionViolation

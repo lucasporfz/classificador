@@ -33,6 +33,20 @@ export const CORPUS_EXCLUSIONS = Object.freeze([
     saveSec: (9 * 3600) + (30 * 60) + 47,
     reason: 'Sessao de jaded com problema conhecido, excluida a pedido do usuario.',
   }),
+  // Mesma hunt da exclusao acima: `Server Log bakra.txt` S4 e byte-a-byte a sessao
+  // `Tue Jun 09 09:30:47 2026`, que aparece em tres fixtures (bakra, drome, jaded). As
+  // outras duas copias ja estavam fora (jaded por data, drome por arquivo inteiro); esta
+  // ficou dentro e continuava sendo varrida. Excluida a pedido do usuario em 09/Ago/2026,
+  // pelo mesmo motivo das outras: a mecanica dessa hunt nao esta modelada.
+  Object.freeze({
+    id: 'temporary-bakra-session-2026-06-09-093047',
+    server: 'Server Log bakra.txt',
+    year: 2026,
+    month: 6,
+    day: 9,
+    saveSec: (9 * 3600) + (30 * 60) + 47,
+    reason: 'Mesma hunt de jaded/drome ja excluida, sob outro fixture; excluida a pedido do usuario.',
+  }),
 ]);
 
 const MONTHS = Object.freeze({
@@ -213,6 +227,12 @@ function compactDeterministic(deterministic) {
     known: deterministic.known ?? null,
     unknown: deterministic.unknown ?? null,
     reason: deterministic.reason ?? null,
+    // S-004b: a classe de evidência do veredito reprovado. Sem ela na projeção, a
+    // auditoria de invariantes leria `undefined` e voltaria a tratar evidência ausente
+    // como contradição.
+    evidence: deterministic.evidence ?? null,
+    evidenceReason: deterministic.evidenceReason ?? null,
+    declaredMultiLevel: deterministic.declaredMultiLevel ?? null,
   };
 }
 

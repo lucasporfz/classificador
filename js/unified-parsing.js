@@ -463,6 +463,22 @@
         if (candidates.length) { echoTs = ts; echoBlock = block; echoCandidates = candidates; break; }
       }
       if (echoTs == null) continue;
+      // T-002/M-016d-1a: o segundo do estágio atrasado pode conter, legitimamente, a
+      // explosão de OUTRO cast concreto do dono — T-002 declara exatamente esse caso.
+      // Quando ele existe, um hit que não fecha sob a fração é evidência DAQUELE cast,
+      // não prova contra a fração: sem outro cast, nada além do eco poderia ter produzido
+      // aquele hit, e a contradição é real (regra inalterada); com outro cast cuja janela
+      // (M-012/M-013) cobre o segundo, a alternativa existe e a contradição some.
+      // Nesse caso, a consolidação exclui do estágio atrasado SÓ os hits com evidência
+      // contrária — os comparáveis que não fecham, que são justamente os do outro cast.
+      // Hits sem contraparte e overkills continuam acompanhando a explosão, como no
+      // segundo exclusivo: excluí-los também deixaria pedaços do eco no segundo, que
+      // viram âncora de um turno órfão. Caso-prova: `dlc ms` `21:35:29`, onde o eco `1/2`
+      // do `exevo mort ora` de `:27` (`583`/`788`/`733`) divide o segundo com o
+      // `exevo gran flam hur` de `:29` (`1546`/`2092`/`1947`).
+      const echoSecondSharedWithOtherCast = (spellCasts || []).some(other => other !== cast
+        && other && other.profile && other.profile.type === 'attack'
+        && Number.isFinite(+other.ts) && Math.abs(other.ts - echoTs) <= 1);
       // Esta prova é pré-formação e não deve povoar o cache global de reversão
       // usado por todas as partições da sessão (logs longos têm muitos casts).
       const stageContext = Object.assign({}, context || {}, { _revCache: new Map() });
@@ -487,10 +503,11 @@
       // do segundo do eco não tem contraparte) e dlc ms 21:36:13.
       // Os pares casados continuam tendo de fechar todos sob a MESMA fração (uma
       // explosão tem uma única potência); overkills acompanham, mas nunca provam.
-      let winningTier = null, matchedPrimary = null, matchedEcho = null;
+      let winningTier = null, matchedPrimary = null, matchedEcho = null, otherCastHits = null;
       for (const tier of tiers) {
         const mp = new Set();
         const me = [];
+        const other = new Set();
         let contradicted = false;
         for (const echoHit of echoCandidates) {
           const e = echoEvidence.get(echoHit.id);
@@ -513,19 +530,25 @@
                 Math.abs(eo - hi) <= ELEMENTAL_INTERMEDIATE_TOLERANCE;
             }));
           });
-          if (!primaryHit) { contradicted = true; break; } // contradição real
+          if (!primaryHit) {
+            if (!echoSecondSharedWithOtherCast) { contradicted = true; break; } // contradição real
+            other.add(echoHit); // explicável pelo outro cast concreto do segundo (T-002)
+            continue;
+          }
           mp.add(primaryHit);
           me.push(echoHit);
         }
         // A queda de um bloco sem nenhum par comparável não prova explosão alguma:
         // exige-se ao menos um par casado, além de nenhuma contradição.
-        if (!contradicted && me.length) { winningTier = tier; matchedPrimary = mp; matchedEcho = me; break; }
+        if (!contradicted && me.length) { winningTier = tier; matchedPrimary = mp; matchedEcho = me; otherCastHits = other; break; }
       }
       if (!winningTier) continue;
       // Uma vez que pares comparáveis provam timing + potência, a explosão de
       // área inteira no mesmo timestamp é o estágio atrasado. Isso preserva hits
       // cujo original não é calculável e overkills, sem usá-los como prova.
-      const consolidatedEcho = echoBlock;
+      const consolidatedEcho = (otherCastHits && otherCastHits.size)
+        ? echoBlock.filter(h => !otherCastHits.has(h))
+        : echoBlock;
       for (const h of matchedPrimary) {
         h.multiStageStage = stages.primary.id;
         h.multiStageCastTs = cast.ts;
@@ -641,6 +664,15 @@
       const delays = delayed && Array.isArray(delayed.delays) ? delayed.delays.filter(d => d >= 1) : null;
       const tiers = delayed && Array.isArray(delayed.tiers) ? delayed.tiers.filter(tier => tier && tier.denominator > 0) : null;
       if (!delayed || !delays || !delays.length || !tiers || !tiers.length) continue;
+      // M-016d-1b, simétrico: a via de cluster de leech pertence a quem DECLARA essa
+      // confirmação — hoje só Spiritual Outburst. Death Echo declara confirmação
+      // elemental; deixá-lo cair aqui quando a via elemental falha é pior do que não
+      // consolidar, porque o cluster de leech separa mobs com e sem prey e consolida
+      // só PARTE do eco: o resto fica no turno seguinte, no mesmo mob e em dois níveis,
+      // e mata o turno no veto same-mob de S-004a. Caso-prova: `dlc ms` `21:35:29`, em
+      // que só os dois `darklight source 583` viraram eco e os `788`/`733` ficaram para
+      // trás.
+      if (stages.confirmation !== 'leech_cluster') continue;
 
       const originTurn = turns.find(t => t.hits.some(h => h.ts === cast.ts || h.ts === cast.ts - 1));
       if (!originTurn) continue;
