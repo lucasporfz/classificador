@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTÓTIPO — share de hits por componente (grav san)</title>
+<style>
+  :root {
+    --bg: #080F1D;
+    --bg-surface: #0C1829;
+    --bg-raised: #101F35;
+    --text: #E6EFF8;
+    --text-muted: #7B97BC;
+    --text-dim: #415E7A;
+    --border: #1B2E48;
+    --border-hover: #2A4468;
+    --accent: #00C49A;
+    --on-accent: #04211B;
+    --warn: #FBBF24;
+    --down: #60A5FA;
+    --bad: #F87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 26px 22px 90px;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px; line-height: 1.5;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; }
+  .proto-tag {
+    display: inline-block; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+    background: var(--warn); color: #2A1D00; padding: 3px 9px; border-radius: 4px; font-weight: 700;
+  }
+  h1 { font-size: 21px; font-weight: 600; margin: 12px 0 6px; }
+  h2.cls-h { font-size: 14px; font-weight: 500; margin: 26px 0 8px; color: var(--accent); }
+  .desc { font-size: 12.5px; color: var(--text-muted); margin: 0 0 6px; max-width: 880px; }
+  .question {
+    background: var(--bg-surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 6px; padding: 12px 14px; margin: 14px 0 6px; font-size: 12.8px; color: var(--text-muted);
+  }
+  .question strong { color: var(--text); }
+  .verdict {
+    background: rgba(0,196,154,.07); border: 1px solid rgba(0,196,154,.3); border-left: 3px solid var(--accent);
+    border-radius: 6px; padding: 12px 14px; margin: 12px 0 6px; font-size: 12.8px; color: var(--text-muted);
+  }
+  .verdict strong { color: var(--accent); letter-spacing: .04em; }
+  .verdict b { color: var(--text); font-weight: 600; }
+  .verdict ol { margin: 8px 0 6px; padding-left: 20px; }
+  .verdict li { margin-bottom: 5px; }
+  .caveat {
+    background: rgba(251,191,36,.06); border: 1px solid rgba(251,191,36,.25);
+    border-left: 3px solid var(--warn); border-radius: 6px; padding: 10px 13px; margin: 12px 0;
+    font-size: 12.3px; color: var(--text-muted);
+  }
+  .caveat b { color: var(--text); font-weight: 600; }
+  code { font-family: Consolas, Menlo, monospace; font-size: 12px; color: var(--accent); }
+  pre.formula {
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 11px 14px; font-family: Consolas, Menlo, monospace; font-size: 12px;
+    color: var(--text-muted); overflow-x: auto; margin: 10px 0;
+  }
+  pre.formula b { color: var(--accent); font-weight: 600; }
+  pre.formula i { color: var(--warn); font-style: normal; }
+
+  .inv {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 13px; margin: 10px 0; font-size: 12.3px; color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .badge { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700;
+           padding: 3px 8px; border-radius: 4px; }
+  .badge.ok { background: var(--accent); color: var(--on-accent); }
+  .badge.fail { background: var(--bad); color: #2A0000; }
+
+  .state-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 8px; margin-bottom: 8px; }
+  .state-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px; padding: 9px 11px; }
+  .state-label { color: var(--text-muted); font-size: 11px; margin-bottom: 3px; }
+  .state-value { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .state-note { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+  .changed { border-color: var(--accent); }
+  .changelog {
+    font-size: 12px; color: var(--warn); background: rgba(251,191,36,.07);
+    border: 1px solid rgba(251,191,36,.25); border-radius: 6px; padding: 8px 11px; margin: 8px 0 4px; min-height: 34px;
+  }
+
+  table.cls-table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .cls-table th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 5px 8px; border-bottom: 1px solid var(--border); font-size: 11.5px; }
+  .cls-table td { padding: 5px 8px; border-bottom: 1px solid rgba(27,46,72,.5); }
+  .cls-table td.num, .cls-table th.num { text-align: right; }
+  .col-adj { color: var(--accent); }
+  th.col-adj { color: var(--accent); }
+  tr.no-carpet td.col-adj { color: var(--text-dim); }
+  tr.spotlight td { background: rgba(0,196,154,.06); }
+  td.up { color: var(--accent); }
+  td.down { color: var(--down); }
+  .synth-tag, .spot-tag {
+    font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+    border-radius: 3px; padding: 1px 5px; margin-left: 7px;
+  }
+  .synth-tag { color: var(--warn); border: 1px solid rgba(251,191,36,.4); }
+  .spot-tag { color: var(--accent); border: 1px solid rgba(0,196,154,.4); }
+  table.cls-rotation { table-layout: fixed; }
+  table.cls-rotation th, table.cls-rotation td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .gs-param { font-size: 11.5px; color: var(--text-muted); margin: 2px 0; font-variant-numeric: tabular-nums; }
+  .gs-param b { color: var(--text); font-weight: 600; }
+  .gs-param span.detail { color: var(--text-dim); }
+
+  .diag {
+    border: 1px dashed var(--border-hover); border-radius: 6px; padding: 10px 12px; margin-top: 10px;
+    background: rgba(12,24,41,.5);
+  }
+  .diag-title { font-size: 11px; color: var(--warn); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 7px; }
+  .diag table { font-size: 12px; }
+  .diag td, .diag th { color: var(--text-dim); }
+  .diag td.hi { color: var(--text-muted); }
+  .diag td.strong { color: var(--text); }
+
+  .cls-chart-metric { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--bg-surface); }
+  .cls-chart-metric button {
+    background: transparent; border: 0; color: var(--text-muted); padding: 6px 14px;
+    font-size: 12px; cursor: pointer; font-family: inherit; border-right: 1px solid var(--border);
+  }
+  .cls-chart-metric button:last-child { border-right: 0; }
+  .cls-chart-metric button:hover { background: var(--bg-raised); color: var(--text); }
+  .cls-chart-metric button.active { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .cls-component-chart-tools { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 6px; }
+
+  .play-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0 12px; }
+  .play-label { font-size: 11.5px; color: var(--text-muted); min-width: 175px; }
+  button.act {
+    background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 5px 11px; border-radius: 5px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  button.act:hover { background: var(--bg-raised); color: var(--text); border-color: var(--border-hover); }
+  button.act.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
+
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; }
+  .tab {
+    background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 6px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .tab.active { background: var(--bg-raised); color: var(--text); border-color: var(--accent); }
+  .scenario-desc { font-size: 12.5px; color: var(--text-muted); margin: 0 0 12px; max-width: 880px; }
+  .scenario-desc b { color: var(--text); font-weight: 600; }
+  .steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .steps li { display: flex; align-items: center; gap: 10px; }
+  .step-btn {
+    background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 6px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; font-family: inherit;
+    min-width: 375px; text-align: left;
+  }
+  .step-btn.next { border-color: var(--accent); color: var(--text); }
+  .step-btn.done { opacity: .45; }
+  .step-num { color: var(--text-dim); font-size: 11px; width: 18px; }
+  .step-watch { font-size: 11.5px; color: var(--text-dim); }
+  .cast { color: var(--text-muted); font-size: 11.5px; margin-top: 10px; max-width: 880px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="proto-tag">protótipo descartável</span>
+  <h1>Frequência sob tapete — share de hits por componente</h1>
+  <p class="desc">
+    Bancada da segunda rodada, sobre o log <b>barrage</b> (royal'drone). A primeira
+    (<code>grav-san-adjusted-hits.prototype.html</code>) decidiu a coluna e continua valendo como registro
+    daquelas decisões — esta responde uma pergunta nova, e só ela.
+  </p>
+
+  <div class="question">
+    <strong>A pergunta:</strong> hoje o ganho de cada componente é multiplicado por um <b>uptime global</b>,
+    igual para toda a tabela. Um poder que apareceu pouquíssimas vezes sob grav san recebe o mesmo fator de
+    um que esteve sob tapete quase sempre. O peso deveria ser <strong>por componente</strong>.
+  </div>
+
+  <div class="verdict">
+    <strong>DECIDIDO NA ENTREVISTA</strong>
+    <ol>
+      <li><b>Semântica descritiva:</b> a coluna diz hits equivalentes <b>já colhidos</b>, não projeção.</li>
+      <li><b>Peso = share de hits.</b> Nenhuma conta com dano — só hits e turnos.</li>
+      <li><b>Tela intocada:</b> turnos e hits méd já estão nas duas tabelas, então a coluna segue reconstruível sem nenhuma coluna nova.</li>
+      <li><b>Sem guarda para n baixo:</b> share 100% em 1 turno é fato, não ruído a corrigir.</li>
+      <li><b>Verificação:</b> este protótipo, contra os números que a UI de produção mostra.</li>
+    </ol>
+  </div>
+
+  <pre class="formula">    HOJE:    ajustado_c = hitsMean_c × (1 + bonus × <i>uptime_global</i> × ratio_c)
+    NOVO:    <b>ajustado_c = hitsMean_c × (1 + bonus × share_c)</b>
+
+    share_c = (carpet.hitsMean × carpet.turns) / (row.hitsMean × row.turns)
+            = <i>uptime_c</i> × ratio_c
+
+    A troca é de UM fator: o uptime global vira o uptime DAQUELE componente.
+    ratio_c não sumiu — continua dentro do share.</pre>
+
+  <div class="caveat">
+    <b>Precisão:</b> os hits méd vieram da tela com 2 casas (8,15), então o último dígito da coluna pode
+    diferir em ±0,01 do que a produção calculará com a precisão cheia. Os <b>turnos</b> são inteiros, então
+    o invariante abaixo e os uptime_c são exatos.
+  </div>
+
+  <h2 class="cls-h">invariante — checado ao vivo</h2>
+  <div class="inv" id="invariant"></div>
+
+  <h2 class="cls-h">estado atual da conta</h2>
+  <div class="state-grid" id="stateGrid"></div>
+  <div class="changelog" id="changelog">Nada mudou ainda — o estado acima é o inicial.</div>
+
+  <h2 class="cls-h">rotação — como a produção vai renderizar</h2>
+  <div class="cls-component-chart-tools">
+    <div class="cls-chart-metric" id="modelToggle" role="group" aria-label="modelo"></div>
+  </div>
+  <div id="rotationTable"></div>
+  <p class="cast" id="rotationFoot"></p>
+
+  <div class="diag">
+    <div class="diag-title">diagnóstico — a conta aberta (não vai pra produção)</div>
+    <div id="diagTable"></div>
+    <p class="cast" id="diagFoot"></p>
+  </div>
+
+  <h2 class="cls-h" id="gravSanHeading">rotação — grav san ativo (utevo grav san confirmado)</h2>
+  <div id="gravSanParams"></div>
+  <div id="gravSanTable"></div>
+
+  <h2 class="cls-h">mexer à vontade</h2>
+  <div id="freePlay"></div>
+
+  <h2 class="cls-h">roteiros guiados</h2>
+  <div class="tabs" id="tabs"></div>
+  <p class="scenario-desc" id="scenarioDesc"></p>
+  <ol class="steps" id="steps"></ol>
+
+</div>
+
+<!-- =====================================================================
+     MÓDULO PURO — é isto que sobe pro código real (clsGravSanAdjustedHits).
+     Sem DOM, sem eventos. Recebe o `res` do classificador e devolve as
+     linhas com a conta aberta. Os dois modelos ficam computados lado a
+     lado só aqui, para a comparação; em produção sobra o 'shareHits'.
+     ===================================================================== -->
+<script>
+const GravSanAdjustedHits = (function () {
+
+  // Pareamento rotação x grav san. NÃO usar row.key: buildRotationRows faz `delete row.key`
+  // antes de publicar. kind + label reproduz o rowKeyFor do builder, e as duas tabelas saem
+  // do mesmo builder — então a identidade é a mesma dos dois lados.
+  function identity(row) {
+    return String(row && row.kind) + '|' + String(row && row.label);
+  }
+
+  const DEFAULT_OPTIONS = {
+    carpetBonus: 0.12,
+    // 'shareHits'    -> peso por componente: hits sob tapete / hits totais   <-- decidido
+    // 'globalUptime' -> modelo atual em produção: uptime global x razão      <-- o que sai
+    model: 'shareHits',
+  };
+
+  function compute(input, options) {
+    const opt = Object.assign({}, DEFAULT_OPTIONS, options || {});
+    const rows = input.rows || [];
+    const gravRows = input.gravSanRows || [];
+    const bonus = opt.carpetBonus;
+
+    // O uptime global SAI da fórmula, mas continua sendo computado: as linhas de parâmetro
+    // da seção do grav san seguem exibindo-o, e a tela não muda.
+    const uptimeDenominator = rows.reduce((s, r) => s + (+r.turns || 0), 0);
+    const uptimeNumerator = +input.gravSanComponentsUsed || 0;
+    const uptime = uptimeDenominator > 0 ? uptimeNumerator / uptimeDenominator : 0;
+
+    const carpetByIdentity = {};
+    gravRows.forEach(g => { carpetByIdentity[identity(g)] = g; });
+
+    const out = rows.map(row => {
+      const hitsMean = +row.hitsMean || 0;
+      const turns = +row.turns || 0;
+      const carpet = carpetByIdentity[identity(row)] || null;
+      const carpetHitsMean = carpet ? (+carpet.hitsMean || 0) : null;
+      const carpetTurns = carpet ? (+carpet.turns || 0) : 0;
+
+      const totalHits = hitsMean * turns;
+      const carpetHits = carpetHitsMean == null ? 0 : carpetHitsMean * carpetTurns;
+
+      // sem turno de tapete => share 0 => a coluna repete hits méd (decisão mantida)
+      const share = (carpetHitsMean != null && totalHits > 0) ? carpetHits / totalHits : 0;
+      // modelo atual, mantido só para a comparação lado a lado
+      const ratio = (carpetHitsMean != null && hitsMean > 0) ? carpetHitsMean / hitsMean : 0;
+
+      const gainNew = bonus * share;
+      const gainOld = uptime * bonus * ratio;
+      const gain = opt.model === 'globalUptime' ? gainOld : gainNew;
+
+      return {
+        id: identity(row),
+        label: row.label,
+        kind: row.kind,
+        synthetic: !!row.synthetic,
+        turns: turns,
+        hitsMean: hitsMean,
+        carpetTurns: carpetTurns,
+        carpetHitsMean: carpetHitsMean,
+        totalHits: totalHits,
+        carpetHits: carpetHits,
+        componentUptime: turns > 0 ? carpetTurns / turns : 0,
+        share: share,
+        ratio: ratio,
+        gain: gain,
+        adjustedHitsMean: hitsMean * (1 + gain),
+        adjustedNew: hitsMean * (1 + gainNew),
+        adjustedOld: hitsMean * (1 + gainOld),
+        movement: hitsMean * (gainNew - gainOld),
+        observedOnCarpet: carpetHitsMean != null,
+      };
+    });
+
+    // Σ carpetTurns tem de bater com gravSanComponentsUsed: buildGravSanComponentStats e
+    // buildGravSanRows aplicam o mesmo filtro, pulam unresolved/partialEdge e derivam o
+    // label igual. Se divergir, é bug no motor — não na coluna.
+    const carpetTurnsSum = gravRows.reduce((s, g) => s + (+g.turns || 0), 0);
+
+    return {
+      model: opt.model,
+      uptime: uptime,
+      uptimeNumerator: uptimeNumerator,
+      uptimeDenominator: uptimeDenominator,
+      carpetBonus: bonus,
+      showColumn: (+input.gravSanComponentCount || 0) > 0 && bonus > 0,
+      invariant: {
+        carpetTurnsSum: carpetTurnsSum,
+        componentsUsed: uptimeNumerator,
+        ok: carpetTurnsSum === uptimeNumerator,
+      },
+      rows: out,
+    };
+  }
+
+  return { compute: compute, identity: identity, DEFAULT_OPTIONS: DEFAULT_OPTIONS };
+})();
+</script>
+
+<!-- =====================================================================
+     CASCA DESCARTÁVEL — página, controles, roteiros. Nada disto sobe.
+     ===================================================================== -->
+<script>
+// ---------------------------------------------------------------------------
+// barrage / royal'drone — números lidos da UI de produção do classificador.
+// A fórmula de HOJE reproduz a coluna publicada em todas as 4 linhas
+// (8,34 · 7,16 · 8,26 · 6,89), o que valida a bancada contra o app real.
+// ---------------------------------------------------------------------------
+const BARRAGE = {
+  id: 'barrage',
+  name: 'barrage (royal’drone)',
+  player: 'royal’drone',
+  note: '1/169 turnos excluídos por não alinhar 100% os dois logs',
+  gravSanBonusInferred: 0.12,
+  gravSanComponentCount: 55,   // componentes dentro da janela do tapete
+  gravSanComponentsUsed: 50,   // componentes de grav san aproveitados
+  rows: [
+    { kind: 'spell',   label: 'Divine Caldera (exevo mas san)',       turns: 84,  hitsMean: 8.15, dmgBase: 678, dmgEff: 842,  uiAdjusted: 8.34 },
+    { kind: 'spell',   label: 'Ethereal Barrage (exori dir moe)',     turns: 75,  hitsMean: 7.01, dmgBase: 724, dmgEff: 892,  uiAdjusted: 7.16 },
+    { kind: 'grenade', label: 'Divine Grenade (exevo tempo mas san)', turns: 9,   hitsMean: 8.11, dmgBase: 800, dmgEff: 1069, uiAdjusted: 8.26 },
+    { kind: 'arrow',   label: 'Auto ataque',                          turns: 160, hitsMean: 6.73, dmgBase: 667, dmgEff: 812,  uiAdjusted: 6.89 },
+  ],
+  gravSanRows: [
+    { kind: 'spell',   label: 'Divine Caldera (exevo mas san)',       turns: 14, hitsMean: 10.14, dmgBase: 681, dmgEff: 908 },
+    { kind: 'spell',   label: 'Ethereal Barrage (exori dir moe)',     turns: 7,  hitsMean: 8.29,  dmgBase: 717, dmgEff: 1048 },
+    { kind: 'grenade', label: 'Divine Grenade (exevo tempo mas san)', turns: 7,  hitsMean: 8.00,  dmgBase: 772, dmgEff: 1118 },
+    { kind: 'arrow',   label: 'Auto ataque',                          turns: 22, hitsMean: 8.86,  dmgBase: 689, dmgEff: 967 },
+  ],
+  spotlight: 'Divine Grenade (exevo tempo mas san)',
+};
+
+// Mantido da bancada anterior: é o único conjunto real com um componente que NUNCA pisou
+// no tapete (Divine Barrage, 33 turnos, 0 sob grav san). O barrage não tem esse caso.
+const CANGACEIRO = {
+  id: 'cangaceiro',
+  name: 'cangaceiro suave',
+  player: 'cangaceiro suave',
+  note: 'conjunto da primeira bancada — tem o caso “nunca no tapete”',
+  gravSanBonusInferred: 0.10,
+  gravSanComponentCount: 92,
+  gravSanComponentsUsed: 52,
+  rows: [
+    { kind: 'spell',   label: 'Divine Barrage (exori dir san)',       turns: 33,  hitsMean: 3.33, dmgBase: 492, dmgEff: 663 },
+    { kind: 'spell',   label: 'Divine Caldera (exevo mas san)',       turns: 113, hitsMean: 5.09, dmgBase: 571, dmgEff: 686 },
+    { kind: 'spell',   label: 'Ethereal Barrage (exori dir moe)',     turns: 117, hitsMean: 4.20, dmgBase: 661, dmgEff: 775 },
+    { kind: 'grenade', label: 'Divine Grenade (exevo tempo mas san)', turns: 29,  hitsMean: 7.24, dmgBase: 746, dmgEff: 972 },
+    { kind: 'arrow',   label: 'Auto ataque',                          turns: 297, hitsMean: 4.09, dmgBase: 589, dmgEff: 687 },
+  ],
+  gravSanRows: [
+    { kind: 'spell',   label: 'Divine Caldera (exevo mas san)',       turns: 14, hitsMean: 8.93, dmgBase: 585, dmgEff: 745 },
+    { kind: 'spell',   label: 'Ethereal Barrage (exori dir moe)',     turns: 10, hitsMean: 5.00, dmgBase: 611, dmgEff: 790 },
+    { kind: 'grenade', label: 'Divine Grenade (exevo tempo mas san)', turns: 12, hitsMean: 7.58, dmgBase: 796, dmgEff: 1250 },
+    { kind: 'arrow',   label: 'Auto ataque',                          turns: 16, hitsMean: 4.81, dmgBase: 510, dmgEff: 732 },
+  ],
+  spotlight: 'Divine Barrage (exori dir san)',
+};
+
+const DATASETS = { barrage: BARRAGE, cangaceiro: CANGACEIRO };
+
+// SINTÉTICOS — inventados para exibir dois extremos que nenhum log real aqui contém.
+// Marcados na tabela; nunca confundir com medição.
+const SYNTHETIC_ROWS = [
+  { kind: 'spell', label: 'Strong Ethereal Spear (exori gran con)', turns: 40, hitsMean: 1.00, dmgBase: 1067, dmgEff: 1230, synthetic: true },
+  { kind: 'spell', label: 'Divine Missile (exori san)',             turns: 1,  hitsMean: 1.00, dmgBase: 640,  dmgEff: 705,  synthetic: true },
+];
+const SYNTHETIC_CARPET = [
+  { kind: 'spell', label: 'Strong Ethereal Spear (exori gran con)', turns: 1, hitsMean: 1.00, dmgBase: 1120, dmgEff: 1355 },
+  { kind: 'spell', label: 'Divine Missile (exori san)',             turns: 1, hitsMean: 1.00, dmgBase: 690,  dmgEff: 780  },
+];
+
+function sessionWith(opts) {
+  const base = DATASETS[opts.dataset] || BARRAGE;
+  const s = Object.assign({}, base);
+  if (opts.synthetic) {
+    s.rows = base.rows.concat(SYNTHETIC_ROWS);
+    s.gravSanRows = base.gravSanRows.concat(SYNTHETIC_CARPET);
+    // o motor contaria esses dois pares (turno, componente) a mais como aproveitados
+    s.gravSanComponentsUsed = base.gravSanComponentsUsed + SYNTHETIC_CARPET.length;
+    s.gravSanComponentCount = base.gravSanComponentCount + SYNTHETIC_CARPET.length;
+  }
+  if (!opts.hasGravSan) {
+    s.gravSanBonusInferred = 0;
+    s.gravSanComponentCount = 0;
+    s.gravSanComponentsUsed = 0;
+    s.gravSanRows = [];
+  }
+  return s;
+}
+
+const INITIAL = {
+  dataset: 'barrage',
+  model: 'shareHits',
+  hasGravSan: true,
+  carpetBonus: 0.12,
+  synthetic: false,
+};
+
+let ui = Object.assign({}, INITIAL);
+let lastChange = 'Nada mudou ainda — o estado acima é o inicial.';
+let changedKeys = [];
+let activeTab = 0;
+let stepCursor = 0;
+
+const f2 = x => x.toFixed(2).replace('.', ',');
+const f3 = x => x.toFixed(3).replace('.', ',');
+const f4 = x => x.toFixed(4).replace('.', ',');
+const pct = x => (x * 100).toFixed(2).replace('.', ',') + '%';
+
+function apply(patch, message, keys) {
+  ui = Object.assign({}, ui, patch);
+  lastChange = message;
+  changedKeys = keys || [];
+  render();
+}
+
+/* ---------- invariante ---------- */
+function renderInvariant(model) {
+  const inv = model.invariant;
+  document.getElementById('invariant').innerHTML =
+    '<span class="badge ' + (inv.ok ? 'ok' : 'fail') + '">' + (inv.ok ? 'confere' : 'diverge') + '</span>' +
+    '<span><code>Σ gravSanRows[].turns</code> = <b style="color:var(--text)">' + inv.carpetTurnsSum + '</b>' +
+    ' &nbsp;·&nbsp; <code>gravSanComponentsUsed</code> = <b style="color:var(--text)">' + inv.componentsUsed + '</b>' +
+    ' &nbsp;·&nbsp; <code>Σ rows[].turns</code> = <b style="color:var(--text)">' + model.uptimeDenominator + '</b></span>' +
+    '<span style="color:var(--text-dim)">' +
+      (inv.ok
+        ? 'os dois contam o mesmo par (turno, componente) sob tapete — se um dia divergir, o bug é do motor, não da coluna'
+        : 'DIVERGIU: buildGravSanRows e buildGravSanComponentStats deixaram de contar a mesma coisa') +
+    '</span>';
+}
+
+/* ---------- painel de estado ---------- */
+function renderState(session, model) {
+  const cards = [
+    {
+      k: 'dataset',
+      label: 'log',
+      value: session.name,
+      note: session.note,
+    },
+    {
+      k: 'model',
+      label: 'modelo do peso',
+      value: ui.model === 'shareHits' ? 'share por componente' : 'uptime global',
+      note: ui.model === 'shareHits'
+        ? 'hits sob tapete / hits totais, por linha (decidido)'
+        : 'o que está em produção hoje — mesmo fator pra tabela toda',
+    },
+    {
+      k: 'carpetBonus',
+      label: 'bônus de dano do tapete',
+      value: pct(model.carpetBonus),
+      note: !ui.hasGravSan
+        ? 'sessão sem utevo grav san'
+        : (ui.carpetBonus === session.gravSanBonusInferred
+          ? 'inferido pelo motor nesta sessão'
+          : 'sobrescrito à mão (o motor inferiu ' + pct(session.gravSanBonusInferred) + ')'),
+    },
+    {
+      k: 'uptimeGlobal',
+      label: 'uptime do tapete',
+      value: pct(model.uptime),
+      note: model.uptimeNumerator + ' / ' + model.uptimeDenominator + ' componentes — ' +
+        (ui.model === 'shareHits' ? 'já não entra na conta, só é exibido' : 'multiplica toda linha'),
+    },
+    {
+      k: 'synthetic',
+      label: 'linhas sintéticas',
+      value: ui.synthetic ? 'injetadas' : 'fora',
+      note: ui.synthetic ? 'dois casos-limite inventados, marcados na tabela' : 'só os dados reais do log',
+    },
+  ];
+  document.getElementById('stateGrid').innerHTML = cards.map(c =>
+    '<div class="state-card' + (changedKeys.indexOf(c.k) >= 0 ? ' changed' : '') + '">' +
+      '<div class="state-label">' + c.label + '</div>' +
+      '<div class="state-value">' + c.value + '</div>' +
+      '<div class="state-note">' + c.note + '</div>' +
+    '</div>'
+  ).join('');
+  document.getElementById('changelog').textContent = lastChange;
+}
+
+/* ---------- toggle do modelo (só protótipo: em produção sobra um) ---------- */
+function renderToggles() {
+  const opts = [
+    { k: 'globalUptime', label: 'uptime global (hoje)' },
+    { k: 'shareHits', label: 'share por componente (novo)' },
+  ];
+  document.getElementById('modelToggle').innerHTML = opts.map(o =>
+    '<button type="button" data-model="' + o.k + '" class="' + (ui.model === o.k ? 'active' : '') + '">' + o.label + '</button>'
+  ).join('');
+  document.querySelectorAll('#modelToggle button').forEach(b => {
+    b.onclick = () => apply({ model: b.getAttribute('data-model') },
+      'Modelo → ' + b.textContent + '. Só a coluna verde muda.', ['model']);
+  });
+}
+
+/* ---------- tabela de rotação (o que vai pra produção) ---------- */
+function renderRotation(session, model) {
+  const byId = {};
+  model.rows.forEach(r => { byId[r.id] = r; });
+  const hasCol = model.showColumn;
+
+  const colgroup =
+    '<colgroup><col><col style="width:70px"><col style="width:80px">' +
+      (hasCol ? '<col style="width:210px">' : '') +
+      '<col style="width:175px"><col style="width:185px"></colgroup>';
+
+  document.getElementById('rotationTable').innerHTML =
+    '<table class="cls-table cls-rotation">' + colgroup + '<thead><tr>' +
+      '<th>componente</th><th class="num">turnos</th><th class="num">hits méd</th>' +
+      (hasCol ? '<th class="num col-adj">Hits médios ajustados (grav san)</th>' : '') +
+      '<th class="num">Dano médio sem crítico / hit</th>' +
+      '<th class="num">Dano médio com crítico / hit</th>' +
+    '</tr></thead><tbody>' +
+    session.rows.map(r => {
+      const a = byId[GravSanAdjustedHits.identity(r)];
+      const spot = r.label === session.spotlight;
+      return '<tr class="' + (a.observedOnCarpet ? '' : 'no-carpet') + (spot ? ' spotlight' : '') + '">' +
+        '<td>' + r.label +
+          (r.synthetic ? '<span class="synth-tag">sintético</span>' : '') +
+          (spot ? '<span class="spot-tag">olhe aqui</span>' : '') + '</td>' +
+        '<td class="num">' + r.turns + '</td>' +
+        '<td class="num">' + f2(r.hitsMean) + '</td>' +
+        (hasCol ? '<td class="num col-adj">' + f2(a.adjustedHitsMean) + '</td>' : '') +
+        '<td class="num">' + r.dmgBase + '</td>' +
+        '<td class="num">' + r.dmgEff + '</td></tr>';
+    }).join('') +
+    '</tbody></table>';
+
+  // confronto com o que a UI de produção publica hoje
+  const checkable = session.rows.filter(r => r.uiAdjusted != null);
+  let parity = '';
+  if (checkable.length) {
+    const bad = checkable.filter(r => {
+      const a = byId[GravSanAdjustedHits.identity(r)];
+      return Math.abs(Number(a.adjustedOld.toFixed(2)) - r.uiAdjusted) > 1e-9;
+    });
+    parity = bad.length === 0
+      ? ' O modelo "uptime global" reproduz as ' + checkable.length + ' células que a UI publica hoje ' +
+        '(' + checkable.map(r => f2(r.uiAdjusted)).join(' · ') + ') — a bancada confere com o app real.'
+      : ' ATENÇÃO: ' + bad.length + ' célula(s) não batem com a UI de produção.';
+  }
+
+  document.getElementById('rotationFoot').textContent = (hasCol
+    ? 'A tela não muda: mesmas colunas de hoje. Só o número da coluna verde é recalculado — turnos e hits méd já estavam nas duas tabelas, então o leitor continua conseguindo refazer a conta.'
+    : 'Sessão sem grav san confirmado: a coluna ajustada não aparece (seria cópia idêntica de "hits méd").') + parity;
+}
+
+/* ---------- diagnóstico (só protótipo) ---------- */
+function renderDiag(model) {
+  document.getElementById('diagTable').innerHTML =
+    '<table class="cls-table"><thead><tr><th>componente</th>' +
+    '<th class="num">turnos</th><th class="num">turnos tapete</th><th class="num">uptime_c</th>' +
+    '<th class="num">ratio_c</th><th class="num">share</th>' +
+    '<th class="num">ganho hoje</th><th class="num">ganho novo</th>' +
+    '<th class="num">hoje</th><th class="num">novo</th><th class="num">mov</th>' +
+    '</tr></thead><tbody>' +
+    model.rows.map(r => {
+      const mv = r.movement;
+      const cls = Math.abs(mv) < 0.0005 ? '' : (mv > 0 ? 'up' : 'down');
+      const gainOld = r.adjustedOld / r.hitsMean - 1;
+      const gainNew = r.adjustedNew / r.hitsMean - 1;
+      return '<tr><td class="strong">' + r.label + (r.observedOnCarpet ? '' : ' · nunca no tapete') + '</td>' +
+        '<td class="num">' + r.turns + '</td>' +
+        '<td class="num">' + r.carpetTurns + '</td>' +
+        '<td class="num hi">' + pct(r.componentUptime) + '</td>' +
+        '<td class="num">' + (r.observedOnCarpet ? f4(r.ratio) : '—') + '</td>' +
+        '<td class="num hi">' + pct(r.share) + '</td>' +
+        '<td class="num">' + pct(gainOld) + '</td>' +
+        '<td class="num hi">' + pct(gainNew) + '</td>' +
+        '<td class="num">' + f4(r.adjustedOld) + '</td>' +
+        '<td class="num hi">' + f4(r.adjustedNew) + '</td>' +
+        '<td class="num ' + cls + '">' + (Math.abs(mv) < 0.0005 ? '—' : (mv > 0 ? '+' : '') + f3(mv)) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+
+  const gains = model.rows.filter(r => r.observedOnCarpet).map(r => r.adjustedOld / r.hitsMean - 1);
+  const spread = gains.length ? (Math.max.apply(null, gains) - Math.min.apply(null, gains)) : 0;
+  const ups = model.rows.filter(r => r.observedOnCarpet).map(r => r.componentUptime);
+  const upSpread = ups.length ? (Math.max.apply(null, ups) - Math.min.apply(null, ups)) : 0;
+
+  document.getElementById('diagFoot').innerHTML =
+    'Verde sobe, azul cai — a mudança move nos <b>dois</b> sentidos, e a razão é exatamente ' +
+    '<code>novo / hoje = uptime_c / uptime_global</code>. ' +
+    'Compare as duas colunas de ganho: hoje elas variam só <b>' + pct(spread) + '</b> entre a maior e a menor, ' +
+    'enquanto a exposição real ao tapete (<code>uptime_c</code>) varia <b>' + pct(upSpread) + '</b>. ' +
+    'É essa compressão que o uptime global causa — e é o sintoma que você notou na tabela.';
+}
+
+/* ---------- seção do grav san (inalterada em produção) ---------- */
+function renderGravSan(session, model) {
+  const heading = document.getElementById('gravSanHeading');
+  const params = document.getElementById('gravSanParams');
+  const table = document.getElementById('gravSanTable');
+
+  if (session.gravSanComponentCount <= 0) {
+    heading.style.display = 'none';
+    params.innerHTML = '';
+    table.innerHTML = '';
+    return;
+  }
+  heading.style.display = '';
+
+  const pctUsed = Math.round(session.gravSanComponentsUsed / session.gravSanComponentCount * 100);
+  params.innerHTML =
+    '<p class="gs-param">componentes de grav san aproveitados: ' + session.gravSanComponentsUsed + '/' +
+      session.gravSanComponentCount + ' (' + pctUsed + '%)</p>' +
+    '<p class="gs-param">uptime do tapete <b>' + pct(model.uptime) + '</b> ' +
+      '<span class="detail">' + model.uptimeNumerator + ' / ' + model.uptimeDenominator +
+      ' componentes (aproveitados)</span></p>' +
+    '<p class="gs-param" style="margin-bottom:8px">bônus de dano do tapete <b>' + pct(model.carpetBonus) + '</b></p>';
+
+  table.innerHTML =
+    '<table class="cls-table"><thead><tr><th>componente</th><th class="num">turnos</th>' +
+    '<th class="num">hits méd</th><th class="num">Dano médio sem crítico</th>' +
+    '<th class="num">Dano médio com crítico</th></tr></thead><tbody>' +
+    session.gravSanRows.map(r =>
+      '<tr class="' + (r.label === session.spotlight ? 'spotlight' : '') + '">' +
+      '<td>' + r.label + '</td><td class="num">' + r.turns + '</td><td class="num">' + f2(r.hitsMean) +
+      '</td><td class="num">' + r.dmgBase + '</td><td class="num">' + r.dmgEff + '</td></tr>'
+    ).join('') + '</tbody></table>';
+}
+
+/* ---------- mexer à vontade ---------- */
+const FREE_PLAY = [
+  {
+    label: 'log',
+    buttons: [
+      { text: 'barrage (royal’drone)', on: () => ui.dataset === 'barrage',
+        act: () => apply({ dataset: 'barrage', carpetBonus: 0.12 }, 'Log barrage: bônus inferido de 12%.', ['dataset', 'carpetBonus']) },
+      { text: 'cangaceiro suave', on: () => ui.dataset === 'cangaceiro',
+        act: () => apply({ dataset: 'cangaceiro', carpetBonus: 0.10 }, 'Log cangaceiro suave: tem o caso “nunca no tapete”.', ['dataset', 'carpetBonus']) },
+    ],
+  },
+  {
+    label: 'modelo do peso',
+    buttons: [
+      { text: 'uptime global (hoje)', on: () => ui.model === 'globalUptime',
+        act: () => apply({ model: 'globalUptime' }, 'Modelo atual: um uptime global multiplicando toda linha.', ['model']) },
+      { text: 'share por componente', on: () => ui.model === 'shareHits',
+        act: () => apply({ model: 'shareHits' }, 'Modelo novo: cada linha pesada pelos próprios hits sob tapete.', ['model']) },
+    ],
+  },
+  {
+    label: 'bônus de dano do tapete',
+    buttons: [0, 0.05, 0.10, 0.12, 0.20].map(b => ({
+      text: pct(b), on: () => Math.abs(ui.carpetBonus - b) < 1e-9,
+      act: () => apply({ carpetBonus: b }, 'Bônus do tapete → ' + pct(b) + '.', ['carpetBonus']),
+    })),
+  },
+  {
+    label: 'casos-limite sintéticos',
+    buttons: [
+      { text: 'fora', on: () => !ui.synthetic,
+        act: () => apply({ synthetic: false }, 'Só os dados reais do log.', ['synthetic']) },
+      { text: 'injetar', on: () => ui.synthetic,
+        act: () => apply({ synthetic: true }, 'Injetados: um componente raro (1 de 40) e um de turno único.', ['synthetic']) },
+    ],
+  },
+  {
+    label: 'a sessão tem tapete?',
+    buttons: [
+      { text: 'com grav san', on: () => ui.hasGravSan,
+        act: () => apply({ hasGravSan: true }, 'Sessão com grav san: a coluna existe.', ['hasGravSan']) },
+      { text: 'sem grav san', on: () => !ui.hasGravSan,
+        act: () => apply({ hasGravSan: false }, 'Sessão sem grav san: coluna e seção do tapete somem.', ['hasGravSan']) },
+    ],
+  },
+  {
+    label: 'voltar ao início',
+    buttons: [
+      { text: 'reset', on: () => false,
+        act: () => { ui = Object.assign({}, INITIAL); lastChange = 'Estado resetado.'; changedKeys = []; render(); } },
+    ],
+  },
+];
+
+function renderFreePlay() {
+  document.getElementById('freePlay').innerHTML = FREE_PLAY.map((g, gi) =>
+    '<div class="play-row"><span class="play-label">' + g.label + '</span>' +
+    g.buttons.map((b, bi) =>
+      '<button class="act ' + (b.on() ? 'on' : '') + '" data-g="' + gi + '" data-b="' + bi + '">' + b.text + '</button>'
+    ).join('') + '</div>'
+  ).join('');
+  document.querySelectorAll('#freePlay button').forEach(el => {
+    el.onclick = () => FREE_PLAY[+el.getAttribute('data-g')].buttons[+el.getAttribute('data-b')].act();
+  });
+}
+
+/* ---------- roteiros guiados ---------- */
+const SCENARIOS = [
+  {
+    name: 'A Divine Grenade do barrage',
+    desc: 'O caso decisivo, em dado real. A <b>Divine Grenade</b> tem 9 turnos, e <b>7 deles foram sob tapete</b> ' +
+          '— 77,78%, mais de <b>5× o uptime global de 15,24%</b>. Mesmo assim, hoje ela recebe o <b>menor</b> ganho ' +
+          'da tabela inteira (+1,80%), porque sua razão é levemente abaixo de 1 (8,00 sob tapete contra 8,11 no ' +
+          'geral) e o uptime global achata todo mundo por igual. Pelo share ela recebe <b>+9,21%</b>, de longe o maior ' +
+          '— que é o que a exposição dela ao tapete manda.',
+    steps: [
+      { text: 'Ver o modelo de hoje (uptime global)', watch: 'Granada 8,11 → 8,26 · o menor ganho da tabela',
+        act: () => apply({ model: 'globalUptime', synthetic: false, dataset: 'barrage', carpetBonus: 0.12 }, 'Modelo de hoje: uptime global de 15,24% em toda linha.', ['model']) },
+      { text: 'Trocar para share por componente', watch: 'Granada salta para 8,86 — +0,60 hit',
+        act: () => apply({ model: 'shareHits' }, 'Share por componente: a Granada sobe 0,60 e vira o maior ganho.', ['model']) },
+      { text: 'Conferir no diagnóstico: uptime_c da Granada', watch: '77,78% contra 15,24% global = 5,1×', act: () => {} },
+      { text: 'Olhar o Ethereal Barrage na mesma tabela', watch: '9,33% de uptime_c: 7,16 → 7,10, CAI', act: () => {} },
+    ],
+  },
+  {
+    name: 'Por que a coluna de hoje parece uniforme',
+    desc: 'Este é o sintoma que você descreveu, medido. Com o uptime global, os quatro componentes do barrage ' +
+          'recebem ganhos de <b>+2,28% · +2,16% · +1,80% · +2,41%</b> — praticamente o mesmo número para todos. ' +
+          'Mas a exposição real ao tapete deles vai de <b>9,33% a 77,78%</b>. O uptime global é constante e o ' +
+          'ratio_c varia pouco (0,99 a 1,32), então a coluna comprime uma diferença de 8× numa de 1,3×. ' +
+          'Pelo share os ganhos viram <b>+2,49% · +1,32% · +9,21% · +2,17%</b>.',
+    steps: [
+      { text: 'Modelo de hoje, olhar a coluna "ganho hoje"', watch: 'quatro valores entre 1,80% e 2,41%',
+        act: () => apply({ model: 'globalUptime', synthetic: false }, 'Ganhos de hoje: todos ~2%, independentemente do tapete.', ['model']) },
+      { text: 'Comparar com a coluna uptime_c ao lado', watch: '13,75% · 16,67% · 77,78% · 9,33% — nada uniforme', act: () => {} },
+      { text: 'Trocar para o share', watch: 'ganhos agora vão de 1,32% a 9,21%',
+        act: () => apply({ model: 'shareHits' }, 'Share: o ganho passa a acompanhar a exposição real.', ['model']) },
+    ],
+  },
+  {
+    name: 'A tela continua explicando a coluna?',
+    desc: 'A decisão foi <b>não mexer na tela</b>. Isso só se sustenta se o leitor conseguir refazer a conta com ' +
+          'o que já está visível: <code>turnos</code> e <code>hits méd</code> nas duas tabelas, mais o ' +
+          '<code>bônus</code> na linha de parâmetro. Refaça à mão na Caldera e veja fechar.',
+    steps: [
+      { text: 'Rotação: Caldera tem 84 turnos × 8,15 hits', watch: '= 684,60 hits no total', act: () => {} },
+      { text: 'Grav san: Caldera tem 14 turnos × 10,14 hits', watch: '= 141,96 sob tapete → share 20,74%', act: () => {} },
+      { text: 'Aplicar o bônus de 12%', watch: '8,15 × (1 + 0,12 × 0,2074) = 8,35 — bate com a coluna',
+        act: () => apply({ model: 'shareHits', carpetBonus: 0.12 }, 'Caldera: 8,35 pela conta feita só com o que está na tela.', ['model']) },
+      { text: 'Dobrar o bônus para 20%', watch: 'a linha de parâmetro acompanha e a Caldera sobe',
+        act: () => apply({ carpetBonus: 0.20 }, 'Bônus → 20%.', ['carpetBonus']) },
+      { text: 'Voltar ao bônus inferido (12%)', watch: 'Caldera volta a 8,35',
+        act: () => apply({ carpetBonus: 0.12 }, 'Bônus de volta aos 12% inferidos.', ['carpetBonus']) },
+    ],
+  },
+  {
+    name: 'Os casos-limite sintéticos',
+    desc: 'Nem o barrage nem o cangaceiro têm um componente usado <b>uma vez em dezenas</b>, então este roteiro ' +
+          'injeta dois inventados. O <b>Strong Ethereal Spear</b> (40 turnos, 1 sob tapete) é o caso que motivou ' +
+          'a mudança: hoje recebe o uptime global inteiro, pelo share recebe 2,5% — cai de 1,0169 para 1,0030. ' +
+          'O <b>Divine Missile</b> (1 turno só, e sob tapete) é o inverso: share 100%, bônus cheio, ' +
+          '<b>sobe</b> de 1,0169 para 1,1200. Foi a decisão 4 — sem guarda — e este roteiro existe para você ' +
+          'olhar o número e confirmar que aceita.',
+    steps: [
+      { text: 'Injetar os sintéticos, modelo de hoje', watch: 'duas linhas marcadas no fim; ambas em 1,0169',
+        act: () => apply({ synthetic: true, model: 'globalUptime' }, 'Sintéticos injetados: hoje os dois recebem o mesmo ganho.', ['synthetic', 'model']) },
+      { text: 'Trocar para o share', watch: 'Spear cai para 1,0030 · Missile sobe para 1,1200',
+        act: () => apply({ model: 'shareHits' }, 'Share: os dois extremos se separam — 2,5% contra 100%.', ['model']) },
+      { text: 'Confirmar que aceita o n = 1 sem guarda', watch: 'Missile em 1,12 é o bônus inteiro por 1 turno', act: () => {} },
+    ],
+  },
+  {
+    name: 'Casos em que nada muda',
+    desc: 'Os dois modelos coincidem exatamente onde precisam coincidir. Sem tapete confirmado a coluna some nos ' +
+          'dois; com bônus 0 também; e um componente que nunca pisou no tapete repete <code>hits méd</code> nos ' +
+          'dois. O barrage não tem esse último caso — todos os 4 componentes pisaram no tapete — então este ' +
+          'roteiro troca para o <b>cangaceiro suave</b>, onde a Divine Barrage tem 33 turnos e zero sob grav san.',
+    steps: [
+      { text: 'Simular o barrage sem grav san', watch: 'coluna some e a seção do tapete some junto',
+        act: () => apply({ hasGravSan: false }, 'Sessão sem grav san: nada a ajustar.', ['hasGravSan']) },
+      { text: 'Voltar, mas com bônus 0', watch: 'coluna some, seção do grav san permanece',
+        act: () => apply({ hasGravSan: true, carpetBonus: 0 }, 'Bônus 0 com tapete confirmado: coluna some.', ['hasGravSan', 'carpetBonus']) },
+      { text: 'Trocar para o cangaceiro suave', watch: 'Divine Barrage: 33 turnos, nenhum no tapete',
+        act: () => apply({ dataset: 'cangaceiro', carpetBonus: 0.10, model: 'shareHits' }, 'Cangaceiro suave: tem o caso “nunca no tapete”.', ['dataset', 'carpetBonus']) },
+      { text: 'Alternar o modelo com ela na tela', watch: '3,33 e 3,33 — share 0 nos dois modelos',
+        act: () => apply({ model: 'globalUptime' }, 'Divine Barrage não se move: razão 0 e share 0 dão o mesmo.', ['model']) },
+    ],
+  },
+];
+
+function startScenario(i) {
+  activeTab = i;
+  stepCursor = 0;
+  ui = Object.assign({}, INITIAL);
+  lastChange = 'Roteiro "' + SCENARIOS[i].name + '" iniciado — estado voltou ao inicial.';
+  changedKeys = [];
+  render();
+}
+
+function renderScenarios() {
+  document.getElementById('tabs').innerHTML = SCENARIOS.map((s, i) =>
+    '<button class="tab ' + (i === activeTab ? 'active' : '') + '" data-i="' + i + '">' + s.name + '</button>'
+  ).join('');
+  document.querySelectorAll('#tabs button').forEach(b => {
+    b.onclick = () => startScenario(+b.getAttribute('data-i'));
+  });
+
+  const sc = SCENARIOS[activeTab];
+  document.getElementById('scenarioDesc').innerHTML = sc.desc;
+  document.getElementById('steps').innerHTML = sc.steps.map((s, i) =>
+    '<li><span class="step-num">' + (i + 1) + '.</span>' +
+    '<button class="step-btn ' + (i < stepCursor ? 'done' : (i === stepCursor ? 'next' : '')) + '" data-i="' + i + '">' +
+      s.text + '</button>' +
+    '<span class="step-watch">' + s.watch + '</span></li>'
+  ).join('');
+  document.querySelectorAll('#steps button').forEach(b => {
+    b.onclick = () => {
+      const i = +b.getAttribute('data-i');
+      sc.steps[i].act();
+      stepCursor = Math.max(stepCursor, i + 1);
+      renderScenarios();
+    };
+  });
+}
+
+/* ---------- render ---------- */
+function render() {
+  const session = sessionWith({ dataset: ui.dataset, hasGravSan: ui.hasGravSan, synthetic: ui.synthetic });
+  const model = GravSanAdjustedHits.compute(session, {
+    carpetBonus: ui.hasGravSan ? ui.carpetBonus : 0,
+    model: ui.model,
+  });
+  renderInvariant(model);
+  renderState(session, model);
+  renderToggles();
+  renderRotation(session, model);
+  renderDiag(model);
+  renderGravSan(session, model);
+  renderFreePlay();
+  renderScenarios();
+}
+
+render();
+</script>
+</body>
+</html>

@@ -348,13 +348,31 @@ function renderTurnDetail(turns, res, selectedIndex) {
 // `gravSanComponentsUsed`, `gravSanBonus`) — não relê hits nem reclassifica nada, e a
 // `res.rows` primária não é modificada.
 //
-//   uptime      = componentes de grav san aproveitados / soma dos turnos de todas as rows
-//   razao_c     = hits méd do componente no tapete / hits méd geral do MESMO componente
+//   share_c     = hits do componente sob tapete / hits totais do MESMO componente
+//                 = (carpet.hitsMean * carpet.turns) / (row.hitsMean * row.turns)
 //                 (0 quando o componente nunca apareceu num turno de tapete)
-//   ajustado_c  = hits méd_c * (1 + uptime * bônus * razao_c)
+//   ajustado_c  = hits méd_c * (1 + bônus * share_c)
 //
-// O denominador da razão é o hits méd GERAL (que já inclui os turnos de tapete): é o mesmo
-// número que a tabela exibe, o que mantém a coluna reconstruível a partir da tela.
+// O PESO É POR COMPONENTE, NÃO GLOBAL. A versão anterior multiplicava por um `uptime` da
+// sessão inteira (aproveitados / soma dos turnos de TODAS as rows), idêntico em toda linha:
+// um componente que caiu sob tapete uma única vez recebia o mesmo fator de um que esteve
+// sob tapete a hunt inteira. `share_c` decompõe esse uptime — ele vale exatamente
+// `uptime_c * razao_c`, onde `uptime_c = carpet.turns / row.turns` é a frequência que
+// faltava e `razao_c = carpet.hitsMean / row.hitsMean` é a intensidade que já existia.
+// Medido no log `barrage`: a Divine Grenade tem 7 dos 9 turnos sob tapete (77,8%, 5,1x o
+// uptime global de 15,2%) e recebia o MENOR ganho da tabela (+1,8%) porque sua razão é
+// levemente abaixo de 1; com o share recebe o maior (+9,2%). Os ganhos das 4 linhas saíam
+// todos entre +1,8% e +2,4% enquanto a exposição real ia de 9,3% a 77,8% — era o uptime
+// global comprimindo tudo. Ver `prototypes/grav-san-share-hits.prototype.html`.
+//
+// Contar HITS (e não turnos) trata certo o turno em que só parte dos hits caiu sob tapete:
+// 3 de 10 hits dão 30%, enquanto uma frequência por turnos daria 1/1 = 100%.
+//
+// `uptime`/`uptimeNumerator`/`uptimeDenominator` saem da fórmula mas continuam sendo
+// computados e retornados: a seção do grav san segue exibindo o uptime global, que
+// permanece honesto por ser a média dos `uptime_c` ponderada por turnos. A coluna continua
+// reconstruível a partir da tela — `turnos` e `hits méd` estão nas DUAS tabelas e o bônus
+// na linha de parâmetro.
 // Identidade da linha para casar rotação x grav san. NÃO usar `row.key`: o builder
 // (`buildRotationRows` em unified-main.js) faz `delete row.key` antes de publicar, então
 // `row.key` é undefined em TODAS as linhas — casar por ele colapsa a rotação inteira num
@@ -381,11 +399,12 @@ function clsGravSanAdjustedHits(res) {
   const adjustedByKey = {};
   rows.forEach(r => {
     const hitsMean = +r.hitsMean || 0;
+    const totalHits = hitsMean * (+r.turns || 0);
     const carpet = carpetByIdentity.get(clsGravSanRowIdentity(r));
-    const carpetHitsMean = carpet ? (+carpet.hitsMean || 0) : null;
-    // sem turno de tapete => razão 0 => a coluna repete o hits méd (decisão do autor)
-    const ratio = (carpetHitsMean != null && hitsMean > 0) ? carpetHitsMean / hitsMean : 0;
-    adjustedByKey[clsGravSanRowIdentity(r)] = hitsMean * (1 + uptime * carpetBonus * ratio);
+    const carpetHits = carpet ? (+carpet.hitsMean || 0) * (+carpet.turns || 0) : null;
+    // sem turno de tapete => share 0 => a coluna repete o hits méd (decisão do autor)
+    const share = (carpetHits != null && totalHits > 0) ? carpetHits / totalHits : 0;
+    adjustedByKey[clsGravSanRowIdentity(r)] = hitsMean * (1 + carpetBonus * share);
   });
 
   return {
@@ -523,7 +542,10 @@ function renderClassifier(res) {
   const gravSanComponentTotal = res.gravSanComponentCount || 0;
   const gravSanComponentUsed = res.gravSanComponentsUsed || 0;
   const gravSanComponentPct = gravSanComponentTotal > 0 ? Math.round((gravSanComponentUsed / gravSanComponentTotal) * 100) : 0;
-  // Uptime e bônus tornam a coluna "hits médios ajustados" reconstruível a partir da tela.
+  // Turnos + hits méd (presentes nas DUAS tabelas) e o bônus tornam a coluna "hits médios
+  // ajustados" reconstruível a partir da tela. O uptime global é exibido como métrica da
+  // sessão: desde que o peso passou a ser por componente ele não entra mais na coluna, mas
+  // segue honesto por ser a média dos uptime por componente ponderada por turnos.
   const gsParam = 'font-size:11.5px;color:var(--text-muted);margin:2px 0';
   const gravSanCastsHtml = gravSanComponentTotal > 0 ?
     '<p style="' + gsParam + '">' +
