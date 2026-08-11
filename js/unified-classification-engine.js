@@ -191,6 +191,7 @@
     effectiveManaLeech,
     hitLeechFit,
     actionsNearTurn,
+    resetConsolidatedActions,
     possibleShapes,
     segmentations,
     candidateFromShape,
@@ -1508,7 +1509,7 @@
     };
     if (shouldGoldInferLeech) {
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-      context.consolidatedGrenadeCasts = new Set();
+      resetConsolidatedActions(context);
       resolvedWithoutLeech = turns.map(t => resolveTurn(t, facts, context));
       refineCritByComponent(resolvedWithoutLeech);
       const frozenBountyDamage = inferBountyDamageFromFrozenComponents(
@@ -1520,7 +1521,7 @@
         context.bountyTalismanSetup.damage = frozenBountyDamage;
         if (context._revCache) context._revCache.clear();
         context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-        context.consolidatedGrenadeCasts = new Set();
+        resetConsolidatedActions(context);
         resolvedWithoutLeech = turns.map(t => resolveTurn(t, facts, context));
         refineCritByComponent(resolvedWithoutLeech);
       } else {
@@ -1546,7 +1547,7 @@
         // da reversão do multiplicador. A votação continua apoiada exclusivamente nos
         // componentes congelados da primeira passada.
         context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-        context.consolidatedGrenadeCasts = new Set();
+        resetConsolidatedActions(context);
         refineCritByComponent(turns.map(t => resolveTurn(t, facts, context)));
       }
       // S-007: eixo do bloco de AA por sessao. Roda DEPOIS do crit por-componente e do
@@ -1560,12 +1561,12 @@
       // 1Âª passada (sem leech) nÃ£o conseguiu provar por reversÃ£o elemental.
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-      context.consolidatedGrenadeCasts = new Set();
+      resetConsolidatedActions(context);
       resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
       detectExecutionerTiers(resolvedTurns);
     } else {
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-      context.consolidatedGrenadeCasts = new Set();
+      resetConsolidatedActions(context);
       const pass1 = turns.map(t => resolveTurn(t, facts, context));
       refineCritByComponent(pass1);
       context.gravSanSetup = inferGravSanSetup(server, local, options || {}, {
@@ -1574,14 +1575,14 @@
       });
       if (context.gravSanSetup.source === 'inferred_from_damage_leech_in_grav_san_windows') {
         context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-        context.consolidatedGrenadeCasts = new Set();
+        resetConsolidatedActions(context);
         refineCritByComponent(turns.map(t => resolveTurn(t, facts, context)));
       }
       aaElementDetection = inferAaElementForSession(turns, local, context);
       context.aaElement = aaElementDetection.element;
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-      context.consolidatedGrenadeCasts = new Set();
+      resetConsolidatedActions(context);
       resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
       detectExecutionerTiers(resolvedTurns);
     }

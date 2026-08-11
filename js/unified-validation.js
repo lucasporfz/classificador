@@ -136,17 +136,48 @@
     return out;
   }
 
+  // N-007/N-008 + M-025: uma ação nomeia no máximo um componente, logo no máximo um
+  // turno consolidado. O conjunto de ações já consumidas existia só para granada
+  // (`consolidatedGrenadeCasts`), porque a janela [c+2,c+4] cruza a fronteira de 2 s
+  // de forma óbvia; mas a janela ±1 s de spell (M-012/M-013) e a fronteira `Using` de
+  // runa (M-017/M-018a) cruzam essa fronteira do mesmo jeito, e sem o conjunto o
+  // turno seguinte reivindica a mesma ação. Cada varredura recomeça com todas livres.
+  function resetConsolidatedActions(context) {
+    if (!context) return;
+    context.consolidatedGrenadeCasts = new Set();
+    context.consolidatedSpellCasts = new Set();
+    context.consolidatedRuneUses = new Set();
+  }
+
+  // Registra as ações do vencedor. Ponto único: só o que foi consolidado num turno
+  // resolvido sai da oferta dos turnos seguintes.
+  function registerConsolidatedActions(context, blocks) {
+    if (!context) return;
+    for (const b of blocks || []) {
+      if (!b || !b.action) continue;
+      if (b.comp === 'grenade' && context.consolidatedGrenadeCasts) context.consolidatedGrenadeCasts.add(b.action);
+      if (b.comp === 'spell' && context.consolidatedSpellCasts) context.consolidatedSpellCasts.add(b.action);
+      if (b.comp === 'rune' && context.consolidatedRuneUses) context.consolidatedRuneUses.add(b.action);
+    }
+  }
+
   function actionsNearTurn(turn, facts, context) {
     const firstTs = Math.min(...turn.hits.map(h => h.ts));
     const lastTs = Math.max(...turn.hits.map(h => h.ts));
-    const spellCasts = facts.local.spellCasts.filter(c => c.ts >= firstTs - 1 && c.ts <= lastTs + 1);
+    const consumedSpells = context && context.consolidatedSpellCasts;
+    const consumedRunes = context && context.consolidatedRuneUses;
+    const spellCasts = facts.local.spellCasts.filter(c =>
+      c.ts >= firstTs - 1
+      && c.ts <= lastTs + 1
+      && !(consumedSpells && consumedSpells.has(c)));
     const runeUses = facts.server.runeUses.filter(r =>
       r.ts >= firstTs - 1
       && r.ts <= lastTs + 1
       && !r.ignored
       && r.profile
       && r.profile.element !== 'unknown'
-      && (r.profile.topology === 'single' || r.profile.topology === 'area'));
+      && (r.profile.topology === 'single' || r.profile.topology === 'area')
+      && !(consumedRunes && consumedRunes.has(r)));
     // M-024/M-025: uma granada possui um único evento de impacto (um timestamp ou
     // dois timestamps cronologicamente consecutivos comprovados) e o mesmo cast não
     // pode explicar hits em dois turnos consolidados. Um cast cuja explosão já foi
@@ -465,7 +496,12 @@
         return beforeFirst[0] || null;
       }
       const centerTs = Math.round(mean((hits || []).map(h => h.ts)));
-      const sorted = actions.runeUses.slice().sort((a, b) => Math.abs(a.ts - centerTs) - Math.abs(b.ts - centerTs) || b.ts - a.ts);
+      // Desempate igual ao do ramo de spell acima: a mesma distância ao centro
+      // resolve para a ação ANTERIOR. Preferir a posterior era uma inconsistência
+      // interna deste ramo — nenhuma regra a sustenta, e é ela que faz um turno
+      // reivindicar a runa do turno seguinte quando as duas empatam (N-008).
+      const sorted = actions.runeUses.slice()
+        .sort((a, b) => Math.abs(a.ts - centerTs) - Math.abs(b.ts - centerTs) || a.ts - b.ts);
       return sorted[0] || null;
     }
     if (comp === 'grenade') {
@@ -1878,9 +1914,37 @@
     return minTs === maxTs && minTs === action.ts;
   }
 
+  // M-012/M-013/M-017/M-018a: o efeito não precede a causa. As janelas normativas
+  // toleram um cast/`Using` até 1 s DEPOIS do impacto (defasagem Server Log × Local
+  // Chat), mas essa folga é um último recurso, não evidência.
+  // A comparação é contra o ÚLTIMO hit do bloco, não o primeiro: uma spell de área
+  // atravessa segundos (`t-1`/`t`/`t+1`, M-031), então um bloco começar antes do cast
+  // é normal e não torna o cast acausal — o que o torna acausal é ele ser posterior a
+  // TODOS os hits que estaria explicando, caso em que não explica nenhum. Medir pelo
+  // primeiro hit condenava blocos multi-segundo legítimos (caso-prova negativo:
+  // `bakra` `09:23:20`/`09:27:02`, cujo `Divine Caldera` começa 1 s antes do cast).
+  // A granada é causal por construção — validateCandidate já exige que todo hit caia
+  // em [cast+2, cast+4] (M-023) —, então este sinal nunca a penaliza.
+  // Caso-prova: `rpboss` `09:40:31`, onde o hit de `:32` era nomeado pelo
+  // `exori gran con` castado em `:33` (posterior ao único hit do bloco) só porque o
+  // cast de granada de `:29` perdia o desempate seguinte; o cast de `:33` é do turno
+  // `09:40:33` (N-008).
+  function acausalActionHits(candidate) {
+    let total = 0;
+    for (const b of candidate.components || []) {
+      if (!b.action || b.comp === 'grenade') continue;
+      const main = (b.hits || []).filter(isMainHit);
+      if (!main.length) continue;
+      const lastTs = Math.max.apply(null, main.map(h => h.ts || 0));
+      if ((b.action.ts || 0) > lastTs) total += main.length;
+    }
+    return total;
+  }
+
   function scoreCandidate(candidate, actions, context) {
     let deterministicHits = 0, unknownHits = 0, leechFits = 0, timing = 0, mechanicalOrder = 0, virtualZeroHits = 0, cappedLowHits = 0, leechContradictions = 0, actionRecencyPenalty = 0, grenadeRolloverPenalty = 0;
     const tsSplitPenalty = timestampSplitPenalty(candidate);
+    const acausalHits = acausalActionHits(candidate);
     const comps = candidate.components || [];
     if (comps.length > 1 && comps[0] && comps[0].comp === 'arrow' && comps.slice(1).some(b => b && (b.comp === 'spell' || b.comp === 'rune' || b.comp === 'grenade')) && !arrowPrefixIsAbsorbable(comps, context)) {
       mechanicalOrder = comps.reduce((sum, b) => sum + ((b.hits || []).filter(isMainHit).length), 0);
@@ -1919,6 +1983,7 @@
       leechFits,
       leechContradictions,
       grenadeRolloverPenalty,
+      acausalHits,
       actionRecencyPenalty,
       unknownHits,
       virtualZeroHits,
@@ -1952,6 +2017,13 @@
       // para engolir uma spell concreta que a forma-base de um timestamp
       // preserva. Aplica-se só depois das provas determinística e de leech.
       ['grenadeRolloverPenalty', 1],
+      // M-012/M-013/M-017/M-018a: entre partições que empatam em toda a evidência
+      // determinística e de leech, a que NÃO precisa de uma ação posterior aos
+      // próprios hits vence. A folga de +1 s das janelas é defasagem de relógio,
+      // não prova; usá-la como desempate é o que fazia um turno reivindicar o cast
+      // do turno seguinte (N-008). Vem antes de `actionRecencyPenalty` porque a
+      // distância ao centro é geometria, e esta é ordem causal.
+      ['acausalHits', 1],
       ['actionRecencyPenalty', 1],
       ['virtualZeroHits', 1],
       ['unknownHits', 1],
@@ -2023,31 +2095,31 @@
     return out;
   }
 
-  function nearestSpellCastForTurn(turn, actions, vocation) {
-    const hits = turn.hits || [];
-    if (!hits.length) return null;
-    const candidates = (actions.spellCasts || []).filter(c => {
+  // C-004/M-011: só uma incantação ofensiva do dono, e da vocação do dono, pode
+  // nomear componente. O mesmo recorte serve à escolha da ação do turno inteiro
+  // (hipótese fundida) e à da ação do componente final, por isso vive aqui em vez
+  // de duplicado nos dois pontos de escolha.
+  function offensiveSpellCastsForVocation(actions, vocation) {
+    return (actions && actions.spellCasts || []).filter(c => {
       if (!c || !c.profile || c.profile.type !== 'attack') return false;
       if (vocation && c.profile.vocation && c.profile.vocation !== vocation) return false;
       return true;
     });
-    // M-016e: mesma exceção de chooseActionForComponent -- quando um estágio
-    // atrasado consolidado carrega o ts do cast originário (multiStageCastTs), a
-    // proximidade ao centro do turno quebra se um cast concreto diferente e
-    // legítimo (ex.: Greater Flurry of Blows) ficar mais perto do centro
-    // deslocado do bloco cruzado. Preferir o cast originário quando os hits do
-    // turno concordam nele.
-    const stageCastTs = sortedUnique(hits.map(h => h.multiStageCastTs).filter(ts => ts != null));
-    if (stageCastTs.length === 1) {
-      const originCast = candidates.find(c => c.ts === stageCastTs[0]);
-      if (originCast) return originCast;
-    }
-    const center = Math.round(mean(hits.map(h => h.ts)));
-    const sorted = candidates.slice().sort((a, b) =>
-      Math.abs(a.ts - center) - Math.abs(b.ts - center)
-      || a.ts - b.ts
-      || (a.seq || 0) - (b.seq || 0));
-    return sorted[0] || null;
+  }
+
+  // Ações oferecidas a um componente de `comp` dentro do turno, com o mesmo
+  // recorte de elegibilidade usado para escolher a ação do turno.
+  function componentActionPool(comp, actions, vocation) {
+    if (comp === 'spell') return { spellCasts: offensiveSpellCastsForVocation(actions, vocation) };
+    if (comp === 'rune') return { runeUses: (actions && actions.runeUses) || [] };
+    if (comp === 'grenade') return { grenadeCasts: (actions && actions.grenadeCasts) || [] };
+    return actions;
+  }
+
+  function nearestSpellCastForTurn(turn, actions, vocation) {
+    const hits = turn.hits || [];
+    if (!hits.length) return null;
+    return chooseActionForComponent('spell', hits, componentActionPool('spell', actions, vocation));
   }
 
   // generalize-single-target-aa-resolver-to-runes: mesmo critério de proximidade
@@ -2724,6 +2796,8 @@
     effectiveManaLeech,
     hitLeechFit,
     actionsNearTurn,
+    resetConsolidatedActions,
+    registerConsolidatedActions,
     possibleShapes,
     segmentations,
     guidedCutPositions,
@@ -2762,6 +2836,7 @@
     leechPartitionScore,
     nearestSpellCastForTurn,
     nearestRuneUseForTurn,
+    componentActionPool,
     detectCharmKilledZeroAction,
     makeVirtualZeroHit,
     makeVirtualZeroHitForCharm,

@@ -29,8 +29,11 @@
 
   const {
     actionsNearTurn,
+    registerConsolidatedActions,
     nearestSpellCastForTurn,
     nearestRuneUseForTurn,
+    componentActionPool,
+    chooseActionForComponent,
     detectCharmKilledZeroAction,
     makeVirtualZeroHit,
     makeVirtualZeroHitForCharm,
@@ -125,14 +128,18 @@
         // charm nao prova AA quando a acao concreta de area pode explicar os
         // dois alvos. A mesma politica vale para as quatro vocacoes nao-RP.
         if (concreteAreaActionCanExplainTurn) {
-          return finalizeManualTurn(turn, [
+          const soloDefs = [
             { comp: actionComp, action, hits: [hits[0], virtual], reason: 'single_target_aa_all_action_without_positive_aa_evidence' },
-          ], 'single_target_aa_all_action_without_positive_aa_evidence', context);
+          ];
+          registerConsolidatedActions(context, soloDefs);
+          return finalizeManualTurn(turn, soloDefs, 'single_target_aa_all_action_without_positive_aa_evidence', context);
         }
-        return finalizeManualTurn(turn, [
+        const charmDefs = [
           { comp: 'arrow', hits: [hits[0]], reason: 'ek_single_visible_aa_before_zero_damage_spell' },
           { comp: actionComp, action, hits: [virtual], reason: 'zero_damage_spell_charm_killed_target_before_hit' },
-        ], 'ek_zero_damage_spell_by_charm', context);
+        ];
+        registerConsolidatedActions(context, charmDefs);
+        return finalizeManualTurn(turn, charmDefs, 'ek_zero_damage_spell_by_charm', context);
       }
       return null;
     }
@@ -529,7 +536,24 @@
 
     function buildValidatedDefs(candidateDefs, candidateReason) {
       const built = candidateDefs.map(def => {
-        const block = { comp: def.comp, hits: def.hits.slice(), action: def.action || null };
+        // M-017/M-018a/M-012/M-013: a fronteira que nomeia a ação é definida em
+        // relação ao primeiro hit DO COMPONENTE, não do turno. A ação acima foi
+        // escolhida sobre o turno inteiro (a hipótese fundida); depois que a
+        // partição decidiu o corte `AA + ação`, o bloco da ação é menor e a
+        // escolha precisa ser refeita sobre ele. Sem isso o AA envenena o
+        // primeiro seq, a fronteira `Using` imediatamente anterior à runa fica
+        // invisível, e o desempate por centro pode nomear uma ação POSTERIOR aos
+        // próprios hits — que é a legítima do turno seguinte (N-008), deixando a
+        // anterior sem dono. Casos-prova: `ms boss` `22:19:21` (runa de `:21`, não
+        // a de `:23`) e `uhax 3 ed` `13:44:07` (runa de `:06`, não a de `:08`).
+        const componentAction = def.comp === actionComp
+          ? (chooseActionForComponent(
+            actionComp,
+            def.hits.filter(hit => !hit.virtual),
+            componentActionPool(actionComp, actions, context.vocation),
+          ) || def.action || null)
+          : (def.action || null);
+        const block = { comp: def.comp, hits: def.hits.slice(), action: componentAction };
         let deterministic;
         let critHomogeneity = { ok: true };
         if (def.comp === actionComp) {
@@ -564,6 +588,7 @@
           deterministic = validatePhysicalBlock(block);
         }
         return Object.assign({}, def, {
+          action: componentAction,
           deterministic,
           critHomogeneity,
           leech: validateLeechBlockOfficialRates(block, context),
@@ -667,6 +692,11 @@
       }
     }
     const defs = picked.defs;
+
+    // N-007/N-008: o resolvedor manual também consolida a ação num turno; sem
+    // registrar aqui, a spell/runa que ele nomeia continuaria disponível para o
+    // turno seguinte e voltaria a nomear dois componentes.
+    registerConsolidatedActions(context, defs);
 
     return finalizeManualTurn(turn, defs, reason, context);
   }
@@ -772,6 +802,7 @@
         best.score.leechFits === second.score.leechFits &&
         best.score.leechContradictions === second.score.leechContradictions &&
         best.score.grenadeRolloverPenalty === second.score.grenadeRolloverPenalty &&
+        best.score.acausalHits === second.score.acausalHits &&
         best.score.actionRecencyPenalty === second.score.actionRecencyPenalty &&
         best.score.virtualZeroHits === second.score.virtualZeroHits &&
         best.score.unknownHits === second.score.unknownHits &&
@@ -780,23 +811,15 @@
         (best.candidate.shape.join('>') !== second.candidate.shape.join('>') || best.candidate.cuts.join(',') !== second.candidate.cuts.join(','))) {
       const bracketWinner = sameMobLeechBracketWinner(turn, best, second);
       if (bracketWinner) {
-        if (context && context.consolidatedGrenadeCasts) {
-          for (const b of bracketWinner.candidate.components) {
-            if (b.comp === 'grenade' && b.action) context.consolidatedGrenadeCasts.add(b.action);
-          }
-        }
+        registerConsolidatedActions(context, bracketWinner.candidate.components);
         return finalizeTurn(turn, bracketWinner, rejected.concat([best, second].filter(c => c !== bracketWinner)), context);
       }
       return unresolvedTurn(turn, rejected.concat([best, second]), 'ambiguous_equal_best_partitions');
     }
 
-    // M-024/M-025: registra o cast de granada que explodiu neste turno para que
-    // actionsNearTurn não o ofereça a turnos posteriores da janela [c+2,c+4].
-    if (context && context.consolidatedGrenadeCasts) {
-      for (const b of best.candidate.components) {
-        if (b.comp === 'grenade' && b.action) context.consolidatedGrenadeCasts.add(b.action);
-      }
-    }
+    // N-007/N-008/M-024/M-025: registra as ações consolidadas neste turno para que
+    // actionsNearTurn não as ofereça a turnos posteriores da mesma janela.
+    registerConsolidatedActions(context, best.candidate.components);
 
     return finalizeTurn(turn, best, rejected, context);
   }
@@ -890,9 +913,16 @@
 
   function buildGrenadeCastAssignments(turns, facts, context) {
     const savedConsumed = context && context.consolidatedGrenadeCasts;
+    const savedSpells = context && context.consolidatedSpellCasts;
+    const savedRunes = context && context.consolidatedRuneUses;
     const savedPreassigned = context && context.preassignedGrenadeCasts;
     if (context) {
+      // Passe de sondagem: cada turno é resolvido isolado, fora de ordem e várias
+      // vezes. Nenhum consumo (N-007/N-008) vale aqui — `null` desliga os três
+      // conjuntos, e o `finally` os devolve.
       context.consolidatedGrenadeCasts = null;
+      context.consolidatedSpellCasts = null;
+      context.consolidatedRuneUses = null;
       context.preassignedGrenadeCasts = null;
       context.grenadeAssignmentOnly = true;
     }
@@ -1085,6 +1115,8 @@
     } finally {
       if (context) {
         context.consolidatedGrenadeCasts = savedConsumed;
+        context.consolidatedSpellCasts = savedSpells;
+        context.consolidatedRuneUses = savedRunes;
         context.preassignedGrenadeCasts = savedPreassigned;
         delete context.grenadeAssignmentOnly;
       }

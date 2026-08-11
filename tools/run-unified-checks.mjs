@@ -30,7 +30,7 @@ const HEAP = '--max-old-space-size=8192';
 const WORKFLOW = {
   name: 'gabarito prioritario + invariantes mecanicas',
   args: ['tools/unified-validation-workflow.mjs', '--gabarito', '--invariants'],
-  expect: 'fixtures pre-2026-06-16 sem violacao de invariante mecanico',
+  expect: 'sem violacao de invariante mecanico',
 };
 
 const GABARITO = {
@@ -40,9 +40,9 @@ const GABARITO = {
 };
 
 const INVARIANTS = {
-  name: 'invariantes mecanicas (corpus pre-corte)',
+  name: 'invariantes mecanicas (corpus completo, todos os regimes)',
   args: ['tools/unified-validation-workflow.mjs', '--invariants'],
-  expect: 'fixtures pre-2026-06-16 sem violacao de invariante mecanico',
+  expect: 'sem violacao de invariante mecanico',
 };
 
 // Todo tests/*.test.mjs, descoberto do disco em vez de lista fixa — era assim que o

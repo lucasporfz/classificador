@@ -71,6 +71,24 @@ const energyWaveWithoutHealingRuneCheck = turn => {
     comp.comp === 'rune' && /ultimate healing/i.test(String(comp.actionLabel || '')));
   return healingRune ? 'Ultimate Healing não pode nomear componente de dano' : null;
 };
+// M-015/N-007/N-008 (change fix-action-reuse-across-turns): contagem sozinha nao pega o
+// defeito de reuso de acao — os dois turnos vizinhos tem a contagem certa e mesmo assim
+// compartilham a MESMA acao. O assert precisa cravar qual acao concreta nomeia o
+// componente, pelo relogio da acao.
+const componentActionAtCheck = (expected, comp, expectedActionClock) => turn => {
+  const c = counts(turn);
+  for (const [component, count] of Object.entries(expected)) {
+    if (c[component] !== count) {
+      return `esperado ${JSON.stringify(expected)}; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }
+  }
+  const block = (turn.components || []).find(x => (x.comp || x.kind) === comp);
+  if (!block) return `esperado componente ${comp} presente; ausente`;
+  const clock = block.action && block.action.clock || null;
+  return clock === expectedActionClock
+    ? null
+    : `esperado acao de ${comp} em ${expectedActionClock}; got ${clock || '-'}`;
+};
 const spellWithAaCheck = (expectedArrowHits, expectedSpellHits, labelPart, expectedBeam = null) => turn => {
   const c = counts(turn);
   if (!(c.arrow === expectedArrowHits && c.spell === expectedSpellHits && c.rune === 0 && c.grenade === 0)) {
@@ -201,6 +219,55 @@ export const CASES = [
         ? null
         : `esperado A0 S6 Energy Wave; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
     }, '11/Jun/2026'),
+  // ===== change fix-action-reuse-across-turns: M-015/N-007/N-008 =====
+  // Uma acao nomeia no maximo um componente, em no maximo um turno. Nos casos abaixo o
+  // motor dava a MESMA acao a dois turnos vizinhos, deixando sem dono a acao causalmente
+  // correta que existe no log. Ver reports/fase2-m015-diagnostico.md.
+  //
+  // ms boss S25: `Using one of 914 sudden death runes` em 22:19:21 (seq 574) explica o hit
+  // 1258 de 22:19:22; `Using one of 913` em 22:19:23 (seq 579) explica o 1075 de 22:19:24.
+  // M-017/M-018a: a linha Using imediatamente anterior ao primeiro hit DO COMPONENTE.
+  C('ms boss/22:19:21-rune-using-anterior', 'ms boss server log.txt', 'ms boss local chat.txt', '22:19:21',
+    componentActionAtCheck({ arrow: 1, spell: 0, rune: 1, grenade: 0 }, 'rune', '22:19:21'), '13/Jun/2026'),
+  C('ms boss/22:19:24-rune-nao-compartilhada', 'ms boss server log.txt', 'ms boss local chat.txt', '22:19:24',
+    componentActionAtCheck({ arrow: 0, spell: 0, rune: 1, grenade: 0 }, 'rune', '22:19:23'), '13/Jun/2026'),
+  // uhax 3 ed S1: Great Fireball em 13:44:06 e 13:44:08 — uma explosao cada.
+  C('uhax 3 ed/13:44:07-gfb-using-anterior', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:44:07',
+    componentActionAtCheck({ arrow: 0, spell: 0, rune: 9, grenade: 0 }, 'rune', '13:44:06'), '03/Jul/2026'),
+  C('uhax 3 ed/13:44:09-gfb-nao-compartilhada', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:44:09',
+    componentActionAtCheck({ arrow: 0, spell: 0, rune: 8, grenade: 0 }, 'rune', '13:44:08'), '03/Jul/2026'),
+  // uhax 3 ed S1: existe UM so `exevo ulus tera` (13:43:54) para dois blocos. O bloco de
+  // 13:43:56 e a runa Great Fireball de 13:43:56, nao um segundo Terra Burst: normalizada
+  // por darklight matter, sua assinatura por-mob e 1 : 1,0033 : 0,923 : 0,803, igual a dos
+  // blocos GFB de :58 e :07 e distinta da do Terra Burst de :53 (1 : 1,047 : 1,001).
+  // Corrige junto a violacao M-012/M-013 (cast de :54 a 2s dos hits de :56).
+  C('uhax 3 ed/13:43:53-terra-burst-nao-compartilhado', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:43:53',
+    componentActionAtCheck({ arrow: 1, spell: 9, rune: 0, grenade: 0 }, 'spell', '13:43:54'), '03/Jul/2026'),
+  C('uhax 3 ed/13:43:55-bloco-e-great-fireball', 'uhax 3 server log ed.txt', 'uhax 3 local chat ed.txt', '13:43:55',
+    componentActionAtCheck({ arrow: 1, spell: 0, rune: 11, grenade: 0 }, 'rune', '13:43:56'), '03/Jul/2026'),
+  // rpboss S2: `exevo tempo mas san` castada em 09:40:29 tem janela de impacto
+  // [09:40:31, 09:40:33] (M-023/M-024) e cobre o hit de 09:40:32. O `exori gran con` de
+  // 09:40:33 explica o hit de 09:40:33 — a resposta direta do proprio cast.
+  C('rpboss/09:40:31-aa-granada', 'RPBOSS Server Log.txt', 'RPBOSS Local Chat.txt', '09:40:31',
+    componentActionAtCheck({ arrow: 1, spell: 0, rune: 0, grenade: 1 }, 'grenade', '09:40:29'), '17/Jun/2026'),
+  C('rpboss/09:40:33-spell-do-proprio-cast', 'RPBOSS Server Log.txt', 'RPBOSS Local Chat.txt', '09:40:33',
+    componentActionAtCheck({ arrow: 0, spell: 1, rune: 0, grenade: 0 }, 'spell', '09:40:33'), '17/Jun/2026'),
+  // bakra/jaded S5 (mesmo log): Divine Caldera e de area e atinge cada mob UMA vez por
+  // cast, entao o cast de 09:29:23 nao pode explicar 733 e 565 no mesmo bakragore. O hit
+  // de 09:29:24 e auto-ataque.
+  C('bakra/09:29:22-caldera-nao-compartilhada', 'Server Log bakra.txt', 'Local Chat bakra.txt', '09:29:22',
+    componentActionAtCheck({ arrow: 1, spell: 1, rune: 0, grenade: 0 }, 'spell', '09:29:23'), '10/Jun/2026'),
+  C('bakra/09:29:24-aa', 'Server Log bakra.txt', 'Local Chat bakra.txt', '09:29:24',
+    sharedCountCheck({ arrow: 1, spell: 0, rune: 0, grenade: 0 }), '10/Jun/2026'),
+  C('jaded/09:29:24-aa', 'jaded Server Log.txt', 'jaded Local Chat.txt', '09:29:24',
+    sharedCountCheck({ arrow: 1, spell: 0, rune: 0, grenade: 0 }), '10/Jun/2026'),
+  // kim S0: M-016d — blast (889 em 16:24:29) e estagio atrasado (172 OK em 16:24:30) do
+  // MESMO cast 16:24:29 ficam no MESMO turno. O segundo do eco so tem overkill, entao o
+  // gate guloso de M-016d-1 o pulava e o eco virava turno separado com o mesmo cast.
+  C('kim/16:24:28-death-echo-blast-e-eco', 'kim server log.txt', 'kim local chat.txt', '16:24:28',
+    componentActionAtCheck({ arrow: 1, spell: 2, rune: 0, grenade: 0 }, 'spell', '16:24:29'), '14/Jul/2026'),
+  CN('kim/16:24:30-eco-nao-e-turno-proprio', 'kim server log.txt', 'kim local chat.txt', '16:24:30', '14/Jul/2026'),
+  // ===== fim change fix-action-reuse-across-turns =====
   // essence/Echo of Ichgahal: boss unitario, sem cast ofensivo e sem Using de
   // runa no turno; o unico hit observado so pode ser AA.
   C('essence/00:21:12', 'essence server log.txt', 'essence local chat.txt', '00:21:12',
@@ -386,22 +453,15 @@ export const CASES = [
         ? null
         : `esperado Thunderstorm; got ${rune && rune.actionLabel || '-'}`;
     }, '10/Jun/2026'),
-  // Alcance geral de M-024: rollover real encontrado pelo dump RP fora do
-  // fixture alvo. Passa cumulativamente por dano, crit-state, M-031 e
-  // cardinalidade de leech; não é exceção por log.
-  C('grenade-rollover-corpus/bakra-09:21:00', 'Server Log bakra.txt', 'Local Chat bakra.txt', '09:21:00',
-    t => {
-      const c = counts(t);
-      return (t.status === 'unresolved' && c.arrow === 0 && c.spell === 0 && c.rune === 0 && c.grenade === 0)
-        ? null
-        : `esperado unresolved sem rollover não comprovado; status=${t.status} A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
-    }, '09/Jun/2026'),
-  // Forma-base de um timestamp: a hipótese de rollover não pode engolir a
-  // Caldera concreta e vencer só por ter menos componentes.
-  C('grenade-rollover-corpus/bakra-09:23:20', 'Server Log bakra.txt', 'Local Chat bakra.txt', '09:23:20',
-    grenadeWithAaSpellCheck(1, 9, 10, 'Divine Caldera', [33801], []), '09/Jun/2026'),
-  C('grenade-rollover-corpus/bakra-09:27:02', 'Server Log bakra.txt', 'Local Chat bakra.txt', '09:27:02',
-    grenadeWithAaSpellCheck(1, 10, 13, 'Divine Caldera', [34023], []), '09/Jun/2026'),
+  // REMOVIDOS em 10/Ago/2026 (fix-action-reuse-across-turns), por decisão do usuário:
+  // `grenade-rollover-corpus/bakra-09:21:00`, `09:23:20` e `09:27:02`. Os três eram os
+  // ÚNICOS casos do gabarito inteiro cuja sessão está em `CORPUS_EXCLUSIONS` — a hunt
+  // `09/Jun/2026 09:18-09:30` do `bakra`, que o harness só alcançava por passar
+  // `includeExcluded: true`. O usuário declarou a sessão inteira fora de interesse:
+  // turno sem classificação, turno reclassificado, nada nela importa por enquanto.
+  // Motivo técnico de terem virado vermelho: `09:23:20`/`09:27:02` esperavam um
+  // `Divine Caldera` que o mesmo cast (`09:23:19`) já nomeava no turno `09:23:18` —
+  // um cast, dois componentes, dois turnos, exatamente o que N-008a proíbe.
   // mazzerinbarrage 09/Jul/2026: granada do cast anterior cai no prefixo do turno
   // seguinte. M-023/M-025 exigem comparar a janela inteira antes de consumir o cast.
   C('mazzerinbarrage/01:20:45', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '01:20:45',

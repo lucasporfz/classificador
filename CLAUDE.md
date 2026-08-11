@@ -82,9 +82,11 @@ node tools/run-unified-checks.mjs
 Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--tests`):
 
 - gabarito curado pré-2026-06-16 (`tools/unified-experimental.mjs --gabarito`);
-- varredura exaustiva de invariantes mecânicos sobre TODAS as fixtures pré-corte
-  (`--invariants`) — cobre M-024/M-025 cross-turno, cardinalidade, T-006 e rótulos
-  concretos, que o gabarito curado não cobre;
+- varredura exaustiva de invariantes mecânicos sobre **TODAS as sessões de TODOS os pares,
+  em qualquer regime** (`--invariants`) — cobre M-024/M-025 cross-turno, cardinalidade,
+  T-006 e rótulos concretos, que o gabarito curado não cobre. A cobertura é normativa
+  (D-017a): a única exclusão admitida é `CORPUS_EXCLUSIONS`, e é **proibido** reintroduzir
+  recorte por data. Travada por `tests/unified-invariants.test.mjs`;
 - todos os `tests/*.test.mjs`, descobertos do disco.
 
 **Não usar `python`/`pytest`.** Este repo é 100% Unified/JS. Os antigos
@@ -94,16 +96,28 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
-**Baseline conhecido (medido em 21/Jul/2026, após `remove-legacy-classifier`).** Comparar
-contra ele em vez de exigir verde total. Total de alvos: **8/12 OK**.
+**Baseline conhecido (medido em 11/Ago/2026, após `fix-action-reuse-across-turns`).**
+Comparar contra ele em vez de exigir verde total. Total de alvos: **30/34 OK**.
 
-- `--invariants`: **OK**.
-- `--gabarito`: **77/84** (3 fora do escopo do reviewer). Falham `bakradrone` ×3
-  (`09:31:02`, `09:22:43`, `09:59:53`) e `essence` ×4 (`00:21:12`, `00:21:14`,
-  `00:23:29`, `00:25:22`) — **7 falhas**. `barrage/19:04:08` saiu da lista com
-  `fix-overkill-only-turn-boundary` (22/Jul/2026); `infer-aa-element-per-session`
-  (22/Jul/2026) somou 3 casos de `thunder arrow`, o único fixture com munição de área
-  elemental (S-007b).
+- `--invariants`: **28/33 fixtures limpos, 1 SKIP** (`drome`, exclusão canônica de par
+  inteiro). 5 fixtures falham (`bakra`, `bakradrone`, `essence`, `jaded`,
+  `mazzerinbarrage`), **todos** por **quebras de M-009 derivadas**: emitidas com
+  `kind='unresolved'` sobre turnos de `unresolved_by_leech_contradiction` pré-cutoff (fora
+  de escopo por decisão de 19/Jul/2026) ou `partial_edge_missing_evidence` (T-007/A-009).
+  Somem junto com o turno unresolved; não são contradição mecânica independente.
+
+  **As 8 quebras sobre turnos RESOLVIDOS acabaram** (`fix-action-reuse-across-turns`,
+  11/Ago/2026): eram `bakra`/`jaded` `10/Jun` `09:29:24`, `ms boss` `13/Jun` `22:19:24`,
+  `kim` `14/Jul` `16:24:30`, `rpboss` `17/Jun` `09:40:33`, `uhax 3 ed` `03/Jul` `13:43:55`
+  (×2) e `13:44:09` — todas M-015/N-007/N-008 (reuso de ação entre turnos vizinhos). A
+  correção foi escolher a ação sobre o bloco final do componente e consumir spell/runa como
+  a granada já fazia (M-013a/M-013b, N-008a, M-016d-1c).
+- `--gabarito`: **185/187**, falham **2** — `essence/00:21:12` e `essence/00:21:14`
+  (esperado `A1`, obtido `A0 S0 R0 G0`). Em 11/Ago/2026 o gabarito perdeu 3 casos
+  (`grenade-rollover-corpus/bakra` `09:21:00`/`09:23:20`/`09:27:02`) e ganhou 13 da família
+  M-015: eram os únicos casos de todo o gabarito dentro de `CORPUS_EXCLUSIONS` (hunt
+  `09/Jun/2026 09:18-09:30`), removidos a pedido do usuário. O baseline de 09/Ago
+  registrava as mesmas 2 falhas de `essence`.
   (Era **71/79** antes de `prefer-grenade-cast-turn-that-cannot-resolve-without-it`,
   **70/78** antes de `require-discriminating-leech-channel-in-bracket`,
   **62/70** em `68fd1e6` e **59/70** em `bfd4a26`; as changes C-012a e
@@ -121,6 +135,13 @@ contra ele em vez de exigir verde total. Total de alvos: **8/12 OK**.
 alvos que sumiram (`experimental-leech-cardinality`, `experimental-synthetic-case`) passavam,
 mas carregavam `js/classifier.js` e o núcleo experimental — ou seja, mediam um motor que este
 repositório não usa. Foram removidos junto com o legado (`remove-legacy-classifier`).
+De 12 para 34 alvos: são `tests/*.test.mjs` novos, descobertos do disco pelo runner.
+
+**Cobertura de invariantes não pode encolher.** Até 09/Ago/2026 a varredura aplicava D-017
+como gate cego de data e pulava 17 dos 34 fixtures — o regime pós-cutoff inteiro ficava sem
+cobertura, escondendo 5 quebras em turnos resolvidos. A regra agora é D-017a e há teste que
+trava (`tests/unified-invariants.test.mjs`). Se um relatório voltar a dizer "N fixtures fora
+do escopo D-017", é bug de cobertura, não escopo legítimo.
 
 **Ao medir baseline num worktree limpo, copiar `tests/*.test.mjs` para dentro dele.**
 O `.gitignore` ignora `tests/` (só `validator-smoke`, `fixtures/` e `snapshots/` são

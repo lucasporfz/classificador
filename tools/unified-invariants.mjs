@@ -135,16 +135,6 @@ function candidateComponents(turn) {
     .flatMap(candidate => candidate.candidate?.components || candidate.components || []);
 }
 
-function isPreCutoff(result) {
-  if (result?.mobModsRegime?.id) return result.mobModsRegime.id === 'pre-2026-06-16';
-  return result?.sessionDateKey > 0 && result.sessionDateKey < 20260616;
-}
-
-function sessionIsDefinitelyOutsideScope(session) {
-  if (!session?.year) return false;
-  return (session.year * 10000) + (session.month * 100) + session.day >= 20260616;
-}
-
 function grenadeImpactViolations(turns) {
   const byCast = new Map();
   for (const turn of turns) {
@@ -400,15 +390,19 @@ function setupViolations(result) {
   return violations;
 }
 
+// D-016 vale nos DOIS sentidos: sessao datada antes de 16/Jun/2026 usa a tabela pre-corte,
+// sessao datada de 16/Jun/2026 em diante usa exclusivamente a pos-corte. Sessao sem data nao
+// pode escolher regime por suposicao, entao nao e auditada aqui (D-006/D-016).
 function regimeViolations(result) {
-  if (!(result?.sessionDateKey > 0 && result.sessionDateKey < 20260616)) return [];
+  if (!(result?.sessionDateKey > 0)) return [];
+  const expected = result.sessionDateKey < 20260616 ? 'pre-2026-06-16' : 'post-2026-06-16';
   const regime = result.mobModsRegime?.id || result.mobModsRegime;
-  return regime === 'pre-2026-06-16'
+  return regime === expected
     ? []
     : [{
         ts: result.turns?.[0]?.ts ?? 0,
-        rule: 'D-016/D-017',
-        msg: `sessao pre-cutoff usa regime ${regime || 'ausente'}`,
+        rule: 'D-016',
+        msg: `sessao ${expected === 'pre-2026-06-16' ? 'pre' : 'pos'}-cutoff usa regime ${regime || 'ausente'}`,
       }];
 }
 
@@ -444,23 +438,23 @@ export function runUnifiedInvariants({
       continue;
     }
 
+    // Cobertura TOTAL por decisao do usuario (09/Ago/2026): toda sessao nao-excluida entra,
+    // em qualquer regime. O antigo gate de data (D-017) so valia "enquanto o conjunto
+    // pos-16-de-junho nao estiver preenchido", condicao ja expirada — e escondia quebras
+    // reais em turnos RESOLVIDOS de kim/rpboss/uhax 3 ed. As unicas exclusoes legitimas sao
+    // as canonicas de CORPUS_EXCLUSIONS, ja aplicadas por corpus.sessionsFor.
     let scopedTurns = 0;
     const violations = [];
     for (const pair of pairs) {
-      if (sessionIsDefinitelyOutsideScope(pair.sv)) continue;
       const result = corpus.classify(fixture.server, fixture.local, pair, { profile: 'gabarito' });
       if (!result) continue;
-      const sessionKey = pair.sv?.year
-        ? (pair.sv.year * 10000) + (pair.sv.month * 100) + pair.sv.day
-        : null;
-      if (!(sessionKey > 0 && sessionKey < 20260616) && !isPreCutoff(result)) continue;
       scopedTurns += (result.turns || []).length;
       violations.push(...checkUnifiedInvariants(result));
     }
     violations.sort((a, b) => a.ts - b.ts || a.rule.localeCompare(b.rule));
 
     if (!scopedTurns) {
-      write(`SKIP invariants/${fixture.key}: nenhuma sessao pre-2026-06-16 em escopo (D-017)`);
+      write(`SKIP invariants/${fixture.key}: nenhuma sessao classificavel (todas excluidas ou vazias)`);
       skipped++;
     } else if (violations.length) {
       const shown = violations.slice(0, 6)
@@ -469,11 +463,11 @@ export function runUnifiedInvariants({
       write(`FAIL invariants/${fixture.key}: ${shown}${violations.length > 6 ? ` (+${violations.length - 6})` : ''}`);
       fail++;
     } else {
-      write(`PASS invariants/${fixture.key}: ${scopedTurns} turnos pre-corte respeitam M-024/M-025, cardinalidade, T-006 e rotulos concretos`);
+      write(`PASS invariants/${fixture.key}: ${scopedTurns} turnos respeitam M-024/M-025, cardinalidade, T-006 e rotulos concretos`);
       pass++;
     }
   }
-  write(`\n${pass}/${pass + fail} fixtures pre-2026-06-16 sem violacao de invariante mecanico; ${skipped} fora do escopo D-017`);
+  write(`\n${pass}/${pass + fail} fixtures sem violacao de invariante mecanico; ${skipped} sem sessao classificavel`);
   return { pass, fail, skipped, empty: false, corpus };
 }
 

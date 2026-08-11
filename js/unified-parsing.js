@@ -456,11 +456,28 @@
       // potência falhar nesse segundo (evidência insuficiente permanece não
       // resolvida, não vira uma busca ampla).
       let echoTs = null, echoBlock = null, echoCandidates = null;
+      let overkillOnlyEcho = null;
       for (const delayCandidate of delays) {
         const ts = primaryTerminal + delayCandidate;
         const block = (hitsByTs.get(ts) || []).filter(h => !delayedByHit.has(h.id));
         const candidates = block.filter(h => !h.overkill && !h.zeroDamageDodge);
         if (candidates.length) { echoTs = ts; echoBlock = block; echoCandidates = candidates; break; }
+        // M-016d-1a/D-011/D-012a: dano de overkill é truncado — não prova nem
+        // contradiz a transformação de potência. Um segundo composto SÓ de overkill
+        // é, então, evidência ausente (D-006), e o gate guloso o pulava por não ter
+        // candidato avaliável. O efeito não era neutro: o eco virava âncora de um
+        // turno próprio e o MESMO cast passava a nomear dois turnos consolidados,
+        // que é exatamente o que M-016d/N-008 proíbem. A regra já manda os overkills
+        // "acompanharem a explosão" no segundo confirmado; aqui eles são tudo o que
+        // o segundo tem. Guardado abaixo e só usado se nenhum delay trouxer prova.
+        if (!overkillOnlyEcho && block.length && block.every(h => h.overkill)) {
+          overkillOnlyEcho = { ts, block };
+        }
+      }
+      if (echoTs == null && overkillOnlyEcho) {
+        echoTs = overkillOnlyEcho.ts;
+        echoBlock = overkillOnlyEcho.block;
+        echoCandidates = [];
       }
       if (echoTs == null) continue;
       // T-002/M-016d-1a: o segundo do estágio atrasado pode conter, legitimamente, a
@@ -542,6 +559,19 @@
         // exige-se ao menos um par casado, além de nenhuma contradição.
         if (!contradicted && me.length) { winningTier = tier; matchedPrimary = mp; matchedEcho = me; otherCastHits = other; break; }
       }
+      // Segundo só-overkill: não há par para casar nem para contradizer. A
+      // consolidação NÃO afirma potência alguma sobre o bloco — nenhum hit recebe
+      // `multiStageTierStage` e nenhum dano é inventado (D-006); ela apenas mantém
+      // os dois estágios do mesmo cast no mesmo turno. Se o perfil declarasse mais
+      // de uma fração haveria uma escolha real a fazer sem evidência, e aí o motor
+      // continua não decidindo.
+      const echoProvenByPower = !!winningTier;
+      if (!winningTier && !echoCandidates.length && tiers.length === 1) {
+        winningTier = tiers[0];
+        matchedPrimary = new Set();
+        matchedEcho = [];
+        otherCastHits = new Set();
+      }
       if (!winningTier) continue;
       // Uma vez que pares comparáveis provam timing + potência, a explosão de
       // área inteira no mesmo timestamp é o estágio atrasado. Isso preserva hits
@@ -556,10 +586,18 @@
       for (const h of consolidatedEcho) {
         h.multiStageStage = delayed.id;
         h.multiStageCastTs = cast.ts;
-        if (winningTier.stage != null) h.multiStageTierStage = winningTier.stage;
+        if (echoProvenByPower && winningTier.stage != null) h.multiStageTierStage = winningTier.stage;
         delayedByHit.set(h.id, cast);
       }
-      assignments.push({ cast, primaryHits: Array.from(matchedPrimary), delayedHits: consolidatedEcho });
+      // `anchorHits` localiza o turno de origem. Normalmente são os próprios hits
+      // casados do blast; no segundo só-overkill não há par casado, e a âncora passa
+      // a ser a janela do blast (T-003: sem âncora o eco não seria reanexado a turno
+      // nenhum e o hit sumiria).
+      assignments.push({
+        cast,
+        anchorHits: matchedPrimary.size ? Array.from(matchedPrimary) : primaryWindow.slice(),
+        delayedHits: consolidatedEcho,
+      });
     }
     const turnEligible = sorted.filter(h => !delayedByHit.has(h.id));
     const blocks = [];
@@ -592,7 +630,7 @@
       if (turnHits.length) pushTurn(start, turnHits);
     }
     for (const assignment of assignments) {
-      const origin = turns.find(t => assignment.primaryHits.some(h => t.hits.includes(h)));
+      const origin = turns.find(t => assignment.anchorHits.some(h => t.hits.includes(h)));
       if (!origin) continue;
       origin.hits.push(...assignment.delayedHits);
       origin.hits.sort((a, b) => (a.ts - b.ts) || ((a.seq || 0) - (b.seq || 0)));
