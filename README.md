@@ -1,57 +1,48 @@
 # Classificador (Tibia)
 
-Página única que cruza um **server log** + um **local chat** da mesma hunt e produz
-uma **tabela de rotação** por componente/spell: **turnos, hits médios, dano base, dano
-efetivo** — além de gráficos do log (componentes por turno, hits/turno, dano/turno,
-Impact Analyser e histograma por componente). **Não há simulação**: só leitura dos dois
-logs.
+Página única que cruza um **server log** + um **local chat** da mesma hunt e mostra
+**quanto cada componente da rotação realmente fez**: turnos, hits médios, dano base e dano
+efetivo por componente/spell. **Não há simulação** — só leitura dos dois logs.
 
-Funciona para todas as vocações (RP e EK validados; mage/druid/monk pela mesma mecânica).
+O local chat é o que diz qual spell foi lançada em cada turno, e é isso que permite separar
+o componente "spell" por incantação (ex.: `Divine Caldera`) em vez de somar tudo num balde só.
+
+Funciona para todas as vocações.
 
 ## Como usar
 
-Abra `index.html` num servidor estático (o Chart.js vem de CDN). Cole o server log e o
-local chat da mesma hunt e clique em **classificar**.
+**https://lucasporfz.github.io/classificador/**
 
-```
-# qualquer servidor estático, ex.:
-npx serve .
-# ou a extensão Live Server do VS Code
-```
+1. Carregue ou cole o **server log** e o **local chat** da mesma hunt.
+2. Se os arquivos contiverem várias hunts, escolha o **par de sessões** no seletor (o
+   pareamento é automático por dia e horário de save).
+3. Clique em **classificar**.
 
-## Como funciona (resumo)
+## O que a página mostra
 
-O projeto tem **um único motor de classificação**, o Unified, carregado por `index.html` na
-ordem abaixo:
+**Tabela de rotação** — uma linha por componente/spell:
 
-- **`js/unified-parsing.js`** — fatos observados: hits, casts, `Using` de runa, leech, charms
-  e modificadores; formação dos turnos de 2 segundos.
-- **`js/unified-formulas.js`** — reversão discreta de dano (elemental e físico), `effectiveMod`
-  por pierce/Expose Weakness, fórmulas de leech.
-- **`js/unified-setup-inference.js`** — inferência por sessão: taxa de leech, minor charms,
-  BM/Battle Momentum, `utevo grav san`, multiplicador de crítico.
-- **`js/unified-validation.js`** — validação de partição candidata: interseções, crit-state,
-  cardinalidade por leech, homogeneidade.
-- **`js/unified-turn-resolution.js`** — enumeração de cortes, escolha da partição e nomeação.
-- **`js/unified-classification-engine.js`** / **`js/unified-main.js`** — orquestração e a API
-  consumida pela UI.
+| coluna | o que é |
+| --- | --- |
+| componente | Auto ataque, cada spell por incantação, runa, granada |
+| turnos | em quantos turnos alinhados aquele componente apareceu |
+| hits méd | hits por turno |
+| hits médios ajustados (grav san) | hits por turno corrigidos pelo ganho do tapete |
+| dano médio sem crítico | dano base, com crítico/Onslaught/prey revertidos |
+| dano médio com crítico | dano efetivo observado |
 
-## Teste / oráculo
+Componentes com mecânica em estágios aparecem quebrados em faixas próprias — *sem bônus* /
+*com bônus*, *primeira* / *segunda explosão* (death echo), *central* / *lateral* (beam),
+*Stage 1/2/3*.
 
-```
-node tools/diag-unified-turn.mjs "logs/<server>.txt" "logs/<localchat>.txt" HH:MM:SS
-```
+**Grav san** — quando `utevo grav san` é confirmado na sessão, sai uma segunda tabela só
+com o que caiu em cima do tapete, mais uptime e bônus de dano.
 
-Diagnóstico canônico de turno: roda o Unified com as **mesmas opções da UI** e mostra status,
-hits com evidência física/elemental e as violações de cada partição rejeitada. Use
-`--session N` para mirar uma sessão específica por índice.
+**Uptime** — AA uptime e Spell/rune/granada uptime (perdidos, acertados, % e por hora).
 
-Validação obrigatória depois de qualquer mudança no classificador:
+**Gráficos do log** — componentes por turno, hits/turno, dano/turno, Impact Analyser e um
+histograma por componente. Clicar em qualquer ponto abre o **detalhe do turno**, hit a hit,
+com navegação anterior/próximo.
 
-```
-node tools/run-unified-checks.mjs
-```
-
-Fixtures em `logs/` cobrem: RP pack (`server log rp` + `localchat rp`), RP party
-(`darklight …`), RP boss single-target (`murcion …`), EK packs (`bastion …`,
-`night harpy …`) e druid (`uhax …`).
+Turnos que não alinham 100% entre os dois logs (cast fora da janela, ou fora da cobertura do
+local chat) são **excluídos e contados** no rodapé — não entram na média silenciosamente.
