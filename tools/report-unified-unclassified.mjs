@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { discoverFixturePairs } from './fixture-pairs.mjs';
+import { CORPUS_EXCLUSIONS } from './unified-corpus.mjs';
 
 const ROOT = process.cwd();
 const LOG_DIR = path.join(ROOT, 'logs');
@@ -184,27 +185,39 @@ function isPostCutoffSession(sv) {
   return sd.day >= CUTOFF.day;
 }
 
-// A sessão `mazzerinbarrage` salva 28/Jun/2026 23:02:16 tem múltiplos setups de leech
-// dentro da MESMA sessão (troca de arma no meio da caçada) — confirmado por revisão
-// manual do usuário em 12/Jul/2026. A inferência de leech do motor é única por sessão
-// (C-006); detectar múltiplos setups intra-sessão é fora de escopo (já difícil o
-// suficiente com um só). Excluída incondicionalmente, não só sob --post-cutoff-only.
+// As exclusões vivem em DOIS níveis, e eles não se misturam:
+//
+// - Nível CORPUS (`CORPUS_EXCLUSIONS`, em tools/unified-corpus.mjs): o par/sessão não é
+//   classificado por ferramenta nenhuma. É o catálogo canônico, citado por
+//   docs/CLASSIFICATION_RULES.md e pelo hash de identidade do dump. Este relatório o
+//   CONSOME em vez de manter uma cópia própria — a cópia divergia (deixava `drome` inteiro
+//   entrar aqui e sair do dump, inflando o total em 25 turnos que são duplicata de bakra).
+// - Nível ESCOPO DE INVESTIGAÇÃO (abaixo): a sessão/turno É classificada, mas seus
+//   `unresolved` não contam como pendência acionável. Não entra em `CORPUS_EXCLUSIONS`
+//   porque isso apagaria a sessão do dump aceito, perdendo classificações válidas.
+function isCorpusExcludedSession(serverName, sv) {
+  const sd = parseSessionDate(sv);
+  return CORPUS_EXCLUSIONS.some(exclusion => {
+    if (exclusion.server !== serverName) return false;
+    if (exclusion.year == null) return true; // arquivo inteiro
+    return !!sd
+      && exclusion.year === sd.year
+      && exclusion.month === sd.month
+      && exclusion.day === sd.day
+      && exclusion.saveSec === sd.saveSec;
+  });
+}
+
+// ESCOPO DE INVESTIGAÇÃO. A sessão `mazzerinbarrage` salva 28/Jun/2026 23:02:16 tem
+// múltiplos setups de leech dentro da MESMA sessão (troca de arma no meio da caçada) —
+// confirmado por revisão manual do usuário em 12/Jul/2026. A inferência de leech do motor é
+// única por sessão (C-006); detectar múltiplos setups intra-sessão é fora de escopo (já
+// difícil o suficiente com um só). Pulada incondicionalmente, não só sob
+// --post-cutoff-only; o total de sessões puladas aparece no cabeçalho do relatório.
 function isKnownMultiLeechSetupSession(label, sv) {
   if (label !== 'mazzerinbarrage') return false;
   const sd = parseSessionDate(sv);
   return !!sd && sd.year === 2026 && sd.month === 6 && sd.day === 28;
-}
-
-// A sessão salva `Tue Jun 09 09:30:47 2026` (saveSec 34247) aparece em três fixtures que
-// compartilham o mesmo prefixo de log — `bakra`, `drome` e `jaded` — sempre com os MESMOS
-// 54 turnos sem classificação (09:18:50→09:27:14), categoria `mixed_crit_state` /
-// `no_valid_partition`. Decisão do usuário (20/Jul/2026): esse hunt tem uma mecânica que
-// não vai ser modelada por agora, então essa sessão fica FORA da varredura de turnos sem
-// classificação, incondicionalmente (não é leech, então não caía no filtro pré-cutoff).
-function isIgnoredMechanicSession(label, sv) {
-  if (label !== 'bakra' && label !== 'drome' && label !== 'jaded') return false;
-  const sd = parseSessionDate(sv);
-  return !!sd && sd.year === 2026 && sd.month === 6 && sd.day === 9 && sd.saveSec === 34247;
 }
 
 // Turnos com comportamento conhecido e escolhido não trabalhar (docs/CLASSIFICATION_RULES.md,
@@ -256,14 +269,14 @@ function runPair(ctx, label, serverName, localName, windowFilter, postCutoffOnly
     useFloat16Mitigation: true,
   };
   const allUnresolved = [];
-  let version, status = 'resolved', totalTurns = 0, goldObs = 0, leechSetup = null, lastError = null, knownAccepted = 0, preCutoffLeech = 0;
+  let version, status = 'resolved', totalTurns = 0, goldObs = 0, leechSetup = null, lastError = null, knownAccepted = 0, preCutoffLeech = 0, partialEdge = 0, scopeSkippedSessions = 0;
   pairs.forEach((pair, sessionIndex) => {
     // Pula sessões de data diferente da janela pedida — evita classificar sessões
     // que já sabemos que não vão contribuir com nenhum turno filtrado.
     if (!sessionMatchesWindowDate(pair, windowFilter)) return;
     if (postCutoffOnly && !isPostCutoffSession(pair.sv)) return;
-    if (isKnownMultiLeechSetupSession(label, pair.sv)) return;
-    if (isIgnoredMechanicSession(label, pair.sv)) return;
+    if (isCorpusExcludedSession(serverName, pair.sv)) return;
+    if (isKnownMultiLeechSetupSession(label, pair.sv)) { scopeSkippedSessions++; return; }
     const result = ctx.UnifiedClassificationEngine.classifyUnified(pair.sv.text, pair.lc.text, opts);
     if (result.error) { lastError = result.error; return; }
     version = result.version;
@@ -272,8 +285,11 @@ function runPair(ctx, label, serverName, localName, windowFilter, postCutoffOnly
     goldObs += result.goldLeechObservationCount || 0;
     leechSetup = result.leechSetup || leechSetup;
     for (const t of (result.turns || [])) {
-      if (t && t.partialEdgeMissingEvidence) continue;
       if (windowFilter && (t.ts < windowFilter.start || t.ts > windowFilter.end)) continue;
+      // T-007/A-009: turno parcial sem evidência fica FORA da contagem de sem classificação
+      // por regra — mas contado, não pulado em silêncio. Sem esta coluna a categoria some
+      // da fotografia e o bruto observado não fecha com o dump.
+      if (t && t.partialEdgeMissingEvidence) { partialEdge++; continue; }
       if (isKnownAcceptedUnresolved(label, pair.sv, t.ts)) { knownAccepted++; continue; }
       if (t.status === 'unresolved' || (t.components || []).some(c => c.comp === 'unresolved')) {
         if (!includePreCutoffLeech && isOutOfScopePreCutoffLeech(t, pair.sv)) { preCutoffLeech++; continue; }
@@ -294,6 +310,8 @@ function runPair(ctx, label, serverName, localName, windowFilter, postCutoffOnly
     unresolvedTurns: allUnresolved.length,
     knownAcceptedUnresolved: knownAccepted,
     preCutoffLeechExcluded: preCutoffLeech,
+    partialEdgeExcluded: partialEdge,
+    scopeSkippedSessions,
     resolvedWithoutLeech: null,
     leechSetup,
     goldLeechObservationCount: goldObs,
@@ -317,22 +335,32 @@ function writeReport(results, windowFilter) {
   lines.push('Fonte normativa lida antes da execução: `docs/CLASSIFICATION_RULES.md`.');
   lines.push('');
   const totalPreCutoffLeech = results.reduce((s, r) => s + (r.preCutoffLeechExcluded || 0), 0);
+  const totalPartialEdge = results.reduce((s, r) => s + (r.partialEdgeExcluded || 0), 0);
+  const totalKnownAccepted = results.reduce((s, r) => s + (r.knownAcceptedUnresolved || 0), 0);
+  const totalScopeSkipped = results.reduce((s, r) => s + (r.scopeSkippedSessions || 0), 0);
   lines.push(`Resumo geral: ${totalUnresolved} turnos sem classificação em ${totalTurns} turnos processados, ${results.length} pares de logs varridos.`);
-  if (totalPreCutoffLeech) {
-    lines.push('');
-    lines.push(`Fora de escopo: ${totalPreCutoffLeech} turnos pré-cutoff cuja causa é leech, excluídos por decisão do usuário (a mecânica de bônus de leech pré-cutoff não existe mais no jogo). Use \`--include-pre-cutoff-leech\` para vê-los.`);
+  lines.push('');
+  lines.push('Bruto observado = pendência acionável + as três categorias excluídas abaixo. Elas não se somam à acionável nem entre si.');
+  lines.push('');
+  lines.push(`- Leech pré-cutoff (fora de escopo): **${totalPreCutoffLeech}** — decisão do usuário em 19/Jul/2026; a mecânica de bônus de leech daquele regime não existe mais no jogo. Use \`--include-pre-cutoff-leech\` para vê-los.`);
+  lines.push(`- Partial edge (T-007/A-009): **${totalPartialEdge}** — primeiro turno cortado pela borda da sessão, sem evidência para classificar; fora da contagem por regra.`);
+  lines.push(`- Irresolúvel aceito (catálogo do relatório): **${totalKnownAccepted}**.`);
+  if (totalScopeSkipped) {
+    lines.push(`- Sessões puladas por escopo de investigação: **${totalScopeSkipped}** (setup de leech múltiplo intra-sessão, C-006).`);
   }
+  lines.push('');
+  lines.push('Exclusões de nível corpus (`CORPUS_EXCLUSIONS`) não aparecem aqui: o par/sessão não é classificado por ferramenta nenhuma.');
   lines.push('');
   lines.push('## Resumo por log');
   lines.push('');
-  lines.push('| Log | Turnos | Sem classificacao | Leech pre-cutoff (fora de escopo) | Sem N_leech | Gold | Leech setup | Status |');
-  lines.push('|---|---:|---:|---:|---|---:|---|---|');
+  lines.push('| Log | Turnos | Sem classificacao | Leech pre-cutoff (fora de escopo) | Partial edge (T-007/A-009) | Irresoluvel aceito | Sem N_leech | Gold | Leech setup | Status |');
+  lines.push('|---|---:|---:|---:|---:|---:|---|---:|---|---|');
   for (const r of results) {
     const status = r.missing ? 'arquivo ausente' : (r.error ? `erro: ${r.error}` : (r.status || '-'));
     const without = r.resolvedWithoutLeech
       ? `R${r.resolvedWithoutLeech.resolved_without_leech}/A${r.resolvedWithoutLeech.ambiguous_without_leech}/U${r.resolvedWithoutLeech.unresolved_without_leech}`
       : '-';
-    lines.push(`| ${r.label} | ${r.totalTurns || 0} | ${r.unresolvedTurns || 0} | ${r.preCutoffLeechExcluded || 0} | ${without} | ${r.goldLeechObservationCount || 0} | ${formatLeechSetup(r.leechSetup)} | ${status} |`);
+    lines.push(`| ${r.label} | ${r.totalTurns || 0} | ${r.unresolvedTurns || 0} | ${r.preCutoffLeechExcluded || 0} | ${r.partialEdgeExcluded || 0} | ${r.knownAcceptedUnresolved || 0} | ${without} | ${r.goldLeechObservationCount || 0} | ${formatLeechSetup(r.leechSetup)} | ${status} |`);
   }
   lines.push('');
   lines.push('## Turnos sem classificação');
@@ -445,7 +473,8 @@ for (const [label, sv, lc] of selectedPairs) {
   const row = runPair(ctx, label, sv, lc, windowFilter, postCutoffOnly, includePreCutoffLeech);
   results.push(row);
   const skipped = row.preCutoffLeechExcluded ? `, ${row.preCutoffLeechExcluded} leech pré-cutoff fora de escopo` : '';
-  console.error(`[unified-report] ${label}: ${row.unresolvedTurns || 0}/${row.totalTurns || 0} sem classificação${skipped} (${row.error || row.status || 'ok'})`);
+  const edge = row.partialEdgeExcluded ? `, ${row.partialEdgeExcluded} partial edge` : '';
+  console.error(`[unified-report] ${label}: ${row.unresolvedTurns || 0}/${row.totalTurns || 0} sem classificação${skipped}${edge} (${row.error || row.status || 'ok'})`);
 }
 const summary = writeReport(results, windowFilter);
 
@@ -456,12 +485,15 @@ console.log(JSON.stringify({
   totalUnresolved: summary.totalUnresolved,
   knownAcceptedUnresolved: results.reduce((s, r) => s + (r.knownAcceptedUnresolved || 0), 0),
   preCutoffLeechExcluded: results.reduce((s, r) => s + (r.preCutoffLeechExcluded || 0), 0),
+  partialEdgeExcluded: results.reduce((s, r) => s + (r.partialEdgeExcluded || 0), 0),
+  scopeSkippedSessions: results.reduce((s, r) => s + (r.scopeSkippedSessions || 0), 0),
   pairs: results.map(r => ({
     label: r.label,
     totalTurns: r.totalTurns || 0,
     unresolvedTurns: r.unresolvedTurns || 0,
     knownAcceptedUnresolved: r.knownAcceptedUnresolved || 0,
     preCutoffLeechExcluded: r.preCutoffLeechExcluded || 0,
+    partialEdgeExcluded: r.partialEdgeExcluded || 0,
     status: r.missing ? 'missing' : (r.error || r.status || 'ok'),
   })),
 }, null, 2));
