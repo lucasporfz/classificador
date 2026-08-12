@@ -99,8 +99,15 @@ CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu dele
 **Baseline conhecido (medido em 12/Ago/2026, após `implement-s014f-boss-leech-no-veto`).**
 Comparar contra ele em vez de exigir verde total. Total de alvos: **30/34 OK**.
 Turnos sem classificação no corpus (`tools/report-unified-unclassified.mjs`, contagem
-bruta = `totalUnresolved` + `knownAccepted` + `preCutoffLeech` + `partialEdge`): **52** de
+bruta = `totalUnresolved` + `knownAccepted` + `partialEdge` = 27 + 3 + 22): **52** de
 16.407 (era 246 antes de S-014f).
+
+O relatório **não exclui mais** leech pré-cutoff: a decisão de 19/Jul/2026 foi revogada em
+11/Ago/2026 e a família caiu por `S-014f`, então o filtro padrão saiu junto com a flag
+`--include-pre-cutoff-leech` (12/Ago/2026, ticket `#7`). `preCutoffLeechCounted` (ex-`…Excluded`)
+virou coluna **informativa**: dos **27** turnos acionáveis, **26** têm causa de leech em sessão
+pré-cutoff — concentrados em `bakradrone` 9, `jaded` 5, `darklight e vemiath` 3,
+`mazzerinbarrage` 3, `bakra` 2 e 1 em cada de `darklight rp`/`hakka`/`ms boss`/`rp pack`.
 
 - `--invariants`: **32/33 fixtures limpos, 1 SKIP** (`drome`, exclusão canônica de par
   inteiro). Falha **1**: `bakradrone` `09:57:20` (`M-009: unresolved com 3 hits no boss

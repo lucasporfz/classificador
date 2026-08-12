@@ -36,7 +36,10 @@
     boss (`N_leech=2` no mesmo alvo único) — cada hit no boss pertence a uma ação concreta
     distinta (AA, spell, runa ou granada), casada 1-a-1 por cast na ordem M-004. Um turno cujos
     hits atingem criaturas **distintas** (uma delas com artigo) não é boss-turn e mantém a
-    topologia de área normal (AoE com 1 hit por criatura). Caso-prova: `RPBOSS` `17/Jun/2026`
+    topologia de área normal (AoE com 1 hit por criatura). Consequência adicional, em `S-014f`:
+    como essa mesma detecção já força todo bloco a ter 1 hit, num turno **integralmente** de boss
+    a cardinalidade por leech passa a ser evidência não-discriminante e **não veta** partição.
+    Caso-prova: `RPBOSS` `17/Jun/2026`
     (Royal Paladin × Murcion) — `09:01:14`/`09:01:48`/`09:03:05`/`09:00:51` resolvem
     `AA + spell + granada` (1 hit cada), enquanto `08:59:25`/`08:59:28` (Murcion + `an elder
     bloodjaw`) permanecem AoE multi-criatura. Generaliza para sessões multi-boss:
@@ -1047,11 +1050,23 @@ A escolha entre A e B usa vida e mana separadamente (D-022), reconstrução de d
 
   **Limites:** não se aplica a turno que atinge criatura não-boss (`M-009a` já exclui turno multi-criatura); não autoriza fundir componentes (`C-007`), criar AA (`M-032`), reutilizar cast (`M-025`) nem relaxar veto mecânico algum. Caso-prova do limite: `bakradrone` `09:57:20` permanece `unresolved` por `M-009a`/`M-025` — 3 hits no boss, com a granada do cast `exevo tempo mas san` de `:18` já consolidada no turno `09:57:22`, restando duas vagas para três ações. Perda registrada e aceita: a reconstrução de dano real sob overkill (`D-025`) deixa de ser veto em turno de boss e permanece só como diagnóstico — mesma direção que `D-012b` já documentou como a correta.
 
-  Medido em 12/Ago/2026 (`reports/boss-leech-2026-08-11/ab-boss-leech-veto.mjs`, motor patchado **fora** do repositório): gabarito `185/187 → 187/187`; invariantes mecânicos `28/33 → 32/33` (mesmo SKIP canônico de `drome`; a única falha restante é o `09:57:20` acima); turnos sem classificação `246 → 52`; **zero** regressões. Os dois únicos turnos que mudam de classificação em todo o corpus (`essence`/`mazzerinbarrage` `00:20:35`) passam a bater o caso-gabarito **13h** (`A1 S1`, `Strong Ethereal Spear 1107`), que o motor vinha violando ao rotular o hit como `Sudden Death`.
+  Medido em 12/Ago/2026 (`reports/boss-leech-2026-08-11/ab-boss-leech-veto.mjs`, motor patchado **fora** do repositório): gabarito `185/187 → 187/187`; invariantes mecânicos `28/33 → 32/33` (mesmo SKIP canônico de `drome`; a única falha restante é o `09:57:20` acima); turnos sem classificação `246 → 52`; **zero** regressões.
+
+  Os números vêm de dois baldes distintos, que não se confundem: (a) turnos **resolvidos antes e
+  depois** que mudam de rótulo são exatamente **dois** — `00:20:35` na mesma caçada vista por dois
+  fixtures (`essence` S0 = `mazzerinbarrage` S5) —, e ambos passam a bater o caso **13h** de
+  `tools/turnos-problematicos.md` (`A1 S1`, `Strong Ethereal Spear (exori gran con) 1107`), que o
+  motor vinha violando ao rotular o hit como `Sudden Death`; (b) os dois casos do gabarito curado
+  que deixam de falhar são **outros turnos** — `essence/00:21:12` e `essence/00:21:14`, que saem de
+  `unresolved` para `A1` e portanto entram na conta de `246 → 52`, não na de mudança de rótulo.
 
 - **S-015 — Dano parecido com cardinalidade distinta:** quando dois componentes possuem magnitudes de dano semelhantes, ou quando o overkill torna as magnitudes exibidas pouco confiáveis, a segmentação não deve depender apenas de médias ou clusters de dano exibido. Nesses casos, a cardinalidade por leech deve ser usada para decidir quantos hits procurar em cada componente. Um bloco com dano parecido só pode ser fundido se a cardinalidade por leech aceitar o tamanho fundido; se a fusão exigir `N_leech` incompatível com os hits, uma fronteira deve ser mantida.
 
-- **S-016 — Limite do leech:** a cardinalidade por leech é evidência mecânica de tamanho de bloco, não autorização para violar ordem, cooldown, topologia ou casts concretos. O leech pode escolher entre partições mecanicamente possíveis, mas não pode criar segundo AA no mesmo ciclo, não pode permitir spell e runa no mesmo turno, não pode dar múltiplos hits a uma ação cujo perfil permita apenas um hit, não pode reutilizar cast e não pode inventar componente sem hit observado.
+- **S-016 — Limite do leech:** a cardinalidade por leech é evidência mecânica de tamanho de bloco, não autorização para violar ordem, cooldown, topologia ou casts concretos. O leech pode escolher entre partições mecanicamente possíveis, mas não pode criar segundo AA no mesmo ciclo, não pode permitir spell e runa no mesmo turno, não pode dar múltiplos hits a uma ação cujo perfil permita apenas um hit, não pode reutilizar cast e não pode inventar componente sem hit observado. Limite recíproco
+  (`S-014f`): quando a topologia já determina o tamanho de todos os blocos — turno integralmente
+  de boss, onde `M-009a` crava `N_leech = 1` em toda partição válida —, o leech deixa de escolher
+  entre partições e não pode vetar nenhuma; fica em desempate, na mesma posição que esta regra já
+  lhe reserva.
 
 - **S-017 — Cardinalidade por leech quando originais físicos estão indisponíveis:** quando originais físicos, armor, mitigation ou physicalDmgMod estiverem ausentes (inclusive no regime pós-16 de junho de 2026, D-016/D-028), o classificador **não deve** colapsar automaticamente blocos físicos parecidos em um único componente. Nesses casos, deve testar partições contíguas por cardinalidade de leech. Para cada bloco candidato com `k` hits principais elegíveis, testar `N_leech = k`. A ausência do eixo físico reduz a evidência disponível, mas **não desativa** a evidência de leech. Um bloco único de `k` hits só pode ser aceito se seus hits aceitarem `N_leech = k` pelo leech utilizável; uma partição alternativa em blocos menores, cujos hits aceitem com mais consistência seus respectivos `N_leech`, **deve vencer**, mesmo sem O-interval físico. Uma partição única só vence se aceitar o `N_leech` do bloco único melhor que as partições alternativas. É proibido aceitar o bloco único apenas por falta de O-interval físico ou por o regime ser pós-corte.
 
@@ -1409,6 +1424,7 @@ Verificar que:
 - vida e mana são avaliadas separadamente antes de qualquer fallback por soma;
 - a fórmula `areaFactor(N_leech) = 0,1 + 0,9 / N_leech` é usada para testar cardinalidade por quantidade de hits principais elegíveis;
 - um bloco de `k` hits principais elegíveis só é aceito como componente se os hits aceitarem `N_leech = k` pelo leech, quando há leech utilizável;
+- em turno **integralmente de boss** (todos os hits principais em mob reconhecido por `M-009a`), a cardinalidade por leech **não veta** partição — `S-014f`: `N_leech = 1` em toda partição válida, então o leech esperado é idêntico entre elas e a evidência não discrimina. Ela continua calculada, exposta no diagnóstico e usada só como desempate;
 - hits de overkill não usam razão `leech / danoMostrado`;
 - em overkill, o classificador reconstrói intervalo de dano real por leech absoluto;
 - charms como `wound`, `overpower` e `damage reflection` não contam como hits principais para o `N` do componente;
@@ -1607,6 +1623,135 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   marcados e controles não marcados pertencem à mesma sessão, mas os
   multiplicadores só se aplicam aos marcados. Sessões sem o sufixo preservam o
   comportamento anterior e não herdam níveis de outra porção do mesmo arquivo.
+  Uma sessão pode conter **mais de um** setup de leech; ver **C-006a**.
+
+- **C-006a — Setup de leech por fase da sessão:** `C-006` infere um setup por sessão; **uma
+  sessão pode conter mais de um**. O fato é confirmado pelo usuário em `mazzerinbarrage` S11
+  (`28/Jun/2026`, troca de arma no meio da caçada, declarada em `12/Jul/2026`). Nas demais
+  sessões em que o degrau é observado a **causa não é declarada**, e esta regra não a declara:
+  ela descreve o que está medido — a taxa efetiva de leech do personagem muda num instante,
+  permanecendo dos dois lados dentro da grade de `D-020`/`D-020a` — e nada além disso. Uma
+  **fase** é um intervalo contíguo de turnos dentro do qual o setup é constante; a sessão é a
+  sequência de suas fases. O número de fases **não é constante desta regra**: é o número de
+  fronteiras admitidas pelos gates abaixo, e **zero fronteiras é o caso normal**, idêntico ao
+  comportamento de `C-006`.
+
+  **Posição no fluxo (depois de `S-014f`):** esta regra **não é pré-requisito para destravar
+  turno**. A família de turnos que a motivou caiu por `S-014f` em 12/Ago/2026 — a causa era o
+  **veto** por cardinalidade de leech em turno integralmente de boss, não a taxa. `C-006a` é
+  qualidade de **métrica**: taxa base correta ⇒ `A-006` (dano base agregado) correto, e os hits
+  **não-boss** das mesmas sessões, onde o leech continua vetando normalmente.
+
+  **(1) Detecção sem circularidade.** A fronteira só pode ser procurada em evidência cujo
+  `N_leech` é conhecido **sem** classificar (`C-006`: a inferência não pode depender do rótulo que
+  tenta provar): turno integralmente de boss (`N = 1` por `M-009`/`M-009a`) ou componente-ouro com
+  ação, limites e `N` já congelados. Razão de hit de área com `N` inferido **não vota** — ela
+  carrega o `areaFactor` do rótulo que está sendo provado. O canal de **detecção** é o de **vida**;
+  o de mana acompanha a fase detectada e nunca a define sozinho (medido: em `bakra` S0 e
+  `bakradrone` S0 a mana não se move no degrau, e em `essence` S0 se move por fator diferente do
+  da vida).
+
+  **(2) Admissão da fronteira — gate discriminante.** Uma fronteira só existe quando, **dos dois
+  lados**, um **único** ponto da grade de `D-020`/`D-020a` explica o bloco, e **nenhum outro ponto
+  da grade o explica**. É o mesmo princípio de `D-021a` (a estimativa só fixa nível quando
+  discrimina; fora disso o nível fica indeterminado) e a mesma recusa de decidir por maioria de
+  `C-012a` e `M-036`.
+
+  **Instrumento (decisão de 12/Ago/2026).** "Explicar" o bloco significa **encaixe exato** de
+  `D-024` (`observado == CEIL(dano × taxa × areaFactor)`). A tolerância de `C-006`
+  (`min(5, max(3, ⌈esperado × 1 %⌉))`) permanece válida **apenas** para declarar contradição
+  (`observado > esperado + tolerância`), que é o falso-positivo contra o qual ela foi criada.
+  Motivo: a grade de `D-020` anda de `0,25` pp (Conviction Perk), o que num hit de ~1000 de dano
+  vale ~2,5 pontos de leech — **menos** que a própria tolerância. Aplicada ao encaixe, ela faz
+  dois ou três pontos vizinhos da grade "explicarem" o mesmo bloco simultaneamente, e a exigência
+  "nenhum outro ponto o explica" nunca é satisfeita: o gate reprovaria sempre e toda fase cairia
+  na cláusula (4). Com igualdade exata, o degrau do `CEIL` separa pontos vizinhos em quase todo
+  hit.
+
+  **Redução de contradições não é critério**: uma sessão com contradição alta que resolve limpa
+  não pode ser fatiada por melhoria de ajuste — caso-prova negativo `mazzerinbarrage` S0
+  (`04/Jun/2026`): 444 contradições em 1.697 evidências e **zero** turnos sem classificação; ela
+  deve permanecer com **uma** fase.
+
+  **(3) Piso de evidência por fase.** Cada fase precisa de **≥ 30 observações de leech de vida
+  utilizáveis sem depender de `N`** (cláusula 1) dentro dela. Justificativa medida (11/Ago/2026,
+  `reports/boss-leech-2026-08-11/`): a fase real mais magra do corpus tem **71** observações
+  (`essence` S0 / `mazzerinbarrage` S5, `echo of ichgahal`), então o piso preserva **todos** os
+  casos conhecidos com margem de 2,4× e não custa nenhum turno hoje. Ele existe para barrar fase
+  fina espúria, não para recortar as fases conhecidas.
+
+  **(4) Fase que não crava não vira setup.** Quando o bloco contraditado **não** satisfaz (2) ou
+  (3), é **proibido** escolher uma taxa para ele — isso seria o ajuste livre que `D-020` veda. Ele
+  é declarado **fase de setup indeterminado**, e nela o leech é **evidência ausente**
+  (`D-006`/`C-007`), não contradição: naquela fase o leech **não veta** partição por cardinalidade
+  e **não confirma** cardinalidade. Ausência de evidência continua sem autorizar fusão de
+  componentes ou reuso de ação (`C-007`), sem criar AA (`M-032`) e sem virar desempate positivo. O
+  diagnóstico da sessão (`U-006`) deve registrar **qual** dos dois motivos ocorreu — gate
+  discriminante ou piso —, do mesmo modo que `D-021a` exige para ausência de charm.
+
+  **(5) Escopo do que é por fase.** Somente `lifeBase` e `manaBase` ganham eixo de fase.
+  `Vampiric Embrace` / `Void's Call` (`D-021`/`D-021a`) e o perk de Mana Leech com Expose Weakness
+  (`D-022a`) continuam inferidos **uma vez por sessão**, sobre a evidência agregada, com cada
+  razão normalizada pela taxa da fase do **próprio hit**. Motivo: são os únicos parâmetros cuja
+  mudança está medida, e a fase minoritária tipicamente não tem observação do mob portador do
+  charm — em `mazzerinbarrage` S11 o `darklight striker` (`Vampiric Embrace +3,2%`) só existe na
+  fase alta, e inferir charm por fase devolveria "ausência de charm" por falta de observação,
+  exatamente o resultado que `D-021a` proíbe.
+
+  **(6) Fronteira de fase encaixa em fronteira de turno.** A fase é definida sobre fronteiras de
+  turno (`T-002`), não sobre segundos: a fronteira é a **fronteira de turno mais cedo** que separa
+  todas as observações consistentes com uma fase de todas as consistentes com a outra. Quando
+  **nenhuma** fronteira de turno as separa — o turno contém hits dos dois lados —, **somente
+  aquele turno** cai em leech inutilizável por (4); no máximo um turno por fronteira. Nenhum turno
+  é cobrado por duas taxas, e a premissa de `D-023`/`D-024` de que a taxa efetiva e o `N_leech`
+  são constantes dentro do componente permanece intacta. Caso que exige a cláusula: `bakra` S0
+  mede o degrau **entre `08:46:15` e `08:46:17`** — 2 segundos, que cabem num único turno.
+
+  **Casos-prova (medidos em `reports/boss-leech-2026-08-11/`, com o motor não alterado):**
+
+  - `bakra` S0 = `jaded` S0 (`31/Mar/2026`), boss único e luta contínua: `48,56 / 48,59 / 48,60 /
+    48,55 %` até `08:46:15`, depois `24,30 / 24,30 / 24,30 %` — razão `2,000` exata, **dano
+    inalterado e mana intacta** (`15,82 %` nas duas fases). É o caso que exclui de uma vez
+    mitigação de boss, leech pré-mitigação, identidade de mob, minor charm e regime.
+  - `mazzerinbarrage` S11 (`28/Jun/2026`, pós-cutoff, causa declarada pelo usuário): mesmo degrau
+    (`49,32 % → 25,04 %`), fase minoritária integralmente boss, **zero** turnos sem classificação
+    — a fase adotada é a alta, então a anômala é capped-low e nunca foi contradição.
+  - Caso-prova negativo (fatiamento indevido): `mazzerinbarrage` S0 (`04/Jun/2026`), 444
+    contradições em 1.697 evidências e zero unresolved — **uma** fase.
+
+  **Limitação registrada — hipótese medida, não mecânica declarada.** Nenhuma das duas escolhas
+  abaixo tem hipótese nula testável no corpus atual, e as duas ficam escritas como o que são
+  (mesmo estilo de `M-036`, `M-037` e `D-020a`):
+
+  1. **O eixo é tempo, e isso é analogia, não medição direta.** Em `essence` S0 /
+     `mazzerinbarrage` S5 e S7 a fronteira coincide com a troca de boss (8 s entre a última
+     observação de uma fase e a primeira da outra), então "o setup mudou no tempo" e "os
+     `echo of *` têm outra taxa" **não se distinguem por dentro dessas hunts**. Esta regra escolhe
+     o eixo **tempo** por analogia com `bakra` S0 (mesmo degrau **sem** troca de mob) e com
+     `bakragore`, que aparece com fator `1,00` em sete sessões e `0,49` em outra. Se algum dia um
+     log mostrar taxa distinta **por mob** sem degrau temporal, a escolha de eixo precisa ser
+     revisitada.
+  2. **Sob o instrumento exato da cláusula (2), a fase baixa de `mazzerinbarrage` S11 não crava** e
+     cai na cláusula (4) — fase de setup indeterminado. Isso é o resultado **desejado** e não uma
+     falha: ali a fase anômala é capped-low e nunca foi contradição, então neutralizar o leech
+     preserva os `0` unresolved da sessão, que é o controle de drift obrigatório da família. O
+     preço, registrado: naquela fase o dano base agregado (`A-006`) fica sem correção de leech.
+     Mesma situação em `bakradrone` S0, cuja fase alta mede `≈ 49,2 %` contra `50,00 %` da grade.
+  3. **Viés por sessão na fase adotada, ainda sem causa.** `bakra` S0 mede `24,30 %` contra
+     `lifeBase = 25,00 %` inferida (−2,8 %), enquanto `bakradrone` S0 mede `25,05 %` contra
+     `25,00 %` (+0,2 %). O viés é **por sessão**, o que sugere um multiplicador não removido de
+     `leechDamageBasis` em algumas sessões. Não muda o veredito (o degrau é uma razão **interna**
+     à sessão, `2,000` exata em `bakra`), mas afeta diretamente **se a fase crava** no gate (2) —
+     é o motivo do resíduo maior em `bakradrone`.
+
+  **Estado de implementação (12/Ago/2026): escrita, não implementada.** Não existe detector de
+  fase no motor. Isso não é contradição entre regra e implementação no sentido de `C-002`: com
+  `S-014f`, **nenhum** turno do corpus depende desta regra para resolver, e o comportamento atual
+  do motor (uma fase por sessão) é exatamente o caso de "zero fronteiras admitidas", que esta
+  regra declara ser o caso normal. Quando for implementada, o detector precisa ser **inerte** onde
+  não há fronteira — mesmo padrão de `M-035`/`M-036`, o detector encontra o conjunto vazio e
+  retorna sem mutar nada — e `mazzerinbarrage` S0 e S11 precisam continuar em `0` unresolved.
+
 - **C-007 — Ausência de evidência não é contradição:** `no_leech_evidence`, mob sem mod conhecido, sessão pós-corte sem tabela preenchida ou falta de canal de vida/mana geram evidência ausente. Evidência ausente não autoriza fusão de componentes nem reuso de ação.
 - **C-008 — Procs não são hits principais:** `damage reflection`, `wound charm`, `overpower charm` e procs anexos podem ser diagnósticos, mas não incrementam `N_leech`, não consomem cast, não viram componente e não criam AA virtual sem regra de borda/parcial aplicável.
 - **C-009 — Runa confirmada preserva fronteira, não turno novo:** `Using` pode confirmar execução e precedência de bloco compatível, mas não separa turno. Turno permanece bloco mecânico de ciclo conforme T-002 e combinações de T-005/T-006.

@@ -237,22 +237,26 @@ function isKnownAcceptedUnresolved(label, sv, ts) {
   return KNOWN_ACCEPTED_UNRESOLVED.has(key);
 }
 
-// Decisão do usuário (19/Jul/2026): turnos sem classificação cuja causa é leech E que estão
-// no regime PRÉ-cutoff ficam FORA do escopo de investigação — a mecânica de bônus de leech
-// daquele regime não existe mais no jogo, então não há o que corrigir no motor. Diferente de
-// `--post-cutoff-only`: pré-cutoff continua em escopo quando a causa NÃO é leech (dano
-// original, conflito mecânico, crit-state etc. seguem valendo em qualquer regime).
-// Padrão ligado de propósito — como flag opcional seria esquecida. Opt-out:
-// `--include-pre-cutoff-leech`. Os excluídos não somem: viram a coluna `Leech pré-cutoff`.
+// REVOGADO. A decisão do usuário de 19/Jul/2026 tirava do escopo de investigação todo turno
+// sem classificação cuja causa fosse leech no regime PRÉ-cutoff ("a mecânica de bônus de leech
+// daquele regime não existe mais no jogo, não há o que corrigir"). Ela foi revogada em
+// 11/Ago/2026 e a família foi de fato fechada em 12/Ago/2026 por `S-014f` (o problema era o
+// VETO por leech em turno de boss, não a mecânica extinta): 246 -> 52 turnos sem classificação.
+// Manter o filtro ligado por padrão escondia, sem flag nenhuma, metade do resíduo restante.
+//
+// O que sobrou é só CONTAGEM: os turnos entram normalmente na pendência acionável, e a coluna
+// diz quantos deles são dessa causa nesse regime — útil porque é onde mora a maior parte do
+// resíduo. Nada é excluído aqui, e não existe mais flag de opt-in/opt-out (`--post-cutoff-only`
+// continua existindo, e é outra coisa: derruba TODO o pré-cutoff, leech ou não).
 const LEECH_CAUSED_CATEGORIES = new Set([
   'unresolved_by_leech_contradiction',
   'unresolved_by_missing_leech_setup',
 ]);
-function isOutOfScopePreCutoffLeech(turn, sv) {
+function isPreCutoffLeech(turn, sv) {
   return !isPostCutoffSession(sv) && LEECH_CAUSED_CATEGORIES.has(unresolvedCategory(turn));
 }
 
-function runPair(ctx, label, serverName, localName, windowFilter, postCutoffOnly, includePreCutoffLeech) {
+function runPair(ctx, label, serverName, localName, windowFilter, postCutoffOnly) {
   const serverPath = path.join(LOG_DIR, serverName);
   const localPath = path.join(LOG_DIR, localName);
   if (!fs.existsSync(serverPath) || !fs.existsSync(localPath)) {
@@ -292,7 +296,7 @@ function runPair(ctx, label, serverName, localName, windowFilter, postCutoffOnly
       if (t && t.partialEdgeMissingEvidence) { partialEdge++; continue; }
       if (isKnownAcceptedUnresolved(label, pair.sv, t.ts)) { knownAccepted++; continue; }
       if (t.status === 'unresolved' || (t.components || []).some(c => c.comp === 'unresolved')) {
-        if (!includePreCutoffLeech && isOutOfScopePreCutoffLeech(t, pair.sv)) { preCutoffLeech++; continue; }
+        if (isPreCutoffLeech(t, pair.sv)) preCutoffLeech++; // só conta; não exclui (ver acima)
         t.sessionIndex = sessionIndex;
         allUnresolved.push(t);
       }
@@ -309,7 +313,7 @@ function runPair(ctx, label, serverName, localName, windowFilter, postCutoffOnly
     totalTurns,
     unresolvedTurns: allUnresolved.length,
     knownAcceptedUnresolved: knownAccepted,
-    preCutoffLeechExcluded: preCutoffLeech,
+    preCutoffLeechCounted: preCutoffLeech,
     partialEdgeExcluded: partialEdge,
     scopeSkippedSessions,
     resolvedWithoutLeech: null,
@@ -334,15 +338,15 @@ function writeReport(results, windowFilter) {
   lines.push('');
   lines.push('Fonte normativa lida antes da execução: `docs/CLASSIFICATION_RULES.md`.');
   lines.push('');
-  const totalPreCutoffLeech = results.reduce((s, r) => s + (r.preCutoffLeechExcluded || 0), 0);
+  const totalPreCutoffLeech = results.reduce((s, r) => s + (r.preCutoffLeechCounted || 0), 0);
   const totalPartialEdge = results.reduce((s, r) => s + (r.partialEdgeExcluded || 0), 0);
   const totalKnownAccepted = results.reduce((s, r) => s + (r.knownAcceptedUnresolved || 0), 0);
   const totalScopeSkipped = results.reduce((s, r) => s + (r.scopeSkippedSessions || 0), 0);
   lines.push(`Resumo geral: ${totalUnresolved} turnos sem classificação em ${totalTurns} turnos processados, ${results.length} pares de logs varridos.`);
   lines.push('');
-  lines.push('Bruto observado = pendência acionável + as três categorias excluídas abaixo. Elas não se somam à acionável nem entre si.');
+  lines.push('Bruto observado = pendência acionável + as duas categorias excluídas abaixo. Elas não se somam à acionável nem entre si.');
   lines.push('');
-  lines.push(`- Leech pré-cutoff (fora de escopo): **${totalPreCutoffLeech}** — decisão do usuário em 19/Jul/2026; a mecânica de bônus de leech daquele regime não existe mais no jogo. Use \`--include-pre-cutoff-leech\` para vê-los.`);
+  lines.push(`- Leech pré-cutoff (**informativo, já contado na acionável**): **${totalPreCutoffLeech}** — quantos dos turnos acima têm causa de leech em sessão pré-cutoff (D-016). A decisão de 19/Jul/2026 que os excluía por padrão foi **revogada** (11/Ago/2026) e a família foi fechada por \`S-014f\` (12/Ago/2026); a coluna virou contagem, não exclusão, e a flag \`--include-pre-cutoff-leech\` deixou de existir.`);
   lines.push(`- Partial edge (T-007/A-009): **${totalPartialEdge}** — primeiro turno cortado pela borda da sessão, sem evidência para classificar; fora da contagem por regra.`);
   lines.push(`- Irresolúvel aceito (catálogo do relatório): **${totalKnownAccepted}**.`);
   if (totalScopeSkipped) {
@@ -353,14 +357,14 @@ function writeReport(results, windowFilter) {
   lines.push('');
   lines.push('## Resumo por log');
   lines.push('');
-  lines.push('| Log | Turnos | Sem classificacao | Leech pre-cutoff (fora de escopo) | Partial edge (T-007/A-009) | Irresoluvel aceito | Sem N_leech | Gold | Leech setup | Status |');
+  lines.push('| Log | Turnos | Sem classificacao | Leech pre-cutoff (informativo, ja contado) | Partial edge (T-007/A-009) | Irresoluvel aceito | Sem N_leech | Gold | Leech setup | Status |');
   lines.push('|---|---:|---:|---:|---:|---:|---|---:|---|---|');
   for (const r of results) {
     const status = r.missing ? 'arquivo ausente' : (r.error ? `erro: ${r.error}` : (r.status || '-'));
     const without = r.resolvedWithoutLeech
       ? `R${r.resolvedWithoutLeech.resolved_without_leech}/A${r.resolvedWithoutLeech.ambiguous_without_leech}/U${r.resolvedWithoutLeech.unresolved_without_leech}`
       : '-';
-    lines.push(`| ${r.label} | ${r.totalTurns || 0} | ${r.unresolvedTurns || 0} | ${r.preCutoffLeechExcluded || 0} | ${r.partialEdgeExcluded || 0} | ${r.knownAcceptedUnresolved || 0} | ${without} | ${r.goldLeechObservationCount || 0} | ${formatLeechSetup(r.leechSetup)} | ${status} |`);
+    lines.push(`| ${r.label} | ${r.totalTurns || 0} | ${r.unresolvedTurns || 0} | ${r.preCutoffLeechCounted || 0} | ${r.partialEdgeExcluded || 0} | ${r.knownAcceptedUnresolved || 0} | ${without} | ${r.goldLeechObservationCount || 0} | ${formatLeechSetup(r.leechSetup)} | ${status} |`);
   }
   lines.push('');
   lines.push('## Turnos sem classificação');
@@ -465,14 +469,13 @@ if (windowArg) {
 }
 
 const postCutoffOnly = process.argv.includes('--post-cutoff-only');
-const includePreCutoffLeech = process.argv.includes('--include-pre-cutoff-leech');
 
 const results = [];
 for (const [label, sv, lc] of selectedPairs) {
   console.error(`[unified-report] processando ${label}...`);
-  const row = runPair(ctx, label, sv, lc, windowFilter, postCutoffOnly, includePreCutoffLeech);
+  const row = runPair(ctx, label, sv, lc, windowFilter, postCutoffOnly);
   results.push(row);
-  const skipped = row.preCutoffLeechExcluded ? `, ${row.preCutoffLeechExcluded} leech pré-cutoff fora de escopo` : '';
+  const skipped = row.preCutoffLeechCounted ? `, ${row.preCutoffLeechCounted} deles leech pré-cutoff` : '';
   const edge = row.partialEdgeExcluded ? `, ${row.partialEdgeExcluded} partial edge` : '';
   console.error(`[unified-report] ${label}: ${row.unresolvedTurns || 0}/${row.totalTurns || 0} sem classificação${skipped}${edge} (${row.error || row.status || 'ok'})`);
 }
@@ -484,7 +487,7 @@ console.log(JSON.stringify({
   totalTurns: summary.totalTurns,
   totalUnresolved: summary.totalUnresolved,
   knownAcceptedUnresolved: results.reduce((s, r) => s + (r.knownAcceptedUnresolved || 0), 0),
-  preCutoffLeechExcluded: results.reduce((s, r) => s + (r.preCutoffLeechExcluded || 0), 0),
+  preCutoffLeechCounted: results.reduce((s, r) => s + (r.preCutoffLeechCounted || 0), 0),
   partialEdgeExcluded: results.reduce((s, r) => s + (r.partialEdgeExcluded || 0), 0),
   scopeSkippedSessions: results.reduce((s, r) => s + (r.scopeSkippedSessions || 0), 0),
   pairs: results.map(r => ({
@@ -492,7 +495,7 @@ console.log(JSON.stringify({
     totalTurns: r.totalTurns || 0,
     unresolvedTurns: r.unresolvedTurns || 0,
     knownAcceptedUnresolved: r.knownAcceptedUnresolved || 0,
-    preCutoffLeechExcluded: r.preCutoffLeechExcluded || 0,
+    preCutoffLeechCounted: r.preCutoffLeechCounted || 0,
     partialEdgeExcluded: r.partialEdgeExcluded || 0,
     status: r.missing ? 'missing' : (r.error || r.status || 'ok'),
   })),
