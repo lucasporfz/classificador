@@ -1680,7 +1680,11 @@
           leech.overriddenByConcreteSpellSparseLeech = true;
           leech.overrideReason = block.leechOverrideReason;
         } else {
-          violations.push({ rule: leech.rule, reason: 'leech_cardinality_failed', block, leech });
+          // S-014f: em turno integralmente de boss, M-009a/M-010/M-026/V-006 já forçam
+          // blocos de 1 hit em TODA partição válida, logo N_leech = 1 e o leech esperado
+          // é idêntico entre elas — a evidência não discrimina, só reprova todas juntas.
+          // O leech continua calculado e exposto no diagnóstico; só deixa de vetar.
+          if (!isBoss) violations.push({ rule: leech.rule, reason: 'leech_cardinality_failed', block, leech });
         }
       }
     }

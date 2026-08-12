@@ -96,15 +96,21 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
-**Baseline conhecido (medido em 11/Ago/2026, após `fix-action-reuse-across-turns`).**
+**Baseline conhecido (medido em 12/Ago/2026, após `implement-s014f-boss-leech-no-veto`).**
 Comparar contra ele em vez de exigir verde total. Total de alvos: **30/34 OK**.
+Turnos sem classificação no corpus (`tools/report-unified-unclassified.mjs`, contagem
+bruta = `totalUnresolved` + `knownAccepted` + `preCutoffLeech` + `partialEdge`): **52** de
+16.407 (era 246 antes de S-014f).
 
-- `--invariants`: **28/33 fixtures limpos, 1 SKIP** (`drome`, exclusão canônica de par
-  inteiro). 5 fixtures falham (`bakra`, `bakradrone`, `essence`, `jaded`,
-  `mazzerinbarrage`), **todos** por **quebras de M-009 derivadas**: emitidas com
-  `kind='unresolved'` sobre turnos de `unresolved_by_leech_contradiction` pré-cutoff (fora
-  de escopo por decisão de 19/Jul/2026) ou `partial_edge_missing_evidence` (T-007/A-009).
-  Somem junto com o turno unresolved; não são contradição mecânica independente.
+- `--invariants`: **32/33 fixtures limpos, 1 SKIP** (`drome`, exclusão canônica de par
+  inteiro). Falha **1**: `bakradrone` `09:57:20` (`M-009: unresolved com 3 hits no boss
+  unitário`) — é o limite declarado em `S-014f`, não contradição mecânica nova.
+
+  Antes de `S-014f` (baseline de 11/Ago) eram 28/33, com 5 fixtures falhando (`bakra`,
+  `bakradrone`, `essence`, `jaded`, `mazzerinbarrage`) por quebras de M-009 derivadas,
+  emitidas com `kind='unresolved'` sobre turnos de `unresolved_by_leech_contradiction`
+  pré-cutoff ou `partial_edge_missing_evidence` (T-007/A-009). Elas sumiram junto com os
+  turnos unresolved que S-014f destravou.
 
   **As 8 quebras sobre turnos RESOLVIDOS acabaram** (`fix-action-reuse-across-turns`,
   11/Ago/2026): eram `bakra`/`jaded` `10/Jun` `09:29:24`, `ms boss` `13/Jun` `22:19:24`,
@@ -112,8 +118,8 @@ Comparar contra ele em vez de exigir verde total. Total de alvos: **30/34 OK**.
   (×2) e `13:44:09` — todas M-015/N-007/N-008 (reuso de ação entre turnos vizinhos). A
   correção foi escolher a ação sobre o bloco final do componente e consumir spell/runa como
   a granada já fazia (M-013a/M-013b, N-008a, M-016d-1c).
-- `--gabarito`: **185/187**, falham **2** — `essence/00:21:12` e `essence/00:21:14`
-  (esperado `A1`, obtido `A0 S0 R0 G0`). Em 11/Ago/2026 o gabarito perdeu 3 casos
+- `--gabarito`: **187/187**. As 2 falhas históricas (`essence/00:21:12` e `essence/00:21:14`,
+  esperado `A1`, obtido `A0 S0 R0 G0`) caíram com `S-014f` em 12/Ago/2026. Em 11/Ago/2026 o gabarito perdeu 3 casos
   (`grenade-rollover-corpus/bakra` `09:21:00`/`09:23:20`/`09:27:02`) e ganhou 13 da família
   M-015: eram os únicos casos de todo o gabarito dentro de `CORPUS_EXCLUSIONS` (hunt
   `09/Jun/2026 09:18-09:30`), removidos a pedido do usuário. O baseline de 09/Ago
