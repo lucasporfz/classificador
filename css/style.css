@@ -89,6 +89,67 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
    trocar Hits<->Turno altera o sufixo do cabeçalho de dano e reflui a tabela inteira. */
 .cls-rotation-table { table-layout: fixed; }
 .cls-rotation-table th, .cls-rotation-table td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A coluna de nome nunca trunca: com o min-width da tabela ela tem piso para caber numa
+   linha, e um nome fora do comum quebra em duas em vez de virar reticências. */
+.cls-rotation-table th:first-child, .cls-rotation-table td:first-child {
+  white-space: normal; overflow: visible; text-overflow: clip;
+}
+/* Rede de segurança: nas larguras previstas a tabela cabe e a barra não aparece. */
+.cls-table-scroll { overflow-x: auto; }
+/* Cabeçalho numérico: rótulo livre para quebrar em duas linhas, com o slot da % ancorado
+   ao lado dele e alinhado embaixo, no mesmo eixo dos números do corpo. É o que deixa as
+   colunas serem dimensionadas pelo conteúdo em vez de pelo comprimento do rótulo. */
+.cls-rotation-table th { vertical-align: bottom; }
+.cls-th-inner { display: flex; align-items: flex-end; justify-content: flex-end; }
+.cls-th-inner > span:first-child { white-space: normal; text-align: right; min-width: 0; }
+/* O slot é item flex: sem isto ele encolhe quando o rótulo aperta e o cabeçalho
+   escorrega alguns px para a direita, saindo do eixo dos números. */
+.cls-th-inner > .cls-pct { flex: 0 0 auto; }
+
+/* Slot de largura fixa para o percentual que acompanha um número na tabela de rotação.
+   Sem largura fixa o número à esquerda termina num ponto diferente por linha (a % vai de
+   "0,3%" a "100,0%") e a coluna fica serrilhada. O mesmo span, vazio, vai no <th> para o
+   cabeçalho terminar no eixo dos NÚMEROS e não no do parêntese. */
+.cls-pct {
+  display: inline-block; width: 8ch; margin-left: 6px; text-align: right;
+  color: var(--text-dim); font-size: 11px; font-variant-numeric: tabular-nums;
+  /* peso fixo: `ch` é a largura do "0", e o <th> herda font-weight 500 enquanto o <td>
+     usa 400 — sem isto o slot fica ~1px mais largo no cabeçalho e desalinha dele. */
+  font-weight: 400;
+}
+
+/* Composição do dano efetivo: donut + ranking. Mesma ordem e mesma cor da tabela. */
+.cls-share {
+  display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin: 0 0 14px;
+}
+.cls-share-legend { flex: 1 1 380px; min-width: 300px; }
+.cls-share-headline { font-size: 12.5px; color: var(--text-muted); margin: 0 0 8px; }
+.cls-share-headline strong { color: var(--text); font-weight: 600; }
+.cls-share-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 68px 14px 58px 96px;
+  gap: 8px; align-items: center; padding: 2px 0; font-size: 12.4px;
+}
+.cls-share-row > .cls-share-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cls-share-turns, .cls-share-pct, .cls-share-total { text-align: right; font-variant-numeric: tabular-nums; }
+.cls-share-turns { color: var(--text-muted); }
+.cls-share-pct { font-weight: 600; }
+.cls-share-total { color: var(--text-muted); font-size: 12px; }
+.cls-share-arrow { text-align: center; color: var(--text-dim); font-size: 11px; }
+.cls-share-head {
+  font-size: 10.5px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: .06em; padding-bottom: 2px;
+}
+.cls-share-head > div { text-align: right; white-space: nowrap; }
+.cls-share-head > div:first-child { text-align: left; }
+.cls-share-bar {
+  grid-column: 1 / -1; height: 4px; border-radius: 2px;
+  background: rgba(27, 46, 72, .7); overflow: hidden; margin: -1px 0 3px;
+}
+.cls-share-bar > i { display: block; height: 100%; border-radius: 2px; }
+.cls-share-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+.cls-share-note { font-size: 11px; color: var(--text-muted); margin: 6px 0 0; }
 
 .cls-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 8px 0 14px; }
 .cls-metric { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }

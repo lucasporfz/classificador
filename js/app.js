@@ -418,6 +418,71 @@ function clsGravSanAdjustedHits(res) {
   };
 }
 
+// Paleta compartilhada por TUDO que colore componente: tabela de rotação, donut de
+// composição, histogramas por componente e o gráfico de componentes por turno. Antes ela
+// existia duplicada em renderClassifier e renderClassifierCharts, cada uma numerando a sua
+// própria lista filtrada — o que deixava as cores divergirem entre a tabela e os gráficos.
+const CLS_COMP_PALETTE = ['#F59E0B', '#22C55E', '#60A5FA', '#F87171', '#A78BFA', '#FBBF24', '#34D399', '#F472B6', '#38BDF8', '#FB923C', '#C084FC'];
+
+// Dano efetivo TOTAL da linha = soma do damageTimeline (por turno alinhado, já sem os
+// turnos partialEdge, que buildRotationRows não inclui). Não vem do motor: é derivado
+// aqui, na UI, do array que a UI já recebe.
+function clsRowTotalEff(row) {
+  return row && Array.isArray(row.damageTimeline)
+    ? row.damageTimeline.reduce((sum, v) => sum + (+v || 0), 0)
+    : 0;
+}
+
+// Separador de milhar seguindo o idioma da UI: sem isto o dano total sairia com ponto
+// (2.107.064) mesmo no modo EN. As demais colunas não usam separador, mas os totais de
+// sessão chegam à casa dos milhões e ficam ilegíveis sem ele.
+function clsFmtInt(n) {
+  return Math.round(+n || 0).toLocaleString(LANG === 'en' ? 'en-US' : 'pt-BR');
+}
+
+// Ordem de exibição = dano efetivo total decrescente, com a cor derivada dessa ordem.
+// Função pura de `res`, então renderClassifier e renderClassifierCharts chegam à mesma
+// ordem e às mesmas cores sem precisar passar nada entre elas.
+function clsRowsByDamage(res) {
+  const rows = ((res && res.rows) || []).slice()
+    .sort((a, b) => clsRowTotalEff(b) - clsRowTotalEff(a));
+  const colors = new Map();
+  rows.forEach((row, i) => colors.set(row, CLS_COMP_PALETTE[i % CLS_COMP_PALETTE.length]));
+  return { rows, colorOf: row => colors.get(row) || CLS_COMP_PALETTE[0] };
+}
+
+// Denominador do uptime por componente: o MESMO das duas métricas do topo da tela —
+// auto ataque contra aaUptime, spell/runa/granada contra spellRuneUptime. Logo a linha
+// do auto ataque na tabela reproduz o "AA uptime" já exibido acima dela.
+function clsTurnUptimeDen(res, row) {
+  const metric = row && row.kind === 'arrow' ? res.aaUptime : res.spellRuneUptime;
+  return (metric && +metric.expected) || res.totalTurns || 0;
+}
+
+// Donut SVG (sem Chart.js: é estático e não precisa de interação).
+function clsShareDonut(rows, colorOf, total, size) {
+  const R = size / 2, inner = R * 0.60, cx = R, cy = R;
+  let angle = -Math.PI / 2;
+  const point = (rad, ang) => (cx + rad * Math.cos(ang)).toFixed(2) + ' ' + (cy + rad * Math.sin(ang)).toFixed(2);
+  const arcs = rows.map(row => {
+    const frac = total > 0 ? clsRowTotalEff(row) / total : 0;
+    if (frac <= 0) return '';
+    const end = angle + frac * Math.PI * 2;
+    const big = frac > 0.5 ? 1 : 0;
+    const d = 'M ' + point(R - 1, angle) + ' A ' + (R - 1) + ' ' + (R - 1) + ' 0 ' + big + ' 1 ' + point(R - 1, end) +
+      ' L ' + point(inner, end) + ' A ' + inner + ' ' + inner + ' 0 ' + big + ' 0 ' + point(inner, angle) + ' Z';
+    angle = end;
+    return '<path d="' + d + '" fill="' + colorOf(row) + '" stroke="var(--bg-surface)" stroke-width="1.5">' +
+      '<title>' + clsRowLabel(row) + ' — ' + (frac * 100).toFixed(1) + '%</title></path>';
+  }).join('');
+  const topPct = rows.length && total > 0 ? (clsRowTotalEff(rows[0]) / total) * 100 : 0;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" role="img">' + arcs +
+    '<text x="' + cx + '" y="' + (cy - 5) + '" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="600">' +
+      topPct.toFixed(1) + '%</text>' +
+    '<text x="' + cx + '" y="' + (cy + 13) + '" text-anchor="middle" fill="var(--text-muted)" font-size="10">' +
+      t('cls_share_biggest') + '</text></svg>';
+}
+
 function renderClassifier(res) {
   const box = $('clsResults');
   if (!res || res.error) {
@@ -462,12 +527,29 @@ function renderClassifier(res) {
   const gravSanDmgModeSuffix = clsGravSanDamageMetric === 'turn' ? t('cls_metric_turn_suffix') : t('cls_metric_hit_suffix');
   const gravSanAdjusted = clsGravSanAdjustedHits(res);
   const showAdjustedHits = gravSanAdjusted.showColumn;
-  const rowsHtml = res.rows.map(r => {
+  const ranked = clsRowsByDamage(res);
+  const shareTotal = ranked.rows.reduce((sum, row) => sum + clsRowTotalEff(row), 0);
+  // Percentual que acompanha um número, em slot de largura fixa (ver .cls-pct no CSS).
+  const pctCell = v => '<span class="cls-pct">(' + f1(v) + '%)</span>';
+  const pctSpacer = '<span class="cls-pct" aria-hidden="true"></span>';
+  // Cabeçalho de coluna numérica. O rótulo vai num span próprio para poder quebrar em
+  // duas linhas sem empurrar o slot da % para uma linha só dele — é isso que permite
+  // colunas estreitas o bastante para a tabela inteira caber sem rolagem horizontal.
+  const numTh = (label, spacer) =>
+    '<th style="text-align:right"><div class="cls-th-inner"><span>' + label + '</span>' +
+      (spacer ? pctSpacer : '') + '</div></th>';
+  const rowsHtml = ranked.rows.map(r => {
     const adjustedCell = !showAdjustedHits ? '' :
       '<td style="text-align:right">' + f2(gravSanAdjusted.adjustedByKey[clsGravSanRowIdentity(r)] || 0) + '</td>';
-    const main = '<tr><td>' + (r.kind === 'arrow' ? t('cls_comp_arrow') : r.label) + '</td><td style="text-align:right">' + r.turns +
+    const den = clsTurnUptimeDen(res, r);
+    const rowEff = clsRowTotalEff(r);
+    const main = '<tr><td><span class="cls-share-dot" style="background:' + ranked.colorOf(r) + '"></span>' +
+      (r.kind === 'arrow' ? t('cls_comp_arrow') : r.label) + '</td><td style="text-align:right">' + r.turns +
+      pctCell(den > 0 ? (r.turns / den) * 100 : 0) +
       '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td>' + adjustedCell + '<td style="text-align:right">' + rowDmg(r, 'base') +
-      '</td><td style="text-align:right">' + rowDmg(r, 'eff') + '</td></tr>';
+      '</td><td style="text-align:right">' + rowDmg(r, 'eff') + '</td>' +
+      '<td style="text-align:right">' + clsFmtInt(rowEff) +
+      pctCell(shareTotal > 0 ? (rowEff / shareTotal) * 100 : 0) + '</td></tr>';
     if (!r.tiers || !r.tiers.length) return main;
     const sub = r.tiers.map(tier => {
       // "Dano médio sem crítico" pools non-crit hits across many different casts (Terra
@@ -481,9 +563,14 @@ function renderClassifier(res) {
       // subdivide em tiers), então a sub-linha emite uma célula vazia — mas emite, senão
       // o tier desalinha das colunas de dano.
       const tierAdjustedCell = showAdjustedHits ? '<td></td>' : '';
+      // O tier é um recorte dos hits do componente: não tem turnos próprios (célula de
+      // turnos vazia) e o seu dano total sai do dano/turno × turnos do componente-pai.
+      const tierEff = Math.round((+tier.dmgEffPerTurn || 0) * r.turns);
       return '<tr style="color:var(--text-muted);font-size:12px"><td style="padding-left:22px">└ ' + tierLabel(tier, r.bonusMult, r.beamFraction) +
         '</td><td></td><td style="text-align:right">' + f2(tier.hitsMean) + '</td>' + tierAdjustedCell +
-        '<td style="text-align:right">' + tierBaseCell + '</td><td style="text-align:right">' + rowDmg(tier, 'eff') + '</td></tr>';
+        '<td style="text-align:right">' + tierBaseCell + '</td><td style="text-align:right">' + rowDmg(tier, 'eff') + '</td>' +
+        '<td style="text-align:right">' + clsFmtInt(tierEff) +
+        pctCell(shareTotal > 0 ? (tierEff / shareTotal) * 100 : 0) + '</td></tr>';
     }).join('');
     return main + sub;
   }).join('');
@@ -513,25 +600,32 @@ function renderClassifier(res) {
   // gráficos do log (só dados observados, sem simulação) — um histograma de hits por
   // LINHA da rotação (cada spell/componente: AA, cada spell nominal, runa, granada).
   // compPalette compartilhado com o gráfico de componentes por turno — índice i = mesma cor.
-  const compPalette = ['#F59E0B', '#22C55E', '#60A5FA', '#F87171', '#A78BFA', '#FBBF24', '#34D399', '#F472B6', '#38BDF8', '#FB923C', '#C084FC'];
-  const compDefs = (res.rows || [])
-    .map((r, rowIndex) => ({ r, rowIndex }))
-    .filter(x => Array.isArray(x.r.hitsPerTurn) && x.r.hitsPerTurn.some(v => v > 0))
+  const compDefs = ranked.rows
+    .filter(r => Array.isArray(r.hitsPerTurn) && r.hitsPerTurn.some(v => v > 0))
     .map((r, i) => ({
       canvas: 'clsHist' + i,
-      rowIndex: r.rowIndex,
-      vals: r.r.hitsPerTurn.filter(v => v > 0),
-      label: clsRowLabel(r.r),
-      color: compPalette[i % compPalette.length],
+      row: r,
+      vals: r.hitsPerTurn.filter(v => v > 0),
+      label: clsRowLabel(r),
+      color: ranked.colorOf(r),
     }));
   const hasSeries = (res.temporalSeries || []).length > 0;
   // Larguras travadas: sem isto, trocar Hits<->Turno muda o sufixo do cabeçalho de dano
   // ("/ hit" <-> "/ turno") e a tabela inteira reflui. "componente" fica sem largura e
   // absorve a sobra.
+  // Larguras das colunas numéricas + piso para a coluna de nome. A de nome é a única
+  // "auto": ela absorve a sobra, mas as colunas fixas somadas podiam espremê-la a ~97px
+  // (caso com a coluna de grav san) e o nome do componente saía truncado. O piso vira um
+  // min-width na tabela; quando nem ele cabe, quem rola é o container, não o texto.
+  const rotationCols = { turns: 150, hits: 74, gravSan: 120, dmgBase: 150, dmgEff: 150, total: 146 };
+  const CLS_NAME_COL_MIN = 300;
+  const rotationMinWidth = CLS_NAME_COL_MIN + rotationCols.turns + rotationCols.hits +
+    (showAdjustedHits ? rotationCols.gravSan : 0) + rotationCols.dmgBase + rotationCols.dmgEff + rotationCols.total;
   const rotationColgroup =
-    '<colgroup><col><col style="width:70px"><col style="width:80px">' +
-      (showAdjustedHits ? '<col style="width:200px">' : '') +
-      '<col style="width:185px"><col style="width:195px"></colgroup>';
+    '<colgroup><col><col style="width:' + rotationCols.turns + 'px"><col style="width:' + rotationCols.hits + 'px">' +
+      (showAdjustedHits ? '<col style="width:' + rotationCols.gravSan + 'px">' : '') +
+      '<col style="width:' + rotationCols.dmgBase + 'px"><col style="width:' + rotationCols.dmgEff + 'px">' +
+      '<col style="width:' + rotationCols.total + 'px"></colgroup>';
   const rotationMetricHtml =
     '<div class="cls-component-chart-tools">' +
       '<div class="cls-chart-metric cls-rotation-damage-metric" role="group" aria-label="' + t('cls_rotation_damage_metric') + '">' +
@@ -575,6 +669,40 @@ function renderClassifier(res) {
       '<table class="cls-table"><thead><tr><th>' + t('cls_th_comp') + '</th><th style="text-align:right">' + t('cls_th_turns') +
         '</th><th style="text-align:right">' + t('cls_th_hits') + '</th><th style="text-align:right">' + t('cls_th_dmg_base') + gravSanDmgModeSuffix +
         '</th><th style="text-align:right">' + t('cls_th_dmg_eff') + gravSanDmgModeSuffix + '</th></tr></thead><tbody>' + gravSanRowsHtml + '</tbody></table>');
+  // Painel de composição: donut + ranking, na mesma ordem e cor da tabela.
+  const shareTop = ranked.rows.slice(0, 3);
+  const shareTopPct = shareTotal > 0 ? (shareTop.reduce((sum, row) => sum + clsRowTotalEff(row), 0) / shareTotal) * 100 : 0;
+  const shareLegend = ranked.rows.map(row => {
+    const eff = clsRowTotalEff(row);
+    const p = shareTotal > 0 ? (eff / shareTotal) * 100 : 0;
+    const den = clsTurnUptimeDen(res, row);
+    const tp = den > 0 ? (row.turns / den) * 100 : 0;
+    return '<div class="cls-share-row">' +
+        '<div class="cls-share-name"><span class="cls-share-dot" style="background:' + ranked.colorOf(row) + '"></span>' + clsRowLabel(row) + '</div>' +
+        '<div class="cls-share-turns">' + f1(tp) + '%</div>' +
+        '<div class="cls-share-arrow">→</div>' +
+        '<div class="cls-share-pct">' + f1(p) + '%</div>' +
+        '<div class="cls-share-total">' + clsFmtInt(eff) + '</div>' +
+      '</div>' +
+      '<div class="cls-share-bar"><i style="width:' + f1(p) + '%;background:' + ranked.colorOf(row) + '"></i></div>';
+  }).join('');
+  const shareHtml = !ranked.rows.length || shareTotal <= 0 ? '' :
+    '<h3 class="cls-h">' + t('cls_h_damage_share') + '</h3>' +
+    '<div class="cls-share">' +
+      '<div>' + clsShareDonut(ranked.rows, ranked.colorOf, shareTotal, 190) + '</div>' +
+      '<div class="cls-share-legend">' +
+        '<p class="cls-share-headline">' + t('cls_share_headline')
+          .replace('{n}', shareTop.length)
+          .replace('{pct}', '<strong>' + f1(shareTopPct) + '%</strong>')
+          .replace('{total}', '<strong>' + clsFmtInt(shareTotal) + '</strong>')
+          .replace('{turns}', '<strong>' + res.totalTurns + '</strong>') + '</p>' +
+        '<div class="cls-share-row cls-share-head"><div>' + t('cls_th_comp') + '</div>' +
+          '<div>' + t('cls_share_leg_turns') + '</div><div></div>' +
+          '<div>' + t('cls_share_leg_dmg') + '</div><div>' + t('cls_th_dmg_total') + '</div></div>' +
+        shareLegend +
+      '</div>' +
+    '</div>';
+
   const metricHtml = !hasSeries || !compDefs.length ? '' :
     '<div class="cls-component-chart-tools">' +
       '<div class="cls-chart-metric" role="group" aria-label="' + t('cls_component_chart_metric') + '">' +
@@ -601,14 +729,19 @@ function renderClassifier(res) {
       (res.player || '—') + ' &nbsp;·&nbsp; <strong>' + t('cls_dmg_spell') + ':</strong> ' +
       (dmgSummary.join(', ') || '—') + '</p>' +
     aaMetricHtml +
+    shareHtml +
     '<h3 class="cls-h">' + t('cls_h_rotation') + '</h3>' +
     rotationMetricHtml +
-    '<table class="cls-table cls-rotation-table">' + rotationColgroup +
-      '<thead><tr><th>' + t('cls_th_comp') + '</th><th style="text-align:right">' + t('cls_th_turns') +
-      '</th><th style="text-align:right">' + t('cls_th_hits') + '</th>' +
-      (showAdjustedHits ? '<th style="text-align:right">' + t('cls_th_hits_gravsan_adjusted') + '</th>' : '') +
-      '<th style="text-align:right">' + t('cls_th_dmg_base') + dmgModeSuffix +
-      '</th><th style="text-align:right">' + t('cls_th_dmg_eff') + dmgModeSuffix + '</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+    '<div class="cls-table-scroll"><table class="cls-table cls-rotation-table" style="min-width:' + rotationMinWidth + 'px">' + rotationColgroup +
+      '<thead><tr><th>' + t('cls_th_comp') + '</th>' +
+      numTh(t('cls_th_turns_uptime'), true) +
+      numTh(t('cls_th_hits'), false) +
+      (showAdjustedHits ? numTh(t('cls_th_hits_gravsan_adjusted'), false) : '') +
+      numTh(t('cls_th_dmg_base') + dmgModeSuffix, false) +
+      numTh(t('cls_th_dmg_eff') + dmgModeSuffix, false) +
+      numTh(t('cls_th_dmg_total'), true) +
+      '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' +
+    '<p class="cls-share-note">' + t('cls_share_note') + '</p>' +
     '<p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0">' +
       t('cls_unmatched').replace('{u}', res.excludedTurns).replace('{n}', res.totalTurns) + '</p>' +
     gravSanTableHtml +
@@ -679,8 +812,8 @@ function renderClassifierCharts(res, compDefs) {
   // componentes por turno — uma linha por componente/spell REAL da rotação (das linhas
   // observadas), não o set fixo do validador. Assim pega as spells de qualquer vocação e
   // não inventa runa/granada quando não há. Usa o hitsTimeline alinhado de cada linha.
-  const compPalette = ['#F59E0B', '#22C55E', '#60A5FA', '#F87171', '#A78BFA', '#FBBF24', '#34D399', '#F472B6', '#38BDF8', '#FB923C', '#C084FC'];
-  const compRows = (res.rows || []).filter((r, rowIndex) =>
+  const rankedForCharts = clsRowsByDamage(res);
+  const compRows = rankedForCharts.rows.filter(r =>
     Array.isArray(r.hitsTimeline) &&
     r.hitsTimeline.some(v => v > 0)
   );
@@ -694,8 +827,8 @@ function renderClassifierCharts(res, compDefs) {
     try {
       clsTimelineComponentsChart = new Chart(compCv, {
         type: 'line',
-        data: { labels, datasets: compRows.map((r, idx) => {
-          const color = compPalette[idx % compPalette.length];
+        data: { labels, datasets: compRows.map(r => {
+          const color = rankedForCharts.colorOf(r);
           return {
             label: clsRowLabel(r),
             data: componentTimeline(r),
@@ -714,7 +847,7 @@ function renderClassifierCharts(res, compDefs) {
     renderSmallComponentHistogram(d.canvas, c => { clsRowHistCharts.push(c); }, d.vals, null, d.label, undefined, d.color, {
       onClick: clsChartClickHandler(res, (hit, chart) => {
         const n = Number(chart.data && chart.data.labels ? chart.data.labels[hit.index] : hit.index);
-        const row = (res.rows || [])[d.rowIndex];
+        const row = d.row;
         if (!row || !Array.isArray(row.hitsTimeline) || !Array.isArray(res.turnTrace)) return null;
         return res.turnTrace.filter((_, i) => Math.round(row.hitsTimeline[i] || 0) === n);
       })
