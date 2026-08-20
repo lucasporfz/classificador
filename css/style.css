@@ -289,3 +289,29 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
     justify-content: flex-start;
   }
 }
+
+/* Tooltip "por criatura" da tabela de rotação: passar o mouse numa linha de componente
+   mostra em quais criaturas os hits daquele componente caíram. Segue o cursor, então
+   pointer-events: none — senão a camada rouba o mouse da linha e fica piscando. */
+.cls-row-targets { cursor: help; }
+.cls-row-targets:hover > td { background: rgba(0, 196, 154, .07); }
+#clsTargetTip {
+  position: fixed; z-index: 60; pointer-events: none;
+  background: var(--bg-raised); border: 1px solid var(--border-hover);
+  border-radius: var(--r-sm); box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
+  color: var(--text); font-size: 12px; padding: 10px 12px; max-width: 620px;
+}
+.cls-target-title {
+  font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: .06em; margin-bottom: 6px;
+}
+.cls-target-stack { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(27, 46, 72, .7); }
+.cls-target-stack > i { display: block; height: 100%; }
+.cls-target-table { border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; margin-top: 8px; }
+.cls-target-table th {
+  color: var(--text-dim); font-weight: 500; font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: .05em; padding: 2px 8px; text-align: right;
+}
+.cls-target-table td { padding: 2px 8px; text-align: right; border-top: 0.5px solid var(--border); white-space: nowrap; }
+.cls-target-table th:first-child, .cls-target-table td:first-child { text-align: left; }
+.cls-target-foot { color: var(--text-muted); font-size: 10.5px; margin-top: 8px; }
