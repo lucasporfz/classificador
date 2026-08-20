@@ -467,8 +467,18 @@ function clsTargetsByComponent(res) {
       let c = comps.get(key);
       if (!c) { c = { key, isAa: comp === 'arrow', hits: 0, dmg: 0, mobs: new Map(), turns: new Set() }; comps.set(key, c); }
       let m = c.mobs.get(h.mob);
-      if (!m) { m = { mob: h.mob, hits: 0, dmg: 0, crit: 0, lb: 0, sb: 0, ok: 0, cleanHits: 0, cleanDmg: 0 }; c.mobs.set(h.mob, m); }
+      if (!m) { m = { mob: h.mob, hits: 0, dmg: 0, lb: 0, sb: 0, ok: 0, cleanHits: 0, cleanDmg: 0, attacks: new Set(), critAttacks: new Set() }; c.mobs.set(h.mob, m); }
       const dmg = +h.dmg || 0;
+      // O crítico é rolado UMA vez por ataque e vale para todos os alvos daquele
+      // ataque (nos fixtures, nenhum cast tem hits críticos e não-críticos misturados),
+      // então o denominador do crítico é o ATAQUE, não o hit: em área, ponderar por
+      // hits infla quando o cast crítico calhou de pegar mais mobs (`barrage`: 21,8%
+      // por hit contra 18,7% por ataque no roaming dread). Charms (Low Blow, Savage
+      // Blow) procam por hit — 16 dos 22 casts com low blow em `bastion` são mistos —
+      // e por isso continuam com denominador de hits.
+      const attackKey = tr.ts + ':' + (h.componentIdx == null ? 0 : h.componentIdx);
+      m.attacks.add(attackKey);
+      if (h.realCrit && !h.lowBlow) m.critAttacks.add(attackKey);
       c.hits++; c.dmg += dmg; c.turns.add(tr.ts);
       m.hits++; m.dmg += dmg;
       // As três colunas são DISJUNTAS. O parser marca `realCrit = crítico do log OU
@@ -479,7 +489,6 @@ function clsTargetsByComponent(res) {
       // `realCrit`, então já era disjunto; fica explícito aqui do mesmo jeito.
       if (h.lowBlow) { m.lb++; anyLowBlow = true; }
       else if (h.savageBlow) { m.sb++; anySavage = true; }
-      else if (h.realCrit) m.crit++;
       // Dano médio ignora overkill: o log mostra só o que faltava de vida (D-011),
       // então o golpe que mata puxaria a média para baixo sem significar nada.
       if (h.ok || h.overkill) m.ok++; else { m.cleanHits++; m.cleanDmg += dmg; }
@@ -495,7 +504,7 @@ function clsTargetsByComponent(res) {
       r.color = CLS_TARGET_PALETTE[i % CLS_TARGET_PALETTE.length];
       r.hitPct = c.hits ? (100 * r.hits) / c.hits : 0;
       r.dmgPct = c.dmg ? (100 * r.dmg) / c.dmg : 0;
-      r.critPct = r.hits ? (100 * r.crit) / r.hits : 0;
+      r.critPct = r.attacks.size ? (100 * r.critAttacks.size) / r.attacks.size : 0;
       r.lbPct = r.hits ? (100 * r.lb) / r.hits : 0;
       r.sbPct = r.hits ? (100 * r.sb) / r.hits : 0;
       r.okPct = r.hits ? (100 * r.ok) / r.hits : 0;
