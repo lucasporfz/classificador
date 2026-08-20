@@ -471,9 +471,15 @@ function clsTargetsByComponent(res) {
       const dmg = +h.dmg || 0;
       c.hits++; c.dmg += dmg; c.turns.add(tr.ts);
       m.hits++; m.dmg += dmg;
-      if (h.realCrit) m.crit++;
+      // As três colunas são DISJUNTAS. O parser marca `realCrit = crítico do log OU
+      // Low Blow` (o charm é um crítico), então contar `realCrit` direto soma o low
+      // blow duas vezes e infla o crítico — em `bastion` o AA ia a 10,9% quando o
+      // crítico de verdade é 8,3%, e o Great Death Beam de `death echo` aparecia com
+      // 15,8% sendo que ali TODO "crítico" era low blow. Savage Blow não entra em
+      // `realCrit`, então já era disjunto; fica explícito aqui do mesmo jeito.
       if (h.lowBlow) { m.lb++; anyLowBlow = true; }
-      if (h.savageBlow) { m.sb++; anySavage = true; }
+      else if (h.savageBlow) { m.sb++; anySavage = true; }
+      else if (h.realCrit) m.crit++;
       // Dano médio ignora overkill: o log mostra só o que faltava de vida (D-011),
       // então o golpe que mata puxaria a média para baixo sem significar nada.
       if (h.ok || h.overkill) m.ok++; else { m.cleanHits++; m.cleanDmg += dmg; }
