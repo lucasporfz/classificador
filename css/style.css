@@ -315,3 +315,11 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
 .cls-target-table td { padding: 2px 8px; text-align: right; border-top: 0.5px solid var(--border); white-space: nowrap; }
 .cls-target-table th:first-child, .cls-target-table td:first-child { text-align: left; }
 .cls-target-foot { color: var(--text-muted); font-size: 10.5px; margin-top: 8px; }
+/* Selo do charm: Low Blow e Savage Blow ficam colados numa criatura do bestiário,
+   então a informação é "qual bicho", não uma porcentagem de procs. */
+.cls-target-badge {
+  display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 4px;
+  font-size: 9.5px; font-weight: 600; letter-spacing: .04em; vertical-align: 1px;
+}
+.cls-target-badge-lb { background: rgba(74, 144, 247, .18); color: #7fb2ff; border: 1px solid rgba(74, 144, 247, .45); }
+.cls-target-badge-sb { background: rgba(245, 158, 11, .18); color: #f5b74a; border: 1px solid rgba(245, 158, 11, .45); }

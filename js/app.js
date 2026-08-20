@@ -453,49 +453,32 @@ const CLS_TARGET_PALETTE = CLS_COMP_PALETTE;
 function clsTargetsByComponent(res) {
   const trace = (res && res.turnTrace) || [];
   const comps = new Map();
-  // Low Blow e Savage Blow são charms: as colunas só existem se a sessão registrou
-  // algum. Um log sem o charm não deve exibir uma coluna inteira de zeros.
+  // Charm é ATRIBUIÇÃO, não estatística: Low Blow e Savage Blow ficam colados numa
+  // criatura do bestiário. Por isso viram um selo na criatura — não uma coluna de
+  // porcentagem, que só mediria a sorte dos procs daquela amostra. O selo vale para a
+  // sessão inteira, independente do componente em que o charm procou.
+  const charmByMob = new Map();
   let anyLowBlow = false, anySavage = false;
-  let aaTurns = 0, turnsNoAa = 0, unresolved = 0;
 
   for (const tr of trace) {
-    if (tr.unifiedStatus && tr.unifiedStatus !== 'resolved') unresolved++;
-    let hasAa = false;
     for (const h of tr.lines || []) {
       const comp = h.component || h.comp;
       const key = comp === 'arrow' ? 'arrow' : (h.actionLabel || comp);
       let c = comps.get(key);
-      if (!c) { c = { key, isAa: comp === 'arrow', hits: 0, dmg: 0, mobs: new Map(), turns: new Set() }; comps.set(key, c); }
+      if (!c) { c = { key, isAa: comp === 'arrow', hits: 0, dmg: 0, mobs: new Map() }; comps.set(key, c); }
       let m = c.mobs.get(h.mob);
-      if (!m) { m = { mob: h.mob, hits: 0, dmg: 0, lb: 0, sb: 0, ok: 0, cleanHits: 0, cleanDmg: 0, attacks: new Set(), critAttacks: new Set() }; c.mobs.set(h.mob, m); }
+      if (!m) { m = { mob: h.mob, hits: 0, dmg: 0, cleanHits: 0, cleanDmg: 0 }; c.mobs.set(h.mob, m); }
+      let charm = charmByMob.get(h.mob);
+      if (!charm) { charm = { lb: 0, sb: 0 }; charmByMob.set(h.mob, charm); }
       const dmg = +h.dmg || 0;
-      // O crítico é rolado UMA vez por ataque e vale para todos os alvos daquele
-      // ataque (nos fixtures, nenhum cast tem hits críticos e não-críticos misturados),
-      // então o denominador do crítico é o ATAQUE, não o hit: em área, ponderar por
-      // hits infla quando o cast crítico calhou de pegar mais mobs (`barrage`: 21,8%
-      // por hit contra 18,7% por ataque no roaming dread). Charms (Low Blow, Savage
-      // Blow) procam por hit — 16 dos 22 casts com low blow em `bastion` são mistos —
-      // e por isso continuam com denominador de hits.
-      const attackKey = tr.ts + ':' + (h.componentIdx == null ? 0 : h.componentIdx);
-      m.attacks.add(attackKey);
-      if (h.realCrit && !h.lowBlow) m.critAttacks.add(attackKey);
-      c.hits++; c.dmg += dmg; c.turns.add(tr.ts);
+      c.hits++; c.dmg += dmg;
       m.hits++; m.dmg += dmg;
-      // As três colunas são DISJUNTAS. O parser marca `realCrit = crítico do log OU
-      // Low Blow` (o charm é um crítico), então contar `realCrit` direto soma o low
-      // blow duas vezes e infla o crítico — em `bastion` o AA ia a 10,9% quando o
-      // crítico de verdade é 8,3%, e o Great Death Beam de `death echo` aparecia com
-      // 15,8% sendo que ali TODO "crítico" era low blow. Savage Blow não entra em
-      // `realCrit`, então já era disjunto; fica explícito aqui do mesmo jeito.
-      if (h.lowBlow) { m.lb++; anyLowBlow = true; }
-      else if (h.savageBlow) { m.sb++; anySavage = true; }
+      if (h.lowBlow) { charm.lb++; anyLowBlow = true; }
+      if (h.savageBlow) { charm.sb++; anySavage = true; }
       // Dano médio ignora overkill: o log mostra só o que faltava de vida (D-011),
       // então o golpe que mata puxaria a média para baixo sem significar nada.
-      if (h.ok || h.overkill) m.ok++; else { m.cleanHits++; m.cleanDmg += dmg; }
-      if (comp === 'arrow') hasAa = true;
+      if (!(h.ok || h.overkill)) { m.cleanHits++; m.cleanDmg += dmg; }
     }
-    if (hasAa) aaTurns++;
-    else if (!tr.unifiedStatus || tr.unifiedStatus === 'resolved') turnsNoAa++;
   }
 
   for (const c of comps.values()) {
@@ -504,61 +487,51 @@ function clsTargetsByComponent(res) {
       r.color = CLS_TARGET_PALETTE[i % CLS_TARGET_PALETTE.length];
       r.hitPct = c.hits ? (100 * r.hits) / c.hits : 0;
       r.dmgPct = c.dmg ? (100 * r.dmg) / c.dmg : 0;
-      r.critPct = r.attacks.size ? (100 * r.critAttacks.size) / r.attacks.size : 0;
-      r.lbPct = r.hits ? (100 * r.lb) / r.hits : 0;
-      r.sbPct = r.hits ? (100 * r.sb) / r.hits : 0;
-      r.okPct = r.hits ? (100 * r.ok) / r.hits : 0;
       r.avgDmg = r.cleanHits ? r.cleanDmg / r.cleanHits : 0;
       r.avgAllOverkill = !r.cleanHits;
+      r.charm = charmByMob.get(r.mob) || { lb: 0, sb: 0 };
     });
-    c.turnCount = c.turns.size;
   }
-  return {
-    comps,
-    anyLowBlow,
-    anySavage,
-    // M-031: só o Royal Paladin tem auto ataque que pode ser de área.
-    areaAa: ((res.unifiedSource && res.unifiedSource.vocation) || '') === 'paladin',
-    aaTurns, turnsNoAa, unresolved,
-    totalTurns: trace.length,
-  };
+  return { comps, anyLowBlow, anySavage };
+}
+
+// Selo do charm ao lado do nome da criatura. O `title` guarda quantos procs
+// sustentam a marca, para quem quiser conferir a evidência.
+function clsTargetCharmBadges(row) {
+  const badge = (cls, label, key, procs) =>
+    '<span class="cls-target-badge ' + cls + '" title="' +
+      clsEscapeHtml(t(key) + ' — ' + t('cls_targets_charm_procs').replace('{n}', procs)) + '">' + label + '</span>';
+  return (row.charm.lb ? badge('cls-target-badge-lb', 'LB', 'cls_targets_charm_low_blow', row.charm.lb) : '') +
+    (row.charm.sb ? badge('cls-target-badge-sb', 'SB', 'cls_targets_charm_savage', row.charm.sb) : '');
 }
 
 function clsTargetsTooltipHtml(comp, data) {
   const f1 = x => x.toFixed(1);
-  const th = (key, show) => (show === false ? '' : '<th>' + t(key) + '</th>');
   const bar = '<div class="cls-target-stack">' + comp.rows
     .map(r => '<i style="width:' + f1(r.hitPct) + '%;background:' + r.color + '" title="' +
       clsEscapeHtml(r.mob) + ' — ' + f1(r.hitPct) + '%"></i>').join('') + '</div>';
   const body = comp.rows.map(r =>
-    '<tr><td><span class="cls-share-dot" style="background:' + r.color + '"></span>' + clsEscapeHtml(r.mob) + '</td>' +
+    '<tr><td><span class="cls-share-dot" style="background:' + r.color + '"></span>' +
+        clsEscapeHtml(r.mob) + clsTargetCharmBadges(r) + '</td>' +
       '<td>' + clsFmtInt(r.hits) + '</td>' +
       '<td><strong>' + f1(r.hitPct) + '%</strong></td>' +
       '<td>' + f1(r.dmgPct) + '%</td>' +
-      '<td>' + (r.avgAllOverkill ? '—' : clsFmtInt(r.avgDmg)) + '</td>' +
-      '<td>' + f1(r.critPct) + '%</td>' +
-      (data.anyLowBlow ? '<td>' + f1(r.lbPct) + '%</td>' : '') +
-      (data.anySavage ? '<td>' + f1(r.sbPct) + '%</td>' : '') +
-      '<td>' + f1(r.okPct) + '%</td></tr>').join('');
-  const foot = (comp.isAa
-    ? t('cls_targets_foot_aa')
-        .replace('{hitTurns}', data.aaTurns)
-        .replace('{turns}', data.totalTurns)
-        .replace('{noAa}', data.turnsNoAa)
-        .replace('{unresolved}', data.unresolved) +
-      (data.areaAa ? ' · ' + t('cls_targets_foot_area_aa') : '')
-    : t('cls_targets_foot_comp').replace('{turns}', comp.turnCount)) +
-    ' · ' + t('cls_targets_foot_avg');
+      '<td>' + (r.avgAllOverkill ? '—' : clsFmtInt(r.avgDmg)) + '</td></tr>').join('');
+  const legendParts = [];
+  if (data.anyLowBlow) legendParts.push('<span class="cls-target-badge cls-target-badge-lb">LB</span> ' + t('cls_targets_charm_low_blow'));
+  if (data.anySavage) legendParts.push('<span class="cls-target-badge cls-target-badge-sb">SB</span> ' + t('cls_targets_charm_savage'));
+  const charmLegend = legendParts.length
+    ? '<br>' + legendParts.join(' · ') + ' — ' + t('cls_targets_charm_legend')
+    : '';
   const title = t('cls_targets_title')
     .replace('{comp}', clsEscapeHtml(comp.isAa ? t('cls_comp_arrow') : comp.key));
   return '<div class="cls-target-title">' + title + '</div>' + bar +
     '<table class="cls-target-table"><thead><tr>' +
-      th('cls_targets_th_mob') + th('cls_targets_th_hits') + th('cls_targets_th_share') +
-      th('cls_targets_th_dmg_share') + th('cls_targets_th_avg_dmg') + th('cls_targets_th_crit') +
-      th('cls_targets_th_low_blow', data.anyLowBlow) + th('cls_targets_th_savage', data.anySavage) +
-      th('cls_targets_th_overkill') +
+      '<th>' + t('cls_targets_th_mob') + '</th><th>' + t('cls_targets_th_hits') + '</th>' +
+      '<th>' + t('cls_targets_th_share') + '</th><th>' + t('cls_targets_th_dmg_share') + '</th>' +
+      '<th>' + t('cls_targets_th_avg_dmg') + '</th>' +
     '</tr></thead><tbody>' + body + '</tbody></table>' +
-    '<div class="cls-target-foot">' + foot + '</div>';
+    '<div class="cls-target-foot">' + t('cls_targets_foot_avg') + charmLegend + '</div>';
 }
 
 // Tooltip que segue o cursor. `pointer-events: none` (no CSS) é o que impede a camada
