@@ -35,6 +35,28 @@ Uma característica passiva do personagem que não é vocação nem equipamento
 diretamente observável, e por isso precisa ser inferida da sessão (ex.: BM, que
 adiciona pierce elemental). Tratado como parte do setup.
 
+**Omega**:
+Nome que este projeto deu a um perk de dano que o jogo não anota em lugar nenhum do
+server log: ele multiplica o dano por um fator fixo quando o alvo está com pouca vida.
+O nome é nosso porque a mecânica não tem nome observável — nenhum sufixo, nenhuma
+linha, nenhuma incantação a revela. O que a revela é o dano de charm, que é fixo por
+mob e por isso denuncia qualquer multiplicador oculto como um segundo nível exato.
+_Avoid_: bônus de execute, low-hp bonus, perk dos 6%.
+
+**Estado do hit**:
+O conjunto de fatos que valem para um hit individual (e não para o componente inteiro
+nem para a sessão) e que mudam o dano dele: Expose Weakness, prey, amplification,
+Perfect Shot, crítico — e omega. Dois hits do mesmo mob no mesmo estado do hit têm
+obrigatoriamente o mesmo dano; é isso que torna a comparação entre eles uma prova, e
+não uma estimativa.
+
+Estados do hit se dividem em **observados** e **inferidos**. Observado é o que o
+server log escreve no sufixo da própria linha. Inferido é o que só se deduz do nível
+do bloco a que o hit pertence — omega é o primeiro do tipo. A distinção importa
+porque um estado inferido não pode ser assumido: ele depende de o perk correspondente
+ter sido detectado na sessão, e fora disso simplesmente não existe.
+_Avoid_: modificador do hit, flag do hit.
+
 **Orquestração**:
 A camada mais externa: decide sob quais hipóteses de perk rodar o bootstrap (ex.:
 com e sem BM), compara a evidência entre elas, e escolhe o resultado final da

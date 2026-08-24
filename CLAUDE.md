@@ -96,11 +96,70 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
-**Baseline conhecido (medido em 12/Ago/2026, após `implement-s014f-boss-leech-no-veto`).**
-Comparar contra ele em vez de exigir verde total. Total de alvos: **30/34 OK**.
-Turnos sem classificação no corpus (`tools/report-unified-unclassified.mjs`, contagem
-bruta = `totalUnresolved` + `knownAccepted` + `partialEdge` = 27 + 3 + 22): **52** de
-16.407 (era 246 antes de S-014f).
+**Baseline conhecido (medido em 24/Ago/2026, após `apply-omega-cross-state-tolerance-as-last-resort`).**
+Total de alvos: **35/40 OK**; gabarito **239/239**; invariantes com **1** falha, a declarada em
+S-014f (`bakradrone 09:57:20`). Dump: **18.958** turnos, **58** sem classificação.
+
+As 5 falhas são todas **pré-existentes** e idênticas antes e depois da change:
+`gabarito prioritario + invariantes mecanicas` (a falha de invariante do `bakradrone`),
+`experimental-ui-parity`, `mob-element-regime`, `unified-grav-san-ratio-witness` (o código de
+D-030b/D-030c que ela exercita está em `git stash`) e `unified-spiritual-outburst-multistage`.
+Os 2 alvos a mais vieram desta change (`unified-omega-cross-state-exactness`,
+`unified-omega-last-resort`); os outros 2 do 38 vieram de changes preexistentes no working tree.
+
+**`crypt` saiu de 118 para 1 turno sem classificação** (`07:52:37`, pendência declarada), com
+**zero** turnos resolvidos perdidos e **zero** drift fora de `crypt` — as 438 linhas do diff do
+dump estão todas em `crypt`, e o conjunto de turnos sem classificação dos outros fixtures é
+byte-idêntico. A regra é **S-004c** (+ `S-004c-nota`); o diagnóstico está em
+`reports/crypt-omega-1-nivel.md`.
+
+**Atenção ao medir contra este baseline:** `node tools/query-unified-dump.mjs --verify-source`
+devolve **exit 3** (fonte divergiu do `latest` aceito) por causa de changes preexistentes não
+commitadas em `js/`, não por causa desta. O `latest` aceito (18.955 turnos / 684 sem
+classificação) está defasado do working tree; para diff de drift, gere o seu próprio baseline
+com `node tools/dump-unified.mjs` **antes** de editar `js/`, e não promova o candidate sem
+antes resolver a defasagem.
+
+**Baseline anterior, para referência (medido em 23/Ago/2026, após `rescue-field-hits-with-impossible-leech`).**
+Comparar contra ele em vez de exigir verde total. Total de alvos: **32/37 OK**;
+gabarito **203/203**; invariantes **35/36** fixtures limpos e **0 SKIP**, com a única falha em
+`bakradrone 09:57:20` (limite declarado em S-014f). Dump: **18.955** turnos,
+**684** sem classificação.
+
+**O denominador mudou nesta medição — não compare 18.955/684 com 17.105/52 direto.** Duas
+coisas entraram de uma vez:
+
+- `CORPUS_EXCLUSIONS` ficou **vazio** (M-038a, issue #11). A hunt `Tue Jun 09 09:30:47 2026`
+  voltou ao corpus nos três fixtures em que aparece (`bakra` S4, `drome` S4, `jaded` S4,
+  209 turnos cada) e `drome` trouxe junto 4 sessões que nunca tiveram cobertura (391 turnos).
+  Contribuição desta change para os turnos sem classificação: **+5** — `09:21:08` contado 3×
+  (o tick de campo que M-038a não alcança, leech 3 não excede dano 9) mais `19:52:11` e
+  `09:19:56` de `drome`. Todos declarados como pendência conhecida.
+- `Crypt Server Log.txt` **já estava no corpus mas nunca esteve no dump aceito**: 832 turnos,
+  dos quais **627 sem classificação**. É a origem de 627 dos 632 turnos sem classificação a
+  mais, e **não** tem relação com M-038a. `query-unified-dump.mjs --verify-source` não pegou
+  a defasagem porque a assinatura da fonte não cobre a lista de pares — é pendência aberta,
+  tanto o fixture quanto o furo do `--verify-source`.
+
+Nenhum turno previamente coberto mudou de classificação: as 1.055 remoções do diff são 100 %
+renumeração `S<N>→S<N+1>`, porque a hunt reentrou no índice 4 de `bakra` e `jaded`
+(verificado linha a linha, 0 linhas do latest sem contraparte).
+
+A hunt entrou com **0 quebras de invariante** — as 5 de `M-012/M-013` que ela tinha eram
+resíduo de tick de campo. Os 6 alvos a mais no gabarito (197→203) são dessa hunt. **A falha
+`tests/unified-grav-san-ratio-witness.test.mjs` no working tree atual NÃO é regressão**: o
+teste está no disco (o `.gitignore` ignora `tests/`) mas o código de `D-030b`/`D-030c` que
+ele exercita está em `git stash` — some com `git stash pop`.
+
+Baseline anterior, para referência (22/Ago/2026, após `exclude-field-and-dot-damage-from-main-hits`):
+**32/37 OK**, gabarito **197/197**, invariantes **33/34** + 1 SKIP (`drome`), dump **17.105**
+turnos e **52** sem classificação. O fixture `ek boss` entrou no corpus nessa data com 8 turnos
+sem classificação e 3 quebras de M-009; `M-038` e a correção da topologia de `exori scu` para
+`area` zeraram os dois.
+
+Baseline anterior, para referência (12/Ago/2026, após `implement-s014f-boss-leech-no-veto`):
+**30/34 OK**, gabarito 187/187, **52** turnos sem classificação de 16.407 (era 246 antes de
+S-014f), contagem bruta = `totalUnresolved` + `knownAccepted` + `partialEdge` = 27 + 3 + 22.
 
 O relatório **não exclui mais** leech pré-cutoff: a decisão de 19/Jul/2026 foi revogada em
 11/Ago/2026 e a família caiu por `S-014f`, então o filtro padrão saiu junto com a flag

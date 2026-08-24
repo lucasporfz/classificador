@@ -21,6 +21,8 @@
     elementalStateKey,
     ELEMENTAL_INTERMEDIATE_TOLERANCE,
     IGNORED_RUNE_RE,
+    fieldDamageLevels,
+    isFieldDamageHit,
     RUNE_PROFILES,
     IGNORED_SPELL_RE,
     SPELL_PROFILES,
@@ -75,6 +77,7 @@
     const potionUsePattern = /^Using one of\s+\d+\s+.+?\s+potions?\b/i;
     let pendingLeechHit = null;
     let lastPotionTs = null;
+    let hasFieldRuneUse = false;
     let seq = 0;
     // D-011a: `seq` enumera somente fatos modelados e, portanto, não preserva
     // sozinho a continuidade causal hit/charm -> XP. Mantemos a ordem bruta em
@@ -220,6 +223,9 @@
         const name = normalizeRuneName(ru[1]);
         const profile = runeProfile(name);
         const ev = { kind: 'runeUse', seq: seq++, ts, clock: tsToClock(ts), name, profile, ignored: !profile, rawLine };
+        // M-021/M-038: a runa ignorada nao classifica, mas o campo que ela deixa no chao
+        // produz dano. Registrar o uso e o gate do detector de field.
+        if (IGNORED_RUNE_RE.test(name)) hasFieldRuneUse = true;
         events.push(ev); if (profile) runeUses.push(ev);
         continue;
       }
@@ -241,6 +247,21 @@
       // fatos modelados já bloqueiam pelo próprio "próximo evento relevante".
     }
 
+    // M-038: dano de campo (`wall`/`bomb`/`field`, M-021) e proc anexo, da mesma familia de
+    // `damage reflection`/`wound charm`/`overpower charm` (C-008/D-027). Sai de `hits` AQUI,
+    // antes do passe de overkill e antes de qualquer inferencia de setup de sessao: na hunt
+    // de `drome` esses hits sao 41% de todos e contaminam crit, leech e o tier de grav san.
+    const fieldLevels = fieldDamageLevels(hits, { hasFieldRuneUse });
+    if (fieldLevels.size) {
+      const remaining = [];
+      for (const h of hits) {
+        if (isFieldDamageHit(h, fieldLevels)) h.kind = 'field';
+        else remaining.push(h);
+      }
+      hits.length = 0;
+      for (const h of remaining) hits.push(h);
+    }
+
     // D-011/D-011a: o próximo evento relevante em até 1s só prova overkill se
     // nenhuma ação explícita incompatível tiver sido omitida de `events`.
     for (const h of hits) {
@@ -248,7 +269,7 @@
       for (const ev of events) {
         if ((ev.seq || 0) <= h.seq) continue;
         if (ev.ts - h.ts > 1) break;
-        if (ev.kind === 'charm' || ev.kind === 'reflect' || ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
+        if (ev.kind === 'charm' || ev.kind === 'reflect' || ev.kind === 'field' || ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
         next = ev; break;
       }
       const hOrder = rawOrderByEvent.get(h);
@@ -269,7 +290,7 @@
       for (const ev of events) {
         if ((ev.seq || 0) <= cev.seq) continue;
         if (ev.ts - cev.ts > 1) break;
-        if (ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
+        if (ev.kind === 'field' || ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
         next = ev; break;
       }
       const charmOrder = rawOrderByEvent.get(cev);

@@ -225,6 +225,141 @@
   quadrado do fator de um pulo). Casos-prova: `logs/serverlog6..9.txt`,
   `logs/monk server log.txt` e `logs/monk 2 server log.txt`.
 
+- **M-039 — Perk omega (bônus de dano por vida baixa do alvo):** existe um perk do
+  **personagem** que multiplica o dano por **exatamente `1,06`** quando o alvo está com
+  pouca vida. Ele é **binário por-hit** (um hit tem ou não tem o bônus), é
+  **multiplicador plano pós-mitigação** — entra no mesmo ponto de prey, `utevo grav san` e
+  bônus de classe de bestiário (`postMultiplier`) e afeta igualmente a reversão física e a
+  elemental — e está **dentro** da base de leech.
+
+  **Omega NÃO é descontado da base de leech, e isso é a consequência direta da medição.**
+  O desconto de `leechDamageBasis` existe para multiplicadores que inflam o dano exibido
+  **sem** inflar o leech — é o que D-030 declara de `utevo grav san` e o que vale para prey
+  e Bounty. Omega é o oposto: medido em `crypt` sobre pares de hits no mesmo segundo, mesmo
+  mob e mesmo estado de crit cuja razão de dano é `1,060`, a razão de **life leech** é
+  `1,0596` (n = 2.884) e a de **mana leech** `1,0541` (n = 2.908). O leech **acompanha** o
+  dano inflado, logo o dano inflado **é** a base e nada é removido. Descontar `1,06` ali
+  cobraria do hit uma taxa 6% menor que a real: medido, isso deixava o esperado
+  sistematicamente ~6% **abaixo** do observado em **todos** os hits omega, com os vizinhos
+  sem omega batendo exato — e o viés sobrevivia encostado na tolerância de D-024 (o canal
+  de mana aceitava o hit pelo "e/ou"), aparecendo como dano base (A-006) enviesado em vez
+  de turno quebrado. Caso-prova: `crypt` `07:30:10`, `cyclursus 815` omega no bloco de
+  `Divine Caldera`, `N_leech = 8` — life observado `82`, previsto `82` sem desconto e `77`
+  com desconto, enquanto os dois `cyclursus 768` sem omega do mesmo bloco fecham `77`
+  exatos. Omega também **não** pertence à família do perk de dano contra boss, que infla o
+  dano exibido sem inflar o leech.
+
+  **Esta regra registra o valor, não o gatilho.** O classificador **não observa vida de
+  criatura**, então a condição "alvo com pouca vida" não é normatizada aqui: gravar uma
+  constante que o motor não pode verificar transformaria em regra algo que ele nunca
+  poderá conferir. A evidência que sustenta a leitura por vida — frequência de `19,5%` dos
+  hits (um gatilho de 20% de HP prevê `19,1%`), monotonia do estado (em blocos
+  consecutivos sem morte entre eles: subiu 30, ficou igual 31, **caiu 4**), pico de
+  correlação cruzada com mortes em **`+2s`** (`r = 0,272`, lags negativos ≈ 0) e
+  dose-resposta (mortes por alvo nos 4s seguintes: `0,176 → 0,263 → 0,339 → 0,438`
+  conforme a fração boostada do bloco) — está em `reports/crypt-omega-prototipo.md` e é
+  **referência**, não norma.
+
+  **Detecção por sessão, e só pelo dano de charm (a testemunha de M-036).** O dano de
+  charm ofensivo é fixo por mob (sem sorteio) e vale
+  `hitpoints × 0,05 × mitigação × effectiveMod(modElemento, pierce)`, então qualquer
+  multiplicador oculto aparece como um **segundo nível exato**. Agrupando as testemunhas
+  por `(mob, charm, elemento, estado de pierce)`, com o mesmo piso de `≥3` procs de M-036 e
+  a mesma exclusão de procs dentro de janela de `utevo grav san`, uma sessão só é marcada
+  com omega quando, na mesma linha de testemunha, existirem **os dois** níveis: um nível
+  **ancorado** (bate com o previsto pela fórmula dentro da tolerância de M-036) e **outro**
+  nível a `×1,06` do nível ancorado. A âncora é obrigatória porque sem ela o "nível
+  previsto" seria só calculado, e um erro de tabela de ~6% se disfarçaria de omega; a razão
+  é medida entre dois níveis **observados**, então qualquer multiplicador uniforme da
+  sessão (bônus de classe de bestiário) cancela nela. O detector **não** pode usar os hits
+  principais como testemunha — eles são justamente o que ele destrava, e usá-los fecharia
+  laço com a classificação. Sessão sem charm ofensivo, ou cujas testemunhas não exibam a
+  escada, **abstém-se** (D-006): omega fica inativo, nenhum hit ganha candidato adicional, e
+  o resultado é idêntico ao anterior a esta regra. Ausência de testemunha não é prova de
+  ausência do perk nem de presença dele.
+
+  **Omega é um segundo original candidato, não um estado livre.** Em sessão com omega
+  ativo, a reconstrução do original de um hit produz **dois** conjuntos candidatos — com e
+  sem `÷1,06`. A escolha **não é livre por hit**: ela é derivada do **nível do próprio
+  bloco**, do mesmo modo que os níveis de spell e granada já são derivados dos hits. Um hit
+  é rotulado `omegaActive` somente quando o candidato com omega revertido é o que pertence
+  ao nível do bloco. Omega **não entra** na chave de estado de modificadores
+  (`elementalStateKey`): lá ele **desligaria** o gate de exatidão same-mob (S-004a) — hits
+  com e sem omega deixariam de formar grupo de comparação e qualquer divergência passaria a
+  ser "explicável" declarando um dos hits omega —, em vez de modelar a mecânica. Com omega
+  como candidato, o gate continua exato: `982` vs `983` (`mazzerinbarrage 23:46:36`)
+  continua sendo veto duro, porque `983/982` não é `1,06`. O rótulo `omegaActive` é exposto
+  por hit no trace/diagnóstico e na coluna de estado do hit da tabela de dano detalhado,
+  para que a decisão seja auditável turno a turno.
+
+  **No eixo físico, omega é último recurso e mínimo.** No eixo elemental a separação é
+  inequívoca (no caso-prova o spread do bloco cai de `48,1` para `1,5`). No físico não: a
+  largura da banda de `O` de um hit é metade do armor (`60` para `roaming dread`) e o
+  deslocamento de omega é ≈ `30`, então os dois intervalos candidatos do mesmo hit se
+  sobrepõem e admiti-los livremente faria a interseção quase sempre fechar, esvaziando
+  `physical_intersection_empty` como discriminador. Por isso a ordem é: avaliar o bloco
+  **sem** omega; só na falha por interseção vazia, procurar a atribuição com o **menor
+  número** de hits marcados; e **empate entre atribuições mínimas distintas mantém a
+  rejeição** (D-006 — a evidência física sozinha não separa as duas). Bloco que já fecha sem
+  omega não muda, inclusive dentro da própria sessão com omega ativo.
+
+  **A contagem de `omegaActive` nunca desempata entre partições.** A preferência por
+  atribuição mínima vale **dentro** da validação de um bloco; promovê-la a critério
+  cross-partição poria "menos omega" à frente do leech como desempate não declarado. Em
+  particular, as duas leituras de um hit de fronteira — `último hit do bloco anterior, com
+  omega` e `primeiro hit do bloco seguinte` — devem chegar **empatadas** aos desempates
+  existentes, para que `S-020`/`S-020a` decidam pelo leech absoluto do hit em disputa contra
+  âncoras do mesmo mob. No caso do hit de fronteira, o que omega remove é apenas a morte
+  prematura por `same_mob_state_exact_original_mismatch`; quem decide o lado é o leech.
+  Quando `S-020`/`S-020a` não decidem, o turno permanece
+  `unresolved/ambiguous_equal_best_partitions` (`S-013`).
+
+  **A ordem de avaliação é a mesma nos dois eixos, e vale para o bloco inteiro.** Omega é um
+  candidato de original, não um remendo de um veto específico: o bloco é sempre avaliado
+  **sem** omega primeiro e, só quando essa avaliação falha, o motor procura a atribuição
+  mínima e revalida o bloco **inteiro** sob ela — com todos os gates de sempre (exatidão
+  same-mob, interseção, cluster, crit-homogeneidade, cardinalidade por leech). Um bloco que
+  já fecha sem omega nunca é tocado, e um bloco que continua falhando sob a atribuição
+  mantém a rejeição original. Empate entre atribuições mínimas distintas mantém a rejeição
+  em **ambos** os eixos (D-006): duas leituras igualmente apoiadas deixam o nível do bloco
+  indeterminado, e é o nível que deveria derivar o rótulo. Medido em `crypt`: **zero**
+  empates em 151.634 atribuições elementais e 50.925 físicas — a cláusula é guarda, não
+  caminho quente.
+
+  **Raio medido: 1 fixture.** Varredura do canal de charm nos 36 pares de `logs/`: só
+  `crypt` exibe a escada, e nos três mobs (`roaming dread`/curse `818 → 867`,
+  `crypt mage`/freeze `665 → 705`, `cyclursus`/zap `659 → 699`, contra os previstos
+  `817,94`/`665,91`/`659,65` com `pierce = 0`). Os outros 35 fixtures, somando ~5.000 procs
+  de charm — de `mazzerinbarrage` com 1.102 e `ms boss` com 1.174 a `death echo` com 0 —
+  não produzem **nenhuma** linha confirmada. O drift fora de `crypt` é zero por construção,
+  e é verificável por diff.
+
+  Caso-prova: `logs/Crypt Server Log.txt` / `logs/Crypt Local Chat.txt` (sem cabeçalho de
+  sessão/data), turno `07:30:10` → `A8 + Divine Caldera 8 + Divine Grenade 7`. No bloco
+  elemental de `Divine Caldera`, `cyclursus 815` contra os dois `cyclursus 768` do **mesmo
+  mob e mesmo estado** está em razão `1,0612`: exatamente um hit é marcado, e os outros sete
+  não. No bloco de AA físico, `cyclursus 968` contra `cyclursus 912` está em `1,0614`; a
+  interseção de `O` do bloco é vazia por `7` e fecha marcando **exatamente um** hit
+  (`O` do `968` desloca de `[587,632]` para `[555,601]`). Os 7 hits de `:11` são a granada
+  do `exevo tempo mas san` de `07:30:08` explodindo em `cast+3` (M-023); seis normalizam
+  para o mesmo nível holy e o sétimo (`cyclursus 780`) é overkill e herda o bloco contíguo
+  (D-012). Fixtures sem a escada permanecem idênticos (o detector encontra o conjunto vazio
+  e retorna sem mutar nada) — mesmo padrão de M-035/M-036.
+
+  **Limitações declaradas.** (a) O gatilho por vida não é modelado, então a fração de hits
+  com omega num turno é observada, nunca prevista: ela varia de 0% a mais de 60% conforme o
+  desgaste do pacote, e **nenhum gate pode limitá-la** a um múltiplo da taxa da sessão — os
+  ~19% da sessão são média sobre pacotes inteiros, não o valor esperado de um turno
+  (validado com sinal independente do ajuste: `corr(fração de omega exigida, mortes por hit
+  nos 5s seguintes) = 0,460`, monotônica). (b) Omega é o **primeiro estado de hit não
+  observado** a entrar na exatidão same-mob — todo o resto (`EW`, prey, amplification,
+  Perfect Shot) vem de sufixo do Server Log. A contenção é o gate por sessão mais a
+  restrição ao par exato `×1,06`; um falso positivo do detector afrouxaria S-004a na sessão
+  inteira. (c) Em `crypt` o tier de `utevo grav san` mede `≈1,0990` contra o candidato
+  `0,10` da grade de D-030, e os níveis `×1,10` do charm ficam `−1` do previsto; isso não
+  afeta a detecção de omega (os níveis base e `×1,06` fecham com delta `0`), mas pode virar
+  resíduo em blocos dentro de janela de grav san.
+
 ### Runas
 
 - **M-017 — Sinal de execução:** `Using one of N … runes` é sinal **primário** de classificação, no mesmo nível da mudança de crit-state (D-007). Comprova a execução da runa; não inventa dano onde não existe bloco determinístico compatível.
@@ -232,7 +367,15 @@
 - **M-018a — Precedência do `Using`:** quando uma execução de runa está confirmada por `Using` e existe um run contíguo de hits deterministicamente consistente com o elemento e a topologia dessa runa, esse run é classificado como runa, **com precedência sobre a leitura física coincidente** (D-005/V-002) — ainda que o original físico de algum desses hits caia dentro do intervalo do AA. Onde os hits forem fisicamente variáveis e não formarem bloco elemental compatível, o `Using` permanece apenas execução/uptime (A-004) e os hits seguem AA. Como `Using` é sinal primário, uma linha de runa observada dentro do turno também deve gerar a fronteira candidata imediatamente anterior à runa antes de podas por leech, desde que existam hits antes e depois dela no turno. Para essa fronteira, um charm-kill real seguido de XP e reconhecido por S-014e conta como hit virtual na posição original do evento: se ocorrer antes do `Using`, pode ocupar o único AA single-target; se ocorrer depois, pertence ao run compatível da runa. Esta precedência não conta repetições nem usa limiar numérico: o critério é a consistência determinística do original elemental e a ordem observada, não a quantidade de hits.
 - **M-019 — Conflito com spell:** spell e runa não podem coexistir no mesmo turno. Quando uma spell ofensiva estiver confirmada, `Using` não pode retirar hits dela.
 - **M-020 — Tentativa sem dano:** runa usada sem componente compatível deve ser registrada como tentativa sem dano.
-- **M-021 — Runas ignoradas:** nomes contendo `wall`, `bomb` ou `field` não participam da classificação nem das métricas.
+- **M-021 — Runas ignoradas:** nomes contendo `wall`, `bomb` ou `field` não participam da classificação nem das métricas. A exclusão alcança também o **dano** do campo que a runa deixa no chão — ver M-038.
+- **M-038 — Dano de field/DoT não é hit principal:** o dano causado por um campo deixado no chão por runa `wall`/`bomb`/`field` (M-021) — seja o tick da condição sobre a criatura, seja o dano por passo quando ela anda sobre o campo — é proc anexo, da mesma família de `damage reflection`, `wound charm` e `overpower charm` (C-008, D-027). Ele **não** é hit principal elegível: não incrementa `N_leech`, não consome cast, não vira componente e não entra nas métricas de rotação; permanece observável para diagnóstico. O Server Log não o distingue textualmente de um hit real (`A moonsilver sentinel loses 18 hitpoints due to your attack.`, sem sufixo), então a identificação é por **nível de field da sessão**, com quatro condições cumulativas e nenhum limiar absoluto de dano:
+  1. **Gate por M-021** — a sessão contém ao menos uma execução de runa `wall|bomb|field`. Sem o gate, nenhum hit é marcado, em nenhuma sessão.
+  2. **Candidato** — hit ofensivo do dono do log, **não crítico**, com life leech **e** mana leech zerados. Campo não dá leech; hit real dá, salvo vida/mana cheias.
+  3. **Série** — o valor **exato** de dano se repete em ao menos **3** candidatos da sessão (mesmo piso de evidência de H-003 e M-036).
+  4. **Nível** — o valor é distintamente **abaixo** da referência de dano real da sessão, sendo a referência a **mediana do dano dos hits com leech observado**. A referência precisa ser calculada só sobre hits com leech: numa sessão dominada por campo (41 % dos hits em `drome`) a mediana de todos os hits é o próprio campo e o teste se anula.
+  
+  A marcação final é por **pertencimento ao conjunto de níveis**, não por série: uma ocorrência avulsa de um nível já provado por outra criatura também é campo (`ek boss` `19:42:14`, `Maior Domus 15`, único). Sessão sem leech observável não tem referência e o detector **abstém-se** (D-006). As condições 2 e 3 sozinhas não bastam: dano determinístico de área repete o valor exato por construção e, sem a condição 4, blocos reais são marcados por engano (`serverlog8` `539` contra mediana `828`; `mazzerinbarrage` `1798` contra `891`). Variantes do mesmo campo — `Expose Weakness` (+8 % de pierce) e `utevo grav san` (+12 %) — produzem **outros valores exatos** e formam suas próprias séries; o detector não reverte multiplicador nenhum, porque o tier de grav san é inferido a partir dos mesmos hits e reverter fecharia um laço. Casos-prova: `ek boss` (5 execuções de `fire bomb`, 47 hits, níveis `{7,8,9,15,18,19}` contra referência `680`) e a hunt `Tue Jun 09 09:30:47 2026` (`drome`/`bakra` S4/`jaded`, 21 execuções, 4.442 hits, níveis `{9,19}` fora de janela e `{10,21}` dentro — todas as 79 ocorrências de `10` e as 105 de `21` caem dentro de janela de `utevo grav san` do dono do log, nenhuma fora).
+  - **M-038a — Leech maior que o próprio dano não é evidência de hit real:** leech é fração do dano causado; nenhuma taxa produz mais leech do que o dano do próprio hit. Logo, um hit cujo dano pertence a um **nível de field já provado** da sessão e cuja soma `lifeLeech + manaLeech` **excede** o próprio dano continua sendo campo, mesmo tendo leech associado — esse leech pertence a outro fato do log, não ao hit. O caso concreto é o restauro de poção que o servidor emite **depois** do tick, situação que D-027 não cobre porque só barra `You gained mana` **precedida** por uso de poção: na hunt `Tue Jun 09 09:30:47 2026`, `Using one of 1148 ultimate spirit potions...` → `A murmillion loses 19 hitpoints due to your attack.` → `You gained 152 mana.` Os 215 hits só-mana desse resíduo têm mana/dano de mediana `11,05` e máximo `27,1`, contra `0,054` dos hits reais da mesma sessão. A relaxação vale **só na pertinência** ao conjunto de níveis, **nunca na detecção do nível**: a condição 2 acima (candidato sem leech nenhum) continua sendo a única fonte dos níveis, o que impede o critério de inventar nível novo — ele só reconhece ocorrência de nível já provado por candidatos limpos (4.386 deles na hunt). Hit **crítico** nunca entra por aqui, porque campo não crita. **Limite conhecido:** `leech > dano` é também a assinatura de overkill (dano truncado com leech do dano real) — `bastion 15:21:16`, hit `340 OK` com `life 431`, é o caso-prova citado por D-012b. É por isso que o critério é duplamente gated, pelo nível de field já provado e pelo gate de runa de M-021: medido sobre todo o corpus, nenhum hit fora desta hunt está num nível de field provado com leech maior que o próprio dano. M-038a **não** cria contradição de leech nem hit virtual (D-012b, T-003); apenas recusa o leech como prova de hit real. **Resíduo declarado:** `09:21:08` (`murmillion 9` com `mana 3`) não é alcançado — `3` não excede `9` — e o turno permanece sem classificação.
 - **M-022 — Runa desconhecida:** runa sem perfil fica como `unknown_rune_topology` e não classifica dano.
 
 | Runa | Topologia | Elemento |
@@ -270,7 +413,7 @@
 
 ### Glossário de leech
 
-- **Hit principal elegível:** linha ofensiva real do jogador que pode pertencer a AA, spell, runa ou granada. Não inclui `damage reflection`, `wound charm`, `overpower charm` ou outros procs anexos.
+- **Hit principal elegível:** linha ofensiva real do jogador que pode pertencer a AA, spell, runa ou granada. Não inclui `damage reflection`, `wound charm`, `overpower charm`, **dano de field/DoT (M-038)** ou outros procs anexos.
 - **Dodge de Hazard:** linha `dodged your attack. (Hazard)` é tentativa ofensiva observada do jogador e conta como hit principal elegível de dano `0` para cardinalidade/`N_leech`; ela não possui leech, não prova dano original e não inventa dano virtual.
 - **N_leech:** quantidade de hits principais elegíveis produzidos pelo mesmo componente. `N_leech` **não** significa quantidade de mobs distintos, quantidade de nomes únicos de mob, quantidade de criaturas diferentes, nem quantidade de alvos únicos.
 - **Mesmo mob repetido:** se um componente produz duas ou mais linhas de dano no mesmo mob, cada linha principal incrementa `N_leech`. Exemplo: dois hits principais no mesmo `night harpy` dentro do mesmo componente significam `N_leech = 2`.
@@ -752,7 +895,7 @@ overkillMinimo = Dreal_min - danoMostrado
 
 - **D-026 — Proibição de razão sob overkill:** em hits de overkill, é proibido usar `leech / danoMostrado` como razão comparativa, porque o denominador está truncado. Nesses casos, somente o leech absoluto e os intervalos de dano real reconstruídos por D-025 são válidos. Esta regra preserva D-011, D-013 e D-018, mas amplia D-019: o leech absoluto não serve apenas para detectar outlier de AA; ele também serve para validar a cardinalidade `N_leech` de blocos candidatos.
 
-- **D-027 — Associação de leech ao hit ofensivo:** linhas `You were healed for X hitpoints` e `You gained Y mana` só podem ser associadas ao último hit ofensivo principal elegível do mesmo timestamp ou da sequência imediata compatível. `You healed yourself` não é Life Leech ofensivo. `You gained mana` precedido por uso de mana potion não é Mana Leech ofensivo. `damage reflection`, `wound charm` e `overpower charm` não são hits principais para cardinalidade de componente e não devem consumir o pareamento de leech do hit principal.
+- **D-027 — Associação de leech ao hit ofensivo:** linhas `You were healed for X hitpoints` e `You gained Y mana` só podem ser associadas ao último hit ofensivo principal elegível do mesmo timestamp ou da sequência imediata compatível. `You healed yourself` não é Life Leech ofensivo. `You gained mana` precedido por uso de mana potion não é Mana Leech ofensivo. `damage reflection`, `wound charm`, `overpower charm` e dano de field/DoT (M-038) não são hits principais para cardinalidade de componente e não devem consumir o pareamento de leech do hit principal.
 
 - **D-028 — Independência entre leech e mitigação física:** a análise de cardinalidade por leech não depende da reversão de armor, mitigation ou physicalDmgMod. Esses dados podem ajudar a comparar originais físicos, mas não são pré-condição para testar `areaFactor(N_leech)`, CEIL, vida e mana observadas e reconstrução de `Dreal` em overkill. A ausência de armor, mitigation, physicalDmgMod ou originais físicos (inclusive no regime pós-16 de junho de 2026, D-016) **não desativa** a cardinalidade por leech: ela apenas remove o eixo físico como evidência adicional. `N_leech` é a quantidade de hits principais elegíveis do componente; não depende de armor, mitigation ou physicalDmgMod e não é quantidade de mobs distintos (D-024a/S-014a/S-014b).
 
@@ -854,6 +997,8 @@ overkillMinimo = Dreal_min - danoMostrado
 - **S-004 — Interseção:** hits do mesmo componente determinístico devem possuir interseção de originais.
 - **S-004a — Exatidão same-mob/same-estado:** dentro de um bloco determinístico elemental, hits não-overkill do **mesmo mob** com o **mesmo estado de modificadores** (mesma presença de Expose Weakness, prey, elemental amplification e Perfect Shot, e mesmos flags de crit/Low Blow/Savage Blow/Onslaught) são comparações **exatas**: mesmo componente ⇒ mesmo dano final (D-010a é função determinística de `(O, m, M, P)`). Perfect Shot ausente é o valor zero desse estado, não evidência desconhecida; somente a tolerância cross-state já vigente pode comparar hits com presença diferente de Perfect Shot. Qualquer tolerância de interseção usada pela implementação para absorver resíduo de arredondamento discreto (ex.: quantização da mitigation) aplica-se **somente** entre mobs distintos ou entre estados distintos do mesmo mob; dentro do mesmo `(mob, estado)`, conjuntos de originais disjuntos são fronteira obrigatória (S-005) e invalidam o bloco — inclusive contra o fallback de cluster. Caso-prova: `mazzerinbarrage 23:46:36`, darklight matter+EW `F=986 ⇒ O={982}` vs `F=987 ⇒ O={983}` sob `P=1` — o 987 não pode pertencer à mesma Divine Caldera dos dois 986. Low Blow e Savage Blow entram aqui como estado do hit/mob, não como exigência de que todos os mobs do componente compartilhem o mesmo charm.
 - **S-004b — Classes de diagnóstico determinístico (contradição × evidência ausente):** um veredito reprovado (`ok:false`) de bloco determinístico pertence a exatamente uma de duas classes, e o diagnóstico deve **declarar qual**, porque `ok:false` sozinho não distingue as duas e quem só lê o diagnóstico (auditoria de invariantes, relatórios) não pode reimplementar a regra que o produziu. As classes são: **(a) contradição mecânica** — o bloco viola S-004/S-005/H-001/H-002 e a partição precisa mudar; **(b) evidência ausente** (D-006) — a regra que produziu o veredito já declara que ele não rejeita o bloco. São de classe (b), e somente elas: **dispersão cross-mob** (`elemental_cluster_span_too_wide`), que V-015b/V-015d proíbem usar como rejeição porque mobs distintos revertem para originais distintos sem contradição; e **mecânica declarada de múltiplos níveis por-mob ainda sem rótulo** (`same_mob_state_exact_original_mismatch` num bloco isento pelo gate de S-004a — beam M-035, estágio não-elemental M-016e, Terra/Ice Burst, Chained Penance M-037), cuja isenção já significa ausência de evidência negativa, e cujo diagnóstico deve nomear a mecânica que isentou. A classe (b) do caso de isenção é atribuída **no ponto em que a isenção é decidida**, não dentro do validador elemental: o mesmo motivo `same_mob_state_exact_original_mismatch` continua sendo contradição num bloco cuja ação não declara múltiplos níveis. O padrão é **fail-loud**: veredito reprovado sem classe declarada conta como contradição, para que um motivo novo apareça em vez de passar silencioso. Declarar a classe não altera `ok`, veto, ordem de validação, tolerância nem partição escolhida — ela descreve um veredito já tomado. Casos-prova: `Mrowdy 2` S0 `17:55:02` (Energy Wave, 6 hits em 3 mobs ⇒ dispersão cross-mob) e `kim` S0 `16:12:55` (Great Energy Beam, `undertaker` `1580/2011 = 0,786` ⇒ isenção por M-035, dentro da fração declarada de M-035a).
+- **S-004c — Omega é estado do hit no gate de exatidão same-mob, e a folga é último recurso:** a **atribuição de omega** sob teste (M-039) faz parte do "estado de modificadores" que S-004a usa para formar o grupo de exatidão. Dois hits não-overkill do mesmo mob e mesmo estado observado cuja atribuição de omega **difere** (um marcado, outro não) são comparação **cross-state**, não exata: a eles aplica-se a `OMEGA_CROSS_STATE_TOLERANCE` de **1** ponto de dano original. Hits com a **mesma** atribuição de omega continuam com interseção **exata** (tolerância 0), inclusive dentro do mesmo grupo, e uma divergência de **2 pontos ou mais** entre estados de omega diferentes continua sendo contradição dura `same_mob_state_exact_original_mismatch`. Esta folga existe **somente** em sessão com omega detectado e **não** se estende por analogia a nenhum outro modificador de hit. **Ela é último recurso por turno:** a resolução avalia o turno primeiro com a folga desligada (comportamento vigente) e só reavalia com a folga ligada quando a avaliação estrita não resolve o turno, adotando o resultado relaxado apenas se ele resolver — nenhuma partição relaxada compete, pontua ou desempata contra uma partição estrita, logo **todo turno que resolve estrito resolve com a mesma partição e o mesmo rótulo**. É a mesma disciplina que D-010b/S-007 já impõem a omega no eixo físico ("último recurso e mínimo"). O turno resolvido pela folga carrega `omegaCrossStateToleranceUsed`. Medição que fixa o valor 1: em `crypt`, dos blocos holy em que o motor **acha** a atribuição de omega e o retry falha mesmo assim, o grupo violador é misto (omega + não-omega) em **601 de 603** e está a distância de **exatamente 1 ponto** em **601** (313 de 313 nos turnos de um único nível holy). Casos-prova: `crypt` `07:32:06` (`cyclursus 761/808`, `O(sem) = {764}` vs `O(com) = {765,766}`) e o par `07:54:02`/`07:54:04`, em que destravar o primeiro devolve a granada do cast `07:54:00` ao turno em que ela explode (`c+2`) e apaga do segundo um `Divine Barrage` de 1 hit a `464` — dano de AA, não de spell. (S-004a, S-004b, M-039, D-006, D-010a)
+  - **S-004c-nota — Limitação conhecida e aceita: o modelo de omega não é exato.** A folga de 1 ponto é consequência declarada de uma inexatidão medida, não um limiar escolhido. Reconstruindo os **101** pares de omega distintos confirmados de `crypt` (mesmo turno, mesma ação, mesmo mob, mesmo estado, `P = 1`, sem crit): o passo pós-mitigação com `FLOOR` puro — que é o que D-010a e M-039 descrevem — acerta **43,5%**; nenhuma combinação de posição na cadeia, arredondamento e pierce fecha 100% (a melhor, omega pré-mitigação com `round` e pierce 0%, faz **91,1%**); e **não existe multiplicador único** que sirva para todos os pares em nenhum arredondamento (`cyclursus 738 → 781` exige `x ∈ [1,05827 ; 1,05962)` e `roaming dread 742 → 787` exige `x ∈ [1,06065 ; 1,06199)` — disjuntos). O motor já compensa parte disso admitindo `FLOOR` **e** `CEIL` na inversão do passo pós-mitigação, o que cobre `dF = big − FLOOR(small × 1,06) ∈ {0, +1}`; os pares que ainda falham estão em `dF ∈ {−1, +2}`, exatamente um passo fora. Corrigir o modelo de omega em si permanece **fora de escopo e não trabalhado**: mover omega para antes da mitigação está falsificado no motor (131 e 244 turnos sem classificação contra 118 do baseline), assim como ajustar pierce holy ou físico. Diagnóstico completo: `reports/crypt-omega-1-nivel.md`.
 - **S-005 — Fronteira obrigatória:** originais comparáveis e incompatíveis obrigam uma fronteira.
 - **S-006 — Blocos unitários:** componentes com somente um hit são válidos.
 - **S-007 — Físico:** AA e Ethereal Barrage exigem coerência entre intervalos físicos. O eixo do AA é físico **por padrão**, e só deixa de ser quando a própria sessão prova o contrário — ver **S-007b**. Ethereal Barrage é **sempre** física: é spell, tem elemento no perfil da ação, e não é munição.
@@ -1233,7 +1378,7 @@ Caso-prova obrigatório — gloompillar 08:36:51 (sessão 14/Jul/2026, Ethereal 
 - **N-011 — Exclusividade:** nomear um componente como spell impede qualquer componente do mesmo turno de ser nomeado como runa, e vice-versa.
 
 
-**Regra normativa curta de N_leech:** em todas as fórmulas de leech deste classificador, `N_leech` significa a quantidade de hits principais elegíveis do componente. `N_leech` nunca significa quantidade de mobs distintos. `N_leech` **não depende de armor, mitigation ou physicalDmgMod** (D-028): a indisponibilidade desses dados não altera a contagem de hits principais nem desativa o teste de `areaFactor(N_leech)`. Se um componente possui dois hits no mesmo mob, então `N_leech = 2`. Se possui quatro hits em dois mobs, então `N_leech = 4`. `damage reflection`, `wound charm`, `overpower charm` e procs anexos não incrementam `N_leech`.
+**Regra normativa curta de N_leech:** em todas as fórmulas de leech deste classificador, `N_leech` significa a quantidade de hits principais elegíveis do componente. `N_leech` nunca significa quantidade de mobs distintos. `N_leech` **não depende de armor, mitigation ou physicalDmgMod** (D-028): a indisponibilidade desses dados não altera a contagem de hits principais nem desativa o teste de `areaFactor(N_leech)`. Se um componente possui dois hits no mesmo mob, então `N_leech = 2`. Se possui quatro hits em dois mobs, então `N_leech = 4`. `damage reflection`, `wound charm`, `overpower charm`, dano de field/DoT (M-038) e procs anexos não incrementam `N_leech`.
 
 ## 6. Regras por regime
 
@@ -1753,7 +1898,7 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   retorna sem mutar nada — e `mazzerinbarrage` S0 e S11 precisam continuar em `0` unresolved.
 
 - **C-007 — Ausência de evidência não é contradição:** `no_leech_evidence`, mob sem mod conhecido, sessão pós-corte sem tabela preenchida ou falta de canal de vida/mana geram evidência ausente. Evidência ausente não autoriza fusão de componentes nem reuso de ação.
-- **C-008 — Procs não são hits principais:** `damage reflection`, `wound charm`, `overpower charm` e procs anexos podem ser diagnósticos, mas não incrementam `N_leech`, não consomem cast, não viram componente e não criam AA virtual sem regra de borda/parcial aplicável.
+- **C-008 — Procs não são hits principais:** `damage reflection`, `wound charm`, `overpower charm`, **dano de field/DoT (M-038)** e procs anexos podem ser diagnósticos, mas não incrementam `N_leech`, não consomem cast, não viram componente e não criam AA virtual sem regra de borda/parcial aplicável.
 - **C-009 — Runa confirmada preserva fronteira, não turno novo:** `Using` pode confirmar execução e precedência de bloco compatível, mas não separa turno. Turno permanece bloco mecânico de ciclo conforme T-002 e combinações de T-005/T-006.
 - **C-010 — Cluster genérico é fallback:** cluster elemental/físico só pode ser usado depois de aplicar ação concreta, cast, `Using`, topologia, cardinalidade, cooldown, leech e originais. Cluster não pode roubar hits de ação concreta compatível.
 - **C-011 — UI e comparação usam Unified auditável:** tabelas, gráficos, histogramas, timeline, hits, dano e drill-down devem exibir a classificação Unified quando a tela estiver validando o Unified, preservando divergências/diagnóstico para auditoria.

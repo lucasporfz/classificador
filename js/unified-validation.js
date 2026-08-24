@@ -29,6 +29,7 @@
     isTerraBurstBlock,
     isChainedPenanceAction,
     elementalOriginalCandidates,
+    omegaActiveForHit,
     intersectSets,
     elementalStateKey,
     gravSanHitInWindow,
@@ -573,7 +574,118 @@
     return mixed ? { ok: false, rule: 'D-007/S-008', reason: 'mixed_crit_state' } : { ok: true };
   }
 
+  // ------------------------------------------------------------------ M-039 (omega)
+  //
+  // Omega e um SEGUNDO original candidato por hit (D1), nao um estado livre: por-hit ele
+  // e binario, e a escolha entre os dois candidatos NAO e livre — ela e derivada do nivel
+  // do proprio bloco, do mesmo jeito que os niveis de spell e granada ja sao derivados dos
+  // hits. Por isso omega NAO entra em `elementalStateKey`: la ele DESLIGARIA o gate de
+  // exatidao same-mob (hits com e sem omega deixariam de formar grupo), em vez de modelar
+  // a mecanica.
+  //
+  // Em toda sessao sem omega detectado nada disto roda e o resultado e bit a bit o de
+  // antes desta regra.
+  const EMPTY_OMEGA_SET = Object.freeze(new Set());
+
+  function omegaSessionActive(context) {
+    return !!(context && context.omegaSetup && context.omegaSetup.active);
+  }
+
+  // Instala a atribuicao SOB TESTE (escopo + marcados) enquanto `fn` roda. `postMultiplier`
+  // e `leechDamageBasis` leem dai; fora do escopo continuam lendo `hit.omegaActive`.
+  function withOmegaAssignment(context, scope, marked, fn) {
+    if (!context) return fn();
+    const prev = context._omegaAssignment;
+    context._omegaAssignment = { scope, marked };
+    try { return fn(); } finally { context._omegaAssignment = prev; }
+  }
+
+  // Busca a atribuicao pelo NIVEL do bloco, em O(n x niveis) — sem explosao combinatoria,
+  // porque omega tem valor unico e conhecido. Para cada nivel candidato `o`, cada hit e
+  // resolvido individualmente: se o candidato SEM omega alcanca `o`, o hit fica sem omega
+  // (minimalidade); so quando nao alcanca e o candidato COM omega alcanca e que ele e
+  // marcado. Um nivel em que algum hit nao fecha de nenhum dos dois jeitos e descartado.
+  //
+  // `candidatesOf(hit, marked)` devolve o conjunto/intervalo de originais do hit sob a
+  // hipotese; `reaches(candidates, o)` diz se aquele nivel e alcancavel.
+  function findOmegaAssignmentByLevel(hits, candidatesOf, reaches, levelsOf) {
+    const rows = [];
+    for (const h of hits) {
+      const no = candidatesOf(h, false);
+      if (!no) return null;
+      rows.push({ hit: h, no, yes: candidatesOf(h, true) });
+    }
+    if (!rows.length) return null;
+    const levels = new Set();
+    for (const r of rows) {
+      for (const v of levelsOf(r.no)) levels.add(v);
+      if (r.yes) for (const v of levelsOf(r.yes)) levels.add(v);
+    }
+    const found = [];
+    for (const o of [...levels].sort((a, b) => a - b)) {
+      const marked = new Set();
+      let ok = true;
+      for (const r of rows) {
+        if (reaches(r.no, o)) continue;
+        if (r.yes && reaches(r.yes, o)) { marked.add(r.hit); continue; }
+        ok = false; break;
+      }
+      // Atribuicao de zero marcados nao acrescenta nada: o caminho sem omega ja rodou e
+      // falhou antes de chegar aqui.
+      if (ok && marked.size) found.push(marked);
+    }
+    if (!found.length) return null;
+    const min = Math.min(...found.map(m => m.size));
+    const minimal = found.filter(m => m.size === min);
+    const key = m => [...m].map(h => h.seq).sort((a, b) => a - b).join(',');
+    const first = key(minimal[0]);
+    return { marked: minimal[0], tied: minimal.some(m => key(m) !== first) };
+  }
+
+  // D-010/S-004: a tolerancia de intersecao do bloco elemental. Existe so para o residuo
+  // discreto (arredondamento de mitigacao/prey/mods pos-cutoff) entre mobs ou entre estados;
+  // dentro do mesmo (mob, estado) a comparacao e exata (S-004a). Runa com `Using` explicito
+  // ganha um pouco mais de folga porque a linha de execucao e sinal primario (M-017/M-018a).
+  function elementalBlockTolerance(block) {
+    return (block && block.comp === 'rune' && block.action) ? 4 : 2;
+  }
+
   function validatePhysicalBlock(block, context) {
+    const base = validatePhysicalBlockUnderAssignment(block, context);
+    if (base.ok || !omegaSessionActive(context)) return base;
+    // D3: no eixo fisico omega e ULTIMO RECURSO e MINIMO. O passo de 6% e da mesma ordem
+    // de grandeza da variacao legitima de armor (a largura da banda de `O` de um hit e
+    // metade do armor: 60 para roaming dread, contra ~30 de deslocamento de omega), entao
+    // admitir os dois candidatos por hit sem restricao faria a intersecao quase sempre
+    // fechar e esvaziaria `physical_intersection_empty` como discriminador. Por isso:
+    // avaliar SEM omega primeiro (acima), so na falha procurar a atribuicao com o MENOR
+    // numero de hits marcados, e manter a rejeicao quando duas atribuicoes minimas
+    // distintas fecham (D-006 — a evidencia fisica sozinha nao separa as duas).
+    if (base.reason !== 'physical_intersection_empty') return base;
+    const hits = block.hits.filter(h => !h.overkill && !h.zeroDamageDodge);
+    if (hits.length < 2) return base;
+    const intervalOf = (hit, marked) => {
+      const ev = withOmegaAssignment(context, new Set([hit]), marked ? new Set([hit]) : EMPTY_OMEGA_SET,
+        () => physicalOriginalInterval(hit, context));
+      return ev && ev.known && ev.interval ? ev.interval : null;
+    };
+    for (const tolerance of [0, PHYSICAL_INTERSECTION_TOLERANCE]) {
+      const found = findOmegaAssignmentByLevel(
+        hits,
+        intervalOf,
+        (iv, o) => o >= iv[0] - tolerance && o <= iv[1] + tolerance,
+        iv => [iv[0], iv[1]],
+      );
+      if (!found) continue;
+      if (found.tied) return base;
+      const retry = withOmegaAssignment(context, new Set(hits), found.marked,
+        () => validatePhysicalBlockUnderAssignment(block, context));
+      if (retry.ok) return Object.assign(retry, { omegaHits: found.marked });
+    }
+    return base;
+  }
+
+  function validatePhysicalBlockUnderAssignment(block, context) {
     const prevKey = context && context._activeCritKey;
     if (context) context._activeCritKey = critKeyForBlock(block);
     try {
@@ -837,7 +949,23 @@
   // evidencia positiva mage/druid (H-005c) precisa do MESMO teste aplicado a um bloco
   // fundido hipotetico (AA + spell juntos) antes de decidir se separa o primeiro hit,
   // nao so ao bloco ja escolhido.
-  function sameMobStateExactnessViolation(perHit) {
+  // S-004c: a folga cross-state de omega esta ARMADA so na passada de ultimo recurso
+  // (`context._omegaCrossStateTolerance`, ver resolveTurn) e so em sessao com omega. Fora
+  // disso nem a marca por hit e calculada — em todo fixture sem omega este caminho e inerte,
+  // inclusive em custo.
+  function omegaCrossStateArmed(context) {
+    return !!(context && context._omegaCrossStateTolerance && omegaSessionActive(context));
+  }
+
+  // A folga vale se e so se o grupo MISTURA atribuicoes de omega. Grupo de mesma atribuicao
+  // (todos marcados ou nenhum marcado) continua exato, tolerancia 0.
+  function omegaCrossStateToleranceFor(group, context) {
+    const first = group[0].omegaAssigned;
+    return group.some(x => x.omegaAssigned !== first) ? context._omegaCrossStateTolerance : 0;
+  }
+
+  function sameMobStateExactnessViolation(perHit, context) {
+    const armed = omegaCrossStateArmed(context);
     const stateGroups = new Map();
     for (const ph of perHit) {
       // M-016d/M-016e: uma spell multiestagio produz, do MESMO cast e no MESMO mob,
@@ -847,6 +975,10 @@
       // hit, tanto quanto EW/prey/crit. Agrupar por (estado, estagio) mantem a
       // comparacao exata DENTRO de cada estagio e nao inventa contradicao entre eles.
       // Caso-prova: `death echo` 11:06:08 e 11:06:20 (gabarito 35/37, normativos).
+      // S-004c: omega NAO entra na chave — separar em grupos DESLIGARIA a comparacao entre
+      // hits com e sem omega. Ele entra como marca, para que so o par misto ganhe folga e o
+      // par de mesma atribuicao continue exato.
+      if (armed) ph.omegaAssigned = !!omegaActiveForHit(ph.hit, context);
       const key = elementalStateKey(ph.hit) + '|' + (ph.hit.multiStageStage || '');
       if (!stateGroups.has(key)) stateGroups.set(key, []);
       stateGroups.get(key).push(ph);
@@ -854,9 +986,10 @@
     for (const group of stateGroups.values()) {
       if (group.length < 2) continue;
       const physical = group.every(x => x.interval);
+      const tolerance = armed ? omegaCrossStateToleranceFor(group, context) : 0;
       const exact = physical
-        ? intersectIntervals(group.map(x => x.interval), 0)
-        : intersectSets(group.map(x => x.originals), 0);
+        ? intersectIntervals(group.map(x => x.interval), tolerance)
+        : intersectSets(group.map(x => x.originals), tolerance);
       if (!exact || !exact.length) {
         return {
           violated: true,
@@ -891,7 +1024,7 @@
       if (!ev || !ev.known || !ev.originals || !ev.originals.length) continue;
       perHit.push({ hit: h, originals: ev.originals });
     }
-    return Object.assign({ known: perHit.length }, sameMobStateExactnessViolation(perHit));
+    return Object.assign({ known: perHit.length }, sameMobStateExactnessViolation(perHit, context));
   }
 
   // H-005c: evidencia positiva de AA mage/druid quando o bloco FUNDIDO (AA + spell)
@@ -1189,6 +1322,42 @@
   }
 
   function validateElementalBlock(block, element, context) {
+    const base = validateElementalBlockUnderAssignment(block, element, context);
+    if (base.ok || !omegaSessionActive(context)) return base;
+    if (element === 'physical' || !element || element === 'unknown') return base;
+    // Sem candidato calculavel nao ha o que atribuir: o segundo candidato de omega e uma
+    // reversao a mais do MESMO hit, nao evidencia nova (D-006).
+    if (base.reason === 'elemental_no_candidate') return base;
+    const hits = block.hits.filter(h => !h.overkill && !h.zeroDamageDodge);
+    if (hits.length < 2) return base;
+    const originalsOf = (hit, marked) => {
+      const ev = withOmegaAssignment(context, new Set([hit]), marked ? new Set([hit]) : EMPTY_OMEGA_SET,
+        () => elementalOriginalCandidates(hit, element, context));
+      return ev && ev.known && ev.originals && ev.originals.length ? ev.originals : null;
+    };
+    // Mesma tolerancia que o proprio bloco usaria na intersecao: ela existe so para o
+    // residuo discreto entre mobs (quantizacao da mitigation), nunca para colar dois
+    // niveis de verdade — o passo de omega e ~6%, ordens de grandeza acima dela.
+    const tolerance = elementalBlockTolerance(block);
+    const found = findOmegaAssignmentByLevel(
+      hits,
+      originalsOf,
+      (originals, o) => originals.some(v => Math.abs(v - o) <= tolerance),
+      originals => originals,
+    );
+    if (!found) return base;
+    // Mesma disciplina do eixo fisico: duas atribuicoes minimas DISTINTAS que fecham sao
+    // duas leituras igualmente apoiadas, e o nivel do bloco — que e quem deveria derivar o
+    // rotulo (D1) — fica indeterminado. Escolher uma seria decidir sem evidencia, contra
+    // D-006. Medido em `crypt` (unico fixture com omega): 0 empates em 151.634 atribuicoes
+    // elementais e 0 em 50.925 fisicas, entao este ramo e guarda, nao caminho quente.
+    if (found.tied) return base;
+    const retry = withOmegaAssignment(context, new Set(hits), found.marked,
+      () => validateElementalBlockUnderAssignment(block, element, context));
+    return retry.ok ? Object.assign(retry, { omegaHits: found.marked }) : base;
+  }
+
+  function validateElementalBlockUnderAssignment(block, element, context) {
     const prevCritKey = context && context._activeCritKey;
     if (context) context._activeCritKey = critKeyForBlock(block);
     try {
@@ -1220,7 +1389,7 @@
     // de originais disjuntos são fronteira obrigatória (S-005) e o bloco é inválido —
     // o cluster (V24) não pode resgatá-lo. Caso-prova: mazzerinbarrage 23:46:36,
     // darklight matter+EW F=986 ⇒ O={982} vs F=987 ⇒ O={983} sob P=1.
-    const sameMob = sameMobStateExactnessViolation(perHit);
+    const sameMob = sameMobStateExactnessViolation(perHit, context);
     if (sameMob.violated) {
       return {
         ok: false,
@@ -1235,7 +1404,7 @@
     // com Using explícito (M-017/M-018a), a linha de execução é sinal primário e
     // aceitamos uma tolerância um pouco maior no original para absorver diferenças
     // discretas entre mobs/mitigação sem transformar quantidade de hits em critério.
-    const tolerance = (block && block.comp === 'rune' && block.action) ? 4 : 2;
+    const tolerance = elementalBlockTolerance(block);
     const inter = intersectSets(sets, tolerance);
     if (sets.length && inter.length) return { ok: true, known, unknown, intersection: inter, element, tolerance };
 
@@ -1486,6 +1655,11 @@
         const det = block.comp === 'arrow'
           ? (aaElement === 'physical' ? validatePhysicalBlock(block, context) : validateElementalBlock(block, aaElement, context))
           : validateElementalBlock(block, element, context);
+        // M-039: o leech NAO consome a atribuicao de omega, de proposito. A base de leech e
+        // o dano exibido COM omega dentro: ele infla o dano e o leech na mesma proporcao
+        // (medido em `crypt`: life 1,0596 e mana 1,0541 para dano 1,060), ao contrario de
+        // prey/Bounty/`utevo grav san`, que inflam so o dano e por isso saem do divisor de
+        // `leechDamageBasis` (D-030).
         const leech = validateLeechBlock(block, context, turn);
         return { deterministic: det, leech, gravSanActive: mode, gravSanTested: mode != null };
       });
@@ -1649,6 +1823,10 @@
       block.gravSanTested = modeResult.gravSanTested;
       block.gravSanModeCandidates = modeResult.gravSanModeCandidates;
       block.deterministic = det;
+      // M-039: a atribuicao de omega pertence a ESTE bloco desta particao candidata. Os
+      // objetos de hit sao compartilhados entre todas as particoes, entao o rotulo NAO
+      // pode ser gravado no hit aqui — so quando a particao vencedora for consolidada.
+      block.omegaHits = (det && det.omegaHits) || null;
       diagnostics.push({ kind: 'deterministic', block, result: det, gravSanActive: block.gravSanActive, gravSanTested: block.gravSanTested });
       if (!det.ok) violations.push(Object.assign({ block }, det));
 

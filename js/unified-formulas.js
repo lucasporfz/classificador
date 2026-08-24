@@ -75,7 +75,10 @@
     'exori amp kor': { label: "Executioner's Throw", type: 'attack', element: 'physical', topology: 'area', vocation: 'knight' },
     'utori kor': { label: 'Inflict Wound', type: 'attack', element: 'physical', topology: 'single', vocation: 'knight' },
     'exori ico scu': { label: 'Shield Bash', type: 'attack', element: 'physical', topology: 'single', vocation: 'knight' },
-    'exori scu': { label: 'Shield Slam', type: 'attack', element: 'physical', topology: 'single', vocation: 'knight' },
+    // Shield Slam e de AREA. A entrada `single` estava errada e M-006 proibia bloco
+    // multi-hit, empurrando o motor para `A1 R2 Great Fireball` em blocos homogeneos com
+    // cast concreto de `exori scu` no mesmo segundo (`ek boss` 19:39:34/19:40:01/:14/:30).
+    'exori scu': { label: 'Shield Slam', type: 'attack', element: 'physical', topology: 'area', vocation: 'knight' },
 
     // Sorcerer
     'exori vis': { label: 'Energy Strike', type: 'attack', element: 'energy', topology: 'single', vocation: 'sorcerer' },
@@ -245,6 +248,28 @@
   // do dano normal do player — e fora de qualquer janela de utevo grav san. Confirmado no
   // par logs/ingol ed (17/Jul/2026, ED): harpy/Bird = 0.05, fechado pelo freeze charm.
   const BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES = [0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.12, 0.15, 0.20, 0.25, 0.30];
+
+  // M-039 — perk "omega": bônus de dano condicional por vida baixa do alvo, fato do
+  // PERSONAGEM. Multiplicador plano pós-mitigação, BINÁRIO por-hit, de valor único e
+  // conhecido, no mesmo ponto de prey/utevo grav san/bônus de classe (postMultiplier) e
+  // DENTRO da base de leech (leechDamageBasis). Detectado por sessão pela testemunha de
+  // dano de charm (inferOmegaPerk, mesmo canal de M-036); sessão sem a escada não ganha
+  // candidato nenhum, então a mecânica é inerte fora dela.
+  //
+  // A regra registra só o valor: o motor não observa vida de criatura, então o gatilho
+  // por HP NÃO é normatizado (D5). A evidência dele está em
+  // reports/crypt-omega-prototipo.md.
+  const OMEGA_MULTIPLIER = 1.06;
+
+  // S-004c: a atribuicao de omega e ESTADO do hit no gate de exatidao same-mob, entao dois
+  // hits do mesmo mob cuja atribuicao DIFERE sao comparacao cross-state e ganham esta folga.
+  // O valor NAO e escolhido: e o residuo medido do modelo de omega. Em `crypt`, dos blocos
+  // holy em que o motor acha a atribuicao e o retry falha mesmo assim, o grupo violador esta
+  // a distancia de EXATAMENTE 1 ponto em 601 de 603 (313 de 313 nos turnos de um unico nivel
+  // holy). Ela e menor que a tolerancia generica do bloco (2) de proposito: 1 ponto em
+  // O ~ 730 e 0,14%, contra >= 3,2% entre dois niveis holy realmente distintos da sessao.
+  // Ver S-004c-nota para por que o modelo de omega nao e exato.
+  const OMEGA_CROSS_STATE_TOLERANCE = 1;
 
   // O crÃ­tico Ã© inferido POR-COMPONENTE por buckets crit/nÃ£o-crit (mean/mean), nÃ£o por
   // uma grade de candidatos global. `criticalMultiplierForHit` aplica o crit do componente
@@ -639,7 +664,31 @@
     }
     m *= gravSanMultiplierAtTs(context, hit && hit.ts, hit);
     m *= bestiaryClassMultiplierForHit(hit, context);
+    m *= omegaMultiplierForHit(hit, context);
     return m;
+  }
+
+  // M-039: omega é binário POR-HIT, e o rótulo não é observado no log — ele é derivado do
+  // nível do bloco candidato durante a validação (D1). Por isso a leitura tem dois níveis:
+  //
+  //   1. `context._omegaAssignment` — a atribuição SOB TESTE do bloco que está sendo
+  //      validado agora. `scope` são os hits daquele bloco; `marked`, os que a atribuição
+  //      declara omega. Fora do `scope` a atribuição não diz nada.
+  //   2. `hit.omegaActive` — o rótulo já consolidado na partição vencedora, usado depois
+  //      da resolução (base de leech da inferência de sessão, agregação, trace/UI).
+  //
+  // Sessão sem omega detectado nunca chega aqui com `active`, então o multiplicador é 1 e
+  // a reversão é bit a bit a anterior a esta regra.
+  function omegaActiveForHit(hit, context) {
+    if (!hit) return false;
+    if (!context || !context.omegaSetup || !context.omegaSetup.active) return false;
+    const assignment = context._omegaAssignment;
+    if (assignment && assignment.scope && assignment.scope.has(hit)) return assignment.marked.has(hit);
+    return !!hit.omegaActive;
+  }
+
+  function omegaMultiplierForHit(hit, context) {
+    return omegaActiveForHit(hit, context) ? OMEGA_MULTIPLIER : 1;
   }
 
   function inversePostMultiplierIntervals(displayDamage, post) {
@@ -970,6 +1019,10 @@
   function isMainHit(hit) {
     if (!hit) return false;
     if (hit.damageReflection || hit.woundCharm || hit.overpowerCharm) return false;
+    // M-038: dano de field/DoT e proc anexo, igual aos de cima. O parser ja o retira de
+    // `hits`; esta linha e a guarda canonica, para que nenhum caminho que alcance o evento
+    // por `events` volte a conta-lo como hit principal.
+    if (hit.kind === 'field') return false;
     if (hit.type !== 'normal' && hit.type !== 'crit') return false;
     return true;
   }
@@ -998,7 +1051,89 @@
     return 1 + setup.bonus;
   }
 
+  // M-038 — Dano de field/DoT nao e hit principal.
+  //
+  // O Server Log nao distingue textualmente o tick de um campo de um hit real
+  // (`A moonsilver sentinel loses 18 hitpoints due to your attack.`, sem sufixo), entao a
+  // identificacao e por NIVEL DE FIELD DA SESSAO, com quatro condicoes cumulativas e nenhum
+  // limiar absoluto de dano. Cada uma delas foi necessaria: sem a de nivel, dano
+  // deterministico de area (que repete o valor exato por construcao) e marcado por engano
+  // (`serverlog8` 539 contra mediana 828; `mazzerinbarrage` 1798 contra 891).
+  const FIELD_SERIES_MIN_HITS = 3;
+  // "Distintamente abaixo" da referencia. Nao e numero calibrado: campo fica em 2,8%-3,0% da
+  // referencia (19/680 em `ek boss`, 21/692 na hunt de `drome`) e o falso positivo mais
+  // proximo do corpus fica em 65%. Qualquer razao entre ~0,05 e ~0,60 produz o mesmo conjunto.
+  const FIELD_LEVEL_MAX_RATIO = 0.10;
+
+  // Forma de um tick de campo, SEM olhar leech: dano positivo, sem dodge e sem crit —
+  // campo nunca critica. E o que os dois caminhos de M-038/M-038a tem em comum; o que os
+  // separa e so a clausula de leech.
+  function hasFieldHitShape(hit) {
+    if (!hit || hit.zeroDamageDodge) return false;
+    if ((+hit.dmg || 0) <= 0) return false;
+    return !(hit.type === 'crit' || hit.realCrit);
+  }
+
+  function isFieldLevelCandidateHit(hit) {
+    if (!hasFieldHitShape(hit)) return false;
+    // Campo nao da leech; hit real da, salvo vida/mana cheias.
+    return !((+hit.lifeLeech || 0) > 0 || (+hit.manaLeech || 0) > 0);
+  }
+
+  // `hasFieldRuneUse` e o gate de M-021: sem runa `wall|bomb|field` na sessao, nenhum hit e
+  // marcado, em sessao nenhuma. Devolve o conjunto de niveis (Set de dano exato).
+  function fieldDamageLevels(hits, { hasFieldRuneUse } = {}) {
+    const levels = new Set();
+    if (!hasFieldRuneUse) return levels;
+    const leechedDamage = [];
+    const counts = new Map();
+    for (const hit of hits || []) {
+      if (!hit || hit.zeroDamageDodge || (+hit.dmg || 0) <= 0) continue;
+      if ((+hit.lifeLeech || 0) > 0 || (+hit.manaLeech || 0) > 0) {
+        leechedDamage.push(+hit.dmg);
+        continue;
+      }
+      if (!isFieldLevelCandidateHit(hit)) continue;
+      const dmg = +hit.dmg;
+      counts.set(dmg, (counts.get(dmg) || 0) + 1);
+    }
+    // D-006: a referencia e a mediana do dano dos hits COM leech — nunca de todos os hits.
+    // Numa sessao dominada por campo (41% dos hits na hunt de `drome`) a mediana geral e o
+    // proprio campo e o teste se anula. Sem nenhum hit com leech nao ha referencia e o
+    // detector se abstem.
+    if (!leechedDamage.length) return levels;
+    leechedDamage.sort((a, b) => a - b);
+    const reference = leechedDamage[Math.floor(leechedDamage.length / 2)];
+    for (const [dmg, occurrences] of counts) {
+      if (occurrences < FIELD_SERIES_MIN_HITS) continue;
+      if (dmg > reference * FIELD_LEVEL_MAX_RATIO) continue;
+      levels.add(dmg);
+    }
+    return levels;
+  }
+
+  // A marcacao final e por PERTENCIMENTO ao conjunto, nao por serie: uma ocorrencia avulsa de
+  // um nivel ja provado por outra criatura tambem e campo (`ek boss` 19:42:14, `Maior Domus`
+  // 15, unica) — e e justamente um dos turnos que so existem por causa do tick.
+  function isFieldDamageHit(hit, levels) {
+    if (!levels || !levels.size) return false;
+    if (!hasFieldHitShape(hit)) return false;
+    // O nivel vem antes da clausula de leech: M-038a so reconhece ocorrencia de um nivel ja
+    // provado por candidatos limpos (`fieldDamageLevels`), e nunca inventa nivel novo.
+    if (!levels.has(+hit.dmg || 0)) return false;
+    if (isFieldLevelCandidateHit(hit)) return true;
+    // M-038a: leech e fracao do dano causado; nenhuma taxa produz mais leech do que o dano do
+    // proprio hit. Leech acima do dano pertence a outro fato do log — o restauro de pocao que
+    // o servidor emitiu DEPOIS do tick, que D-027 nao barra porque so cobre `You gained mana`
+    // PRECEDIDA por uso.
+    return ((+hit.lifeLeech || 0) + (+hit.manaLeech || 0)) > (+hit.dmg || 0);
+  }
+
   const API = {
+    fieldDamageLevels,
+    isFieldDamageHit,
+    FIELD_SERIES_MIN_HITS,
+    FIELD_LEVEL_MAX_RATIO,
     gravSanHitInWindow,
     gravSanMultiplierAtTs,
     VERSION,
@@ -1034,6 +1169,10 @@
     GRAV_SAN_BONUS_CANDIDATES,
     BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES,
     bestiaryClassMultiplierForHit,
+    OMEGA_MULTIPLIER,
+    OMEGA_CROSS_STATE_TOLERANCE,
+    omegaActiveForHit,
+    omegaMultiplierForHit,
     CRIT_BUCKET_MIN_SAMPLES,
     CRIT_BOOTSTRAP_MAX,
     CRIT_MULTIPLIER_CANDIDATES,

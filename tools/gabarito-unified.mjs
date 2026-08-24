@@ -1316,6 +1316,126 @@ export const CASES = [
   // Caldera com 2 hits no bakragore (viola M-009) corrigido para Caldera(1) + Granada(1).
   C('mazzerinbarrage/21:08:57', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '21:08:57',
     t => { const c = counts(t); return (c.arrow === 1 && c.spell === 1 && c.rune === 0 && c.grenade === 1) ? null : `esperado A1 S1 G1; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '14/Jun/2026'),
+  // M-038 (change exclude-field-and-dot-damage-from-main-hits): o dano dos fields deixados
+  // pelas 5 `fire bomb runes` de 19:39:09-24 entrava como hit principal. Sao 47 hits, niveis
+  // {7,8,9,15,18,19} contra referencia 680, contaminando 38 dos 229 turnos da sessao.
+  // `ek boss` nao tem cabecalho `Channel ... saved`: sessao unica, sem filtro de data.
+  //
+  // Boss `Maior Domus` (sem artigo, M-009a): cada acao produz no maximo 1 hit (M-009). O tick
+  // de 7 fazia 3 hits no boss unitario -> 3 quebras da invariante M-009.
+  C('ek-boss/19:42:24', 'ek boss server log.txt', 'ek boss local chat.txt', '19:42:24',
+    spellWithAaCheck(1, 1, 'Fierce Berserk (exori gran)')),
+  C('ek-boss/19:42:41', 'ek boss server log.txt', 'ek boss local chat.txt', '19:42:41',
+    spellWithAaCheck(1, 1, 'Front Sweep (exori min)')),
+  C('ek-boss/19:43:08', 'ek boss server log.txt', 'ek boss local chat.txt', '19:43:08',
+    spellWithAaCheck(1, 1, 'Front Sweep (exori min)')),
+  // Turnos que existem SO por causa do tick: sem hit principal, nao ha turno.
+  CN('ek-boss/19:40:40-so-field', 'ek boss server log.txt', 'ek boss local chat.txt', '19:40:40'),
+  CN('ek-boss/19:41:26-so-field', 'ek boss server log.txt', 'ek boss local chat.txt', '19:41:26'),
+  CN('ek-boss/19:42:14-so-field', 'ek boss server log.txt', 'ek boss local chat.txt', '19:42:14'),
+  // O tick roubava o slot de AA (M-032: knight tem 0 ou 1 AA por turno).
+  C('ek-boss/19:41:28', 'ek boss server log.txt', 'ek boss local chat.txt', '19:41:28',
+    t => { const c = counts(t); return (c.arrow === 1 && c.spell === 0 && c.rune === 0 && c.grenade === 0) ? null : `esperado A1; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  C('ek-boss/19:41:45', 'ek boss server log.txt', 'ek boss local chat.txt', '19:41:45',
+    spellWithAaCheck(1, 2, 'Front Sweep (exori min)')),
+  // `exori scu` (Shield Slam) e de AREA; a entrada `single` do catalogo estava errada e
+  // M-006 proibia bloco multi-hit, empurrando o motor para `A1 R2 Great Fireball`.
+  // 19:39:54: com o tick de 8 fora, a fronteira e o estado de crit (D-007/S-008, crit e
+  // por-ataque e uniforme na area) — 671 CRIT e o AA, 496/506/496 sao o Shield Slam. Leech
+  // confirma: 671 -> 135 mana ~ 20% ~ N=1; cada 496 -> 40 mana ~ 8% ~ N=3.
+  C('ek-boss/19:39:54', 'ek boss server log.txt', 'ek boss local chat.txt', '19:39:54',
+    spellWithAaCheck(1, 3, 'Shield Slam (exori scu)')),
+  C('ek-boss/19:40:14', 'ek boss server log.txt', 'ek boss local chat.txt', '19:40:14',
+    spellNoAaCheck(3, 'Shield Slam (exori scu)')),
+  // M-038a (23/Ago/2026, `rescue-field-hits-with-impossible-leech`, issue #11): a hunt
+  // `Tue Jun 09 09:30:47 2026` saiu de CORPUS_EXCLUSIONS e passa a ser gabaritada.
+  // M-038 ja tirava 4.386 ticks de campo dela, mas sobravam 216 nos mesmos niveis provados
+  // {9,10,19,21} porque o restauro da ultimate spirit potion chega DEPOIS do tick e era
+  // associado a ele como mana leech (`19` com `mana 152`). Os 5 turnos abaixo eram as 5
+  // quebras `M-012/M-013: spell fora da janela de +/-1s` da sessao.
+  //
+  // 09:18:52: com os dois ticks de 19 fora, a fronteira e o estado de crit (D-007/S-008,
+  // crit e por-ataque e uniforme na area): 913/820/835/890 CRIT sao o AA, 785/785/785/790
+  // sao o Divine Caldera.
+  C('drome/09:18:52', 'Server Log drome.txt', 'Local Chat drome.txt', '09:18:52',
+    spellWithAaCheck(4, 4, 'Divine Caldera (exevo mas san)'), '09/Jun/2026'),
+  // 09:24:47: o unico hit do segundo era um tick de 19 em `scissorion` — turno fantasma.
+  CN('drome/09:24:47-so-field', 'Server Log drome.txt', 'Local Chat drome.txt', '09:24:47', '09/Jun/2026'),
+  // Os quatro abaixo tinham um componente inteiro (ou o AA) feito de ticks. Sem eles o turno
+  // e AA-only: o cast do segundo continua contando como execucao, mas nao tem dano visivel.
+  C('drome/09:20:31', 'Server Log drome.txt', 'Local Chat drome.txt', '09:20:31',
+    t => { const c = counts(t); return (c.arrow === 3 && c.spell === 0 && c.rune === 0 && c.grenade === 0) ? null : `esperado A3; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '09/Jun/2026'),
+  C('drome/09:23:17', 'Server Log drome.txt', 'Local Chat drome.txt', '09:23:17',
+    t => { const c = counts(t); return (c.arrow === 4 && c.spell === 0 && c.rune === 0 && c.grenade === 0) ? null : `esperado A4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '09/Jun/2026'),
+  // 09:24:39 mantem os dois componentes: os ticks eram o 19 do inicio do AA e o 19 de
+  // 09:24:40; sobram 777/777 como AA e o 554 como spell. O rotulo e `Divine Missile
+  // (exori san)`, castado em 09:24:39 — o MESMO segundo do hit. Era justamente aqui que o
+  // tick de 09:24:40 esticava o bloco e fazia o motor alcancar o `exevo mas san` de
+  // 09:24:41, fora da janela de +/-1s: a quebra M-012/M-013 desta sessao.
+  C('drome/09:24:39', 'Server Log drome.txt', 'Local Chat drome.txt', '09:24:39',
+    spellWithAaCheck(2, 1, 'Divine Missile (exori san)'), '09/Jun/2026'),
+  C('drome/09:25:55', 'Server Log drome.txt', 'Local Chat drome.txt', '09:25:55',
+    t => { const c = counts(t); return (c.arrow === 4 && c.spell === 0 && c.rune === 0 && c.grenade === 0) ? null : `esperado A4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '09/Jun/2026'),
+  // M-039 (perk omega, +6% contra alvo com vida baixa). `crypt` e o unico fixture do
+  // corpus onde a testemunha de charm exibe o degrau x1,06 (medido nos 36 pares de logs/).
+  //
+  // Derivacao do turno 07:30:10 pela EVIDENCIA do log, nao pela saida do motor
+  // (23 hits principais em dois segundos, T-002):
+  //   :10, 8 hits CRIT (864 rd, 908 cyc, 893 rd, 836 rd, 968 cyc, 874 cm, 912 cyc,
+  //        854 rd) => AA fisico. O `968 cyclursus` e o `912 cyclursus` estao em razao
+  //        1,0614: e o hit omega do bloco (D3 fecha a intersecao com UM marcado).
+  //   :10, 8 hits nao-crit (752 rd, 749 cm, 752 rd, 815 cyc, 768 cyc, 752 rd, 752 rd,
+  //        768 cyc) => `exevo mas san` castado em 07:30:10 = Divine Caldera. O
+  //        `815 cyclursus` contra os dois `768 cyclursus` do MESMO mob e MESMO estado
+  //        esta em razao 1,0612 — e a prova direta de omega, e o que hoje mata a
+  //        particao por `same_mob_state_exact_original_mismatch` (S-004a).
+  //   :11, 7 hits => `exevo tempo mas san` castado em 07:30:08, explodindo em cast+3
+  //        (janela [cast+2, cast+4], M-023) = Divine Grenade. Seis normalizam para o
+  //        mesmo nivel holy 883 (crypt mage 840, roaming dread 844 x4, cyclursus 863) e
+  //        o setimo, `780 cyclursus`, e OVERKILL: dano truncado, sem nivel a respeitar,
+  //        herda o bloco contiguo por D-012 — logo o componente tem 7 hits, nao 6.
+  //
+  // Ordem AA -> spell -> granada (M-004) e combinacao permitida por T-005/U-004.
+  C('crypt/07:30:10-omega', 'Crypt Server Log.txt', 'Crypt Local Chat.txt', '07:30:10',
+    turn => {
+      const c = counts(turn);
+      if (!(c.arrow === 8 && c.spell === 8 && c.rune === 0 && c.grenade === 7)) {
+        return `esperado A8 S8 G7; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const spell = (turn.components || []).find(comp => comp.comp === 'spell');
+      if (!spell || !String(spell.actionLabel || '').includes('Divine Caldera (exevo mas san)')) {
+        return `esperado Divine Caldera (exevo mas san); got ${spell && spell.actionLabel || '-'}`;
+      }
+      const grenade = (turn.components || []).find(comp => comp.comp === 'grenade');
+      if (!grenade || !String(grenade.actionLabel || '').includes('Divine Grenade')) {
+        return `esperado Divine Grenade; got ${grenade && grenade.actionLabel || '-'}`;
+      }
+      // M-039/D1: o rotulo omega e derivado do nivel do bloco, entao no Caldera ele cai
+      // em exatamente um hit — o `815 cyclursus`, e em nenhum dos outros sete.
+      const omega = (spell.hits || []).filter(h => h.omegaActive);
+      if (omega.length !== 1) return `esperado 1 hit omegaActive no Caldera; got ${omega.length}`;
+      if (!(omega[0].dmg === 815 && String(omega[0].mob).toLowerCase().includes('cyclursus'))) {
+        return `esperado omegaActive no cyclursus 815; got ${omega[0].mob} ${omega[0].dmg}`;
+      }
+      // M-039: omega fica DENTRO da base de leech — o dano exibido e a base, nada e
+      // descontado. Este assert discrimina as duas leituras sem precisar da taxa da
+      // sessao: `CEIL(dano x taxa x areaFactor)` (D-023) e monotonico no dano e os tres
+      // hits abaixo sao do MESMO mob no MESMO bloco (mesma taxa, mesmo N_leech), entao
+      //   - com omega na base  => o leech do 815 fica ~6% acima do leech dos 768;
+      //   - com omega descontado => os tres teriam a MESMA base e o MESMO leech.
+      // Observado no log: 82 no 815 contra 77 nos dois 768 — razao 1,065 contra a razao
+      // de dano 1,061. So a primeira leitura reproduz isso.
+      const cyc = (spell.hits || []).filter(h => String(h.mob).toLowerCase().includes('cyclursus'));
+      const omegaLife = cyc.filter(h => h.omegaActive).map(h => h.lifeLeech);
+      const plainLife = cyc.filter(h => !h.omegaActive).map(h => h.lifeLeech);
+      if (!(omegaLife.length === 1 && plainLife.length === 2)) {
+        return `esperado 1 cyclursus omega + 2 sem omega no Caldera; got ${omegaLife.length}+${plainLife.length}`;
+      }
+      if (!plainLife.every(v => v === 77) || omegaLife[0] !== 82) {
+        return `esperado life leech 82 (omega) e 77/77 (sem omega); got ${omegaLife[0]} e ${plainLife.join('/')}`;
+      }
+      return null;
+    }),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

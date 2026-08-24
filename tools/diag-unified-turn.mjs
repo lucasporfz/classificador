@@ -76,14 +76,12 @@ function buildPairsByIndex(svAll, lcAll) {
   }
   return pairs;
 }
-// tools/dump-unified.mjs exclui uma sessão específica de "jaded Server Log.txt"
-// (09/Jun/2026, problema conhecido à parte) ANTES de numerar S0/S1/S2... — sem
-// replicar esse filtro aqui, --session N diverge da indexação real pra esse fixture.
-// Se outro fixture ganhar um filtro ad-hoc parecido em dump-unified.mjs no futuro,
-// replicar aqui também (ou, melhor, extrair esse filtro pra um módulo compartilhado).
-const isTempExcludedJadedSession = sv => sv.year === 2026 && sv.month === 5 && sv.day === 9;
+// Sem filtro ad-hoc desde 23/Ago/2026: `CORPUS_EXCLUSIONS` ficou vazio
+// (`rescue-field-hits-with-impossible-leech`), então a indexação S0/S1/S2... daqui volta a
+// bater com a de tools/dump-unified.mjs sem replicar nada. Se alguma exclusão de corpus
+// voltar a existir, ela precisa ser refletida aqui de novo — de preferência importando
+// `CORPUS_EXCLUSIONS` em vez de reescrever a regra.
 function applyKnownFixtureExclusions(svPath, pairs) {
-  if (path.basename(svPath) === 'jaded Server Log.txt') return pairs.filter(p => !isTempExcludedJadedSession(p.sv));
   return pairs;
 }
 
@@ -133,7 +131,7 @@ for (const t of (u.turns || [])) {
     console.log(`  comp=${c.comp} label=${c.actionLabel || '-'} hits=${(c.hits || []).length} reason=${c.reason || '-'}`);
     for (const h of (c.hits || [])) {
       const p = h.evidence && h.evidence.physical;
-      const flags = [h.realCrit && 'CRIT', h.onslaught && 'ONS', h.lowBlow && 'LB', h.savageBlow && 'SB', h.overkill && 'OK', h.isPrey && 'prey', h.exposeWeakness && 'EW'].filter(Boolean).join(' ');
+      const flags = [h.realCrit && 'CRIT', h.onslaught && 'ONS', h.lowBlow && 'LB', h.savageBlow && 'SB', h.overkill && 'OK', h.isPrey && 'prey', h.exposeWeakness && 'EW', h.omegaActive && 'omega'].filter(Boolean).join(' ');
       const phys = p && p.interval ? ` O_fis=[${p.interval[0]},${p.interval[1]}] mod=${+(+p.mod).toFixed(4)} mit=${+(+p.mitigation).toFixed(6)} post=${p.post} armor=[${p.armorLow},${p.armorHigh}]` : '';
       console.log(`    ${fmt(h.ts)} seq=${String(h.seq || 0).padStart(5)} ${String(h.mob).padEnd(18)} dmg=${String(h.dmg).padStart(5)} ${flags.padEnd(16)}${phys}`);
     }

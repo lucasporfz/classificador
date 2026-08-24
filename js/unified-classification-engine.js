@@ -57,6 +57,8 @@
     GRAV_SAN_DURATION_SECONDS,
     GRAV_SAN_BONUS_CANDIDATES,
     BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES,
+    bestiaryClassMultiplierForHit,
+    OMEGA_MULTIPLIER,
     CRIT_BUCKET_MIN_SAMPLES,
     CRIT_BOOTSTRAP_MAX,
     CRIT_MULTIPLIER_CANDIDATES,
@@ -1077,6 +1079,104 @@
     return { pierce: null, source: 'no_discriminating_charm_witness', rows: witnesses };
   }
 
+  // M-039 — deteccao por sessao do perk "omega" (+6% de dano quando o alvo esta com vida
+  // baixa), pela MESMA testemunha de M-036: o dano de charm ofensivo e fixo por mob (sem
+  // sorteio), entao `hitpoints * 0.05 * mitigacao * effectiveMod(mod, pierce)` preve o
+  // nivel exato e qualquer multiplicador oculto aparece como um segundo nivel exato.
+  //
+  // O detector NAO olha para os hits principais (D2): eles sao justamente o que ele vai
+  // destravar, e usa-los fecharia laco com a classificacao.
+  //
+  // Duas condicoes por linha de testemunha, e as duas sao necessarias:
+  //   (a) ANCORA -- existe nivel exato com >=3 procs que bate com o previsto pela formula
+  //       dentro da tolerancia de M-036. Sem ela nao ha "nivel previsto" observado, so
+  //       calculado, e um erro de tabela de ~6% se disfarcaria de omega.
+  //   (b) OMEGA  -- existe OUTRO nivel exato com >=3 procs a `x1.06` do nivel ANCORADO.
+  //       A razao e medida entre dois niveis OBSERVADOS, entao qualquer multiplicador
+  //       uniforme da sessao (bonus de classe de bestiario) cancela nela.
+  // Medido sobre os 36 pares de logs/: so `crypt` satisfaz as duas, nos tres mobs
+  // (roaming dread/curse 818->867, crypt mage/freeze 665->705, cyclursus/zap 659->699);
+  // os outros 35 fixtures, com ~5.000 procs de charm somados, nao produzem uma unica
+  // linha confirmada. O drift fora de `crypt` e zero por construcao.
+  //
+  // Procs dentro de janela de utevo grav san sao excluidos, como em M-036: aquele bonus e
+  // um SEGUNDO multiplicador binario (x1.10 nesta sessao) que compoe com omega e
+  // contaminaria a escada.
+  //
+  // Ausencia de testemunha e evidencia ausente (D-006), nao ausencia do perk: a sessao
+  // simplesmente nao ganha candidato de original nenhum e o motor se comporta como antes.
+  const OMEGA_WITNESS_MIN_PROCS = CHARM_WITNESS_MIN_PROCS;
+
+  function inferOmegaPerk(serverFacts, context) {
+    const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
+    const events = (serverFacts && serverFacts.events) || [];
+    const byKey = new Map();
+    for (const ev of events) {
+      if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey || ev.bountyTalisman) continue;
+      if (isWithinAnyWindow(ev.ts, windows)) continue;
+      const sig = charmSignature(ev);
+      const element = CHARM_ELEMENT_MAP[sig];
+      if (!element) continue;
+      const mob = normalizeName(ev.mob);
+      if (!mob) continue;
+      // Mesma chave de M-036: linhas com e sem Expose Weakness / amplification sao
+      // populacoes de pierce diferentes e nunca podem compartilhar nivel.
+      const ew = /expose weakness/i.test(ev.rawLine || '');
+      const amp = !!ev.elementalAmplification;
+      const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0);
+      if (!byKey.has(key)) byKey.set(key, { mob, charm: sig, element, ew, amp, values: [] });
+      byKey.get(key).values.push(ev.dmg);
+    }
+    if (!byKey.size) return { active: false, multiplier: 1, source: 'no_elemental_charm_evidence_outside_grav_san', rows: [] };
+
+    const rows = [];
+    for (const r of byKey.values()) {
+      if (r.values.length < OMEGA_WITNESS_MIN_PROCS) continue;
+      const mods = getMobMods(r.mob, context);
+      if (!mods || !(mods.hitpoints > 0)) continue;
+      const key = ELEMENT_KEYS[r.element];
+      if (!key || !(mods[key] > 0)) continue;
+      const pierce = pierceForElement(r.element, { exposeWeakness: r.ew, elementalAmplification: r.amp }, context);
+      const mit = mitigationMultiplier(mods, context);
+      // O bonus de classe de bestiario tambem multiplica o dano de charm; sem ele a
+      // ancora nao fecharia numa sessao que o tenha. Ele cancela na razao (b), entao
+      // entra so aqui.
+      const classMultiplier = bestiaryClassMultiplierForHit({ mob: r.mob }, context);
+      const expected = mods.hitpoints * 0.05 * mit * effectiveMod(+mods[key], pierce) * classMultiplier;
+      if (!(expected > 0)) continue;
+
+      const counts = new Map();
+      for (const v of r.values) counts.set(v, (counts.get(v) || 0) + 1);
+      const levels = [...counts.entries()]
+        .filter(([, n]) => n >= OMEGA_WITNESS_MIN_PROCS)
+        .map(([value, n]) => ({ value, n }))
+        .sort((a, b) => a.value - b.value);
+
+      const anchorTolerance = Math.max(2, expected * CHARM_EXPECTED_TOLERANCE_RATIO);
+      const anchor = levels.find(L => Math.abs(L.value - expected) <= anchorTolerance);
+      const row = {
+        mob: r.mob, charm: r.charm, element: r.element, ew: r.ew, amp: r.amp,
+        n: r.values.length, expected, levels,
+        baseLevel: anchor ? anchor.value : null, omegaLevel: null,
+      };
+      if (anchor) {
+        const wanted = anchor.value * OMEGA_MULTIPLIER;
+        const omegaTolerance = Math.max(2, wanted * CHARM_EXPECTED_TOLERANCE_RATIO);
+        const omega = levels.find(L => L.value !== anchor.value && Math.abs(L.value - wanted) <= omegaTolerance);
+        if (omega) { row.omegaLevel = omega.value; row.ratio = omega.value / anchor.value; }
+      }
+      rows.push(row);
+    }
+
+    const anchored = rows.filter(r => r.baseLevel != null);
+    const confirmed = rows.filter(r => r.omegaLevel != null);
+    if (confirmed.length) {
+      return { active: true, multiplier: OMEGA_MULTIPLIER, source: 'confirmed_by_charm_damage', rows, confirmedRows: confirmed.length, anchoredRows: anchored.length };
+    }
+    if (!anchored.length) return { active: false, multiplier: 1, source: 'no_anchored_charm_witness_row', rows };
+    return { active: false, multiplier: 1, source: 'charm_witness_without_omega_level', rows, anchoredRows: anchored.length };
+  }
+
   function inferBestiaryClassDamageBonus(serverFacts, context) {
     const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
     const events = (serverFacts && serverFacts.events) || [];
@@ -1327,6 +1427,9 @@
       );
     }
     context.bestiaryClassBonus = inferBestiaryClassDamageBonus(serverFacts, context);
+    // M-039: depois do bonus de classe, porque a ancora da testemunha de omega precisa
+    // dele para bater com o dano de charm observado (a razao x1,06 em si nao depende).
+    context.omegaSetup = inferOmegaPerk(serverFacts, context);
     // CrÃ­tico por-componente: aqui sÃ³ o BOOTSTRAP (pass-1). Se `options.critMultiplier`
     // for dado, respeita como fallback fixo; senÃ£o usa o global grosso crit-independente
     // da porÃ§Ã£o. Os multiplicadores por-componente (`byComponent`) sÃ£o preenchidos pelo
@@ -1725,6 +1828,7 @@
     parseLocalChat,
     inferGravSanSetup,
     inferBestiaryClassDamageBonus,
+    inferOmegaPerk,
     // Exportada para diagnóstico/validação. AINDA NÃO ligada ao fluxo de classificação:
     // o gate de controle negativo (task 3 do change infer-bm-pierce-from-charm-damage)
     // precisa fechar antes de ela virar decisão primária de bmPierce.

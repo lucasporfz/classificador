@@ -78,6 +78,16 @@
       }
     }
     divisor *= gravSanMultiplierAtTs(context, hit && hit.ts, hit);
+    // M-039: omega NAO entra neste divisor, DE PROPOSITO. O que sai daqui e so
+    // multiplicador que infla o dano exibido SEM inflar o leech (prey, Bounty, grav san --
+    // ver D-030). Omega e o contrario: medido em `crypt` sobre pares a x1,060, a razao de
+    // life leech e 1,0596 (n=2.884) e a de mana 1,0541 (n=2.908) -- o leech ACOMPANHA o
+    // dano inflado, logo o dano inflado E a base. Dividir por 1,06 aqui cobraria do hit
+    // uma taxa 6% menor que a real; medido, isso deixava o esperado ~6% abaixo do
+    // observado em 100% dos hits omega (`07:30:10` cyclursus 815: observado 82, esperado
+    // 77 dividindo, 82 sem dividir), com os vizinhos sem omega batendo exato dos dois
+    // jeitos. O vies sobrevivia encostado na tolerancia de D-024 (a mana salvava o hit
+    // pelo "e/ou"), entao aparecia como dano base enviesado e nao como turno quebrado.
     return divisor > 0 ? dmg / divisor : dmg;
   }
 

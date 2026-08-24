@@ -248,6 +248,17 @@ function clsDetailCritLabel(hit) {
   return '-';
 }
 
+// M-039 (D8): a coluna que mostrava só Expose Weakness virou coluna de ESTADO DO HIT.
+// Expose Weakness vem de sufixo do Server Log (fato observado); omega é inferido por
+// bloco na validação — os dois são estados do hit e podem coexistir.
+function clsDetailHitStateLabel(hit) {
+  if (!hit) return '-';
+  const parts = [];
+  if (hit.exposeWeakness) parts.push('EW');
+  if (hit.omegaActive) parts.push('omega');
+  return parts.length ? parts.join(' + ') : '-';
+}
+
 function clsRowLabel(row) {
   return row && row.kind === 'arrow' ? t('cls_comp_arrow') : (row && row.label) || '';
 }
@@ -308,7 +319,7 @@ function renderTurnDetail(turns, res, selectedIndex) {
           ', rune ' + (counts.rune || 0) + ', grenade ' + (counts.grenade || 0) +
         '</p>' +
         '<table class="cls-table cls-turn-detail-table"><thead><tr>' +
-          '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>EW</th><th>Overkill</th><th>Mob alvo</th>' +
+          '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>Estado do hit</th><th>Overkill</th><th>Mob alvo</th>' +
         '</tr></thead><tbody>' +
           hits.map(h =>
             '<tr>' +
@@ -316,7 +327,7 @@ function renderTurnDetail(turns, res, selectedIndex) {
               '<td style="text-align:right">' + clsEscapeHtml(h.dmg) + '</td>' +
               '<td>' + clsEscapeHtml(clsDetailComponentLabel(h, turn)) + '</td>' +
               '<td>' + clsEscapeHtml(clsDetailCritLabel(h)) + '</td>' +
-              '<td>' + (h.exposeWeakness ? 'sim' : '-') + '</td>' +
+              '<td>' + clsEscapeHtml(clsDetailHitStateLabel(h)) + '</td>' +
               '<td>' + (h.ok ? 'sim' : '-') + '</td>' +
               '<td>' + clsEscapeHtml(h.mob || '') + '</td>' +
             '</tr>'

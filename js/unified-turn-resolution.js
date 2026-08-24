@@ -24,6 +24,7 @@
     ELEMENTS,
     SINGLE_TARGET_AA_VOCATIONS,
     BONUS_TIER_ACTIONS,
+    OMEGA_CROSS_STATE_TOLERANCE,
     leechValueToleranceForN,
   } = root.UnifiedFormulas;
 
@@ -701,8 +702,56 @@
     return finalizeManualTurn(turn, defs, reason, context);
   }
 
+  // S-004c: a folga cross-state de omega e ULTIMO RECURSO por turno — a mesma disciplina
+  // que D-010b/S-007 ja impoem a omega no eixo fisico ("ultimo recurso e minimo").
+  //
+  // A avaliacao ESTRITA (folga desligada, comportamento de antes de S-004c) roda primeiro e
+  // sempre. So quando ela nao resolve o turno e que a avaliacao relaxada roda, e o resultado
+  // dela so e adotado se ela propria resolver. Nenhuma particao relaxada compete, pontua ou
+  // desempata contra uma estrita, entao TODO turno que resolve estrito resolve com a mesma
+  // particao e o mesmo rotulo — a regra nao pode reclassificar turno que ja resolve.
+  //
+  // Isso importa porque o gate de exatidao same-mob tem duplo papel: mata o residuo de 1
+  // ponto do modelo de omega E impede que uma particao funda dois componentes elementais
+  // cujos niveis se sobrepoem (em `crypt`, Divine Caldera e Divine Barrage estao a 3,2-4,8%
+  // no mesmo mob). A guarda separa os dois papeis sem precisar distinguir os casos.
+  //
+  // `resolveTurn` ja e chamado varias vezes sobre a lista inteira em cada passada do motor
+  // (bootstrap sem leech, refino de crit, passada final), entao a segunda chamada por turno
+  // nao tem efeito colateral de consumo de acao: o consumo acontece na atribuicao, nao aqui.
   function resolveTurn(turn, facts, context) {
+    const strict = resolveTurnInner(turn, facts, context);
+    if (!context || !context.omegaSetup || !context.omegaSetup.active) return strict;
+    if (strict && strict.status === 'resolved') return strict;
+    const previous = context._omegaCrossStateTolerance;
+    context._omegaCrossStateTolerance = OMEGA_CROSS_STATE_TOLERANCE;
+    try {
+      const relaxed = resolveTurnInner(turn, facts, context);
+      if (relaxed && relaxed.status === 'resolved') {
+        relaxed.omegaCrossStateToleranceUsed = OMEGA_CROSS_STATE_TOLERANCE;
+        return relaxed;
+      }
+    } finally {
+      context._omegaCrossStateTolerance = previous;
+    }
+    // A passada relaxada MUTA `turn` (actions, rotulo de omega por hit, componentId/label
+    // dos hits) e o resultado estrito aponta para os MESMOS objetos. Como ela nao resolveu,
+    // reconstroi o resultado estrito rodando a passada estrita de novo, para que o turno
+    // devolvido e o estado dos hits descrevam a mesma leitura. Custa uma terceira passada
+    // apenas nos turnos que falham nas duas (em `crypt`, exatamente 1).
+    return resolveTurnInner(turn, facts, context);
+  }
+
+  function resolveTurnInner(turn, facts, context) {
     turn.actions = actionsNearTurn(turn, facts, context);
+    // M-039: o motor resolve o turno mais de uma vez (bootstrap sem leech, depois com o
+    // leech real). O rotulo de omega e DERIVADO da validacao, entao ele precisa ser
+    // re-derivado a cada passada: sem limpar, a 2a passada encontraria o bloco ja fechado
+    // pelo rotulo da 1a, a busca por atribuicao nem rodaria, e o rotulo seria perdido na
+    // consolidacao. Limpar so em sessao com omega mantem o campo inexistente nas outras.
+    if (context && context.omegaSetup && context.omegaSetup.active) {
+      for (const h of turn.hits) h.omegaActive = false;
+    }
     turn.hits.forEach(h => enrichHitEvidence(h, context));
 
     const singleTargetAaTurn = resolveSingleTargetAaVocationTurn(turn, facts, context);
@@ -1239,6 +1288,21 @@
         h.componentId = id;
         h.component = unresolved ? 'unresolved' : b.comp;
         h.actionLabel = unresolved ? ('Componente não resolvido ' + componentId) : label;
+        // M-039: aqui — e so aqui — a atribuicao de omega do bloco vencedor vira rotulo do
+        // hit. Durante a busca ela vive em `context._omegaAssignment`, porque os objetos de
+        // hit sao compartilhados entre todas as particoes candidatas e gravar antes
+        // vazaria a hipotese de uma para as outras. Depois desta linha o rotulo e o que a
+        // base de leech da inferencia de sessao, a agregacao e o trace/UI leem.
+        // Sessao sem omega nunca chega aqui com `omegaHits`, e o campo nem existe nela.
+        if (b.omegaHits && b.omegaHits.has(h)) {
+          h.omegaActive = true;
+          // A evidencia do hit foi enriquecida no inicio da resolucao, quando nenhuma
+          // atribuicao existia ainda — ela ainda descreve a reversao SEM omega. Agora que
+          // a decisao do bloco vencedor e conhecida, re-derivar deixa `O`/`post` do
+          // diagnostico e da UI (U-006) coerentes com o rotulo. Mesmo movimento que o
+          // bloco de Terra Burst logo abaixo ja faz pelo seu proprio bonus.
+          enrichHitEvidence(h, context);
+        }
       }
       // Terra Burst/Ice Burst hits are enriched once, up front (`enrichHitEvidence`), before
       // any partition/bonus decision exists, always assuming multiplier 1. Now that the

@@ -495,6 +495,8 @@
             realCrit: !!h.realCrit,
             onslaught: !!h.onslaught,
             exposeWeakness: !!h.exposeWeakness,
+            // M-039: estado inferido do hit, exibido na coluna de estado do detalhe.
+            omegaActive: !!h.omegaActive,
             terraBurstBonusActive: h.terraBurstBonusActive === undefined ? null : h.terraBurstBonusActive,
             terraBurstBonusLevel: (component.deterministic && component.deterministic.terraBurstBonusLevel) || null,
             executionerBonusActive: h.executionerBonusActive === undefined ? null : h.executionerBonusActive,
