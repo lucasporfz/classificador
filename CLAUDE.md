@@ -96,7 +96,53 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
-**Baseline conhecido (medido em 24/Ago/2026, após `apply-omega-cross-state-tolerance-as-last-resort`).**
+**Baseline conhecido (medido em 26/Ago/2026, após `infer-weapon-physical-pierce-per-session`).**
+Total de alvos: **38/43 OK**; gabarito **253/253**; invariantes **37/38** fixtures limpos, com a
+única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **19.548** turnos, **58** sem
+classificação. `query-unified-dump.mjs --verify-source` dá **exit 0** — o `latest` foi promovido
+em 27/Ago/2026 e corresponde ao motor; a defasagem crônica que dava exit 3 acabou.
+
+As 5 falhas são todas **pré-existentes**: `gabarito prioritario + invariantes mecanicas` (a falha
+do `bakradrone`), `experimental-ui-parity`, `mob-element-regime`, `unified-grav-san-ratio-witness`
+(o código de D-030b/D-030c que ela exercita está em `git stash`) e
+`unified-spiritual-outburst-multistage`. O alvo a mais (42→43) é o teste novo desta change.
+
+**Drift desta change: 79 turnos, todos em `moonsilver`** — 78 que passaram de `unresolved` a
+resolvido e 1 (`05:24:53`) cuja granada migrou para o turno em que de fato explodiu
+(`05:24:51`, `cast+3`). Zero drift nos outros 37 fixtures, em 19.548 turnos. A regra é **M-040**
+e o diagnóstico está em `reports/moonsilver-fase2-pierce-fisico.md`.
+
+**O detector de M-040 seleciona o perk em 1 de 132 sessões do corpus** (`moonsilver` S0). Em 93
+delas ele nem roda (`insufficient_eligible_blocks`): só há evidência em pack de AoE com ≥3 blocos
+de AA de ≥3 hits e ≥2 mobs. Consequência declarada e aceita: em hunt de boss o perk fica
+invisível e o dano base sai enviesado sem sintoma. Varredura: `tools/probe-weapon-pierce-corpus.mjs`.
+
+**Baseline anterior, para referência (medido em 26/Ago/2026, após `implement-h005e-h005f-h005g-leech-cardinality-rules`).**
+Total de alvos: **36/42 OK**; gabarito **210/210**; invariantes **36/37** fixtures limpos, com a
+única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **19.356** turnos, **58** sem
+classificação — o MESMO número do baseline anterior: a change não resolveu nem quebrou nenhum
+turno `unresolved`, só reclassificou turnos já resolvidos.
+
+As 6 falhas são todas **pré-existentes**: `gabarito prioritario + invariantes mecanicas` (a
+falha do `bakradrone`), `experimental-ui-parity`, `mob-element-regime`,
+`unified-grav-san-ratio-witness`, `unified-spiritual-outburst-multistage` e
+`unified-experimental-coverage` (contrato travado em 204 contra gabarito 210 — vem de
+`tools/gabarito-unified.mjs` modificado no working tree por #15/#20, não desta change). Os 2
+alvos a mais (40→42) são os testes novos desta change.
+
+**Drift desta change: 88 turnos, 100 % `a=0 → a=1`, zero no sentido inverso** — 80 em `tom` e 8
+em `ek boss`, **nenhum** em qualquer outro fixture. `tom` sai de **124** turnos `a=0` para
+**44**, dos quais 39 são corretos (6 de hit único, 33 cujo primeiro hit declara `N` entre 2 e 9).
+Os 8 de `ek boss` são ganho, não colateral: em todos o AA e o bloco da spell acertam o mesmo mob
+com dano muito diferente (prova independente por `S-004a`). A ausência de flips no sentido
+`a=1 → a=0` é garantida por construção pela semântica **aditiva** de `H-005e`.
+
+**O fixture `moonsilver` (192 turnos) está FORA desta medição por decisão do usuário.** Ele foi
+adicionado a `logs/` em 26/Ago/2026 durante a change; o corpus o descobre automaticamente
+(38 pares), mas tanto a validação quanto o dump candidato desta change cobrem os **37** pares
+anteriores. Ao medir contra este baseline, exclua `moonsilver` ou o número de turnos não bate.
+
+**Baseline anterior, para referência (medido em 24/Ago/2026, após `apply-omega-cross-state-tolerance-as-last-resort`).**
 Total de alvos: **35/40 OK**; gabarito **239/239**; invariantes com **1** falha, a declarada em
 S-014f (`bakradrone 09:57:20`). Dump: **18.958** turnos, **58** sem classificação.
 

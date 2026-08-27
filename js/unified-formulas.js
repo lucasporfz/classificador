@@ -785,6 +785,16 @@
     // effectiveMod. Aplica-se tanto aos eixos elementais quanto ao fÃ­sico.
     if (hit && hit.elementalAmplification) p += 0.16;
     if ((element === 'holy' || element === 'physical') && context && context.bmPierce) p += context.bmPierce;
+    // M-040 - perk de pierce fisico vindo da ARMA. Aditivo como qualquer outra fonte, mas
+    // so em HIT REAL de dano: o dano de charm nao o enxerga, e essa cegueira e justamente
+    // o que o distingue do BM (que o charm testemunha, C-012/M-036). As testemunhas de
+    // charm chamam esta funcao com um literal { exposeWeakness, elementalAmplification }
+    // sem 'dmg', entao a distincao ja existe na forma do argumento -- nao ha flag nova.
+    // Aplicar o perk tambem na testemunha quebra a exatidao medida do charm 'wound'
+    // (ratio 0,9998 -> 0,9156 a +8%). Ver docs/CLASSIFICATION_RULES.md, M-040.
+    if (element === 'physical' && hit && hit.dmg != null && context && context.weaponPhysicalPierce) {
+      p += context.weaponPhysicalPierce;
+    }
     return p;
   }
 

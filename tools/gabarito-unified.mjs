@@ -1470,6 +1470,32 @@ export const CASES = [
   // N=1) e sem sufixo com que contrastar. Deve permanecer `a=0`.
   C('tom/12:32:09-front-sweep-single-hit-no-aa', 'tom server log.txt', 'tom local chat.txt', '12:32:09',
     spellNoAaCheck(1, 'Front Sweep (exori min)')),
+  // M-040 — perk de pierce fisico da arma, fixture `moonsilver` (RP, pack de 5 mobs,
+  // 26/Ago/2026). Sem o perk a sessao fica com 78 de 192 turnos sem classificacao; em 77
+  // deles o motor JA enumera o corte certo e o descarta so porque a intersecao fisica do
+  // bloco de AA fecha vazia.
+  //
+  // O esperado abaixo NAO vem de rodar o motor com o pierce ligado. Ele vem do eixo holy e
+  // da dispersao do bloco, que o pierce fisico nao toca:
+  //   - turno `arrow` puro: nao ha acao alinhada nem sufixo holy consistente, entao todo o
+  //     turno e AA e a unica pergunta e a cardinalidade;
+  //   - `05:18:26`: tres niveis de dano separados no proprio log — 10 hits em 1464..1528
+  //     (spread 4%), 13 hits em 536..750 (spread 40%) e 15 hits em 1097..1163 (spread 6%).
+  //     Os dois grupos TIGHT sao os componentes deterministicos holy e o grupo DISPERSO e o
+  //     AA fisico (a armadura sorteia por hit). Entre os dois holy, granada > Caldera em
+  //     dano base, logo 1464..1528 = granada (10) e 1097..1163 = Divine Caldera (15).
+  C('moonsilver/05:18:22-aa-puro-crit', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:18:22',
+    sharedCountCheck({ arrow: 5, spell: 0, rune: 0, grenade: 0 })),
+  C('moonsilver/05:18:50-aa-puro', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:18:50',
+    sharedCountCheck({ arrow: 9, spell: 0, rune: 0, grenade: 0 })),
+  C('moonsilver/05:20:41-aa-puro', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:20:41',
+    sharedCountCheck({ arrow: 7, spell: 0, rune: 0, grenade: 0 })),
+  C('moonsilver/05:22:16-aa-puro', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:22:16',
+    sharedCountCheck({ arrow: 5, spell: 0, rune: 0, grenade: 0 })),
+  C('moonsilver/05:22:43-aa-puro', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:22:43',
+    sharedCountCheck({ arrow: 4, spell: 0, rune: 0, grenade: 0 })),
+  C('moonsilver/05:18:26-granada-aa-caldera', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:18:26',
+    sharedCountCheck({ arrow: 13, spell: 15, rune: 0, grenade: 10 })),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

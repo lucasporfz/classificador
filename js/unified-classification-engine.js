@@ -1107,6 +1107,106 @@
   // simplesmente nao ganha candidato de original nenhum e o motor se comporta como antes.
   const OMEGA_WITNESS_MIN_PROCS = CHARM_WITNESS_MIN_PROCS;
 
+  // M-040 - perk de pierce fisico da ARMA, inferido por sessao.
+  //
+  // Canal proprio, e nao a testemunha de charm: o charm e cego a este perk por definicao
+  // (e o que o separa do BM). O sinal e a consistencia da reversao fisica ENTRE MOBS dentro
+  // de um bloco de AA -- o bloco e um componente so, logo todos os hits vem do mesmo `O`, e
+  // um pierce faltante desloca `d` de forma DIFERENTE por mob, porque `effectiveMod` e
+  // nao-linear no `physicalDmgMod` base (enche 1:1 ate 1,0 e conta metade do excedente).
+  //
+  // Nao reclassifica por tier: reusa os blocos de uma resolucao ja feita e refaz so
+  // `physicalOriginalInterval`. Medido em `moonsilver`, 1 classificacao custa ~9,3 s e a
+  // varredura aritmetica de 31 candidatos custa 111 ms.
+  const WEAPON_PHYSICAL_PIERCE_TIERS = Object.freeze([0, 0.09]);
+  const WEAPON_PIERCE_MIN_BLOCK_HITS = 3;   // mesmo piso de H-003
+  const WEAPON_PIERCE_MIN_BLOCK_MOBS = 2;   // sem mob distinto nao ha o que discriminar
+  const WEAPON_PIERCE_MIN_BLOCKS = 3;
+
+  function weaponPierceEligibleBlocks(resolvedTurns) {
+    const blocks = [];
+    for (const turn of resolvedTurns || []) {
+      if (!turn || turn.status !== 'resolved') continue;
+      for (const comp of turn.components || []) {
+        if (!comp || comp.comp !== 'arrow') continue;
+        const hits = (comp.hits || []).filter(h => h && !h.overkill && !h.isPrey && h.dmg != null);
+        if (hits.length < WEAPON_PIERCE_MIN_BLOCK_HITS) continue;
+        const mobs = new Set(hits.map(h => normalizeName(h.mob)).filter(Boolean));
+        if (mobs.size < WEAPON_PIERCE_MIN_BLOCK_MOBS) continue;
+        blocks.push({ ts: turn.ts, hits, mobs });
+      }
+    }
+    return blocks;
+  }
+
+  // margem = min(upper) - max(lower). Negativa => a intersecao fisica do bloco e vazia.
+  function weaponPierceBlockMargin(block, context) {
+    let lower = -Infinity, upper = Infinity, known = 0;
+    for (const hit of block.hits) {
+      const rev = physicalOriginalInterval(hit, context);
+      if (!rev || !rev.interval) continue;
+      if (rev.interval[0] > lower) lower = rev.interval[0];
+      if (rev.interval[1] < upper) upper = rev.interval[1];
+      known++;
+    }
+    if (known < WEAPON_PIERCE_MIN_BLOCK_HITS) return null;
+    return upper - lower;
+  }
+
+  function weaponPierceEvaluateTier(blocks, context, tier) {
+    const previous = context.weaponPhysicalPierce;
+    const previousCache = context._revCache;
+    context.weaponPhysicalPierce = tier;
+    context._revCache = new Map();
+    try {
+      const margins = blocks.map(b => weaponPierceBlockMargin(b, context));
+      const empty = [];
+      margins.forEach((m, i) => { if (m != null && m < 0) empty.push(blocks[i]); });
+      const measured = margins.filter(m => m != null).length;
+      return { tier, measured, empty, qualifies: measured > 0 && empty.length === 0 };
+    } finally {
+      context.weaponPhysicalPierce = previous;
+      context._revCache = previousCache;
+    }
+  }
+
+  function inferWeaponPhysicalPierce(resolvedTurns, context) {
+    const inactive = source => ({ pierce: 0, active: false, source, tiers: WEAPON_PHYSICAL_PIERCE_TIERS, corroboration: null });
+    // S-007b: em sessao de municao de area elemental a metrica e ruido (`thunder arrow`
+    // acusa 145 de 148 blocos vazios em TODO tier). O gate nao e otimizacao, e correcao.
+    if (!context || context.aaElement !== 'physical') return inactive('aa_element_not_physical');
+    const blocks = weaponPierceEligibleBlocks(resolvedTurns);
+    if (blocks.length < WEAPON_PIERCE_MIN_BLOCKS) return inactive('insufficient_eligible_blocks');
+
+    const evaluations = WEAPON_PHYSICAL_PIERCE_TIERS.map(t => weaponPierceEvaluateTier(blocks, context, t));
+    const qualifying = evaluations.filter(e => e.qualifies);
+    // D-006: mais de um tier qualificado significa que a sessao NAO discrimina, nao que o
+    // perk existe; nenhum qualificado significa bloco contaminado. Nos dois casos, abstem-se.
+    if (qualifying.length !== 1) {
+      return inactive(qualifying.length === 0 ? 'no_tier_without_empty_block' : 'ambiguous_no_discriminating_evidence');
+    }
+    const chosen = qualifying[0];
+    if (!(chosen.tier > 0)) return inactive('baseline_tier_selected');
+
+    // Corroboracao exigida por M-040: os blocos que o tier destrava tem de ser varios, em
+    // turnos distintos e mobs distintos -- um unico bloco contaminado nao pode eleger o perk.
+    const baseline = evaluations.find(e => e.tier === 0);
+    const unlocked = baseline ? baseline.empty : [];
+    const corroboration = {
+      blocks: unlocked.length,
+      turns: new Set(unlocked.map(b => b.ts)).size,
+      mobs: new Set(unlocked.flatMap(b => Array.from(b.mobs))).size,
+      eligibleBlocks: blocks.length,
+    };
+    return {
+      pierce: chosen.tier,
+      active: true,
+      source: 'evidence_unique_tier_without_empty_physical_block',
+      tiers: WEAPON_PHYSICAL_PIERCE_TIERS,
+      corroboration,
+    };
+  }
+
   function inferOmegaPerk(serverFacts, context) {
     const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
     const events = (serverFacts && serverFacts.events) || [];
@@ -1587,6 +1687,7 @@
     let resolvedWithoutLeech = null;
     let goldLeechObservations = [];
     let aaElementDetection = null;
+    let weaponPhysicalPierceDetection = null;
     // M-024/M-025: a consolidaÃ§Ã£o de granada cross-turno Ã© por-passe e dependente de
     // ordem temporal; o conjunto de casts jÃ¡ explodidos Ã© reiniciado a cada varredura.
     // CrÃ­tico por-componente (two-pass): a passada pass-1 (bootstrap crit grosso) rotula os
@@ -1659,6 +1760,11 @@
       // buscados por forca bruta -- entao nao ha circularidade com resolveTurn.
       aaElementDetection = inferAaElementForSession(turns, local, context);
       context.aaElement = aaElementDetection.element;
+      // M-040: depois do eixo de AA (usa o gate aaElement === physical) e antes da
+      // passada final, que e quem consome context.weaponPhysicalPierce na reversao.
+      weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(resolvedWithoutLeech, context);
+      context.weaponPhysicalPierce = weaponPhysicalPierceDetection.pierce;
+      if (context._revCache) context._revCache.clear();
       // M-016e: sÃ³ depois do leech real (nÃ£o o bootstrap) Ã© que o cluster
       // vida/mana-por-dano Ã© confiÃ¡vel para corrigir um estÃ¡gio atrasado que a
       // 1Âª passada (sem leech) nÃ£o conseguiu provar por reversÃ£o elemental.
@@ -1683,6 +1789,11 @@
       }
       aaElementDetection = inferAaElementForSession(turns, local, context);
       context.aaElement = aaElementDetection.element;
+      // M-040: depois do eixo de AA (usa o gate aaElement === physical) e antes da
+      // passada final, que e quem consome context.weaponPhysicalPierce na reversao.
+      weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(pass1, context);
+      context.weaponPhysicalPierce = weaponPhysicalPierceDetection.pierce;
+      if (context._revCache) context._revCache.clear();
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
       resetConsolidatedActions(context);
@@ -1712,6 +1823,8 @@
       gravSanSetup: context.gravSanSetup,
       aaElement: context.aaElement || 'physical',
       aaElementDetection: aaElementDetection || { element: 'physical', source: 'not_run', counts: null, eligible: 0 },
+      weaponPhysicalPierce: context.weaponPhysicalPierce || 0,
+      weaponPhysicalPierceDetection: weaponPhysicalPierceDetection || { pierce: 0, active: false, source: 'not_run', tiers: WEAPON_PHYSICAL_PIERCE_TIERS, corroboration: null },
       bestiaryClassDamageBonus: context.bestiaryClassBonus,
       critSetup: context.critSetup,
       spellLeechBonusCandidates: SPELL_LEECH_BONUS_CANDIDATES,

@@ -360,6 +360,75 @@
   afeta a detecção de omega (os níveis base e `×1,06` fecham com delta `0`), mas pode virar
   resíduo em blocos dentro de janela de grav san.
 
+- **M-040 — Perk de pierce físico da arma (invisível ao dano de charm):** existe um perk
+  vindo da **arma** que soma pierce ao eixo **físico**, aditivo às demais fontes de
+  `pierceForElement` — Expose Weakness (`+0,08`), elemental amplification (`+0,16`, D-010c) e
+  Battle Momentum (`context.bmPierce`, C-012). Um hit com Expose Weakness numa sessão com o
+  perk e com BM tem pierce físico total `0,09 + 0,04 + 0,08 = 0,21`, e o mod efetivo sai de
+  `effectiveMod(physicalDmgMod, 0,21)` como qualquer outro pierce. É fato do **personagem por
+  sessão**, no mesmo estilo de S-007b, C-012 e do setup de leech: a arma é escolha de
+  equipamento, muda **entre** sessões e nunca dentro de uma.
+
+  **O perk NÃO alcança o dano de charm, e é isso que o distingue do BM.** O charm ofensivo é
+  a testemunha de M-036, C-012 e M-039 justamente por ser determinístico, e ele **enxerga** o
+  BM — em `moonsilver` a detecção de BM fecha `confirmed_by_charm_damage` em `0,04`. Ele
+  **não** enxerga este perk: com o pierce da arma aplicado também à testemunha, o charm
+  `wound` (físico) do `mycobiontic beetle` sai de `0,9998` (com EW) e `1,0000` (sem EW) para
+  `0,9559` a `+4%`, `0,9353` a `+6%` e `0,9156` a `+8%`. Como as duas populações batem exato
+  em `+0%`, o pierce da arma **tem** de ficar fora da testemunha. Consequência de
+  implementação: o perk entra em `pierceForElement` apenas para **hit real de dano**; as
+  chamadas sintéticas das testemunhas de charm (literal `{exposeWeakness,
+  elementalAmplification}`, sem `dmg`) não o recebem. Corolário: o mesmo dado que exclui o
+  perk da testemunha **valida** `physicalDmgMod` e `mitigation` do mob a 0,02% — um bloco de
+  AA que não fecha nessa sessão não é erro de tabela.
+
+  **Detecção por sessão (`inferWeaponPhysicalPierce`), com canal próprio.** O charm é cego ao
+  perk por definição, então o detector usa a **consistência da reversão física entre mobs**
+  dentro de um bloco de AA: o bloco é um componente só, logo todos os seus hits vêm do mesmo
+  `O`, e um pierce faltante desloca `d = f(dmg, physicalModEff, …)` de forma **diferente por
+  mob**, porque `effectiveMod` é não-linear no `physicalDmgMod` base (enche 1:1 até `1,0` e
+  conta metade do excedente). Métrica: `margem = min(upper) − max(lower)` sobre os hits
+  não-overkill e não-prey do bloco; negativa ⇒ bloco vazio. Tiers avaliados: **`[0; 0,09]`**.
+  O tier selecionado é aquele em que **nenhum** bloco elegível fica vazio, e só é adotado se
+  for o **único** a satisfazer isso. Bloco elegível: componente `arrow` de turno resolvido com
+  **≥ 3 hits** não-overkill e **≥ 2 mobs distintos** (mesmo piso de H-003; sem mob distinto
+  não há o que discriminar). O detector **não reclassifica** por tier — reusa os blocos de uma
+  resolução já feita e refaz só `physicalOriginalInterval`.
+
+  **Abstém-se (D-006) devolvendo `0`** quando mais de um tier satisfaz o critério, quando
+  nenhum satisfaz, ou quando há menos de 3 blocos elegíveis. Mais de um tier significa que a
+  sessão não discrimina, não que o perk existe; nenhum tier significa bloco contaminado. Nos
+  dois casos o resultado é idêntico ao anterior a esta regra.
+
+  **Gate obrigatório `aaElement === 'physical'` (S-007b).** Em sessão de munição de área
+  elemental a métrica é ruído: em `thunder arrow` (`aaElement = energy`, evidência physical 28
+  contra energy 61) o detector sem gate acusa **145 de 148** blocos vazios em *todo* tier, com
+  margens de `−337` a `−225`.
+
+  Casos-prova. `moonsilver` S0 (`26/Ago/2026`, RP em pack de 5 mobs) tinha **78 de 192 turnos**
+  sem classificação, e em **77** deles existia uma partição candidata cuja única violação era
+  do eixo físico — 71 na forma `arrow>spell`, 5 `arrow`, 1 `grenade>arrow>spell` —, com gap
+  mediano de `37` (4,2%), ordem de grandeza de calibração e não de conflito mecânico. O
+  detector mede **21 de 90** blocos vazios em `0` e **0 de 90** em `0,09`, seleciona `0,09`, e
+  os 78 turnos resolvem; **113 dos 114** turnos já resolvidos ficam idênticos. Controle
+  negativo `gloompillar` S0: os dois tiers dão **0 de 123** blocos vazios, o critério de
+  unicidade falha e a sessão fica em `0`, byte-idêntica. A evidência de `moonsilver` é
+  corroborada — os 21 blocos destravados estão em **21 turnos distintos e nos 5 mobs** —, e
+  toda sessão que selecionar `0,09` deve exibir corroboração equivalente (≥3 blocos, ≥2 turnos,
+  ≥2 mobs); seleção apoiada em menos que isso é pendência declarada, não drift aceito.
+  Diagnóstico completo: `reports/moonsilver-fase2-pierce-fisico.md`.
+  (S-004, S-005, S-007, S-007b, D-006, D-023, H-003, M-036, C-012)
+
+  - **M-040-nota — O eixo holy fica fora, e por quê.** O usuário levanta um perk irmão de
+    `+4%` de **holy pierce** com o mesmo comportamento de charm. Em `moonsilver` ele é
+    **indecidível**: os cinco mobs da hunt têm `holyDmgMod ≥ 1,0` (oozing `1,10`, os outros
+    três `1,05`, `bloodjaw` `1,00`), então `effectiveMod` joga o pierce inteiro no ramo de
+    meia-taxa para **todos**, o incremento é o mesmo `+0,02` em todo mundo e a concordância
+    cross-mob se preserva exata — medido, **0 turnos de deriva** em qualquer direção. Ele
+    **é** falsificável onde existe mob resistente a holy: `gloompillar` vai de `0` para `72`
+    turnos sem classificação com holy `+4%`, `darklight rp` de `1` para `25`. Enquanto não
+    modelado, o efeito declarado é viés de **−1,8%** no dano base holy de uma sessão que tenha
+    o perk, sem consequência para classificação.
 ### Runas
 
 - **M-017 — Sinal de execução:** `Using one of N … runes` é sinal **primário** de classificação, no mesmo nível da mudança de crit-state (D-007). Comprova a execução da runa; não inventa dano onde não existe bloco determinístico compatível.
