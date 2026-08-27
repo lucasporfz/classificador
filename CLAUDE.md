@@ -96,7 +96,36 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
-**Baseline conhecido (medido em 26/Ago/2026, após `infer-weapon-physical-pierce-per-session`).**
+**Baseline conhecido (medido em 27/Ago/2026, após `fix-amp-kor-tier-inference-and-h005g-cut-gate`).**
+Total de alvos: **39/44 OK**; gabarito **217/217**; invariantes **37/38** fixtures limpos, com a
+única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **19.897** turnos, **58** sem
+classificação.
+
+As 5 falhas são as mesmas de sempre e todas **pré-existentes**: `gabarito prioritario +
+invariantes mecanicas` (a falha do `bakradrone`), `experimental-ui-parity`, `mob-element-regime`,
+`unified-grav-san-ratio-witness` (o código de D-030b/D-030c que ela exercita está em `git stash`)
+e `unified-spiritual-outburst-multistage`. O alvo a mais (43→44) é o teste novo desta change.
+
+**O corpus tem 38 pares desde 27/Ago/2026:** o fixture `tom 2` (346 turnos, EK, raubritter, mesmo
+personagem de `tom` — `Kikaro`, level 1002) entrou em `logs/` durante esta change. É por isso que
+o dump vai de 19.548 para 19.897 turnos sem que nenhum turno tenha sido resolvido ou perdido. Ao
+comparar com o baseline anterior, exclua `tom 2` ou os números não batem.
+
+**Drift desta change: 1 turno** — `tom 2` `12:58:06`, de `a=0 s=5` para `a=1 s=4`. Zero drift nos
+outros 37 fixtures, em 19.897 turnos. As regras são **H-005g** (guarda de último recurso
+corrigida: testava mudez sobre o primeiro hit em vez de mudez sobre o corte) e **M-034a** (piso de
+cardinalidade para o tier do Executioner's Throw). Diagnóstico em
+`reports/tom-amp-kor-diagnostico.md`.
+
+**Pendência declarada de M-034a:** o piso conta hits do bloco **já classificado**, não alvos do
+cast, então um AA fundido por engano empurra o tier **para cima** — inverso do viés da razão de
+dano, que empurra para baixo. Os dois erros não se cancelam. O próprio `tom 2` `12:58:06` tinha 5
+hits antes da correção de H-005g nesta mesma change, e o piso teria cravado `×2.50`. Fora de
+escopo e não resolvido: a rotulagem `base`/`amped` por hit (`execBimodalHighSet` corta no maior
+salto de leech, que um valor capado sequestra — `tom` `12:35:15` rotula o hit `1185` como `amped`
+sendo `base`). Duas tentativas de corrigir isso foram revertidas por quebrarem hits vizinhos.
+
+**Baseline anterior, para referência (medido em 26/Ago/2026, após `infer-weapon-physical-pierce-per-session`).**
 Total de alvos: **38/43 OK**; gabarito **253/253**; invariantes **37/38** fixtures limpos, com a
 única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **19.548** turnos, **58** sem
 classificação. `query-unified-dump.mjs --verify-source` dá **exit 0** — o `latest` foi promovido

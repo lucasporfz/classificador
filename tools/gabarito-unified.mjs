@@ -1470,6 +1470,43 @@ export const CASES = [
   // N=1) e sem sufixo com que contrastar. Deve permanecer `a=0`.
   C('tom/12:32:09-front-sweep-single-hit-no-aa', 'tom server log.txt', 'tom local chat.txt', '12:32:09',
     spellNoAaCheck(1, 'Front Sweep (exori min)')),
+  // H-005g — Low Blow misto no MESMO mob e fronteira de componente, consultada quando a
+  // inversao do leech nao DECIDE o corte (nao quando ela e silenciosa sobre o 1o hit).
+  //
+  // O esperado NAO vem de rodar o motor. Vem de duas provas independentes sobre os hits:
+  //   [0] raubritter marksman 1579 CRIT+low blow charm  life=825 mana=135
+  //   [1] raubritter marksman 1168                      life=185 mana= 59
+  //   [2] raubritter skirmisher 1627 OK                 life=  0 mana=131
+  //   [3] raubritter skirmisher 2186 OK                 life=  0 mana= 35
+  //   [4] raubritter skirmisher 1094                    life=  0 mana=  0
+  //   1) H-005e/D-023 no canal de vida, taxa efetiva 53,2% (50% + 3,2% vampiric embrace no
+  //      marksman): hit [0] da 825/1579 = 52,2% => areaFactor ~0,98 => N=1; hit [1], MESMO
+  //      mob, da 185/1168 = 15,8% => areaFactor 0,298 => N~4. N=1 e N=4 no mesmo mob e no
+  //      mesmo turno nao sao o mesmo componente.
+  //   2) H-005g: o Low Blow procou no marksman do hit [0] e nao no marksman do hit [1]. O
+  //      charm e por criatura e a proc e decidida uma vez por ataque, logo os dois hits sao
+  //      de componentes diferentes.
+  // A particao fundida e rejeitada por si mesma (N_leech aceito 5, leech.ok false).
+  // Logo: A1 (o hit 1579) + Executioner's Throw com os 4 restantes.
+  C('tom 2/12:58:06-low-blow-same-mob-boundary', 'tom 2 server log.txt', 'tom 2 local chat.txt', '12:58:06',
+    turn => {
+      const c = counts(turn);
+      if (!(c.arrow === 1 && c.spell === 4 && c.rune === 0 && c.grenade === 0)) {
+        return `esperado A1 S4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const arrow = (turn.components || []).find(comp => comp.comp === 'arrow');
+      const aa = arrow && (arrow.hits || [])[0];
+      if (!aa || +aa.dmg !== 1579) return `esperado AA de 1579; got ${aa && aa.dmg || '-'}`;
+      const spell = (turn.components || []).find(comp => comp.comp === 'spell');
+      // O CANAL do corte (reason `ek_positional_aa_confirmed_by_low_blow_same_mob_boundary`)
+      // nao pode ser checado aqui: `compactComponent` em tools/unified-corpus.mjs nao projeta
+      // `reason`, entao ele chega `undefined` no runner completo (embora apareca no `--only`,
+      // que nao compacta). O assert do canal vive em
+      // tests/unified-low-blow-same-mob-boundary.test.mjs, que roda o motor direto.
+      return spell && String(spell.actionLabel || '').includes("Executioner's Throw")
+        ? null
+        : `esperado Executioner's Throw; got ${spell && spell.actionLabel || '-'}`;
+    }),
   // M-040 — perk de pierce fisico da arma, fixture `moonsilver` (RP, pack de 5 mobs,
   // 26/Ago/2026). Sem o perk a sessao fica com 78 de 192 turnos sem classificacao; em 77
   // deles o motor JA enumera o corte certo e o descarta so porque a intersecao fisica do

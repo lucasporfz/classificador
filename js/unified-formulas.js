@@ -743,8 +743,16 @@
   // personagem em EXECUTIONER_BONUS_LEVELS (+100/+125/+150% = Ã—2.0/Ã—2.25/Ã—2.5). Ao
   // contrÃ¡rio do Terra Burst, o tier NÃƒO se resolve por reversÃ£o (dano fÃ­sico com arma
   // possivelmente 0% fÃ­sico nÃ£o reverte); o detector usa leech por-canal por-turno
-  // (detectExecutionerTiers) e o dano dos hits limpos sÃ³ pina o multiplicador.
+  // (detectExecutionerTiers). O multiplicador NÃƒO sai da razÃ£o de dano: ela erra sempre
+  // para baixo (o hit amped mata, logo vem truncado por overkill). Quem crava o tier Ã© o
+  // piso de cardinalidade de M-034a; a razÃ£o de dano sÃ³ desempata entre os sobreviventes.
   const EXECUTIONER_BONUS_LEVELS = [2.0, 2.25, 2.5];
+
+  // M-034a: cada tier de mastery tambÃ©m aumenta o NÃšMERO MÃXIMO DE ALVOS do cast
+  // (Ã—2.0 -> 3, Ã—2.25 -> 4, Ã—2.5 -> 5). O maior cast observado na sessÃ£o Ã© portanto um
+  // PISO exato sobre o tier: um cast de k alvos Ã© impossÃ­vel num tier cujo teto Ã© < k.
+  // Ãndice alinhado a EXECUTIONER_BONUS_LEVELS.
+  const EXECUTIONER_MAX_TARGETS = [3, 4, 5];
 
   function isExecutionerThrowAction(action) {
     if (!action) return false;
@@ -1235,6 +1243,7 @@
     isTerraBurstAction,
     isTerraBurstBlock,
     EXECUTIONER_BONUS_LEVELS,
+    EXECUTIONER_MAX_TARGETS,
     isExecutionerThrowAction,
     isChainedPenanceAction,
     pierceForElement,

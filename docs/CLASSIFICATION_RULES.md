@@ -103,9 +103,29 @@
 
 - **M-034 — Tiers de bônus do Executioner's Throw:** `Executioner's Throw (exori amp kor)` de knight (físico, área) tem um bônus de dano condicional por vida do alvo (execute): binário por-hit (um hit tem ou não o bônus) e um multiplicador **fixo por log** (a mastery do personagem), um dentre `2.0`/`2.25`/`2.5` (`+100/+125/+150%`; "bônus 100%" dobra o dano em relação ao hit sem bônus do mesmo alvo). Esta regra apenas **rotula por tier** os hits de um componente `Executioner's Throw` já isolado pela classificação de turno — ela roda como pós-passe de sessão, NÃO participa da pontuação/seleção de partição e NÃO reatribui hits (a segmentação e a cardinalidade por leech continuam por M-031/M-032 e casos 9b/9c). Do resultado, cada hit ganha `executionerBonusActive` e a linha de rotação ganha sub-linhas `base`/`amped` (mesmo encanamento do bônus condicional do Terra Burst).
 
-  A decisão de tier é **leech-primário, por-canal, por-turno** — não por reversão física: um EK pode empunhar arma com 0% de ataque físico, o que torna a reversão física (armor + arma) não confiável, e além disso a maioria dos hits de amp kor é overkill (dano exibido truncado e inútil). O leech incide sobre o dano **real** (pré-truncamento) e é bimodal na razão `A` do bônus. Os canais são avaliados **separadamente**, com **mana leech como canal primário** (o life leech é capado pela vida faltante e subestima quando o jogador está quase cheio). A clusterização é **por turno** porque o valor de leech carrega o fator de área (`0.1 + 0.9/N`, D-023) que desliza entre casts de tamanhos diferentes; dentro de um mesmo cast o fator de área é constante e o gap `~A×` sai limpo. Como o multiplicador é fixo por log, um pass de sessão calibra os níveis de mana com os hits já confiantes e classifica os hits de casts de tier único (sem gap interno) por proximidade, deixando `null` (agrupado em `base`, conservador) apenas a zona ambígua e os hits sem leech nenhum. O multiplicador `A` exibido vem da razão de dano dos hits **limpos** (não-overkill) — um dano overkill é piso, não o valor real, então `2243/1115 ≈ 2.01` NÃO pina `A`; a razão de leech também não pina (carrega ruído de área/arredondamento), só classifica.
+  A decisão de tier é **leech-primário, por-canal, por-turno** — não por reversão física: um EK pode empunhar arma com 0% de ataque físico, o que torna a reversão física (armor + arma) não confiável, e além disso a maioria dos hits de amp kor é overkill (dano exibido truncado e inútil). O leech incide sobre o dano **real** (pré-truncamento) e é bimodal na razão `A` do bônus. Os canais são avaliados **separadamente**, com **mana leech como canal primário** (o life leech é capado pela vida faltante e subestima quando o jogador está quase cheio). A clusterização é **por turno** porque o valor de leech carrega o fator de área (`0.1 + 0.9/N`, D-023) que desliza entre casts de tamanhos diferentes; dentro de um mesmo cast o fator de área é constante e o gap `~A×` sai limpo. Como o multiplicador é fixo por log, um pass de sessão calibra os níveis de mana com os hits já confiantes e classifica os hits de casts de tier único (sem gap interno) por proximidade, deixando `null` (agrupado em `base`, conservador) apenas a zona ambígua e os hits sem leech nenhum. O multiplicador `A` exibido é escolhido entre os tiers que sobrevivem ao **piso de cardinalidade** de `M-034a`, usando a razão de dano dos hits limpos apenas para desempatar. **(Emendado em 27/Ago/2026 — a formulação anterior fazia a razão de dano decidir sozinha, o que produz o tier errado por censura de overkill; ver `M-034a`.)**
 
-  Caso-prova: `logs/bastion server log ek.txt` / `logs/bastion local chat ek.txt` (`Sat Jun 13 2026`, personagem com bônus `+125%` ⇒ `A = 2.25`), turno `15:21:16` — componente `Executioner's Throw` de 4 hits raubritter: `1115` (life `184`, mana `65`) = base; `2243` (life `420`, mana `146`), `668 OK` (life `423`, mana `147`) e `340 OK` (life `431`, mana `128`, leech > dano exibido) = amped ⇒ **3 amped + 1 base**. O `A` inferido pelo dano limpo bate com a mastery real (`2.25`), sem hardcode. Fixtures sem `exori amp kor` permanecem idênticos (o pós-passe encontra o conjunto vazio e retorna sem mutar nada).
+  Caso-prova: `logs/bastion server log ek.txt` / `logs/bastion local chat ek.txt` (`Sat Jun 13 2026`, personagem com bônus `+125%` ⇒ `A = 2.25`), turno `15:21:16` — componente `Executioner's Throw` de 4 hits raubritter: `1115` (life `184`, mana `65`) = base; `2243` (life `420`, mana `146`), `668 OK` (life `423`, mana `147`) e `340 OK` (life `431`, mana `128`, leech > dano exibido) = amped ⇒ **3 amped + 1 base**. Fixtures sem `exori amp kor` permanecem idênticos (o pós-passe encontra o conjunto vazio e retorna sem mutar nada).
+
+- **M-034a — O tier de mastery do Executioner's Throw é cravado pelo TETO DE ALVOS do cast:** `ESTADO: decidida e IMPLEMENTADA em 27/Ago/2026 (change `fix-amp-kor-tier-inference-and-h005g-cut-gate`). Emenda a M-034, cuja formulação original ("o `A` vem da razão de dano dos hits limpos") produzia o tier errado.`
+
+  Fato de domínio: cada tier de mastery do `exori amp kor` aumenta o **número máximo de alvos** do cast, junto com o multiplicador:
+
+  | tier | multiplicador | teto de alvos |
+  |---|---|---|
+  | sem bônus | `×2.00` | 3 |
+  | primeiro bônus | `×2.25` | 4 |
+  | bônus máximo | `×2.50` | 5 |
+
+  A contrapositiva é a regra: **um cast observado com `k` alvos prova que o tier tem teto `≥ k`.** É evidência mecânica direta — não depende de dano nem de leech, e não tem tolerância. O maior cast da sessão elimina todo tier cujo teto seja menor, e o multiplicador é escolhido entre os sobreviventes.
+
+  **Por que o piso é necessário.** A razão de dano dos hits limpos erra **sempre para baixo**, e por construção: um hit *amped* mata — é o propósito do bônus de execute —, logo aparece como **overkill**, com dano truncado. Os únicos hits amped não-overkill são os **rolls mais fracos**, então a amostra amped é censurada por cima. Medido em 27/Ago/2026, o viés persiste até no espaço físico revertido (`evidence.physical.interval`, que já normaliza crit/Low Blow, armadura e mitigação): `bastion` — o próprio caso-prova de M-034, com `A = 2.25` — mede `2.02`; `tom` mede `1.645`; `tom 2`, `2.117`. Como o erro tem direção conhecida, o piso de cardinalidade o bloqueia exatamente onde ele acontece.
+
+  Casos-prova: `tom` (39 casts, maior com 4 alvos), `tom 2` (34 casts, maior com 4) e `bastion` (16 casts, maior com 4) ⇒ teto `≥ 4` nos três ⇒ tier `≥ ×2.25`, e nenhum cast de 5 impede a subida para `×2.50`. Todos fecham em `×2.25`, que é a mastery real dos personagens. Antes do piso, `tom` snapava em `×2.00` — um tier cujo teto de 3 alvos é contradito por 19 casts de 4 alvos da própria sessão. `tom` e `tom 2` são o **mesmo personagem** (`Kikaro`, level 1001 e 1002, sessões adjacentes do mesmo dia), então `A` tem de ser idêntico nos dois — e é.
+
+  Quando nenhum tier sobrevive ao piso (bloco maior que todo teto conhecido), o motor não descarta a evidência de dano: volta a considerar os três níveis, para que um teto errado na tabela não trave a inferência.
+
+  **Dependência declarada — o piso NÃO é independente da classificação de turno.** A contagem vem do **bloco já classificado**, não dos alvos do cast: o motor não observa "alvos", observa hits atribuídos a um componente. Um auto-ataque fundido por engano dentro do bloco de amp kor infla a contagem e empurra o tier **para cima**. Isso é o inverso do viés do dano (que empurra para baixo), então os dois erros **não se cancelam** — um turno mal cortado troca um erro sistemático por outro. Não é hipótese: o próprio `tom 2` `12:58:06` tinha 5 hits no bloco antes da correção da guarda de `H-005g` (na mesma change), e com aquela classificação o piso cravaria `×2.50`. Consequência aceita: o piso é tão confiável quanto a fronteira de componente da sessão, e uma sessão com fusão de AA não detectada produz tier alto sem sintoma visível.
 
 - **M-035 — Sub-linhas central/side de beams de sorcerer:** os beams `Energy Beam (exevo vis lux)`, `Great Energy Beam (exevo gran vis lux)` e `Great Death Beam (exevo max mort)` viram reta de 3 com a mastery de beam (1 central + 2 laterais); os laterais causam uma fração base `F = 0,70` do dano do beam central. O bônus de dano da Beam Mastery por alvo atingido é aplicado **por sub-linha** (`central` e `side` contam seus próprios alvos, com cap de 3 alvos), então a fração observada no log pode ser `0,70 × bonus_side / bonus_central`, usando o tier de mastery do personagem (`+10%`/`+12%`/`+14%` por alvo). O leech também é cardinal por sub-linha: um segmento central de 1 hit pode fechar `N_leech=1` sem ser AA. Esta regra rotula por tier (`central`/`side`) os hits de um componente de beam; para classificação de turno, um beam validado por esses subníveis continua sendo **uma única spell concreta**, e a cardinalidade de leech de uma sub-linha não é evidência positiva de AA por si só. Cada hit ganha `beamSide` e a linha de rotação ganha sub-linhas `central`/`side` (mesmo encanamento do Terra Burst).
 
@@ -1631,8 +1651,11 @@ Caso-prova obrigatório — gloompillar 08:36:51 (sessão 14/Jul/2026, Ethereal 
 
 - **H-005g — Low Blow misto no MESMO mob é fronteira de componente (último recurso):**
   `ESTADO: decidida (26/Ago/2026, mapa #12 / ticket #17) e IMPLEMENTADA no motor em
-  26/Ago/2026 (change `implement-h005e-h005f-h005g-leech-cardinality-rules`). Alcance no
-  corpus: 0 turnos, como previsto — é rede. Coberta por teste sintético.`
+  26/Ago/2026 (change `implement-h005e-h005f-h005g-leech-cardinality-rules`). A guarda de
+  último recurso foi CORRIGIDA em 27/Ago/2026 (change
+  `fix-amp-kor-tier-inference-and-h005g-cut-gate`): ela testava mudez sobre o primeiro hit,
+  não sobre o corte. Alcance no corpus: 1 turno (`tom 2` `12:58:06`); era 0 com a guarda
+  anterior. Coberta por teste sintético e por caso de gabarito.`
 
   Fato de domínio: **Low Blow é charm de bestiário aplicado por criatura, e a proc é decidida
   uma vez por ataque** — se um componente procou Low Blow, todos os hits daquele componente
@@ -1660,15 +1683,26 @@ Caso-prova obrigatório — gloompillar 08:36:51 (sessão 14/Jul/2026, Ethereal 
   **Posição na escada.** Nasce **protegida** na jurisdição de `H-005f`: canal novo não entra sob
   o veto `h005_merged_leech_exact_blocks_aa_split` por omissão, só por decisão explícita.
 
-  **Alcance medido hoje: 0 turnos — esta regra é rede, não correção.** Varredura do corpus
-  completo (19.356 turnos, 26/Ago/2026, ticket #17): **43** turnos têm LB misto same-mob, em 5
-  fixtures (`tom` 23, `bastion` 10, `night harpy` 6, `death echo` 2, `monk` 2). Destes, **35**
-  já são resolvidos corretamente por canal acima — a fronteira de LB coincide exatamente com a
-  fronteira AA/spell que o motor encontra, e em **todos** o primeiro hit declara
-  `N = 0,97–1,00`. Os **8** restantes são a família-alvo de `tom`, e nos 8 `H-005e` também
-  decide (primeiro hit `N ≈ 1`, sufixo `N ≈ k−1`). **Não existe, no corpus, um único turno em
-  que o Low Blow decida e `H-005e` seja muda.** A regra é gravada porque o fato de domínio é
-  verdadeiro e a mecânica sobrevive à varredura — não porque destrave turno.
+  **"Muda sobre o corte" ≠ "muda sobre o primeiro hit" (corrigido em 27/Ago/2026).** A
+  primeira implementação desta regra lia a cláusula de último recurso como
+  `leechDeclaredN(hits[0]) == null`, isto é, mudez sobre o **primeiro hit**. As duas leituras
+  não são equivalentes: a inversão pode declarar `N = 1` no primeiro hit e ainda assim **não
+  decidir o corte**, porque `shouldForceA1ByLeech` exige também suporte do sufixo
+  (`suffixUsableOk`), de beam ou fronteira de crit-state. Com sufixo majoritariamente overkill
+  ou sem leech, o suporte não fecha e `force` é falso. O predicado correto é `!forceA1.force`.
+
+  **Alcance medido: 1 turno (27/Ago/2026).** Varredura do corpus completo com a guarda
+  corrigida (`2.939` blocos fundidos, 38 pares): **1** turno — `tom 2` `12:58:06`. Com a
+  guarda anterior o alcance era **0**, e é isso que a medição de 26/Ago/2026 registrava.
+
+  Aquela medição (19.356 turnos, ticket #17) dizia: *"Não existe, no corpus, um único turno em
+  que o Low Blow decida e `H-005e` seja muda"* — **e estava certa para o corpus daquele dia**,
+  que tinha 5 fixtures com LB misto same-mob (`tom` 23, `bastion` 10, `night harpy` 6,
+  `death echo` 2, `monk` 2), 35 já resolvidos por canal acima e 8 resolvidos por `H-005e`. O
+  fixture `tom 2` entrou depois e é o contraexemplo: primeiro hit declara `N = 1` pelo canal de
+  vida (`825/1579 = 52,2%` contra taxa efetiva `53,2%`), o sufixo tem só 1 hit com leech
+  utilizável (dois overkill, um sem leech) e portanto não alcança o piso `min(2, kSuffix)`.
+  A afirmação de inexistência **não vale mais**; o que vale é o alcance medido acima.
 
   ```text
   Caso-prova POSITIVO (forma da fronteira) — `tom` `12:27:15`, Berserk, k=8:

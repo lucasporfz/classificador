@@ -1,0 +1,919 @@
+12:55:16 Kikaro [1002]: exeta amp res
+12:55:16 Kikaro [1002]: exori gran
+12:55:17 Kikaro [1002]: exura med ico
+12:55:19 Kikaro [1002]: exori
+12:55:19 Kikaro [1002]: exura med ico
+12:55:20 Kikaro [1002]: exeta amp res
+12:55:21 Kikaro [1002]: exori min
+12:55:21 Kikaro [1002]: exura med ico
+12:55:22 Kikaro [1002]: exeta amp res
+12:55:23 Kikaro [1002]: exori gran
+12:55:23 Kikaro [1002]: exura med ico
+12:55:24 Kikaro [1002]: exeta amp res
+12:55:25 Kikaro [1002]: exori
+12:55:26 Kikaro [1002]: exura med ico
+12:55:27 Kikaro [1002]: exori amp kor
+12:55:28 Kikaro [1002]: exura med ico
+12:55:29 Kikaro [1002]: exeta amp res
+12:55:31 Kikaro [1002]: exura med ico
+12:55:33 Kikaro [1002]: exori min
+12:55:34 Kikaro [1002]: exura med ico
+12:55:35 Kikaro [1002]: exeta amp res
+12:55:36 Kikaro [1002]: exori gran
+12:55:37 Kikaro [1002]: exura med ico
+12:55:38 Kikaro [1002]: exeta amp res
+12:55:39 Kikaro [1002]: exori
+12:55:39 Kikaro [1002]: exura med ico
+12:55:41 Kikaro [1002]: exeta amp res
+12:55:41 Kikaro [1002]: exori min
+12:55:41 Kikaro [1002]: exura med ico
+12:55:43 Kikaro [1002]: exori gran
+12:55:43 Kikaro [1002]: exura med ico
+12:55:45 Kikaro [1002]: exeta amp res
+12:55:45 Kikaro [1002]: exori
+12:55:46 Kikaro [1002]: exura med ico
+12:55:47 Kikaro [1002]: exeta amp res
+12:55:47 Kikaro [1002]: exori min
+12:55:48 Kikaro [1002]: exura med ico
+12:55:49 Kikaro [1002]: exori gran
+12:55:50 Kikaro [1002]: exura med ico
+12:55:50 Kikaro [1002]: exeta amp res
+12:55:51 Kikaro [1002]: exori
+12:55:52 Kikaro [1002]: exura med ico
+12:55:53 Kikaro [1002]: exeta amp res
+12:55:53 Kikaro [1002]: exori min
+12:55:54 Kikaro [1002]: exura med ico
+12:55:55 Kikaro [1002]: exori gran
+12:55:56 Kikaro [1002]: exura med ico
+12:55:58 Kikaro [1002]: exori
+12:55:58 Kikaro [1002]: exura med ico
+12:56:00 Kikaro [1002]: exori amp kor
+12:56:00 Kikaro [1002]: exura med ico
+12:56:03 Kikaro [1002]: exeta amp res
+12:56:04 Kikaro [1002]: exori min
+12:56:04 Kikaro [1002]: exura med ico
+12:56:06 Kikaro [1002]: exori gran
+12:56:07 Kikaro [1002]: exura med ico
+12:56:07 Kikaro [1002]: exeta amp res
+12:56:09 Kikaro [1002]: exori
+12:56:09 Kikaro [1002]: exura med ico
+12:56:10 Kikaro [1002]: exeta amp res
+12:56:11 Kikaro [1002]: exori gran
+12:56:11 Kikaro [1002]: exura med ico
+12:56:14 Kikaro [1002]: exori min
+12:56:14 Kikaro [1002]: exura med ico
+12:56:15 Kikaro [1002]: exeta amp res
+12:56:16 Kikaro [1002]: exori
+12:56:16 Kikaro [1002]: exura med ico
+12:56:18 Kikaro [1002]: exori gran
+12:56:18 Kikaro [1002]: exura med ico
+12:56:20 Kikaro [1002]: exeta amp res
+12:56:20 Kikaro [1002]: exori min
+12:56:22 Kikaro [1002]: exura med ico
+12:56:22 Kikaro [1002]: exeta amp res
+12:56:22 Kikaro [1002]: exori
+12:56:24 Kikaro [1002]: exura med ico
+12:56:25 Kikaro [1002]: exori amp kor
+12:56:26 Kikaro [1002]: exeta amp res
+12:56:27 Kikaro [1002]: exori min
+12:56:27 Kikaro [1002]: exura med ico
+12:56:28 Kikaro [1002]: exeta amp res
+12:56:29 Kikaro [1002]: exori gran
+12:56:30 Kikaro [1002]: exura med ico
+12:56:31 Kikaro [1002]: exeta amp res
+12:56:31 Kikaro [1002]: exori
+12:56:32 Kikaro [1002]: exura med ico
+12:56:33 Kikaro [1002]: exeta amp res
+12:56:33 Kikaro [1002]: exori min
+12:56:34 Kikaro [1002]: exura med ico
+12:56:36 Kikaro [1002]: exori gran
+12:56:36 Kikaro [1002]: exura med ico
+12:56:37 Kikaro [1002]: exeta amp res
+12:56:38 Kikaro [1002]: exori
+12:56:38 Kikaro [1002]: exura med ico
+12:56:40 Kikaro [1002]: exori amp kor
+12:56:40 Kikaro [1002]: exura med ico
+12:56:43 Kikaro [1002]: exeta amp res
+12:56:45 Kikaro [1002]: exori min
+12:56:46 Kikaro [1002]: exura med ico
+12:56:47 Kikaro [1002]: exeta amp res
+12:56:47 Kikaro [1002]: exori gran
+12:56:49 Kikaro [1002]: exeta amp res
+12:56:49 Kikaro [1002]: exura med ico
+12:56:49 Kikaro [1002]: exori
+12:56:51 Kikaro [1002]: exeta amp res
+12:56:52 Kikaro [1002]: exori min
+12:56:52 Kikaro [1002]: exura med ico
+12:56:53 Kikaro [1002]: exeta amp res
+12:56:54 Kikaro [1002]: exori gran
+12:56:55 Kikaro [1002]: exura med ico
+12:56:56 Kikaro [1002]: exeta res
+12:56:56 Kikaro [1002]: exori
+12:56:57 Kikaro [1002]: exura med ico
+12:56:58 Kikaro [1002]: exori min
+12:56:59 Kikaro [1002]: exura med ico
+12:57:00 Kikaro [1002]: exeta amp res
+12:57:01 Kikaro [1002]: exori gran
+12:57:03 Kikaro [1002]: exori amp kor
+12:57:06 Kikaro [1002]: exeta amp res
+12:57:07 Kikaro [1002]: exori min
+12:57:09 Kikaro [1002]: exeta amp res
+12:57:10 Kikaro [1002]: exori gran
+12:57:10 Kikaro [1002]: exura med ico
+12:57:12 Kikaro [1002]: exeta amp res
+12:57:12 Kikaro [1002]: exori min
+12:57:12 Kikaro [1002]: exura med ico
+12:57:14 Kikaro [1002]: exeta amp res
+12:57:14 Kikaro [1002]: exori gran
+12:57:14 Kikaro [1002]: exura med ico
+12:57:16 Kikaro [1002]: exori min
+12:57:17 Kikaro [1002]: exura med ico
+12:57:18 Kikaro [1002]: exori
+12:57:19 Kikaro [1002]: exura med ico
+12:57:20 Kikaro [1002]: exeta amp res
+12:57:20 Kikaro [1002]: exori gran
+12:57:21 Kikaro [1002]: exura med ico
+12:57:22 Kikaro [1002]: exeta amp res
+12:57:23 Kikaro [1002]: exori min
+12:57:24 Kikaro [1002]: exura med ico
+12:57:24 Kikaro [1002]: exeta amp res
+12:57:25 Kikaro [1002]: exori
+12:57:27 Kikaro [1002]: exura med ico
+12:57:27 Kikaro [1002]: exori amp kor
+12:57:29 Kikaro [1002]: exura med ico
+12:57:29 Kikaro [1002]: exori min
+12:57:31 Kikaro [1002]: exeta amp res
+12:57:32 Kikaro [1002]: exori gran
+12:57:32 Kikaro [1002]: exura med ico
+12:57:33 Kikaro [1002]: exeta amp res
+12:57:34 Kikaro [1002]: exori min
+12:57:35 Kikaro [1002]: exura med ico
+12:57:36 Kikaro [1002]: exeta amp res
+12:57:36 Kikaro [1002]: exori
+12:57:37 Kikaro [1002]: exura med ico
+12:57:38 Kikaro [1002]: exori gran
+12:57:39 Kikaro [1002]: exura med ico
+12:57:40 Kikaro [1002]: exeta amp res
+12:57:40 Kikaro [1002]: exori min
+12:57:41 Kikaro [1002]: exura med ico
+12:57:43 Kikaro [1002]: exori gran
+12:57:43 Kikaro [1002]: exura med ico
+12:57:45 Kikaro [1002]: exori amp kor
+12:57:47 Kikaro [1002]: utani hur
+12:57:48 Kikaro [1002]: exura med ico
+12:57:49 Kikaro [1002]: exeta amp res
+12:57:49 Kikaro [1002]: exori min
+12:57:51 Kikaro [1002]: exura med ico
+12:57:52 Kikaro [1002]: exori gran
+12:57:53 Kikaro [1002]: exura med ico
+12:57:54 Kikaro [1002]: exeta amp res
+12:57:54 Kikaro [1002]: exori
+12:57:55 Kikaro [1002]: exura med ico
+12:57:56 Kikaro [1002]: exeta amp res
+12:57:56 Kikaro [1002]: exori min
+12:57:58 Kikaro [1002]: exura med ico
+12:57:58 Kikaro [1002]: exeta amp res
+12:57:58 Kikaro [1002]: exori gran
+12:58:00 Kikaro [1002]: exura med ico
+12:58:00 Kikaro [1002]: exeta amp res
+12:58:00 Kikaro [1002]: exori
+12:58:02 Kikaro [1002]: exura med ico
+12:58:02 Kikaro [1002]: exeta amp res
+12:58:02 Kikaro [1002]: exori min
+12:58:04 Kikaro [1002]: exura med ico
+12:58:04 Kikaro [1002]: exeta amp res
+12:58:04 Kikaro [1002]: exori gran
+12:58:06 Kikaro [1002]: exura med ico
+12:58:06 Kikaro [1002]: exori amp kor
+12:58:09 Kikaro [1002]: exeta amp res
+12:58:09 Kikaro [1002]: exori min
+12:58:10 Kikaro [1002]: exura med ico
+12:58:11 Kikaro [1002]: exeta amp res
+12:58:12 Kikaro [1002]: exori gran
+12:58:12 Kikaro [1002]: exura med ico
+12:58:13 Kikaro [1002]: exeta amp res
+12:58:14 Kikaro [1002]: exori
+12:58:14 Kikaro [1002]: exura med ico
+12:58:17 Kikaro [1002]: exori min
+12:58:17 Kikaro [1002]: exura med ico
+12:58:18 Kikaro [1002]: exeta amp res
+12:58:19 Kikaro [1002]: exori gran
+12:58:19 Kikaro [1002]: exura med ico
+12:58:21 Kikaro [1002]: exeta amp res
+12:58:21 Kikaro [1002]: exori
+12:58:21 Kikaro [1002]: exura med ico
+12:58:23 Kikaro [1002]: exori min
+12:58:24 Kikaro [1002]: exeta amp res
+12:58:24 Kikaro [1002]: exura med ico
+12:58:25 Kikaro [1002]: exori amp kor
+12:58:29 Kikaro [1002]: exeta amp res
+12:58:30 Kikaro [1002]: exori min
+12:58:31 Kikaro [1002]: exura med ico
+12:58:31 Kikaro [1002]: exeta amp res
+12:58:33 Kikaro [1002]: exori gran
+12:58:33 Kikaro [1002]: exura med ico
+12:58:34 Kikaro [1002]: exeta amp res
+12:58:35 Kikaro [1002]: exori
+12:58:35 Kikaro [1002]: exura med ico
+12:58:36 Kikaro [1002]: exeta amp res
+12:58:37 Kikaro [1002]: exori min
+12:58:37 Kikaro [1002]: exura med ico
+12:58:39 Kikaro [1002]: exeta amp res
+12:58:39 Kikaro [1002]: exori gran
+12:58:39 Kikaro [1002]: exura med ico
+12:58:41 Kikaro [1002]: exeta amp res
+12:58:41 Kikaro [1002]: exori
+12:58:41 Kikaro [1002]: exura med ico
+12:58:43 Kikaro [1002]: exori min
+12:58:44 Kikaro [1002]: exeta amp res
+12:58:45 Kikaro [1002]: exura med ico
+12:58:46 Kikaro [1002]: exori amp kor
+12:58:48 Kikaro [1002]: exeta amp res
+12:58:49 Kikaro [1002]: exura med ico
+12:58:50 Kikaro [1002]: exori min
+12:58:51 Kikaro [1002]: exura med ico
+12:58:52 Kikaro [1002]: exeta amp res
+12:58:52 Kikaro [1002]: exori gran
+12:58:53 Kikaro [1002]: exura med ico
+12:58:54 Kikaro [1002]: exeta amp res
+12:58:54 Kikaro [1002]: exori
+12:58:56 Kikaro [1002]: exura med ico
+12:58:56 Kikaro [1002]: exori min
+12:58:58 Kikaro [1002]: exura med ico
+12:58:58 Kikaro [1002]: exeta amp res
+12:58:58 Kikaro [1002]: exori gran
+12:59:00 Kikaro [1002]: exura med ico
+12:59:00 Kikaro [1002]: exeta amp res
+12:59:00 Kikaro [1002]: exori min
+12:59:02 Kikaro [1002]: exura med ico
+12:59:02 Kikaro [1002]: exeta amp res
+12:59:03 Kikaro [1002]: exori
+12:59:04 Kikaro [1002]: exura med ico
+12:59:05 Kikaro [1002]: exori gran
+12:59:06 Kikaro [1002]: exura med ico
+12:59:06 Kikaro [1002]: exeta amp res
+12:59:07 Kikaro [1002]: exori min
+12:59:09 Kikaro [1002]: exura med ico
+12:59:09 Kikaro [1002]: exori amp kor
+12:59:12 Kikaro [1002]: exeta amp res
+12:59:12 Kikaro [1002]: exura med ico
+12:59:12 Kikaro [1002]: exori gran
+12:59:14 Kikaro [1002]: exura med ico
+12:59:14 Kikaro [1002]: exeta amp res
+12:59:15 Kikaro [1002]: exori min
+12:59:16 Kikaro [1002]: exura med ico
+12:59:17 Kikaro [1002]: exori gran
+12:59:18 Kikaro [1002]: exura med ico
+12:59:19 Kikaro [1002]: exeta amp res
+12:59:19 Kikaro [1002]: exori min
+12:59:20 Kikaro [1002]: exura med ico
+12:59:21 Kikaro [1002]: exeta amp res
+12:59:21 Kikaro [1002]: exori gran
+12:59:23 Kikaro [1002]: exura med ico
+12:59:24 Kikaro [1002]: exori min
+12:59:25 Kikaro [1002]: exeta amp res
+12:59:25 Kikaro [1002]: exura med ico
+12:59:26 Kikaro [1002]: exori amp kor
+12:59:29 Kikaro [1002]: exeta amp res
+12:59:30 Kikaro [1002]: exori gran
+12:59:32 Kikaro [1002]: exura med ico
+12:59:32 Kikaro [1002]: exeta amp res
+12:59:32 Kikaro [1002]: exori min
+12:59:34 Kikaro [1002]: exori
+12:59:35 Kikaro [1002]: exura med ico
+12:59:36 Kikaro [1002]: exori gran
+12:59:37 Kikaro [1002]: exura med ico
+12:59:38 Kikaro [1002]: exeta amp res
+12:59:39 Kikaro [1002]: exori min
+12:59:39 Kikaro [1002]: exura med ico
+12:59:41 Kikaro [1002]: exori gran
+12:59:41 Kikaro [1002]: exura med ico
+12:59:43 Kikaro [1002]: exeta amp res
+12:59:43 Kikaro [1002]: exori min
+12:59:43 Kikaro [1002]: exura med ico
+12:59:45 Kikaro [1002]: exeta amp res
+12:59:45 Kikaro [1002]: exori
+12:59:45 Kikaro [1002]: exura med ico
+12:59:47 Kikaro [1002]: exeta amp res
+12:59:47 Kikaro [1002]: exori gran
+12:59:48 Kikaro [1002]: exura med ico
+12:59:49 Kikaro [1002]: exori amp kor
+12:59:50 Kikaro [1002]: exura med ico
+12:59:51 Kikaro [1002]: exori hur
+12:59:52 Kikaro [1002]: exura med ico
+12:59:54 Kikaro [1002]: exeta amp res
+12:59:54 Kikaro [1002]: exori min
+12:59:55 Kikaro [1002]: exura med ico
+12:59:56 Kikaro [1002]: exeta amp res
+12:59:57 Kikaro [1002]: exori gran
+12:59:57 Kikaro [1002]: exura med ico
+12:59:59 Kikaro [1002]: exeta amp res
+12:59:59 Kikaro [1002]: exori
+12:59:59 Kikaro [1002]: exura med ico
+13:00:01 Kikaro [1002]: exeta amp res
+13:00:01 Kikaro [1002]: exori min
+13:00:01 Kikaro [1002]: exura med ico
+13:00:03 Kikaro [1002]: exeta amp res
+13:00:03 Kikaro [1002]: exori gran
+13:00:04 Kikaro [1002]: exura med ico
+13:00:05 Kikaro [1002]: exeta amp res
+13:00:05 Kikaro [1002]: exori
+13:00:06 Kikaro [1002]: exura med ico
+13:00:07 Kikaro [1002]: exori min
+13:00:08 Kikaro [1002]: exura med ico
+13:00:10 Kikaro [1002]: exori gran
+13:00:12 Kikaro [1002]: exura med ico
+13:00:13 Kikaro [1002]: exori amp kor
+13:00:14 Kikaro [1002]: exura med ico
+13:00:16 Kikaro [1002]: exeta amp res
+13:00:18 Kikaro [1002]: exori min
+13:00:18 Kikaro [1002]: exura med ico
+13:00:19 Kikaro [1002]: exeta amp res
+13:00:20 Kikaro [1002]: exori gran
+13:00:20 Kikaro [1002]: exura med ico
+13:00:22 Kikaro [1002]: exeta amp res
+13:00:22 Kikaro [1002]: exori
+13:00:22 Kikaro [1002]: exura med ico
+13:00:24 Kikaro [1002]: exeta amp res
+13:00:24 Kikaro [1002]: exori min
+13:00:25 Kikaro [1002]: exura med ico
+13:00:26 Kikaro [1002]: exeta amp res
+13:00:26 Kikaro [1002]: exori gran
+13:00:27 Kikaro [1002]: exura med ico
+13:00:28 Kikaro [1002]: exeta amp res
+13:00:28 Kikaro [1002]: exori
+13:00:29 Kikaro [1002]: exura med ico
+13:00:30 Kikaro [1002]: exeta amp res
+13:00:30 Kikaro [1002]: exori min
+13:00:31 Kikaro [1002]: exura med ico
+13:00:32 Kikaro [1002]: exeta amp res
+13:00:32 Kikaro [1002]: exori gran
+13:00:33 Kikaro [1002]: exura med ico
+13:00:34 Kikaro [1002]: exeta amp res
+13:00:35 Kikaro [1002]: exori min
+13:00:35 Kikaro [1002]: exura med ico
+13:00:37 Kikaro [1002]: exori amp kor
+13:00:38 Kikaro [1002]: exura med ico
+13:00:39 Kikaro [1002]: exeta amp res
+13:00:40 Kikaro [1002]: exori min
+13:00:42 Kikaro [1002]: exeta amp res
+13:00:43 Kikaro [1002]: exori gran
+13:00:44 Kikaro [1002]: exura med ico
+13:00:44 Kikaro [1002]: exeta amp res
+13:00:46 Kikaro [1002]: exori
+13:00:46 Kikaro [1002]: exura med ico
+13:00:48 Kikaro [1002]: exeta amp res
+13:00:48 Kikaro [1002]: exori min
+13:00:49 Kikaro [1002]: exura med ico
+13:00:50 Kikaro [1002]: exeta amp res
+13:00:51 Kikaro [1002]: exori gran
+13:00:51 Kikaro [1002]: exura med ico
+13:00:53 Kikaro [1002]: exeta amp res
+13:00:53 Kikaro [1002]: exori
+13:00:54 Kikaro [1002]: exura med ico
+13:00:55 Kikaro [1002]: exeta amp res
+13:00:55 Kikaro [1002]: exori min
+13:00:57 Kikaro [1002]: exeta amp res
+13:00:57 Kikaro [1002]: exura med ico
+13:00:57 Kikaro [1002]: exori amp kor
+13:01:01 Kikaro [1002]: exeta amp res
+13:01:02 Kikaro [1002]: exura med ico
+13:01:03 Kikaro [1002]: exori min
+13:01:06 Kikaro [1002]: exori gran
+13:01:06 Kikaro [1002]: exura med ico
+13:01:07 Kikaro [1002]: exeta amp res
+13:01:08 Kikaro [1002]: exori
+13:01:08 Kikaro [1002]: exura med ico
+13:01:10 Kikaro [1002]: exeta amp res
+13:01:10 Kikaro [1002]: exori min
+13:01:11 Kikaro [1002]: exura med ico
+13:01:12 Kikaro [1002]: exeta amp res
+13:01:12 Kikaro [1002]: exori gran
+13:01:13 Kikaro [1002]: exura med ico
+13:01:14 Kikaro [1002]: exeta amp res
+13:01:14 Kikaro [1002]: exori min
+13:01:15 Kikaro [1002]: exura med ico
+13:01:16 Kikaro [1002]: exeta amp res
+13:01:16 Kikaro [1002]: exori
+13:01:17 Kikaro [1002]: exura med ico
+13:01:18 Kikaro [1002]: exeta amp res
+13:01:18 Kikaro [1002]: exori gran
+13:01:19 Kikaro [1002]: exura med ico
+13:01:21 Kikaro [1002]: exori min
+13:01:21 Kikaro [1002]: exura med ico
+13:01:22 Kikaro [1002]: exeta amp res
+13:01:23 Kikaro [1002]: exori
+13:01:23 Kikaro [1002]: exura med ico
+13:01:25 Kikaro [1002]: exori amp kor
+13:01:27 Kikaro [1002]: exeta amp res
+13:01:28 Kikaro [1002]: exori min
+13:01:29 Kikaro [1002]: exura med ico
+13:01:29 Kikaro [1002]: exeta amp res
+13:01:30 Kikaro [1002]: exori gran
+13:01:32 Kikaro [1002]: exeta amp res
+13:01:32 Kikaro [1002]: exori
+13:01:32 Kikaro [1002]: exura med ico
+13:01:34 Kikaro [1002]: exeta amp res
+13:01:34 Kikaro [1002]: exori gran
+13:01:34 Kikaro [1002]: exura med ico
+13:01:36 Kikaro [1002]: exeta amp res
+13:01:36 Kikaro [1002]: exori min
+13:01:38 Kikaro [1002]: exori gran
+13:01:40 Kikaro [1002]: exura med ico
+13:01:40 Kikaro [1002]: exeta amp res
+13:01:41 Kikaro [1002]: exori amp kor
+13:01:43 Kikaro [1002]: exeta amp res
+13:01:45 Kikaro [1002]: exori min
+13:01:45 Kikaro [1002]: exura med ico
+13:01:46 Kikaro [1002]: exeta amp res
+13:01:47 Kikaro [1002]: exori gran
+13:01:47 Kikaro [1002]: exura med ico
+13:01:48 Kikaro [1002]: exeta amp res
+13:01:49 Kikaro [1002]: exori min
+13:01:49 Kikaro [1002]: exura med ico
+13:01:51 Kikaro [1002]: exeta amp res
+13:01:51 Kikaro [1002]: exori
+13:01:51 Kikaro [1002]: exura med ico
+13:01:53 Kikaro [1002]: exeta amp res
+13:01:53 Kikaro [1002]: exori gran
+13:01:53 Kikaro [1002]: exura med ico
+13:01:55 Kikaro [1002]: exeta amp res
+13:01:55 Kikaro [1002]: exori min
+13:01:56 Kikaro [1002]: exura med ico
+13:01:57 Kikaro [1002]: exeta amp res
+13:01:57 Kikaro [1002]: exori
+13:01:58 Kikaro [1002]: exura med ico
+13:01:59 Kikaro [1002]: exeta amp res
+13:01:59 Kikaro [1002]: exori gran
+13:02:00 Kikaro [1002]: exura med ico
+13:02:05 Kikaro [1002]: exeta amp res
+13:02:05 Kikaro [1002]: exura med ico
+13:02:05 Kikaro [1002]: exori min
+13:02:07 Kikaro [1002]: exura med ico
+13:02:07 Kikaro [1002]: exeta amp res
+13:02:08 Kikaro [1002]: exori gran
+13:02:09 Kikaro [1002]: exeta amp res
+13:02:10 Kikaro [1002]: exori
+13:02:10 Kikaro [1002]: exura med ico
+13:02:12 Kikaro [1002]: exeta amp res
+13:02:12 Kikaro [1002]: exori min
+13:02:12 Kikaro [1002]: exura med ico
+13:02:14 Kikaro [1002]: exeta amp res
+13:02:14 Kikaro [1002]: exori gran
+13:02:14 Kikaro [1002]: exura med ico
+13:02:16 Kikaro [1002]: exori
+13:02:17 Kikaro [1002]: exura med ico
+13:02:18 Kikaro [1002]: exeta amp res
+13:02:18 Kikaro [1002]: exori min
+13:02:19 Kikaro [1002]: exura med ico
+13:02:20 Kikaro [1002]: exori gran
+13:02:23 Kikaro [1002]: exori hur
+13:02:24 Kikaro [1002]: exeta amp res
+13:02:25 Kikaro [1002]: exura med ico
+13:02:25 Kikaro [1002]: exori amp kor
+13:02:28 Kikaro [1002]: exeta amp res
+13:02:29 Kikaro [1002]: exori min
+13:02:30 Kikaro [1002]: exura med ico
+13:02:31 Kikaro [1002]: exeta amp res
+13:02:32 Kikaro [1002]: exori gran
+13:02:32 Kikaro [1002]: exura med ico
+13:02:34 Kikaro [1002]: exeta amp res
+13:02:34 Kikaro [1002]: exori min
+13:02:34 Kikaro [1002]: exura med ico
+13:02:36 Kikaro [1002]: exeta amp res
+13:02:36 Kikaro [1002]: exori gran
+13:02:36 Kikaro [1002]: exura med ico
+13:02:38 Kikaro [1002]: exeta amp res
+13:02:38 Kikaro [1002]: exori
+13:02:38 Kikaro [1002]: exura med ico
+13:02:40 Kikaro [1002]: exeta amp res
+13:02:40 Kikaro [1002]: exori min
+13:02:41 Kikaro [1002]: exura med ico
+13:02:42 Kikaro [1002]: exori gran
+13:02:43 Kikaro [1002]: exura med ico
+13:02:43 Kikaro [1002]: exeta amp res
+13:02:45 Kikaro [1002]: exori
+13:02:45 Kikaro [1002]: exura med ico
+13:02:46 Kikaro [1002]: exeta amp res
+13:02:47 Kikaro [1002]: exori amp kor
+13:02:47 Kikaro [1002]: exura med ico
+13:02:50 Kikaro [1002]: exeta amp res
+13:02:51 Kikaro [1002]: exori min
+13:02:51 Kikaro [1002]: exura med ico
+13:02:52 Kikaro [1002]: exeta amp res
+13:02:53 Kikaro [1002]: exori gran
+13:02:54 Kikaro [1002]: exura med ico
+13:02:55 Kikaro [1002]: exeta amp res
+13:02:55 Kikaro [1002]: exori
+13:02:56 Kikaro [1002]: exura med ico
+13:02:57 Kikaro [1002]: exeta amp res
+13:02:57 Kikaro [1002]: exori min
+13:02:58 Kikaro [1002]: exura med ico
+13:02:59 Kikaro [1002]: exeta amp res
+13:03:00 Kikaro [1002]: exori gran
+13:03:00 Kikaro [1002]: exura med ico
+13:03:02 Kikaro [1002]: exori
+13:03:02 Kikaro [1002]: exura med ico
+13:03:04 Kikaro [1002]: exeta amp res
+13:03:04 Kikaro [1002]: exori min
+13:03:04 Kikaro [1002]: exura med ico
+13:03:06 Kikaro [1002]: exori gran
+13:03:09 Kikaro [1002]: exura med ico
+13:03:10 Kikaro [1002]: exeta amp res
+13:03:12 Kikaro [1002]: exori min
+13:03:12 Kikaro [1002]: exura med ico
+13:03:13 Kikaro [1002]: exeta amp res
+13:03:14 Kikaro [1002]: exori gran
+13:03:14 Kikaro [1002]: exura med ico
+13:03:16 Kikaro [1002]: exeta amp res
+13:03:16 Kikaro [1002]: exori
+13:03:16 Kikaro [1002]: exura med ico
+13:03:18 Kikaro [1002]: exori min
+13:03:18 Kikaro [1002]: exura med ico
+13:03:20 Kikaro [1002]: exeta amp res
+13:03:20 Kikaro [1002]: exori gran
+13:03:21 Kikaro [1002]: exura med ico
+13:03:22 Kikaro [1002]: exeta amp res
+13:03:22 Kikaro [1002]: exori min
+13:03:23 Kikaro [1002]: exura med ico
+13:03:24 Kikaro [1002]: exeta amp res
+13:03:25 Kikaro [1002]: exori
+13:03:26 Kikaro [1002]: exura med ico
+13:03:27 Kikaro [1002]: exori amp kor
+13:03:29 Kikaro [1002]: exura med ico
+13:03:30 Kikaro [1002]: exeta amp res
+13:03:32 Kikaro [1002]: exeta amp res
+13:03:33 Kikaro [1002]: exura med ico
+13:03:33 Kikaro [1002]: exori min
+13:03:35 Kikaro [1002]: exura med ico
+13:03:35 Kikaro [1002]: exeta amp res
+13:03:35 Kikaro [1002]: exori gran
+13:03:37 Kikaro [1002]: exura med ico
+13:03:37 Kikaro [1002]: exeta amp res
+13:03:37 Kikaro [1002]: exori
+13:03:39 Kikaro [1002]: exura med ico
+13:03:39 Kikaro [1002]: exeta amp res
+13:03:40 Kikaro [1002]: exori min
+13:03:41 Kikaro [1002]: exura med ico
+13:03:41 Kikaro [1002]: exeta amp res
+13:03:42 Kikaro [1002]: exori gran
+13:03:43 Kikaro [1002]: exura med ico
+13:03:44 Kikaro [1002]: exeta res
+13:03:44 Kikaro [1002]: exori
+13:03:46 Kikaro [1002]: exura med ico
+13:03:46 Kikaro [1002]: exeta amp res
+13:03:46 Kikaro [1002]: exori min
+13:03:48 Kikaro [1002]: exura med ico
+13:03:48 Kikaro [1002]: exeta amp res
+13:03:48 Kikaro [1002]: exori gran
+13:03:50 Kikaro [1002]: exura med ico
+13:03:50 Kikaro [1002]: exeta amp res
+13:03:50 Kikaro [1002]: exori
+13:03:52 Kikaro [1002]: exeta amp res
+13:03:53 Kikaro [1002]: exori min
+13:03:53 Kikaro [1002]: exura med ico
+13:03:54 Kikaro [1002]: exeta amp res
+13:03:55 Kikaro [1002]: exori gran
+13:03:55 Kikaro [1002]: exura med ico
+13:03:57 Kikaro [1002]: exori
+13:03:59 Kikaro [1002]: exeta amp res
+13:04:01 Kikaro [1002]: exori min
+13:04:03 Kikaro [1002]: exura med ico
+13:04:03 Kikaro [1002]: exeta amp res
+13:04:03 Kikaro [1002]: exori gran
+13:04:05 Kikaro [1002]: exori
+13:04:06 Kikaro [1002]: exura med ico
+13:04:07 Kikaro [1002]: exeta amp res
+13:04:08 Kikaro [1002]: exori min
+13:04:08 Kikaro [1002]: exura med ico
+13:04:09 Kikaro [1002]: exeta amp res
+13:04:10 Kikaro [1002]: exori gran
+13:04:10 Kikaro [1002]: exura med ico
+13:04:12 Kikaro [1002]: exeta amp res
+13:04:12 Kikaro [1002]: exori
+13:04:12 Kikaro [1002]: exura med ico
+13:04:14 Kikaro [1002]: exeta amp res
+13:04:14 Kikaro [1002]: exori min
+13:04:14 Kikaro [1002]: exura med ico
+13:04:16 Kikaro [1002]: exori amp kor
+13:04:19 Kikaro [1002]: exeta amp res
+13:04:20 Kikaro [1002]: exura med ico
+13:04:21 Kikaro [1002]: exori min
+13:04:22 Kikaro [1002]: exeta amp res
+13:04:23 Kikaro [1002]: exura med ico
+13:04:23 Kikaro [1002]: exori gran
+13:04:25 Kikaro [1002]: exeta amp res
+13:04:25 Kikaro [1002]: exori
+13:04:26 Kikaro [1002]: exura med ico
+13:04:27 Kikaro [1002]: exeta amp res
+13:04:27 Kikaro [1002]: exori min
+13:04:28 Kikaro [1002]: exura med ico
+13:04:29 Kikaro [1002]: exeta amp res
+13:04:29 Kikaro [1002]: exori gran
+13:04:30 Kikaro [1002]: exura med ico
+13:04:31 Kikaro [1002]: exeta amp res
+13:04:31 Kikaro [1002]: exori
+13:04:32 Kikaro [1002]: exura med ico
+13:04:33 Kikaro [1002]: exeta amp res
+13:04:34 Kikaro [1002]: exori min
+13:04:34 Kikaro [1002]: exura med ico
+13:04:35 Kikaro [1002]: exeta amp res
+13:04:36 Kikaro [1002]: exori gran
+13:04:36 Kikaro [1002]: exura med ico
+13:04:38 Kikaro [1002]: exori amp kor
+13:04:39 Kikaro [1002]: exeta amp res
+13:04:41 Kikaro [1002]: exori min
+13:04:42 Kikaro [1002]: exura med ico
+13:04:43 Kikaro [1002]: exeta amp res
+13:04:43 Kikaro [1002]: exori gran
+13:04:45 Kikaro [1002]: exori
+13:04:46 Kikaro [1002]: exura med ico
+13:04:47 Kikaro [1002]: exeta amp res
+13:04:48 Kikaro [1002]: exori gran
+13:04:48 Kikaro [1002]: exura med ico
+13:04:49 Kikaro [1002]: exeta amp res
+13:04:50 Kikaro [1002]: exori min
+13:04:50 Kikaro [1002]: exura med ico
+13:04:52 Kikaro [1002]: exeta amp res
+13:04:52 Kikaro [1002]: exori
+13:04:52 Kikaro [1002]: exura med ico
+13:04:54 Kikaro [1002]: exeta amp res
+13:04:54 Kikaro [1002]: exori gran
+13:04:56 Kikaro [1002]: exura med ico
+13:04:56 Kikaro [1002]: exori hur
+13:04:59 Kikaro [1002]: exeta amp res
+13:05:00 Kikaro [1002]: exori min
+13:05:00 Kikaro [1002]: exura med ico
+13:05:02 Kikaro [1002]: exori gran
+13:05:03 Kikaro [1002]: exura med ico
+13:05:03 Kikaro [1002]: exeta amp res
+13:05:04 Kikaro [1002]: exori
+13:05:05 Kikaro [1002]: exura med ico
+13:05:06 Kikaro [1002]: exeta amp res
+13:05:06 Kikaro [1002]: exori min
+13:05:07 Kikaro [1002]: exura med ico
+13:05:08 Kikaro [1002]: exeta amp res
+13:05:08 Kikaro [1002]: exori gran
+13:05:09 Kikaro [1002]: exura med ico
+13:05:10 Kikaro [1002]: exeta amp res
+13:05:10 Kikaro [1002]: exori
+13:05:11 Kikaro [1002]: exura med ico
+13:05:12 Kikaro [1002]: exeta amp res
+13:05:12 Kikaro [1002]: exori min
+13:05:13 Kikaro [1002]: exura med ico
+13:05:14 Kikaro [1002]: exeta amp res
+13:05:15 Kikaro [1002]: exori amp kor
+13:05:15 Kikaro [1002]: exura med ico
+13:05:17 Kikaro [1002]: exeta amp res
+13:05:19 Kikaro [1002]: exori min
+13:05:20 Kikaro [1002]: exura med ico
+13:05:21 Kikaro [1002]: exeta amp res
+13:05:22 Kikaro [1002]: exura med ico
+13:05:22 Kikaro [1002]: exori gran
+13:05:24 Kikaro [1002]: exura med ico
+13:05:24 Kikaro [1002]: exeta amp res
+13:05:24 Kikaro [1002]: exori
+13:05:26 Kikaro [1002]: exura med ico
+13:05:26 Kikaro [1002]: exeta amp res
+13:05:27 Kikaro [1002]: exori min
+13:05:28 Kikaro [1002]: exura med ico
+13:05:29 Kikaro [1002]: exori gran
+13:05:30 Kikaro [1002]: exura med ico
+13:05:31 Kikaro [1002]: exeta amp res
+13:05:31 Kikaro [1002]: exori
+13:05:33 Kikaro [1002]: exura med ico
+13:05:33 Kikaro [1002]: exeta amp res
+13:05:33 Kikaro [1002]: exori min
+13:05:35 Kikaro [1002]: exura med ico
+13:05:35 Kikaro [1002]: exeta amp res
+13:05:35 Kikaro [1002]: exori gran
+13:05:38 Kikaro [1002]: exori amp kor
+13:05:39 Kikaro [1002]: exura med ico
+13:05:40 Kikaro [1002]: exori min
+13:05:41 Kikaro [1002]: exura med ico
+13:05:42 Kikaro [1002]: exeta amp res
+13:05:43 Kikaro [1002]: exori gran
+13:05:44 Kikaro [1002]: exura med ico
+13:05:44 Kikaro [1002]: exeta amp res
+13:05:45 Kikaro [1002]: exori
+13:05:46 Kikaro [1002]: exura med ico
+13:05:47 Kikaro [1002]: exeta amp res
+13:05:48 Kikaro [1002]: exori gran
+13:05:48 Kikaro [1002]: exura med ico
+13:05:49 Kikaro [1002]: exeta amp res
+13:05:50 Kikaro [1002]: exori min
+13:05:52 Kikaro [1002]: exeta amp res
+13:05:52 Kikaro [1002]: exori
+13:05:52 Kikaro [1002]: exura med ico
+13:05:54 Kikaro [1002]: exeta amp res
+13:05:54 Kikaro [1002]: exori gran
+13:05:55 Kikaro [1002]: exura med ico
+13:05:56 Kikaro [1002]: exori amp kor
+13:05:57 Kikaro [1002]: exura med ico
+13:05:59 Kikaro [1002]: exeta amp res
+13:06:00 Kikaro [1002]: exori min
+13:06:00 Kikaro [1002]: exura med ico
+13:06:02 Kikaro [1002]: exeta amp res
+13:06:02 Kikaro [1002]: exori gran
+13:06:02 Kikaro [1002]: exura med ico
+13:06:04 Kikaro [1002]: exeta amp res
+13:06:04 Kikaro [1002]: exori
+13:06:04 Kikaro [1002]: exura med ico
+13:06:06 Kikaro [1002]: exeta amp res
+13:06:06 Kikaro [1002]: exori min
+13:06:06 Kikaro [1002]: exura med ico
+13:06:08 Kikaro [1002]: exeta amp res
+13:06:08 Kikaro [1002]: exori gran
+13:06:08 Kikaro [1002]: exura med ico
+13:06:10 Kikaro [1002]: exeta amp res
+13:06:10 Kikaro [1002]: exori
+13:06:11 Kikaro [1002]: exura med ico
+13:06:12 Kikaro [1002]: exeta amp res
+13:06:12 Kikaro [1002]: exori gran
+13:06:13 Kikaro [1002]: exura med ico
+13:06:14 Kikaro [1002]: exeta amp res
+13:06:14 Kikaro [1002]: exori min
+13:06:15 Kikaro [1002]: exura med ico
+13:06:16 Kikaro [1002]: exeta amp res
+13:06:16 Kikaro [1002]: exori
+13:06:17 Kikaro [1002]: exura med ico
+13:06:18 Kikaro [1002]: exeta amp res
+13:06:19 Kikaro [1002]: exori amp kor
+13:06:19 Kikaro [1002]: exura med ico
+13:06:20 Kikaro [1002]: exeta amp res
+13:06:21 Kikaro [1002]: exori min
+13:06:21 Kikaro [1002]: exura med ico
+13:06:25 Kikaro [1002]: exeta amp res
+13:06:26 Kikaro [1002]: exori gran
+13:06:27 Kikaro [1002]: exeta amp res
+13:06:28 Kikaro [1002]: exura med ico
+13:06:28 Kikaro [1002]: exori min
+13:06:29 Kikaro [1002]: exeta amp res
+13:06:30 Kikaro [1002]: exura med ico
+13:06:31 Kikaro [1002]: exori
+13:06:32 Kikaro [1002]: exeta amp res
+13:06:33 Kikaro [1002]: exori gran
+13:06:33 Kikaro [1002]: exura med ico
+13:06:35 Kikaro [1002]: exeta amp res
+13:06:35 Kikaro [1002]: exori min
+13:06:35 Kikaro [1002]: exura med ico
+13:06:37 Kikaro [1002]: exeta amp res
+13:06:37 Kikaro [1002]: exori
+13:06:37 Kikaro [1002]: exura med ico
+13:06:39 Kikaro [1002]: exeta amp res
+13:06:39 Kikaro [1002]: exori gran
+13:06:39 Kikaro [1002]: exura med ico
+13:06:41 Kikaro [1002]: exeta amp res
+13:06:41 Kikaro [1002]: exori min
+13:06:41 Kikaro [1002]: exura med ico
+13:06:43 Kikaro [1002]: exeta amp res
+13:06:43 Kikaro [1002]: exori
+13:06:45 Kikaro [1002]: exura med ico
+13:06:45 Kikaro [1002]: exori amp kor
+13:06:48 Kikaro [1002]: exeta amp res
+13:06:50 Kikaro [1002]: exeta amp res
+13:06:50 Kikaro [1002]: exori min
+13:06:51 Kikaro [1002]: exura med ico
+13:06:52 Kikaro [1002]: exeta amp res
+13:06:52 Kikaro [1002]: exori gran
+13:06:53 Kikaro [1002]: exura med ico
+13:06:54 Kikaro [1002]: exeta amp res
+13:06:55 Kikaro [1002]: exori
+13:06:55 Kikaro [1002]: exura med ico
+13:06:57 Kikaro [1002]: exori min
+13:06:57 Kikaro [1002]: exura med ico
+13:06:58 Kikaro [1002]: exeta amp res
+13:06:59 Kikaro [1002]: exori gran
+13:07:00 Kikaro [1002]: exura med ico
+13:07:01 Kikaro [1002]: exeta amp res
+13:07:01 Kikaro [1002]: exori
+13:07:02 Kikaro [1002]: exura med ico
+13:07:03 Kikaro [1002]: exori min
+13:07:04 Kikaro [1002]: exura gran ico
+13:07:06 Kikaro [1002]: exura med ico
+13:07:07 Kikaro [1002]: exeta amp res
+13:07:07 Kikaro [1002]: exori gran
+13:07:08 Kikaro [1002]: exura med ico
+13:07:09 Kikaro [1002]: exeta amp res
+13:07:10 Kikaro [1002]: exori min
+13:07:11 Kikaro [1002]: exura med ico
+13:07:12 Kikaro [1002]: exeta amp res
+13:07:12 Kikaro [1002]: exori amp kor
+13:07:14 Kikaro [1002]: exura med ico
+13:07:14 Kikaro [1002]: exeta amp res
+13:07:14 Kikaro [1002]: exori gran
+13:07:16 Kikaro [1002]: exura med ico
+13:07:16 Kikaro [1002]: exeta amp res
+13:07:16 Kikaro [1002]: exori min
+13:07:18 Kikaro [1002]: exeta amp res
+13:07:19 Kikaro [1002]: exori
+13:07:19 Kikaro [1002]: exura med ico
+13:07:21 Kikaro [1002]: exori gran
+13:07:21 Kikaro [1002]: exura med ico
+13:07:23 Kikaro [1002]: exeta amp res
+13:07:23 Kikaro [1002]: exori min
+13:07:23 Kikaro [1002]: exura med ico
+13:07:25 Kikaro [1002]: exeta amp res
+13:07:25 Kikaro [1002]: exori
+13:07:26 Kikaro [1002]: exura med ico
+13:07:27 Kikaro [1002]: exeta amp res
+13:07:27 Kikaro [1002]: exori gran
+13:07:28 Kikaro [1002]: exura med ico
+13:07:29 Kikaro [1002]: exeta amp res
+13:07:29 Kikaro [1002]: exori min
+13:07:30 Kikaro [1002]: exura med ico
+13:07:31 Kikaro [1002]: exori
+13:07:32 Kikaro [1002]: exura med ico
+13:07:34 Kikaro [1002]: exori amp kor
+13:07:34 Kikaro [1002]: exura med ico
+13:07:37 Kikaro [1002]: exeta amp res
+13:07:38 Kikaro [1002]: exura med ico
+13:07:38 Kikaro [1002]: exori min
+13:07:39 Kikaro [1002]: exeta amp res
+13:07:40 Kikaro [1002]: exura med ico
+13:07:41 Kikaro [1002]: exori gran
+13:07:43 Kikaro [1002]: exeta amp res
+13:07:43 Kikaro [1002]: exori
+13:07:43 Kikaro [1002]: exura med ico
+13:07:45 Kikaro [1002]: exeta amp res
+13:07:45 Kikaro [1002]: exori min
+13:07:45 Kikaro [1002]: exura med ico
+13:07:47 Kikaro [1002]: exeta amp res
+13:07:47 Kikaro [1002]: exori gran
+13:07:47 Kikaro [1002]: exura med ico
+13:07:49 Kikaro [1002]: exeta amp res
+13:07:49 Kikaro [1002]: exori min
+13:07:49 Kikaro [1002]: exura med ico
+13:07:51 Kikaro [1002]: exeta amp res
+13:07:51 Kikaro [1002]: exori gran
+13:07:52 Kikaro [1002]: exura med ico
+13:07:53 Kikaro [1002]: exeta amp res
+13:07:53 Kikaro [1002]: exori
+13:07:54 Kikaro [1002]: exura med ico
+13:07:55 Kikaro [1002]: exori amp kor
+13:07:58 Kikaro [1002]: exeta amp res
+13:07:58 Kikaro [1002]: exura med ico
+13:07:58 Kikaro [1002]: exori min
+13:08:00 Kikaro [1002]: exura med ico
+13:08:00 Kikaro [1002]: exeta amp res
+13:08:00 Kikaro [1002]: exori gran
+13:08:02 Kikaro [1002]: exeta amp res
+13:08:02 Kikaro [1002]: exori
+13:08:03 Kikaro [1002]: exura med ico
+13:08:05 Kikaro [1002]: exeta amp res
+13:08:05 Kikaro [1002]: exori gran
+13:08:05 Kikaro [1002]: exura med ico
+13:08:07 Kikaro [1002]: exori min
+13:08:07 Kikaro [1002]: exura med ico
+13:08:08 Kikaro [1002]: exeta amp res
+13:08:09 Kikaro [1002]: exori
+13:08:10 Kikaro [1002]: exura med ico
+13:08:11 Kikaro [1002]: exeta amp res
+13:08:11 Kikaro [1002]: exori gran
+13:08:12 Kikaro [1002]: exura med ico
+13:08:13 Kikaro [1002]: exori min
+13:08:15 Kikaro [1002]: exeta amp res
+13:08:15 Kikaro [1002]: exura med ico
+13:08:15 Kikaro [1002]: exori amp kor
+13:08:18 Kikaro [1002]: exeta amp res
+13:08:20 Kikaro [1002]: exori min
+13:08:20 Kikaro [1002]: exura med ico
+13:08:21 Kikaro [1002]: exeta amp res
+13:08:22 Kikaro [1002]: exori gran
+13:08:22 Kikaro [1002]: exura med ico
+13:08:24 Kikaro [1002]: exeta amp res
+13:08:24 Kikaro [1002]: exori min
+13:08:24 Kikaro [1002]: exura med ico
+13:08:26 Kikaro [1002]: exori gran
+13:08:26 Kikaro [1002]: exura med ico
+13:08:28 Kikaro [1002]: exeta amp res
+13:08:28 Kikaro [1002]: exori
+13:08:28 Kikaro [1002]: exura med ico
+13:08:30 Kikaro [1002]: exori amp kor
+13:08:34 Kikaro [1002]: exori min
+13:08:36 Kikaro [1002]: exura med ico
+13:08:36 Kikaro [1002]: exeta amp res
+13:08:36 Kikaro [1002]: exori gran
+13:08:38 Kikaro [1002]: exura med ico
+13:08:38 Kikaro [1002]: exeta amp res
+13:08:38 Kikaro [1002]: exori
+13:08:40 Kikaro [1002]: exura med ico
+13:08:40 Kikaro [1002]: exeta amp res
+13:08:40 Kikaro [1002]: exori min
+13:08:42 Kikaro [1002]: exura med ico
+13:08:42 Kikaro [1002]: exeta amp res
+13:08:43 Kikaro [1002]: exori gran
+13:08:44 Kikaro [1002]: exura med ico
+13:08:44 Kikaro [1002]: exeta amp res
+13:08:45 Kikaro [1002]: exori
+13:08:46 Kikaro [1002]: exura med ico
+13:08:47 Kikaro [1002]: exori min
+13:08:48 Kikaro [1002]: exura med ico
+13:08:49 Kikaro [1002]: exeta amp res
+13:08:49 Kikaro [1002]: exori gran
+13:08:51 Kikaro [1002]: exura med ico
+13:08:51 Kikaro [1002]: exeta amp res
+13:08:51 Kikaro [1002]: exori
+13:08:53 Kikaro [1002]: exori amp kor
+13:08:54 Kikaro [1002]: exura med ico
+13:08:55 Kikaro [1002]: exori min

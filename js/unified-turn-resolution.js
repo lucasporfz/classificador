@@ -56,7 +56,6 @@
     validateLeechBlockForN,
     validateLeechBlockOfficialRates,
     observedLeechAcceptsN,
-    leechDeclaredN,
     possibleShapes,
     segmentations,
     guidedCutPositions,
@@ -471,21 +470,28 @@
     // 55 componentes já resolvidos têm o misto cross-mob contra 8 same-mob; ler cross-mob
     // como fronteira fatiaria 55 blocos corretos.
     //
-    // ÚLTIMO RECURSO: só age quando H-005e é MUDA sobre o corte (primeiro hit overkill ou
-    // sem leech utilizável). Quando a inversão do leech decide, ela decide — os dois sinais
-    // são colineares em todo o corpus observado, e dois canais disputando o mesmo corte só
+    // ÚLTIMO RECURSO: só age quando H-005e é MUDA SOBRE O CORTE. A condição é
+    // `!forceA1.force` — a inversão do leech não decidiu —, NÃO `leechDeclaredN(hits[0])
+    // == null`, que é mudez sobre o PRIMEIRO HIT. As duas leituras não são equivalentes: a
+    // inversão pode declarar `N=1` no primeiro hit e ainda assim não decidir, porque
+    // `shouldForceA1ByLeech` exige também suporte do sufixo (`suffixUsableOk`), de beam ou
+    // fronteira de crit-state. Com sufixo majoritariamente overkill ou sem leech o suporte
+    // não fecha, `force` é false, e H-005e é muda sobre o corte sem ser muda sobre o hit.
+    // Quando a inversão DECIDE, ela decide — dois canais disputando o mesmo corte só
     // criariam questão de precedência sem ganho.
     //
-    // Alcance medido: 0 turnos. Dos 43 turnos do corpus com Low Blow misto same-mob, 35 já
-    // resolvem por canal acima e 8 são a família-alvo, que H-005e resolve. Esta passada é
-    // REDE, não correção — seu critério de aceite é drift zero.
+    // Alcance medido (27/Ago/2026, corpus inteiro, 2.939 blocos fundidos): 1 turno —
+    // `tom 2` `12:58:06`, em que o primeiro hit declara N=1 (vida) e o sufixo tem só 1 hit
+    // com leech utilizável, abaixo do piso `min(2, kSuffix)`. Com a guarda anterior o
+    // alcance era 0: nenhum turno do corpus tem Low Blow misto same-mob com o primeiro hit
+    // sem leech declarado.
     //
     // NÃO entra em H005_MERGED_VETO_JURISDICTION: canal novo nasce protegido.
     if (chosen === allSpell
       && !runeUsingBoundaryConfirmed
       && hits.length > 1
       && firstHitLowBlowSameMobBoundary(hits)
-      && leechDeclaredN(hits[0], context && context.leechSetup, null, context) == null) {
+      && !forceA1.force) {
       chosen = split;
       reason = 'ek_positional_aa_confirmed_by_low_blow_same_mob_boundary';
     }

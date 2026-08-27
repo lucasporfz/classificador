@@ -111,6 +111,7 @@
     isTerraBurstAction,
     isTerraBurstBlock,
     EXECUTIONER_BONUS_LEVELS,
+    EXECUTIONER_MAX_TARGETS,
     isExecutionerThrowAction,
     pierceForElement,
     explicitBmPierceOption,
@@ -1659,8 +1660,26 @@
     let rawA = null;
     if (sameCastRatios.length) rawA = median(sameCastRatios);
     else if (cleanBase.length && cleanAmped.length) rawA = median(cleanAmped) / median(cleanBase);
+    // M-034a: piso por cardinalidade. Cada tier de mastery tem um teto de alvos
+    // (Ã—2.0 -> 3, Ã—2.25 -> 4, Ã—2.5 -> 5), entÃ£o um bloco de k hits sÃ³ Ã© possÃ­vel num tier de
+    // teto >= k. Isso conserta o viÃ©s do estimador de dano, que erra sempre PARA BAIXO (o
+    // overkill trunca os hits amped, que sÃ£o justamente os que matam): o piso bloqueia
+    // exatamente a direÃ§Ã£o do erro. Caso-prova `tom`: 39 casts, maior com 4 hits -> tier
+    // >= Ã—2.25; a razÃ£o de dano dava 1.606 e snapava em Ã—2.0, cujo teto de 3 Ã© contradito
+    // por 19 casts da prÃ³pria sessÃ£o.
+    //
+    // DEPENDÃŠNCIA DECLARADA: `maxBlockHits` conta hits do bloco JÃ CLASSIFICADO, nÃ£o alvos do
+    // cast. Um AA fundido por engano dentro do bloco infla a contagem e pode empurrar o tier
+    // PARA CIMA. Ã‰ o inverso do viÃ©s do dano, e por isso os dois erros nÃ£o se cancelam. O
+    // prÃ³prio `tom 2` `12:58:06` tinha 5 hits antes da correÃ§Ã£o da guarda de H-005g nesta
+    // mesma change: sem ela, o piso cravaria Ã—2.5. NÃ£o Ã© hipÃ³tese â€” Ã© histÃ³rico medido.
+    const maxBlockHits = execComps.reduce((m, comp) => Math.max(m, (comp.hits || []).length), 0);
+    const allowed = EXECUTIONER_BONUS_LEVELS.filter((lv, i) => EXECUTIONER_MAX_TARGETS[i] >= maxBlockHits);
+    // Nenhum tier sobrevive => o teto da tabela estÃ¡ desatualizado ou hÃ¡ bloco corrompido.
+    // Nesse caso o piso se cala em vez de mentir, e a razÃ£o de dano volta a decidir sozinha.
+    const levels = allowed.length ? allowed : EXECUTIONER_BONUS_LEVELS;
     const A = rawA != null
-      ? EXECUTIONER_BONUS_LEVELS.reduce((best, lv) => Math.abs(lv - rawA) < Math.abs(best - rawA) ? lv : best, EXECUTIONER_BONUS_LEVELS[0])
+      ? levels.reduce((best, lv) => Math.abs(lv - rawA) < Math.abs(best - rawA) ? lv : best, levels[0])
       : null;
 
     // Pass 3: multiplicador por hit + nÃ­vel no componente.
