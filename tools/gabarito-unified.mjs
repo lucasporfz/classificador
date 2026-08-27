@@ -1436,6 +1436,40 @@ export const CASES = [
       }
       return null;
     }),
+  // wayfinder #20 (mapa #12) — ancoras de nao-regressao da familia "bloco
+  // homogeneo sem AA" no fixture `tom` (EK, raubritter, log sem cabecalho).
+  // Os 30 turnos `a=0` de `tom` fora do motivo-alvo foram julgados corretos pelo
+  // usuario em 26/Ago/2026; ancoramos UMA por classe de evidencia, nao os 30 —
+  // qualquer regressao que quebre um dos 30 quebra tambem uma destas seis.
+  // A regra que os sustenta e `H-005e` (D-023): a razao leech observado/esperado
+  // a N=1 E o areaFactor(N) e inverte, N = 0,9/(razao - 0,1). Nenhum destes da
+  // N=1 — logo nenhum tem AA. Nao confundir com precisao: em k alto o degrau
+  // entre N vizinhos cai abaixo do perk alpha, entao `N` so e confiavel para
+  // "e ou nao e 1" (ver `12:38:42`).
+  //
+  // crit uniforme + N=k, com o veto `h005` operando legitimamente.
+  C('tom/12:32:31-berserk-no-aa', 'tom server log.txt', 'tom local chat.txt', '12:32:31',
+    spellNoAaCheck(6, 'Berserk (exori)')),
+  // desempate `ek_all_spell_stronger_leech_cardinality` com k=8 limpo; N=8,05.
+  C('tom/12:26:16-berserk-k8-no-aa', 'tom server log.txt', 'tom local chat.txt', '12:26:16',
+    spellNoAaCheck(8, 'Berserk (exori)')),
+  // k=8 em que `H-005e` estima N=9,28: FORA da resolucao da regra, nao
+  // divergencia. Em N=8 o degrau ate N=9 e 5,9%, abaixo do alpha (8-11%). O que
+  // a regra afirma aqui e apenas "nao e 1" — e isso basta para o turno.
+  C('tom/12:38:42-fierce-berserk-k8-no-aa', 'tom server log.txt', 'tom local chat.txt', '12:38:42',
+    spellNoAaCheck(8, 'Fierce Berserk (exori gran)')),
+  // menor k da familia: em k=2 o degrau de areaFactor e 45% e N=1,99 e
+  // discriminante de verdade. Ancora a ponta afiada da regra.
+  C('tom/12:30:20-front-sweep-k2-no-aa', 'tom server log.txt', 'tom local chat.txt', '12:30:20',
+    spellNoAaCheck(2, 'Front Sweep (exori min)')),
+  // hit unico com N~6: o turno nunca chega a escada (hits.length === 1), mas o
+  // leech prova que o hit e a area — o AA e que faltou, e `a=0` esta certo.
+  C('tom/12:34:34-whirlwind-single-hit-is-area', 'tom server log.txt', 'tom local chat.txt', '12:34:34',
+    spellNoAaCheck(1, 'Whirlwind Throw (exori hur)')),
+  // hit unico com N~1: indecidivel por leech (uma spell single-target tambem da
+  // N=1) e sem sufixo com que contrastar. Deve permanecer `a=0`.
+  C('tom/12:32:09-front-sweep-single-hit-no-aa', 'tom server log.txt', 'tom local chat.txt', '12:32:09',
+    spellNoAaCheck(1, 'Front Sweep (exori min)')),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

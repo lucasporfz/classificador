@@ -1361,6 +1361,277 @@ Caso-prova obrigatório — gloompillar 08:36:51 (sessão 14/Jul/2026, Ethereal 
       apenas pela precedência do prior AA-first, sem evidência positiva. REJEITAR.
     Hipótese CORRETA: A0 S9.
   ```
+  - **H-005-nota (notação) — `H-005a`–`H-005d` são as alíneas (a)–(d) acima; `H-005e` em diante
+    são regras autônomas.** As quatro evidências positivas de AA vivem **dentro** do corpo de
+    H-005 como alíneas, e são citadas em outros pontos do documento e no motor pela forma
+    `H-005<letra>`: `H-005a` = separação de timing, `H-005b` = crit-state distinto,
+    **`H-005c` = dano original distinto**, `H-005d` = salto de razão de leech. A partir de `e`
+    a letra passa a designar **regra autônoma** com título próprio (`H-005e`, `H-005f`, `H-005g`), não
+    alínea. Isso resolve a alínea pendurada: `M-035a` cita `H-005c` no sentido exato da alínea
+    (c) — a isenção de beam neutraliza *dano original distinto* como evidência de AA —, e
+    nenhuma regra nova precisa ser escrita para sustentar aquela citação. Registrado em
+    26/Ago/2026 (mapa #12 / ticket #21).
+
+
+- **H-005e — O leech observado declara em quantos alvos o hit bateu (inversão de D-023):**
+  `ESTADO: decidida (26/Ago/2026, mapa #12 / tickets #15 e #20) e IMPLEMENTADA no motor em
+  26/Ago/2026 (change `implement-h005e-h005f-h005g-leech-cardinality-rules`). Ver a nota de
+  implementação abaixo: a semântica no motor é ADITIVA.`
+
+  Por D-023 o leech de um hit é `dano × taxa × areaFactor(N)`, com
+  `areaFactor(N) = 0,1 + 0,9/N`. Logo a razão entre o leech **observado** e o leech
+  **esperado a `N = 1`** *é* o próprio `areaFactor(N)`, e a relação inverte:
+
+  ```text
+  razão = leech_observado / (dano × taxa)          N = 0,9 / (razão − 0,1)
+  ```
+
+  O hit, portanto, **declara** em quantos alvos a ação bateu — sem limiar e sem comparação com
+  os outros hits do turno. Isso é evidência de primeira classe sobre a **cardinalidade** do
+  componente e alimenta as alíneas (a)–(d) acima: um primeiro hit que declara `N > 1` não pode
+  ser AA single-target, e um bloco cujo primeiro hit declara `N = k` (o total de hits do bloco)
+  é um componente único — separar dele um AA é fabricar AA fantasma, exatamente o que H-005
+  proíbe.
+
+  Condições de uso:
+  - **menor `N` entre vida e mana.** Um canal capado só pode *inflar* a estimativa, nunca
+    deprimi-la; o menor dos dois é o piso honesto.
+  - **overkill não estima.** O dano exibido é truncado e a razão perde o denominador; um hit
+    overkill não declara nada (mas continua rotulável por posição ou por crit-state).
+  - **o arredondamento é a tolerância.** Não há limiar a calibrar: `N` é comparado ao inteiro
+    mais próximo.
+  - **escopo:** knight, sorcerer, druid e monk. RP em pack tem o classificador de bandas.
+  - **isenções herdadas de H-005:** beam validado (M-035) e estágio atrasado de ação
+    multiestágio (M-016d/M-016e) não são avaliados por esta alínea — nesses dois casos a
+    cardinalidade plana do bloco não é a mecânica real.
+
+  **Limite de resolução (emenda de 26/Ago/2026, ticket #20).** A margem estrutural é enorme em
+  `N = 1` e encolhe rápido: como o degrau entre `N` vizinhos é `0,9/(N(N+1))`, vale
+  `1→2: 45 %`, `2→3: 27 %`, `7→8: 6,5 %`, `8→9: 5,9 %`. O perk **alpha** (declarado e não
+  modelado — mais dano com HP alto, degrau de ~8–11 % por criatura) infla o **dano exibido**
+  sem inflar o leech; como o dano está no denominador da razão, isso **superestima `N`**. Em
+  `k ≳ 6` a perturbação do alpha é **maior** que o degrau entre `N` vizinhos. Portanto:
+
+  > `N` é confiável para decidir **"é ou não é 1"** em qualquer `k` — o degrau `1→2` é imune ao
+  > alpha por uma ordem de grandeza. `N` **não** é confiável a `±1` quando `k ≳ 6`, e um `N`
+  > fracionário longe do inteiro nessa faixa **não** é divergência mecânica.
+
+  **Nota de implementação (26/Ago/2026) — a semântica implementada é ADITIVA.** No motor, a
+  inversão **acrescenta** um caminho de prova: um hit declara `N = x` se a aceitação exata já
+  existente fecha em `x` **ou** se a inversão arredonda para `x`. O teste exato, com sua
+  tolerância calibrada, **permanece vivo** como caminho alternativo — o texto acima diz "sem
+  limiar", e isso descreve a inversão, não o motor inteiro. A escolha foi deliberada: por
+  construção a semântica aditiva só pode **criar** evidência de AA, nunca retirá-la, o que
+  mantém o drift auditável (todo turno alterado é um ganho a julgar, nunca uma perda a
+  explicar). A alternativa substitutiva foi medida e rejeitada por produzir também perdas de
+  AA em turnos hoje resolvidos, duas delas na própria faixa de baixa resolução declarada
+  abaixo. Decisão do usuário, 26/Ago/2026.
+
+  **A dispersão do sufixo é ASSIMÉTRICA, e só a dispersão para cima é tolerada.** O sufixo é
+  julgado contra `N = k − 1`, que é justamente a faixa em que esta regra se declara não
+  confiável a `±1`. Exigir que ele crave `k − 1` seria exigir a metade não confiável do juízo
+  para autorizar a metade confiável (`é ou não é 1`). Mas o erro tem **direção conhecida**: o
+  perk alpha infla o **dano exibido** sem inflar o leech e, como o dano está no denominador da
+  razão, ele **superestima** `N` — sempre para cima. Portanto:
+
+  > Quando o primeiro hit declara `N = 1`, o sufixo prova o bloco se todos os seus hits com
+  > leech utilizável declararem `N ≥ k − 1`. Dispersão **para baixo** continua sendo
+  > contradição e barra a separação.
+
+  Piso: `k − 1 ≥ 4`. Em sufixo pequeno o degrau entre `N` vizinhos é grande demais para o alpha
+  explicar, e uma diferença ali é contradição real, não ruído. Caso-prova do que o piso barra:
+  `tom` `12:27:56` (`k=2`, sufixo de 1 hit declarando `N=2` contra o primeiro declarando `N=1`)
+  — permanece `A0`.
+
+  Medido em `tom`: o primeiro hit dos turnos destravados declara `N = 1` com `raw` entre
+  **1,01 e 1,10** (apertado; o degrau `1→2` é imune ao alpha por uma ordem de grandeza) e o
+  sufixo dispersa em `k−1`, `k`, `k+1` — **nunca abaixo**. `tom` sai de **124** turnos `a=0`
+  para **44**, dos quais **39 são corretos** (6 de hit único e 33 cujo primeiro hit declara
+  `N` entre 2 e 9, ou seja, não é AA).
+
+  Segurança medida no corpus (#15): **5201 concordâncias contra 4 divergências**; das quatro,
+  `dlc ms 21:52:34` (`N = 9,43`) e `monk 2 07:19:20` (`N = 4,90`) caem na faixa de baixa
+  resolução e devem ser relidas à luz desta emenda.
+
+  ```text
+  Casos-prova (fixture `tom`, EK, raubritter — todos A0, todos com N longe de 1):
+    12:32:31  Berserk, k=6, crit uniforme, N=6,11        → A0 S6
+    12:26:16  Berserk, k=8 limpo, N=8,05                 → A0 S8
+    12:30:20  Front Sweep, k=2, N=1,99                   → A0 S2   (k baixo: N discrimina)
+    12:34:34  Whirlwind Throw, hit ÚNICO, N=6,07         → A0 S1   (o hit é a área; o AA faltou)
+  Caso-prova do limite de resolução:
+    12:38:42  Fierce Berserk, k=8 confirmado, N=9,28     → A0 S8   (fora da resolução, NÃO é
+                                                                    divergência)
+  Limite declarado — N=1 sem sufixo NÃO decide componente:
+    12:32:09  Front Sweep, hit ÚNICO, N=0,99             → A0 S1
+    Um hit que declara N=1 bateu em um alvo, mas uma spell single-target também bate em um
+    alvo. Sem sufixo contra o qual contrastar, esta alínea é necessária e não suficiente:
+    ela nunca promove um hit a AA sozinha.
+  ```
+- **H-005f — O veto de cardinalidade fundida tem jurisdição: ele não reverte decisão de degrau
+  acima do dele:**
+  `ESTADO: decidida (26/Ago/2026, mapa #12 / ticket #21) e IMPLEMENTADA no motor em
+  26/Ago/2026 (change `implement-h005e-h005f-h005g-leech-cardinality-rules`), com a lista de
+  jurisdição CORRIGIDA na implementação — ver a correção logo abaixo da tabela.`
+
+  A resolução single-target escolhe entre `A0` (bloco fundido) e `A1` (prefixo AA + bloco) por
+  uma **escada de canais de evidência**: o primeiro canal que fecha decide, e a ordem da escada
+  *é* a ordem de precedência entre os canais. O veto `h005_merged_leech_exact_blocks_aa_split`
+  — o bloco fundido fecha exato em `N = k` e o primeiro hit não fecha em `N = 1`, logo o corte
+  posicional era leitura de variação normal — **não** é um canal da escada: ele roda depois
+  dela e reverte um `split` já escolhido, qualquer que tenha sido o canal que o escolheu.
+
+  Isso é ilegítimo quando o canal vencedor está **acima** do veto na escada. A evidência do
+  veto é cardinalidade por leech, que já tem canal próprio (`forceA1`, D-023/H-005(d)); quando
+  esse canal perde, a mesma evidência não pode voltar por fora e derrubar um canal que a escada
+  colocou em posição superior. O veto passa a ter **jurisdição declarada**: age sobre o canal de
+  leech e sobre tudo abaixo dele, nunca sobre o que está acima.
+
+  A precedência é **posicional**, não por natureza da evidência: os canais de estágio atrasado
+  multiestágio e de hit virtual por charm-kill também são leech, mas estão acima do `forceA1` na
+  escada e por isso ficam protegidos. A ordem da escada é a regra; a natureza do canal não a
+  reabre.
+
+  ```text
+  Sob jurisdição do veto (o veto age)      Protegidos (o veto não age)
+    ek_a1_forced_by_leech_cardinality_*      single_target_aa_rune_using_boundary
+    ek_positional_aa_confirmed_by_            ek_timestamp_boundary_aa_then_spell
+      leech_cardinality                       ek_positional_aa_confirmed_by_crit_state_boundary
+    ek_positional_aa_confirmed_by_same_mob_   single_target_aa_multistage_action_first_hit_
+      exactness_boundary                        leech_signature
+    single_target_aa_physical_order_          single_target_aa_split_required_by_virtual_
+      tiebreak_after_clean_leech_tie            zero_leech_cardinality
+      (o default, quando nenhum canal
+       dispara)
+  ```
+
+  > **CORREÇÃO DE 26/Ago/2026 (implementação).** A primeira redação desta regra colocava
+  > `ek_positional_aa_confirmed_by_same_mob_exactness_boundary` entre os **protegidos**. Estava
+  > errado, e o erro vinha da tabela de alcance de #21, que mediu o canal errado em **4 dos 5**
+  > turnos. Medido turno a turno na implementação, os quatro `A0` que o veto precisa preservar
+  > (`night harpy` `15:02:06`/`15:02:23`/`15:02:28` e `tom` `12:32:31`) vêm desse canal, **não**
+  > de `forceA1`. Protegê-lo os transformava em `A1`, quebrando três casos-prova de `H-005` e um
+  > caso-prova da própria `H-005e`. O canal está **sob jurisdição**.
+
+  A lista normativa é a de **jurisdição** (à esquerda), não a de protegidos: um canal novo
+  nasce **protegido** e só entra sob o veto por decisão explícita. O veto pode encolher com o
+  tempo, nunca crescer por omissão.
+
+  **A jurisdição não é expressável como um ramo da escada.** Um `else if` posicionado logo
+  abaixo do `forceA1` só seria alcançado quando o `forceA1` **não** disparasse — e portanto
+  deixaria de vetar exatamente o canal que o veto precisa vetar. "Virar degrau" é metáfora de
+  precedência, não de posição no código: a forma que expressa a jurisdição num único lugar é a
+  guarda sobre o `reason` já escolhido. O veto continua sendo pós-processador; o que muda é que
+  ele deixa de ter alcance universal.
+
+  **Escopo.** Esta regra vale para o veto de cardinalidade fundida. O outro pós-processador da
+  mesma família (`h005_same_mob_state_exact_match_blocks_aa_split`, exatidão same-mob por
+  S-004a) **não** recebe jurisdição declarada aqui — medido em 26/Ago/2026, ele dispara em **0
+  turnos** em todo o corpus, então declarar sua jurisdição seria doutrina sem caso. Se ele
+  voltar a disparar, é esforço novo.
+
+  ```text
+  Alcance medido no corpus inteiro — o veto dispara em 5 turnos. Canal MEDIDO turno a turno
+  na implementação (26/Ago/2026); a coluna de #21 dizia `forceA1` nos quatro primeiros e
+  estava errada:
+    night harpy  15:02:06  k=5  canal = same_mob_exactness  → sob jurisdição, NÃO muda
+    night harpy  15:02:23  k=5  canal = same_mob_exactness  → sob jurisdição, NÃO muda
+    night harpy  15:02:28  k=5  canal = same_mob_exactness  → sob jurisdição, NÃO muda
+    tom          12:32:31  k=6  canal = same_mob_exactness  → sob jurisdição, NÃO muda
+    tom          12:34:11  k=3  canal = crit-state          → PROTEGIDO, corrige
+
+  Os três `night harpy` (Groundshaker) são os casos-prova que justificam o veto existir e
+  continuam intocados — a regra não os afrouxa, apenas delimita onde o veto vale.
+
+  Caso-prova da correção — `tom` `12:34:11` (Executioner's Throw, `exori amp kor`):
+     757  raubritter skirmisher   OK            (sem crit)   → AA
+     604  raubritter chastener    CRIT SB OK                 → spell
+    1389  raubritter skirmisher   CRIT OK                    → spell
+    Hoje `A0 S3` pelo veto. Correto `A1 S2`. Os três hits são overkill, então H-005e é muda
+    aqui (overkill não estima) e a única evidência viva é o crit-state: por D-007/S-008 o
+    crítico rola uma vez por ataque e atinge todos os alvos de área igualmente, logo um hit
+    não-crítico não pertence ao mesmo ataque que dois críticos. A fronteira é inequívoca.
+  ```
+
+  **Raio.** Efeito direto de **1 turno**, por construção: a guarda só pode **remover** aplicações
+  do veto, e as únicas removidas são as que vinham de canal protegido. O efeito cross-turno
+  (consumo de ação por N-008a/M-013a/M-013b a partir do turno que muda) não é coberto por esse
+  argumento e exige dump completo contra o baseline na implementação.
+  (H-005, H-005e, D-023, D-007, S-008, N-008a)
+
+
+- **H-005g — Low Blow misto no MESMO mob é fronteira de componente (último recurso):**
+  `ESTADO: decidida (26/Ago/2026, mapa #12 / ticket #17) e IMPLEMENTADA no motor em
+  26/Ago/2026 (change `implement-h005e-h005f-h005g-leech-cardinality-rules`). Alcance no
+  corpus: 0 turnos, como previsto — é rede. Coberta por teste sintético.`
+
+  Fato de domínio: **Low Blow é charm de bestiário aplicado por criatura, e a proc é decidida
+  uma vez por ataque** — se um componente procou Low Blow, todos os hits daquele componente
+  sobre aquela criatura recebem. A contrapositiva é a regra:
+
+  > Dois hits do **mesmo mob**, no mesmo turno, um com Low Blow e outro sem, **não pertencem ao
+  > mesmo componente**.
+
+  **Escopo `same-mob` é constitutivo, não uma precaução.** Entre mobs **distintos** o Low Blow
+  misto é o caso **normal** e não prova nada: o charm é por criatura, então um componente de
+  área que acerta `raubritter marksman` (com charm) e `raubritter chastener` (sem) exibe LB em
+  uns hits e não em outros sem que exista fronteira alguma ali. Medido no corpus inteiro em
+  26/Ago/2026: **55 componentes já resolvidos** têm LB misto **cross-mob**, contra **8** com LB
+  misto **same-mob**. Ler LB cross-mob como fronteira fatiaria 55 blocos corretos — proporção de
+  7 para 1 contra. Qualquer releitura desta regra que perca o `same-mob` está errada.
+
+  **Último recurso.** Esta regra só é consultada quando `H-005e` (inversão do leech) é **muda**
+  sobre o corte em questão: sufixo inteiramente overkill, leech ausente ou não utilizável, ou
+  `k` na faixa de baixa resolução em que `N` não discrimina a `±1`. Quando a inversão do leech
+  decide, ela decide. Razão: no corpus observado os dois sinais são **colineares** — o hit com
+  Low Blow *é* o hit que declara `N = 1` —, e dois canais disputando o mesmo corte só criam
+  questão de precedência sem ganho. Como toda folga de último recurso, roda em passada própria,
+  depois da passada principal, nunca negociando tolerância com ela.
+
+  **Posição na escada.** Nasce **protegida** na jurisdição de `H-005f`: canal novo não entra sob
+  o veto `h005_merged_leech_exact_blocks_aa_split` por omissão, só por decisão explícita.
+
+  **Alcance medido hoje: 0 turnos — esta regra é rede, não correção.** Varredura do corpus
+  completo (19.356 turnos, 26/Ago/2026, ticket #17): **43** turnos têm LB misto same-mob, em 5
+  fixtures (`tom` 23, `bastion` 10, `night harpy` 6, `death echo` 2, `monk` 2). Destes, **35**
+  já são resolvidos corretamente por canal acima — a fronteira de LB coincide exatamente com a
+  fronteira AA/spell que o motor encontra, e em **todos** o primeiro hit declara
+  `N = 0,97–1,00`. Os **8** restantes são a família-alvo de `tom`, e nos 8 `H-005e` também
+  decide (primeiro hit `N ≈ 1`, sufixo `N ≈ k−1`). **Não existe, no corpus, um único turno em
+  que o Low Blow decida e `H-005e` seja muda.** A regra é gravada porque o fato de domínio é
+  verdadeiro e a mecânica sobrevive à varredura — não porque destrave turno.
+
+  ```text
+  Caso-prova POSITIVO (forma da fronteira) — `tom` `12:27:15`, Berserk, k=8:
+    1700  raubritter marksman  CRIT LB   N=1,02   → AA
+     770  raubritter marksman            N=7,07   → spell
+     818  raubritter chastener           N=7,40   → spell
+     ... (mais 5 hits, N ≈ 7)
+    Mesmo mob (`raubritter marksman`) com LB no primeiro hit e sem LB no bloco seguinte ⇒
+    componentes distintos. Correto `A1 S7`. Aqui H-005e decide sozinha (1,02 vs 7), então
+    H-005g é MUDA por construção — o caso mostra a forma, não o ganho.
+
+  Caso-prova NEGATIVO (o que a regra NÃO pode cortar) — `bastion` `15:17:52`, spell:8:
+    chastener, skirmisher, marksman/LB, skirmisher, marksman/LB, marksman/LB,
+    skirmisher, skirmisher
+    Um único componente, LB misto por CRUZAMENTO DE MOB. Não há fronteira: o charm está no
+    `marksman` e não no `chastener`/`skirmisher`. Este é o formato de 55 componentes do corpus.
+  ```
+
+  **Veredito sobre `componentCritState` — a exclusão global de Low Blow é MANTIDA.**
+  `componentCritState(h) = onslaught || (realCrit && !lowBlow)`
+  (`js/unified-validation.js:239`) continua excluindo `lowBlow`. Razão: aquele predicado compara
+  hits de mobs **quaisquer** dentro de um bloco — ele não conhece a criatura. Admitir Low Blow
+  ali importaria a heterogeneidade **cross-mob** (os 55 componentes acima) para dentro do
+  crit-state e produziria exatamente as fronteiras falsas que o escopo `same-mob` desta regra
+  existe para impedir. Low Blow é uniforme por componente **por criatura**, e crit real é
+  uniforme por componente **por ataque**: são quantificadores diferentes e não cabem no mesmo
+  predicado. `H-005g` é o lugar certo do sinal porque é a única formulação que carrega o escopo
+  `same-mob`. Caso-prova da assimetria — `night harpy` `14:57:35`: o AA é `marksman 1252 CRIT`
+  (crit real, sem LB) e o bloco da spell contém `marksman 906 CRIT LB`; dobrar Low Blow dentro do
+  crit-state colapsaria os dois em `c` e **apagaria** a fronteira que hoje o motor acerta por
+  `ek_positional_aa_confirmed_by_crit_state_boundary`.
+  (H-005, H-005e, H-005f, S-004a, S-008, D-007)
 
 ### Fase 2 — Nomear
 

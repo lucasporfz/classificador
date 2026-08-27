@@ -56,6 +56,7 @@
     validateLeechBlockForN,
     validateLeechBlockOfficialRates,
     observedLeechAcceptsN,
+    leechDeclaredN,
     possibleShapes,
     segmentations,
     guidedCutPositions,
@@ -75,6 +76,39 @@
   const {
     expectedLeech,
   } = root.UnifiedSetupInference;
+
+  // H-005f — jurisdição do veto `h005_merged_leech_exact_blocks_aa_split`.
+  // Lista NORMATIVA: só os `reason` que casam aqui podem ser revertidos pelo veto.
+  // Qualquer `reason` ausente nasce PROTEGIDO — o veto encolhe por decisão, nunca cresce
+  // por omissão. Ver o bloco do veto para o porquê de o default físico estar listado.
+  //
+  // `ek_positional_aa_confirmed_by_same_mob_exactness_boundary` está SOB jurisdição, ao
+  // contrário do que a primeira redação de H-005f supôs. Medido turno a turno: dos 5 turnos
+  // em que o veto dispara no corpus, QUATRO vêm desse canal — `night harpy` 15:02:06/:23/:28
+  // e `tom` 12:32:31 —, e os quatro têm resultado `A0` declarado correto (os três primeiros
+  // são caso-prova de H-005; `tom` 12:32:31 é caso-prova da própria H-005e, "k=6, crit
+  // uniforme, N=6,11 → A0 S6"). Protegê-lo transformava os quatro em `A1`, quebrando o que
+  // a regra existe para preservar. Só `crit_state_boundary` fica protegido — é o canal do
+  // único turno que a jurisdição precisa corrigir (`tom` 12:34:11).
+  // H-005g: o primeiro hit e algum hit do sufixo caem sobre o MESMO mob com estado de
+  // Low Blow DIFERENTE. Comparação restrita ao mesmo mob de propósito — entre mobs
+  // distintos o Low Blow misto é o caso normal e não é fronteira.
+  function firstHitLowBlowSameMobBoundary(hits) {
+    const main = (hits || []).filter(h => h && !h.charmOnly && !h.damageReflection);
+    if (main.length < 2) return false;
+    const first = main[0];
+    const mob = String(first.mob || '').toLowerCase();
+    if (!mob) return false;
+    return main.slice(1).some(h => String(h.mob || '').toLowerCase() === mob
+      && !!h.lowBlow !== !!first.lowBlow);
+  }
+
+  const H005_MERGED_VETO_JURISDICTION = [
+    /^ek_a1_forced_by_leech_cardinality_/,
+    /^ek_positional_aa_confirmed_by_leech_cardinality$/,
+    /^ek_positional_aa_confirmed_by_same_mob_exactness_boundary$/,
+    /^single_target_aa_physical_order_tiebreak_after_clean_leech_tie$/,
+  ];
   function enrichHitEvidence(hit, context) {
     const physical = physicalOriginalInterval(hit, context);
     const elemental = {};
@@ -386,7 +420,29 @@
     // `monk 2` `07:19:48`, `serverlog7` `07:15:00`/`07:15:02`, `serverlog8`
     // `07:22:34` — a vida esta fora do setup (imbuement expirado), mas a MANA fecha
     // N=1 exato e o AA e real; estes turnos nao podem mudar.
+    // H-005f: o veto tem JURISDIÇÃO — ele não reverte decisão de canal acima do dele na
+    // escada. A evidência do veto é cardinalidade por leech, que já tem canal próprio
+    // (`forceA1`); quando esse canal perde, a mesma evidência não pode voltar por fora e
+    // derrubar um canal que a escada colocou em posição superior.
+    //
+    // A precedência é POSICIONAL, não por natureza: os canais de estágio atrasado
+    // multiestágio e de hit virtual por charm-kill também são leech, mas estão acima do
+    // `forceA1` e por isso ficam protegidos.
+    //
+    // A lista normativa é a de JURISDIÇÃO, não a de protegidos: `reason` ausente dela nasce
+    // PROTEGIDO. O veto pode encolher por decisão e nunca cresce por omissão.
+    //
+    // O default `single_target_aa_physical_order_tiebreak_after_clean_leech_tie` precisa
+    // constar explicitamente: o `chosen` pode nascer `split` por ele SEM nenhum degrau
+    // disparar, e omiti-lo o tornaria protegido por acidente.
+    //
+    // NÃO converter em `else if` da escada: um ramo entre o degrau do `forceA1` e o
+    // seguinte só é alcançado quando o `forceA1` não dispara, logo deixaria de vetar
+    // exatamente o canal que o veto precisa vetar, e quebraria os três casos-prova de
+    // `night harpy`.
+    const h005VetoHasJurisdiction = H005_MERGED_VETO_JURISDICTION.some(re => re.test(reason));
     if (chosen === split
+      && h005VetoHasJurisdiction
       && !runeUsingBoundaryConfirmed
       && hits.length > 1) {
       const aaCandidate = hits[0];
@@ -401,6 +457,37 @@
         chosen = allSpell;
         reason = 'h005_merged_leech_exact_blocks_aa_split';
       }
+    }
+
+    // H-005g — Low Blow misto no MESMO mob é fronteira de componente (ÚLTIMO RECURSO).
+    //
+    // Low Blow é charm de bestiário aplicado POR CRIATURA, e a proc é decidida UMA VEZ POR
+    // ATAQUE: se um componente procou Low Blow, todos os hits daquele componente sobre
+    // aquela criatura recebem. Pela contrapositiva, dois hits do MESMO mob com estado de
+    // Low Blow diferente não pertencem ao mesmo componente.
+    //
+    // O escopo `same-mob` é CONSTITUTIVO, não precaução. Entre mobs distintos o Low Blow
+    // misto é o caso NORMAL e não prova nada — o charm é por criatura. Medido no corpus:
+    // 55 componentes já resolvidos têm o misto cross-mob contra 8 same-mob; ler cross-mob
+    // como fronteira fatiaria 55 blocos corretos.
+    //
+    // ÚLTIMO RECURSO: só age quando H-005e é MUDA sobre o corte (primeiro hit overkill ou
+    // sem leech utilizável). Quando a inversão do leech decide, ela decide — os dois sinais
+    // são colineares em todo o corpus observado, e dois canais disputando o mesmo corte só
+    // criariam questão de precedência sem ganho.
+    //
+    // Alcance medido: 0 turnos. Dos 43 turnos do corpus com Low Blow misto same-mob, 35 já
+    // resolvem por canal acima e 8 são a família-alvo, que H-005e resolve. Esta passada é
+    // REDE, não correção — seu critério de aceite é drift zero.
+    //
+    // NÃO entra em H005_MERGED_VETO_JURISDICTION: canal novo nasce protegido.
+    if (chosen === allSpell
+      && !runeUsingBoundaryConfirmed
+      && hits.length > 1
+      && firstHitLowBlowSameMobBoundary(hits)
+      && leechDeclaredN(hits[0], context && context.leechSetup, null, context) == null) {
+      chosen = split;
+      reason = 'ek_positional_aa_confirmed_by_low_blow_same_mob_boundary';
     }
 
     // M-033: runa single-target (Sudden Death, Icicle, Holy Missile) recebe no
@@ -1442,6 +1529,8 @@
   }
   const API = {
     enrichHitEvidence,
+    firstHitLowBlowSameMobBoundary,
+    H005_MERGED_VETO_JURISDICTION,
     resolveSingleTargetAaVocationTurn,
     resolveTurn,
     turnHasEligibleGrenadeCast,

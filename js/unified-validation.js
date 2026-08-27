@@ -2639,6 +2639,69 @@
       });
   }
 
+  // Constantes de areaFactor(N) = LEECH_AREA_FLOOR + LEECH_AREA_NUMERATOR / N (D-023).
+  // Espelham `areaFactor` de UnifiedSetupInference; a inversão precisa delas explícitas.
+  const LEECH_AREA_FLOOR = 0.1;
+  const LEECH_AREA_NUMERATOR = 0.9;
+
+  // H-005e: o leech observado DECLARA em quantos alvos a ação bateu.
+  //
+  // Por D-023, leech = dano × taxa × areaFactor(N) com areaFactor(N) = 0,1 + 0,9/N.
+  // A relação inverte sem limiar:  razão = observado / (dano × taxa),
+  //                                N     = 0,9 / (razão − 0,1).
+  // O hit declara N sozinho, sem comparação com os outros hits do turno.
+  //
+  // Condições normativas de H-005e implementadas aqui:
+  //  - MENOR N entre vida e mana. Um canal capado só pode INFLAR a estimativa (leech
+  //    observado menor que o esperado ⇒ razão menor ⇒ N maior), nunca deprimi-la; o
+  //    menor dos dois é o piso honesto. Caso-prova: `tom` 12:33:20 — a mana está capada
+  //    de verdade (obs 161 vs esp 257) e sozinha daria N=1,71; a vida dá N=1,02.
+  //  - OVERKILL NÃO ESTIMA: o dano exibido é truncado e a razão perde o denominador.
+  //  - O ARREDONDAMENTO é a tolerância: N é comparado ao inteiro mais próximo.
+  //
+  // D2 da change: N < 1 é impossível fisicamente. Um N abaixo de 1 significa leech ACIMA
+  // do esperado para um alvo, que já é contradição dura no motor — nunca arredonda para 1.
+  //
+  // Setup ambíguo (mais de um candidato de taxa que não concordam no inteiro) não declara.
+  // Isenções (beam M-035, estágio atrasado M-016d/M-016e) NÃO vivem aqui: esta função é
+  // aritmética pura e quem decide se pode olhar é o consumidor.
+  function leechDeclaredN(hit, setup, block, context) {
+    if (!hit || !isMainHit(hit)) return null;
+    if (hit.overkill) return null;
+    const basis = leechDamageBasis(hit, context);
+    if (!(basis > 0)) return null;
+    const perChannel = [];
+    for (const channel of ['life', 'mana']) {
+      const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
+      if (!(observed > 0)) continue;
+      const rates = leechEffectiveRateCandidates(setup, channel, block, hit, context);
+      if (!rates.length) continue;
+      let rounded = null;
+      let raw = null;
+      let ambiguous = false;
+      for (const cand of rates) {
+        const ratio = observed / (basis * cand.rate);
+        if (!(ratio > LEECH_AREA_FLOOR)) return null;
+        const n = LEECH_AREA_NUMERATOR / (ratio - LEECH_AREA_FLOOR);
+        if (!(n >= 1)) return null; // D2: leech acima do esperado é contradição, não declaração
+        const r = Math.round(n);
+        if (rounded != null && r !== rounded) { ambiguous = true; break; }
+        rounded = r;
+        raw = raw == null ? n : Math.min(raw, n);
+      }
+      if (ambiguous) continue;
+      if (rounded != null) perChannel.push({ channel, n: rounded, raw });
+    }
+    if (!perChannel.length) return null;
+    const best = perChannel.reduce((a, b) => (b.raw < a.raw ? b : a));
+    return { n: best.n, raw: best.raw, channel: best.channel, channels: perChannel };
+  }
+
+  function leechDeclaresN(hit, setup, block, context, n) {
+    const declared = leechDeclaredN(hit, setup, block, context);
+    return !!(declared && declared.n === n);
+  }
+
   function observedLeechAcceptsN(hit, setup, n, channel, block, context) {
     if (!hit || !isMainHit(hit) || !(n >= 1)) return { usable: false, ok: true, reason: 'not_main_or_invalid_n' };
     const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
@@ -2897,9 +2960,57 @@
     const firstN1 = hitAcceptsLeechNAnyOfficialRate(first, setup, 1, null, context);
     const firstAll = hitAcceptsLeechNAnyOfficialRate(first, setup, kAll, null, context);
     const suffixSupport = blockLeechSupportForN(suffix, setup, kSuffix, context);
-    const suffixUsableOk = suffixSupport.ok >= Math.min(2, kSuffix) && suffixSupport.bad === 0;
-    const firstRejectsAll = firstAll.usable && !firstAll.ok;
-    const firstSingle = firstN1.usable && firstN1.ok;
+    // H-005e aditiva no sufixo, com critério ESTRITO (unanimidade).
+    //
+    // O sufixo é julgado contra `N = k − 1`, que é justamente a faixa em que H-005e declara
+    // sua própria estimativa NÃO confiável a ±1 (`k ≳ 6`; o perk alpha infla o dano exibido
+    // e superestima N). Por isso a inversão só prova o sufixo quando TODOS os hits com leech
+    // utilizável declaram exatamente `kSuffix` — se houver dispersão, a regra não autoriza
+    // desempatar e o caminho fica mudo.
+    //
+    // Medido em `tom`: `12:35:42` (4,4,4,4) e `12:36:50` (5,5,5,5,5) são unânimes e passam;
+    // `12:31:30` (4,4,—,5) e `12:33:20` (5,6,5,5,6) estão dispersos e continuam no default.
+    const suffixDeclared = suffix.map(h => leechDeclaredN(h, setup, null, context)).filter(Boolean);
+    const suffixDeclaredUnanimous = suffixDeclared.length >= Math.min(2, kSuffix)
+      && suffixDeclared.every(d => d.n === kSuffix);
+    // Dispersão do sufixo APENAS PARA CIMA, na faixa de baixa resolução de H-005e.
+    //
+    // Exigir que o sufixo crave `k − 1` é exigir justamente a metade do juízo que H-005e
+    // declara NÃO confiável: o degrau entre N vizinhos encolhe com k e fica abaixo do perk
+    // alpha (declarado e não modelado). Alpha infla o DANO EXIBIDO sem inflar o leech; como
+    // o dano está no denominador da razão, ele SUPERESTIMA N — e só para cima.
+    //
+    // Medido em `tom`: nos 33 turnos que ficavam de fora, o primeiro hit declara N=1 com
+    // `raw` entre 1,01 e 1,10 (apertado, e o degrau 1→2 é imune ao alpha por uma ordem de
+    // grandeza), e o sufixo dispersa SEMPRE para cima — `kSuffix`, `kSuffix+1`, `kSuffix+2`,
+    // NUNCA para baixo. Dispersão para baixo continuaria sendo contradição real e barra.
+    //
+    // O piso `kSuffix >= 4` mantém o critério estrito onde N ainda discrimina: em sufixo
+    // pequeno o degrau é grande demais para o alpha explicar, e uma diferença ali é
+    // contradição de verdade. Caso-prova do que o piso barra: `tom` 12:27:56 (k=2, sufixo
+    // de 1 hit declarando 2) — um bloco de 1 hit que diz ter batido em 2 alvos contradiz o
+    // primeiro hit dizer 1, e o alpha não explica um degrau de 45 %.
+    const suffixDeclaredUpward = kSuffix >= 4
+      && suffixDeclared.length >= 2
+      && suffixDeclared.every(d => d.n >= kSuffix);
+    const suffixUsableOk = (suffixSupport.ok >= Math.min(2, kSuffix) && suffixSupport.bad === 0)
+      || suffixDeclaredUnanimous
+      || suffixDeclaredUpward;
+    // H-005e (semântica ADITIVA — ver design da change): a inversão do leech declara
+    // a cardinalidade do hit e ACRESCENTA um caminho de prova; nenhum caminho existente
+    // é removido. Por construção isto só pode CRIAR evidência de AA, nunca retirá-la.
+    //
+    // É o que destrava a família `single_target_aa_all_action_without_positive_aa_evidence`:
+    // sondados os 8 turnos representativos de `tom`, `N=1` dá `cappedLow` nos DOIS canais
+    // (ex. 12:27:15: mana obs 267 vs esp 272, vida obs 887 vs esp 905) e `N=k` dá
+    // contradição dura. Hoje `firstSingle` é falso e o turno cai no default — que é o
+    // capped-low lido como refutação, exatamente o que S-014e proíbe. Pela inversão,
+    // 887/904 = 0,981 ⇒ N = 1,02, que arredonda para 1.
+    const firstDeclared = leechDeclaredN(first, setup, null, context);
+    const firstRejectsAll = (firstAll.usable && !firstAll.ok)
+      || !!(firstDeclared && firstDeclared.n !== kAll);
+    const firstSingle = (firstN1.usable && firstN1.ok)
+      || !!(firstDeclared && firstDeclared.n === 1);
     // H-005d/M-035: central e side de beam têm cardinalidades independentes.
     // Só teste o sufixo depois que o primeiro hit já provou o contraste N=1 vs N=k.
     const suffixBeam = firstSingle && firstRejectsAll && isBeamAction(action)
@@ -3032,6 +3143,8 @@
     spellLeechBonusOptionsForBlock,
     leechMinorBonusOptionsForHit,
     leechEffectiveRateCandidates,
+    leechDeclaredN,
+    leechDeclaresN,
     observedLeechAcceptsN,
     hitAcceptsLeechNAnyOfficialRate,
     hasSparseLeechConfirmationWithoutContradiction,
