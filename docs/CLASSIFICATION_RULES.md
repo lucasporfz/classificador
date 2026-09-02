@@ -2271,6 +2271,56 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   não há fronteira — mesmo padrão de `M-035`/`M-036`, o detector encontra o conjunto vazio e
   retorna sem mutar nada — e `mazzerinbarrage` S0 e S11 precisam continuar em `0` unresolved.
 
+- **C-006b — Abstenção de canal de leech não é taxa zero:** `ESTADO: decidida e IMPLEMENTADA em 01/Set/2026 (change `make-leech-channel-abstention-explicit`).`
+
+  A inferência de `C-006` é **por canal**: vida e mana têm grades independentes (`D-020`) e
+  volumes de evidência independentes. Um canal pode fixar nível enquanto o outro não tem
+  evidência suficiente para discriminar um ponto da grade — e nesse caso o canal **abstém**.
+  Abstenção e "taxa medida igual a zero" são fatos **diferentes** e não podem ter a mesma
+  representação: a primeira é ausência de evidência (`C-007`, `D-006`), a segunda é uma
+  afirmação sobre o personagem. O setup de leech DEVE registrar a abstenção explicitamente
+  (`lifeBaseKnown`/`manaBaseKnown` mais o motivo e as contagens que a produziram), e não
+  apenas por `base = 0`.
+
+  O valor numérico `0` permanece como o mecanismo que **desliga** o canal a jusante
+  (`leechEffectiveRateCandidates` descarta taxa `<= 0`, `expectedLeech` devolve `null`,
+  `observedLeechAcceptsN` devolve `usable: false`), o que é o comportamento correto: canal
+  abstido é evidência ausente, nunca contradição (`C-007`, `D-025`/`S-014e`). O que a regra
+  proíbe é que esse zero seja a **única** marca do fato.
+
+  **Quando o canal abstém.** Quando o vencedor do ranking de candidatos não atinge o piso de
+  observações utilizáveis do canal. É a mesma recusa de decidir de `C-006a` (2) e `D-021a`:
+  com poucas observações vários pontos da grade explicam o bloco dentro da tolerância e a
+  estimativa não discrimina, então nenhum nível é fixado. Herdar a taxa de outra sessão do
+  mesmo arquivo continua **proibido** por `C-006`, mesmo quando é o mesmo personagem no mesmo
+  dia.
+
+  **Capped-low não muda o resultado.** Um hit sem linha de cura (`lifeLeech = 0`, jogador com
+  vida cheia) é *capped-low* e, por `C-006`/`D-025`/`S-014e`, é sempre consistente e nunca
+  contradição — mas também **nunca pontua**: ele entra em `low`, que por construção não conta
+  em `ok` nem desempata. Contá-lo como observação de valor `0` portanto **não** tira o canal da
+  abstenção, e é proibido usá-lo para isso: `0` é compatível com qualquer taxa da grade e
+  enviesaria qualquer voto que o aceitasse.
+
+  Caso-prova: `logs/aquatic Server Log.txt` / `logs/aquatic Local Chat.txt`, sessão `0`
+  (`Mon Aug 31 10:45:40 2026`, sorcerer `Stingz`, pack de quara). O conjunto-ouro da sessão tem
+  4 componentes / 9 hits (3 AA unitários + um `Energy Wave` de 6 hits); **7** desses 9 hits
+  estão no cap de vida (`lifeLeech = 0`), incluindo os 6 do `Energy Wave`, e sobram **2**
+  observações de vida. Elas são explicadas dentro da tolerância por **15** pontos distintos da
+  grade de `D-020` (o topo é `0,27` com os dois hits exatos, o mesmo valor que S1 infere com 13
+  observações), então nenhum nível é determinável e o canal de vida abstém —
+  `lifeBaseKnown: false`, motivo `insufficient_gold_observations`. O canal de mana, com 9
+  observações dos MESMOS hits, fecha normalmente em `0,175`. As outras duas sessões do mesmo
+  arquivo (`0,27` e `0,2725`) **não** podem ser usadas para preencher S0.
+
+  **Limite declarado (não corrigido aqui):** o caminho confiável por runa
+  (`applyExclusiveTrustedMinorLeechCharms`) pode fixar um minor charm num canal cuja base não
+  foi adotada; nesse caso `base = 0` mais bônus produz taxa efetiva positiva num canal marcado
+  como não-conhecido. Nenhuma sessão do corpus exercita isso hoje (o caminho-ouro nunca fixa
+  charm num canal abstido, porque a abstenção não elege `candidateMob`), e a correção — vetar
+  candidatos de taxa quando `baseKnown === false` — não foi aplicada por estar fora do escopo
+  medido desta change.
+
 - **C-007 — Ausência de evidência não é contradição:** `no_leech_evidence`, mob sem mod conhecido, sessão pós-corte sem tabela preenchida ou falta de canal de vida/mana geram evidência ausente. Evidência ausente não autoriza fusão de componentes nem reuso de ação.
 - **C-008 — Procs não são hits principais:** `damage reflection`, `wound charm`, `overpower charm`, **dano de field/DoT (M-038)** e procs anexos podem ser diagnósticos, mas não incrementam `N_leech`, não consomem cast, não viram componente e não criam AA virtual sem regra de borda/parcial aplicável.
 - **C-009 — Runa confirmada preserva fronteira, não turno novo:** `Using` pode confirmar execução e precedência de bloco compatível, mas não separa turno. Turno permanece bloco mecânico de ciclo conforme T-002 e combinações de T-005/T-006.

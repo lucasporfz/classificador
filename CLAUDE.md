@@ -96,7 +96,27 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
-**Baseline conhecido (medido em 27/Ago/2026, após `fix-amp-kor-tier-inference-and-h005g-cut-gate`).**
+**Baseline conhecido (medido em 01/Set/2026, após `make-leech-channel-abstention-explicit`).**
+Total de alvos: **41/46 OK**; gabarito **217/217**; invariantes **39/40** fixtures limpos, com a
+única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **19.983** turnos.
+
+As 5 falhas são as mesmas de sempre e todas **pré-existentes**: `gabarito prioritario +
+invariantes mecanicas` (a falha do `bakradrone`), `experimental-ui-parity`, `mob-element-regime`,
+`unified-grav-san-ratio-witness` e `unified-spiritual-outburst-multistage`.
+
+**O corpus tem 40 pares:** `aquatic` (86 turnos, sorcerer `Stingz`, pack de quara, 3 sessões de
+31/Ago/2026) e mais um par entraram em `logs/` fora desta change — é de onde vêm os turnos a mais
+em relação ao baseline anterior, sem que nenhum turno tenha sido resolvido ou perdido.
+
+**Drift desta change: ZERO** — o dump é byte-idêntico antes e depois, nos 40 pares e 19.983
+turnos. A regra é **C-006b** (abstenção de canal de leech é explícita, não taxa zero): o setup
+passa a carregar `lifeBaseKnown`/`manaBaseKnown` e `lifeBaseAbstention`/`manaBaseAbstention`; o
+`base: 0` continua desligando o canal a jusante, exatamente como antes. Diagnóstico em
+`reports/aquatic-s0-life-leech-abstention.md`. Pendência declarada: `aquatic` S0 continua sem
+taxa de vida (só 2 observações-ouro, 7 dos 9 hits-ouro no cap de HP) — recuperá-la exigiria
+alargar o conjunto-ouro de `componentGoldN`, que é mudança de cobertura, não de canal.
+
+**Baseline anterior, para referência (medido em 27/Ago/2026, após `fix-amp-kor-tier-inference-and-h005g-cut-gate`).**
 Total de alvos: **39/44 OK**; gabarito **217/217**; invariantes **37/38** fixtures limpos, com a
 única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **19.897** turnos, **58** sem
 classificação.

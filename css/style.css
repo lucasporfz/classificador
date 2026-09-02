@@ -181,6 +181,81 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
 
 .cls-hist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
 
+/* Faixa de turnos: overview da sessão inteira com uma janela arrastável. A janela
+   governa o eixo X dos quatro gráficos de turno; o botão manda classificar só ela. */
+/* Sem cartão: a faixa é do mesmo material dos gráficos, não um painel ao lado deles.
+   Sem padding lateral, o canvas ocupa a MESMA caixa horizontal dos canvas dos gráficos,
+   que é o que permite alinhar com o eixo. O recuo do cabeçalho é posto por app.js, na
+   medida do eixo Y — número fixo aqui sairia de sincronia. */
+.cls-brush { padding: 2px 0 6px; margin-bottom: 10px; }
+.cls-brush-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 6px; }
+.cls-brush-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--text-muted);
+}
+.cls-brush-range { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text); }
+.cls-brush-unresolved { font-size: 11.5px; color: var(--red); }
+.cls-brush-btn {
+  padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent);
+  font-size: 11.5px; font-weight: 600; cursor: pointer;
+}
+.cls-brush-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.cls-brush-btn:disabled {
+  background: var(--bg-surface); color: var(--text-dim);
+  border-color: var(--border); cursor: default;
+}
+.cls-brush-btn.is-ghost {
+  background: transparent; color: var(--text-muted); border-color: var(--border);
+}
+.cls-brush-btn.is-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--border-hover); filter: none; }
+.cls-brush-btn.is-ghost:disabled { color: var(--text-dim); border-color: var(--border); }
+.cls-brush-hint { flex-basis: 100%; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+#clsBrushCanvas { display: block; width: 100%; height: 46px; cursor: crosshair; }
+
+/* Tooltip externo dos gráficos de turno (componentes/hits/dano/impact). É HTML, não o
+   tooltip do canvas: com o hover em modo 'index' o gráfico de componentes lista todas as
+   séries de uma vez, e o nativo fica grande e fora de ordem. */
+.cls-chart-tip {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .08s linear;
+  background: rgba(12, 24, 41, 0.97);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  font-size: 11.5px;
+  color: var(--text);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .55);
+  z-index: 20;
+  min-width: 150px;
+}
+.cls-chart-tip .cls-chart-tip-title {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 6px;
+}
+.cls-chart-tip .cls-chart-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+.cls-chart-tip .cls-chart-tip-sw { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto; }
+.cls-chart-tip .cls-chart-tip-name { color: var(--text-muted); }
+.cls-chart-tip .cls-chart-tip-val {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+}
+.cls-chart-tip .is-total { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 5px; }
+
 .cls-turn-detail {
   position: fixed;
   left: 50%;
@@ -323,3 +398,118 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
 }
 .cls-target-badge-lb { background: rgba(74, 144, 247, .18); color: #7fb2ff; border: 1px solid rgba(74, 144, 247, .45); }
 .cls-target-badge-sb { background: rgba(245, 158, 11, .18); color: #f5b74a; border: 1px solid rgba(245, 158, 11, .45); }
+
+
+/* ==========================================================================
+   Resumo de sessão + dano de charm  (js/session-summary.js)
+   ========================================================================== */
+
+/* A cor do charm NÃO pode sair de CLS_COMP_PALETTE (js/app.js): aquela paleta já ocupa
+   âmbar, verde, azul, VERMELHO #F87171, violeta, amarelo, menta, rosa, ciano #38BDF8,
+   laranja e roxo, e o charm apareceria colado no componente de mesma cor. Ciano #22D3EE
+   é bem mais saturado que o #38BDF8 da paleta (que só entra em sessão com 9+
+   componentes), e a faixa de charm é a ÚNICA hachurada da tela — a listra é o desempate
+   quando a cor sozinha não basta. */
+:root {
+  --cls-charm: #22D3EE;
+  --cls-charm-dark: #0E7F92;
+  --cls-life: #F87171;
+  --cls-mana: #60A5FA;
+}
+.cls-life { color: var(--cls-life); }
+.cls-mana { color: var(--cls-mana); }
+.cls-charm { color: var(--cls-charm); }
+.cls-dim { color: var(--text-dim); }
+.cls-muted { color: var(--text-muted); }
+
+.cls-summary-head {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 12px 16px; margin: 6px 0 10px;
+}
+.cls-summary-name { font-size: 17px; font-weight: 600; }
+.cls-summary-sub { color: var(--text-muted); font-size: 12px; }
+.cls-summary-spells { margin-left: auto; max-width: 62%; text-align: right; }
+.cls-summary-spell-list { font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+.cls-summary-lab {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--text-dim); margin-bottom: 8px;
+}
+
+/* Cards que se acomodam sozinhos em linha e têm a mesma altura: uma coluna alta ao lado
+   de um card baixo abria um vazio grande à direita em qualquer sessão. */
+.cls-summary-cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px; align-items: stretch; margin-bottom: 10px;
+}
+.cls-summary-card {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px 16px;
+}
+.cls-summary-wide { margin-bottom: 18px; }
+.cls-kv { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; font-size: 13px; }
+.cls-kv b { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-variant-numeric: tabular-nums; }
+/* rótulo | taxa | total, com os números alinhados por coluna */
+.cls-kv3, .cls-kv-head { display: grid; grid-template-columns: 1fr 5.5em 6.5em; gap: 10px; }
+.cls-kv3 b { text-align: right; }
+.cls-kv-head {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text-dim); padding-bottom: 2px;
+}
+.cls-kv-head b { font-family: inherit; font-weight: 600; text-align: right; }
+.cls-kv-sum { border-top: 1px solid var(--border); margin-top: 7px; padding-top: 8px; }
+.cls-charm-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+
+/* Título de seção que hospeda o switch à direita. */
+.cls-h.cls-h-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cls-headtools { margin-left: auto; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+.cls-switch {
+  display: inline-flex; align-items: center; gap: 9px; cursor: pointer; user-select: none;
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 13px 5px 9px;
+  transition: border-color 120ms ease-out, background 120ms ease-out;
+}
+.cls-switch:hover { border-color: var(--border-hover); }
+.cls-switch-input { position: absolute; opacity: 0; width: 0; height: 0; }
+.cls-switch-track {
+  width: 32px; height: 18px; border-radius: 999px; background: #22364f;
+  position: relative; flex: 0 0 auto; transition: background 140ms ease-out;
+}
+.cls-switch-knob {
+  position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+  background: #8fa8c4;
+  transition: transform 140ms cubic-bezier(.3, .8, .4, 1), background 140ms ease-out;
+}
+.cls-switch-input:checked + .cls-switch-track { background: var(--accent); }
+.cls-switch-input:checked + .cls-switch-track .cls-switch-knob { transform: translateX(14px); background: var(--on-accent); }
+.cls-switch-input:focus-visible + .cls-switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cls-switch-text { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
+.cls-switch-text b { font-family: 'JetBrains Mono', monospace; color: var(--cls-charm); font-weight: 500; }
+.cls-switch-input:checked ~ .cls-switch-text { color: var(--text); }
+
+/* REGRA DE LAYOUT: ligar/desligar o switch não pode mover NADA de posição. O slot do
+   "+N" tem largura fixa (como .cls-pct) e é emitido sempre, vazio quando não há
+   acréscimo; a variante em bloco reserva a segunda linha da célula de dano total.
+   Sem isso o número da coluna (alinhada à direita) era empurrado ao aparecer o span, e
+   a linha da tabela mudava de altura. Coberto por tests/ui-session-summary.test.mjs. */
+.cls-charm-plus {
+  display: inline-block; width: 7ch; margin-left: 6px; text-align: left;
+  color: var(--cls-charm); font-size: 11px; font-variant-numeric: tabular-nums; font-weight: 500;
+}
+.cls-charm-plus-block { display: block; width: auto; margin-left: 0; text-align: right; min-height: 1.25em; line-height: 1.25; }
+.cls-charm-note { min-height: 1.35em; }
+
+/* Faixa de charm na barra da composição: hachurada, para não se confundir com a cor de
+   nenhum componente. */
+.cls-share-bar { display: flex; }
+.cls-share-bar > i { flex: 0 0 auto; border-radius: 0; }
+.cls-share-bar > i:first-child { border-radius: 2px 0 0 2px; }
+.cls-share-bar > .cls-share-charm {
+  background: repeating-linear-gradient(135deg, var(--cls-charm) 0 3px, var(--cls-charm-dark) 3px 6px);
+  border-radius: 0 2px 2px 0;
+}
+
+@media (max-width: 760px) {
+  .cls-summary-spells { margin-left: 0; max-width: 100%; text-align: left; }
+}

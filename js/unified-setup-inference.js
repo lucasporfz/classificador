@@ -122,10 +122,14 @@
     if (useLife) {
       setup.lifeBase = lifeRobust.base;
       setup.lifeVote = lifeRobust;
+      setup.lifeBaseKnown = true;
+      setup.lifeBaseAbstention = null;
     }
     if (useMana) {
       setup.manaBase = manaRobust.base;
       setup.manaVote = manaRobust;
+      setup.manaBaseKnown = true;
+      setup.manaBaseAbstention = null;
     }
 
     applyExclusiveTrustedMinorLeechCharms(setup, useLife ? lifeRobust : null, useMana ? manaRobust : null, fallback);
@@ -137,6 +141,9 @@
     return {
       lifeBase: 0,
       manaBase: 0,
+      // C-006b: setup desconhecido é abstenção nos DOIS canais, nunca taxa zero medida.
+      lifeBaseKnown: false,
+      manaBaseKnown: false,
       confidence: 'unknown',
       inferred: false,
       source: source || 'unknown',
@@ -611,6 +618,11 @@
     return { bonus: nearest, reason: 'turn_local_delta' };
   }
 
+  // Piso de evidência por canal: abaixo dele o vencedor do ranking não discrimina de
+  // fato (C-006a/D-021a) e o canal abstém em vez de fixar nível. Extraído para constante
+  // nomeada só para dar nome ao número que já estava aqui — o valor não mudou.
+  const GOLD_CHANNEL_MIN_OK = 3;
+
   // Base do personagem (D-020) e minor charm por-mob (D-021) são inferidos JUNTOS: para
   // cada candidato de base, busca-se o melhor par (mob, bônus) que essa base sustenta, e o
   // candidato de base é avaliado pelo score da SESSÃO INTEIRA sob essa combinação — não
@@ -669,19 +681,41 @@
     rows.sort((a, b) => compareGoldBaseScores(a, b)
       || (Number(!!a.exposeWeaknessManaPerk) - Number(!!b.exposeWeaknessManaPerk)));
     const best = rows[0] || null;
-    if (!best || best.ok < 3) {
+    if (!best || best.ok < GOLD_CHANNEL_MIN_OK) {
+      // C-006b: ABSTENÇÃO, não taxa zero. Abaixo do piso de evidência o canal não tem
+      // nível determinável — vários pontos da grade de D-020 explicam as poucas
+      // observações e só o desempate por exatidão os separa, que é exatamente a situação
+      // em que D-021a/C-006a mandam NÃO fixar nível. O `base: 0` continua aqui porque é o
+      // que faz todo consumidor a jusante pular o canal (`leechEffectiveRateCandidates`
+      // descarta taxa <= 0, `expectedLeech` devolve null), mas ele deixa de ser a única
+      // marca do fato: `baseKnown: false` + `abstention` dizem que o canal ABSTEVE, em vez
+      // de afirmar que a taxa medida é zero.
+      const tiedBases = best
+        ? rows.filter(r => r.ok === best.ok).map(r => r.base).filter((v, i, a) => a.indexOf(v) === i)
+        : [];
       return {
         channel: cfg.channel,
         base: 0,
+        baseKnown: false,
         confidence: 'unknown',
         observed: best ? best.observed : 0,
         ranked: rows.slice(0, 8),
         contradictions: best ? best.high : 0,
         exposeWeaknessManaPerk: false,
+        abstention: {
+          reason: 'insufficient_gold_observations',
+          usableObservations: best ? best.ok : 0,
+          minUsableObservations: GOLD_CHANNEL_MIN_OK,
+          collectedObservations: best ? best.observed : 0,
+          bestBase: best ? best.base : null,
+          bestExact: best ? best.exact : 0,
+          tiedBases: tiedBases.length,
+        },
       };
     }
     const strong = best.ok >= 30 && best.independentTurns >= 20;
     const result = Object.assign({}, best, {
+      baseKnown: true,
       confidence: strong ? 'strong' : 'weak',
       ranked: rows.slice(0, 8),
       contradictions: best.high,
@@ -1044,6 +1078,13 @@
     return {
       lifeBase: out.life && out.life.base || 0,
       manaBase: out.mana && out.mana.base || 0,
+      // C-006b: a taxa e o CONHECIMENTO da taxa são coisas diferentes. Um canal que
+      // abstém devolve `base 0` para desligar-se a jusante, e `baseKnown: false` para
+      // que ninguém leia esse zero como "medi e não há leech neste canal".
+      lifeBaseKnown: !!(out.life && out.life.baseKnown),
+      manaBaseKnown: !!(out.mana && out.mana.baseKnown),
+      lifeBaseAbstention: (out.life && out.life.abstention) || null,
+      manaBaseAbstention: (out.mana && out.mana.abstention) || null,
       exposeWeaknessManaPerk: !!(out.mana && out.mana.exposeWeaknessManaPerk),
       life: out.life,
       mana: out.mana,
@@ -1066,6 +1107,8 @@
         evidenceCount: observations.length,
         diagnosticOnly: false,
         multiNDiagnostic: diagnostic,
+        lifeBaseAbstention: joint.lifeBaseAbstention,
+        manaBaseAbstention: joint.manaBaseAbstention,
         lifeVote: joint.life,
         manaVote: joint.mana,
         bountyTalismanSetup: joint.bountyTalismanSetup,
@@ -1074,6 +1117,10 @@
     const setup = {
       lifeBase: joint.lifeBase,
       manaBase: joint.manaBase,
+      lifeBaseKnown: joint.lifeBaseKnown,
+      manaBaseKnown: joint.manaBaseKnown,
+      lifeBaseAbstention: joint.lifeBaseAbstention,
+      manaBaseAbstention: joint.manaBaseAbstention,
       exposeWeaknessManaPerk: joint.exposeWeaknessManaPerk === true,
       confidence,
       inferred: true,
@@ -1214,6 +1261,9 @@
     return {
       lifeBase: 0,
       manaBase: 0,
+      // C-006b: voto multi-N é diagnóstico; nenhum canal fixa nível aqui.
+      lifeBaseKnown: false,
+      manaBaseKnown: false,
       confidence: 'unknown',
       diagnosticOnly: true,
       inferred: false,

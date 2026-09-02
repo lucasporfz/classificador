@@ -193,11 +193,16 @@ function clsLoadFile(inputId, isServer) {
   reader.readAsText(file);
 }
 
-function clsChartClickHandler(res, resolver) {
+// `mode` casa com o hover do gráfico. Os gráficos de turno usam
+// CLS_CHART_INDEX_INTERACTION (coluna inteira, qualquer altura do mouse), então o clique
+// tem de abrir o mesmo turno que o tooltip está mostrando; os histogramas continuam com
+// 'nearest'/intersect, que é o certo para barra.
+function clsChartClickHandler(res, resolver, mode) {
+  const hitMode = mode || { mode: 'nearest', intersect: true };
   return function(evt, activeEls, chartArg) {
     const chart = chartArg || this;
     if (!chart || typeof chart.getElementsAtEventForMode !== 'function') return;
-    const els = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+    const els = chart.getElementsAtEventForMode(evt, hitMode.mode, { intersect: hitMode.intersect }, true);
     if (!els || !els.length) return;
     const turns = typeof resolver === 'function' ? resolver(els[0], chart) : null;
     renderTurnDetail(turns && turns.length ? turns : null, res, 0);
@@ -675,11 +680,30 @@ function renderClassifier(res) {
     return row.hitsMean > 0 ? Math.round(value / row.hitsMean) : 0;
   };
   const rowDmg = rowDmgFor(clsRotationDamageMetric);
+  // Acréscimo de charm que a célula já contém, para ser sinalizado como "+N". O slot é
+  // emitido sempre (vazio quando não há charm) — ver a regra de layout em clsCharmPlus.
+  const rowCharmTotal = row => {
+    if (!clsCharmDamageOn) return null;
+    const charm = clsCharmForRow(summary, row);
+    return charm ? charm.dmg : null;
+  };
+  const rowCharmPerMetric = row => {
+    const total = rowCharmTotal(row);
+    if (!total) return null;
+    if (clsRotationDamageMetric === 'turn') return row.turns ? total / row.turns : null;
+    const hits = (+row.hitsMean || 0) * (+row.turns || 0);
+    return hits ? total / hits : null;
+  };
   const gravSanRowDmg = rowDmgFor(clsGravSanDamageMetric);
   const dmgModeSuffix = clsRotationDamageMetric === 'turn' ? t('cls_metric_turn_suffix') : t('cls_metric_hit_suffix');
   const gravSanDmgModeSuffix = clsGravSanDamageMetric === 'turn' ? t('cls_metric_turn_suffix') : t('cls_metric_hit_suffix');
   const gravSanAdjusted = clsGravSanAdjustedHits(res);
   const showAdjustedHits = gravSanAdjusted.showColumn;
+  // Resumo de sessão + fold-in opcional do dano de charm (js/session-summary.js).
+  // Precisa vir ANTES de `ranked`/`shareTotal`: com o switch ligado o charm entra em
+  // `damageTimeline`, que é a fonte da ordem, das cores, do donut e do dano total.
+  const summary = clsSessionSummaryModel(res);
+  clsCharmApplyToRows(res, summary);
   const ranked = clsRowsByDamage(res);
   const shareTotal = ranked.rows.reduce((sum, row) => sum + clsRowTotalEff(row), 0);
   // Percentual que acompanha um número, em slot de largura fixa (ver .cls-pct no CSS).
@@ -688,9 +712,10 @@ function renderClassifier(res) {
   // Cabeçalho de coluna numérica. O rótulo vai num span próprio para poder quebrar em
   // duas linhas sem empurrar o slot da % para uma linha só dele — é isso que permite
   // colunas estreitas o bastante para a tabela inteira caber sem rolagem horizontal.
-  const numTh = (label, spacer) =>
+  const charmSpacer = '<span class="cls-charm-plus" aria-hidden="true"></span>';
+  const numTh = (label, spacer, charmSlot) =>
     '<th style="text-align:right"><div class="cls-th-inner"><span>' + label + '</span>' +
-      (spacer ? pctSpacer : '') + '</div></th>';
+      (charmSlot ? charmSpacer : '') + (spacer ? pctSpacer : '') + '</div></th>';
   const rowsHtml = ranked.rows.map(r => {
     const adjustedCell = !showAdjustedHits ? '' :
       '<td style="text-align:right">' + f2(gravSanAdjusted.adjustedByKey[clsGravSanRowIdentity(r)] || 0) + '</td>';
@@ -702,10 +727,12 @@ function renderClassifier(res) {
       '"><td><span class="cls-share-dot" style="background:' + ranked.colorOf(r) + '"></span>' +
       (r.kind === 'arrow' ? t('cls_comp_arrow') : r.label) + '</td><td style="text-align:right">' + r.turns +
       pctCell(den > 0 ? (r.turns / den) * 100 : 0) +
-      '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td>' + adjustedCell + '<td style="text-align:right">' + rowDmg(r, 'base') +
-      '</td><td style="text-align:right">' + rowDmg(r, 'eff') + '</td>' +
+      '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td>' + adjustedCell +
+      '<td style="text-align:right"' + (clsCharmDamageOn ? ' class="cls-dim"' : '') + '>' + rowDmg(r, 'base') +
+      '</td><td style="text-align:right">' + rowDmg(r, 'eff') + clsCharmPlus(rowCharmPerMetric(r)) + '</td>' +
       '<td style="text-align:right">' + clsFmtInt(rowEff) +
-      pctCell(shareTotal > 0 ? (rowEff / shareTotal) * 100 : 0) + '</td></tr>';
+      pctCell(shareTotal > 0 ? (rowEff / shareTotal) * 100 : 0) +
+      clsCharmPlusBlock(rowCharmTotal(r)) + '</td></tr>';
     if (!r.tiers || !r.tiers.length) return main;
     const sub = r.tiers.map(tier => {
       // "Dano médio sem crítico" pools non-crit hits across many different casts (Terra
@@ -722,11 +749,14 @@ function renderClassifier(res) {
       // O tier é um recorte dos hits do componente: não tem turnos próprios (célula de
       // turnos vazia) e o seu dano total sai do dano/turno × turnos do componente-pai.
       const tierEff = Math.round((+tier.dmgEffPerTurn || 0) * r.turns);
+      // O tier NÃO recebe charm (a atribuição é por componente, não por recorte de tier),
+      // mas emite os mesmos slots vazios para não desalinhar das colunas do componente.
       return '<tr style="color:var(--text-muted);font-size:12px"><td style="padding-left:22px">└ ' + tierLabel(tier, r.bonusMult, r.beamFraction) +
         '</td><td></td><td style="text-align:right">' + f2(tier.hitsMean) + '</td>' + tierAdjustedCell +
-        '<td style="text-align:right">' + tierBaseCell + '</td><td style="text-align:right">' + rowDmg(tier, 'eff') + '</td>' +
+        '<td style="text-align:right">' + tierBaseCell + '</td>' +
+        '<td style="text-align:right">' + rowDmg(tier, 'eff') + clsCharmPlus(null) + '</td>' +
         '<td style="text-align:right">' + clsFmtInt(tierEff) +
-        pctCell(shareTotal > 0 ? (tierEff / shareTotal) * 100 : 0) + '</td></tr>';
+        pctCell(shareTotal > 0 ? (tierEff / shareTotal) * 100 : 0) + clsCharmPlusBlock(null) + '</td></tr>';
     }).join('');
     return main + sub;
   }).join('');
@@ -735,8 +765,6 @@ function renderClassifier(res) {
       '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td><td style="text-align:right">' + gravSanRowDmg(r, 'base') +
       '</td><td style="text-align:right">' + gravSanRowDmg(r, 'eff') + '</td></tr>'
   ).join('');
-  const dmgSummary = res.damageSpells.map(clsSpellNameSafe)
-    .concat((res.grenadeSpells || []).map(x => clsSpellNameSafe(x) + ' (' + t('cls_kind_grenade') + ')'));
   const aa = res.aaUptime || { expected: 0, hit: 0, lost: 0, pct: 0, perHour: 0 };
   const sr = res.spellRuneUptime || { expected: 0, hit: 0, lost: 0, pct: 0, perHour: 0 };
   const aaMetricHtml =
@@ -833,17 +861,23 @@ function renderClassifier(res) {
     const p = shareTotal > 0 ? (eff / shareTotal) * 100 : 0;
     const den = clsTurnUptimeDen(res, row);
     const tp = den > 0 ? (row.turns / den) * 100 : 0;
+    // Com o charm somado, a barra mostra a parcela dele numa faixa própria — hachurada e
+    // fora da paleta de componentes (ver --cls-charm), para não se confundir com o
+    // componente vizinho quando este for o vermelho da paleta.
+    const charmEff = clsCharmDamageOn ? ((clsCharmForRow(summary, row) || {}).dmg || 0) : 0;
+    const charmPct = shareTotal > 0 ? (charmEff / shareTotal) * 100 : 0;
     return '<div class="cls-share-row">' +
         '<div class="cls-share-name"><span class="cls-share-dot" style="background:' + ranked.colorOf(row) + '"></span>' + clsRowLabel(row) + '</div>' +
         '<div class="cls-share-turns">' + f1(tp) + '%</div>' +
         '<div class="cls-share-arrow">→</div>' +
         '<div class="cls-share-pct">' + f1(p) + '%</div>' +
-        '<div class="cls-share-total">' + clsFmtInt(eff) + '</div>' +
+        '<div class="cls-share-total">' + clsFmtInt(eff) + clsCharmPlusBlock(charmEff || null) + '</div>' +
       '</div>' +
-      '<div class="cls-share-bar"><i style="width:' + f1(p) + '%;background:' + ranked.colorOf(row) + '"></i></div>';
+      '<div class="cls-share-bar"><i style="width:' + f1(p - charmPct) + '%;background:' + ranked.colorOf(row) + '"></i>' +
+        '<i class="cls-share-charm" style="width:' + f1(charmPct) + '%"></i></div>';
   }).join('');
   const shareHtml = !ranked.rows.length || shareTotal <= 0 ? '' :
-    '<h3 class="cls-h">' + t('cls_h_damage_share') + '</h3>' +
+    clsSectionHeadHtml('cls_h_damage_share', 'clsCharmSwitchShare', summary) +
     '<div class="cls-share">' +
       '<div>' + clsShareDonut(ranked.rows, ranked.colorOf, shareTotal, 190) + '</div>' +
       '<div class="cls-share-legend">' +
@@ -873,6 +907,7 @@ function renderClassifier(res) {
         .map(d => '<div style="position:relative;height:220px"><canvas id="' + d.canvas + '"></canvas></div>').join('') +
       '</div>' : '') +
     metricHtml +
+    clsBrushHtml(res) +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineComponents"></canvas></div>' +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineHits"></canvas></div>' +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineDamage"></canvas></div>' +
@@ -881,12 +916,15 @@ function renderClassifier(res) {
 
   box.style.display = 'block';
   box.innerHTML =
-    '<p style="font-size:12.5px;margin:6px 0 14px"><strong>' + t('cls_player') + ':</strong> ' +
-      (res.player || '—') + ' &nbsp;·&nbsp; <strong>' + t('cls_dmg_spell') + ':</strong> ' +
-      (dmgSummary.join(', ') || '—') + '</p>' +
+    // O resumo de sessão absorve a antiga linha solta "jogador · dano do jogador":
+    // mesma informação, dentro da faixa de identificação.
+    clsSessionSummaryHtml(res, summary) +
     aaMetricHtml +
     shareHtml +
-    '<h3 class="cls-h">' + t('cls_h_rotation') + '</h3>' +
+    clsSectionHeadHtml('cls_h_rotation', 'clsCharmSwitchRotation', summary) +
+    // A nota é emitida SEMPRE (vazia quando desligado): condicioná-la à existência
+    // empurrava a tabela inteira para baixo ao ligar o switch.
+    '<p class="cls-share-note cls-charm-note">' + (clsCharmDamageOn ? t('cls_charm_note') : '&nbsp;') + '</p>' +
     rotationMetricHtml +
     '<div class="cls-table-scroll"><table class="cls-table cls-rotation-table" style="min-width:' + rotationMinWidth + 'px">' + rotationColgroup +
       '<thead><tr><th>' + t('cls_th_comp') + '</th>' +
@@ -894,7 +932,7 @@ function renderClassifier(res) {
       numTh(t('cls_th_hits'), false) +
       (showAdjustedHits ? numTh(t('cls_th_hits_gravsan_adjusted'), false) : '') +
       numTh(t('cls_th_dmg_base') + dmgModeSuffix, false) +
-      numTh(t('cls_th_dmg_eff') + dmgModeSuffix, false) +
+      numTh(t('cls_th_dmg_eff') + dmgModeSuffix, false, true) +
       numTh(t('cls_th_dmg_total'), true) +
       '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' +
     '<p class="cls-share-note">' + t('cls_share_note') + '</p>' +
@@ -903,7 +941,15 @@ function renderClassifier(res) {
     gravSanTableHtml +
     chartsHtml;
   renderClassifierCharts(res, compDefs);
+  clsWireBrush(res);
   clsWireTargetTooltips(res);
+  // Os dois switches de charm (composição e rotação) compartilham um estado só.
+  document.querySelectorAll('#clsResults [data-cls-charm-switch]').forEach(input => {
+    input.addEventListener('change', function() {
+      clsCharmDamageOn = this.checked;
+      renderClassifier(res);
+    });
+  });
   document.querySelectorAll('.cls-chart-metric button').forEach(btn => {
     btn.addEventListener('click', function() {
       const metric = this.getAttribute('data-metric');
@@ -930,6 +976,432 @@ function renderClassifier(res) {
   });
 }
 
+// Hover dos gráficos de turno: `interaction/hover` em modo 'index' com `intersect:false`
+// casa o hover pela COLUNA (o turno), não pela proximidade do ponto — o tooltip aparece
+// com o mouse em qualquer altura da área do gráfico, e não só exatamente em cima da linha.
+// O crosshair vertical existe para o olho saber qual turno está sendo lido quando o mouse
+// está longe das linhas.
+const CLS_CHART_INDEX_INTERACTION = { mode: 'index', intersect: false };
+
+const clsChartCrosshairPlugin = {
+  id: 'clsChartCrosshair',
+  afterDatasetsDraw(chart) {
+    if (!chart.$clsCrosshair) return;
+    const active = chart.getActiveElements();
+    if (!active.length) return;
+    const x = active[0].element.x, area = chart.chartArea, ctx = chart.ctx;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(230,239,248,.28)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(x, area.top); ctx.lineTo(x, area.bottom); ctx.stroke();
+    ctx.restore();
+  }
+};
+if (typeof Chart !== 'undefined' && !Chart.registry.plugins.get('clsChartCrosshair')) {
+  Chart.register(clsChartCrosshairPlugin);
+}
+
+// Handler do tooltip externo. `opts.hideZeros` esconde componentes que não dispararam no
+// turno; `opts.showTotal` soma as séries visíveis (só faz sentido no gráfico de
+// componentes). O div vive dentro do wrapper `position:relative` do canvas.
+function clsChartExternalTooltip(opts) {
+  return ctx => {
+    const chart = ctx.chart, tooltip = ctx.tooltip;
+    const parent = chart.canvas && chart.canvas.parentNode;
+    if (!parent) return;
+    let tip = chart.$clsTip;
+    if (!tip || !tip.isConnected) {
+      tip = document.createElement('div');
+      tip.className = 'cls-chart-tip';
+      parent.appendChild(tip);
+      chart.$clsTip = tip;
+    }
+    if (tooltip.opacity === 0 || !tooltip.dataPoints || !tooltip.dataPoints.length) {
+      tip.style.opacity = 0;
+      return;
+    }
+    const idx = tooltip.dataPoints[0].dataIndex;
+    let rows = tooltip.dataPoints.map(dp => ({
+      name: dp.dataset.label,
+      color: dp.dataset.borderColor,
+      value: dp.parsed.y
+    }));
+    if (opts.hideZeros) rows = rows.filter(r => r.value > 0);
+    rows.sort((a, b) => b.value - a.value);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const fmt = n => Number(n).toLocaleString(LANG === 'pt' ? 'pt-BR' : 'en-US');
+    const body = rows.length
+      ? rows.map(r =>
+          '<div class="cls-chart-tip-row">' +
+            '<span class="cls-chart-tip-sw" style="background:' + esc(r.color) + '"></span>' +
+            '<span class="cls-chart-tip-name">' + esc(r.name) + '</span>' +
+            '<span class="cls-chart-tip-val">' + fmt(r.value) + '</span>' +
+          '</div>')
+        .join('')
+      : '<div class="cls-chart-tip-row"><span class="cls-chart-tip-name">—</span></div>';
+    const total = (opts.showTotal && rows.length > 1)
+      ? '<div class="cls-chart-tip-row is-total">' +
+          '<span class="cls-chart-tip-name">' + esc(t('cls_summary_total')) + '</span>' +
+          '<span class="cls-chart-tip-val">' + fmt(rows.reduce((s, r) => s + r.value, 0)) + '</span>' +
+        '</div>'
+      : '';
+    tip.innerHTML =
+      '<div class="cls-chart-tip-title">' + esc(t('val_axis_turn')) + ' ' + (idx + 1) + '</div>' +
+      body + total;
+    // dentro da área do gráfico, virando de lado ao chegar na borda direita
+    const w = tip.offsetWidth || 160, area = chart.chartArea, cx = tooltip.caretX;
+    const left = (cx + 14 + w > area.right) ? cx - 14 - w : cx + 14;
+    tip.style.left = Math.max(area.left, left) + 'px';
+    tip.style.top = (area.top + 8) + 'px';
+    tip.style.opacity = 1;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Faixa de turnos (brush) + reclassificação da faixa.
+//
+// `clsTurnView` é a janela de turnos que os quatro gráficos de turno enxergam; é só
+// visão — arrastar o brush NÃO reclassifica nada. Classificar a faixa é uma ação
+// separada, com botão: ela recorta o log pelos timestamps da faixa e roda o motor de
+// novo, que então infere o setup (leech, referência de AA, perks) SÓ dela.
+// ---------------------------------------------------------------------------
+let clsTurnView = null;          // { start, end } em índices de turnTrace; null = tudo
+let clsBrushCharts = [];         // gráficos de turno que seguem a faixa
+let clsBrushWindowWired = false; // listeners de janela são globais: só uma vez
+let clsBrushDrag = null;
+let clsSliceActive = false;      // o resultado em vigor veio de "classificar a faixa"
+let clsBrushSetView = null;      // escritos por clsWireBrush; o zoom por scroll dos
+let clsBrushRedraw = null;       // gráficos e o resize da janela precisam deles de fora
+const CLS_BRUSH_MIN_SPAN = 8;
+const CLS_BRUSH_HANDLE_PX = 6;
+
+// Turno sem classificação: o motor devolve os hits em componentes `unresolved_*`, que
+// `buildCounts` soma em `counts.unresolved`.
+function clsUnresolvedFlags(res) {
+  const tr = (res && res.turnTrace) || [];
+  return tr.map(t => !!(t && t.counts && t.counts.unresolved > 0));
+}
+
+function clsBrushHtml(res) {
+  const n = ((res && res.turnTrace) || []).length;
+  if (n < 2) return '';
+  const unresolved = clsUnresolvedFlags(res).filter(Boolean).length;
+  return '<div class="cls-brush">' +
+    '<div class="cls-brush-head">' +
+      '<span class="cls-brush-title">' + t('cls_brush_title') + '</span>' +
+      '<span class="cls-brush-range" id="clsBrushRange"></span>' +
+      (unresolved
+        ? '<span class="cls-brush-unresolved">' + t('cls_brush_unresolved').replace('{n}', unresolved) + '</span>'
+        : '') +
+      '<button type="button" class="cls-brush-btn" id="clsBrushClassify"></button>' +
+      '<button type="button" class="cls-brush-btn is-ghost" id="clsBrushReset">' + t('cls_brush_reset') + '</button>' +
+      '<span class="cls-brush-hint">' + t('cls_brush_hint') + '</span>' +
+    '</div>' +
+    '<canvas id="clsBrushCanvas"></canvas>' +
+  '</div>';
+}
+
+function clsBrushClampView(start, end, n) {
+  const span = Math.max(CLS_BRUSH_MIN_SPAN, Math.round(end - start + 1));
+  if (span >= n) return null;                       // null = sessão inteira
+  let s = Math.max(0, Math.round(start));
+  if (s + span - 1 > n - 1) s = n - span;
+  return { start: s, end: s + span - 1 };
+}
+
+// Recorta o log por timestamp. Linhas sem `HH:MM:SS` no começo (o cabeçalho
+// `Channel ... saved ...`, de onde sai a data da sessão e portanto o regime de tabela de
+// mob) são SEMPRE preservadas — perdê-las mudaria a tabela de mobs junto com a faixa.
+function clsSliceLogByTs(text, tsStart, tsEnd) {
+  const out = [];
+  for (const line of String(text || '').split(/\r?\n/)) {
+    const m = /^(\d{2}):(\d{2}):(\d{2})/.exec(line);
+    if (!m) { out.push(line); continue; }
+    const ts = (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]);
+    if (ts >= tsStart && ts <= tsEnd) out.push(line);
+  }
+  return out.join('\n');
+}
+
+function clsBrushApplyView() {
+  for (const c of clsBrushCharts) {
+    if (!c || !c.options || !c.options.scales || !c.options.scales.x) continue;
+    c.options.scales.x.min = clsTurnView ? clsTurnView.start : undefined;
+    c.options.scales.x.max = clsTurnView ? clsTurnView.end : undefined;
+    c.update('none');
+  }
+}
+
+function clsWireBrush(res) {
+  // O painel é reconstruído a cada render: solta os ponteiros do render anterior antes
+  // de qualquer coisa, para o zoom por scroll nunca escrever numa faixa de outro
+  // resultado (acontece quando o novo resultado é curto demais para ter brush).
+  clsBrushSetView = null;
+  clsBrushRedraw = null;
+  const cv = $('clsBrushCanvas');
+  const btn = $('clsBrushClassify');
+  const resetBtn = $('clsBrushReset');
+  if (!cv || !btn) return;
+  const tr = res.turnTrace || [];
+  const n = tr.length;
+  const damage = (res.temporalSeries || []).map(p => p.damage || 0);
+  const unresolved = clsUnresolvedFlags(res);
+  const ctx = cv.getContext('2d');
+
+  const view = () => clsTurnView || { start: 0, end: n - 1 };
+  let hoverZone = null;            // 'left' | 'right' | 'pan' | null
+
+  // Alinhamento com os gráficos: o turno 1 do brush tem de cair na mesma coluna de
+  // pixels que o turno 1 dos gráficos de turno. Eles têm o eixo Y à esquerda (74px por
+  // `afterFit`) e o brush tem o padding do próprio cartão, então a área útil NÃO é a
+  // largura do canvas. Em vez de repetir os números aqui — que sairiam de sincronia na
+  // primeira mudança de layout — a faixa lê o `chartArea` de um gráfico vivo e converte
+  // para coordenadas do canvas do brush via as duas bounding boxes.
+  function plotBounds() {
+    const rect = cv.getBoundingClientRect();
+    const ref = clsBrushCharts.find(c => c && c.chartArea && c.canvas && c.canvas.isConnected);
+    if (!ref) return { l: 0, r: rect.width, w: rect.width };
+    const refRect = ref.canvas.getBoundingClientRect();
+    const l = refRect.left + ref.chartArea.left - rect.left;
+    const r = refRect.left + ref.chartArea.right - rect.left;
+    if (!(r > l + 8)) return { l: 0, r: rect.width, w: rect.width };
+    return { l: Math.max(0, l), r: Math.min(rect.width, r), w: rect.width };
+  }
+  const idxToX = (i, p) => p.l + (i / Math.max(1, n - 1)) * (p.r - p.l);
+  const xToIdx = (x, p) => Math.max(0, Math.min(n - 1,
+    Math.round(((x - p.l) / Math.max(1, p.r - p.l)) * (n - 1))));
+
+  function draw() {
+    const rect = cv.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = rect.width, h = rect.height;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const p = plotBounds();
+    // O texto do cabeçalho começa onde o eixo dos gráficos começa. Fica aqui, e não no
+    // syncHead, porque o resize refaz o desenho mas não o cabeçalho.
+    const head = cv.parentNode && cv.parentNode.querySelector('.cls-brush-head');
+    if (head) head.style.paddingLeft = Math.round(p.l) + 'px';
+
+    // turnos sem classificação, no fundo: o mapa de onde o motor não fechou
+    ctx.fillStyle = 'rgba(248,113,113,.32)';
+    const barW = Math.max(1, (p.r - p.l) / n);
+    for (let i = 0; i < n; i++) if (unresolved[i]) ctx.fillRect(idxToX(i, p) - barW / 2, 0, barW, h);
+
+    // sparkline do dano da sessão inteira
+    const max = damage.reduce((a, b) => Math.max(a, b), 0) || 1;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = idxToX(i, p), y = h - 3 - (damage[i] / max) * (h - 8);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.lineTo(p.r, h); ctx.lineTo(p.l, h); ctx.closePath();
+    ctx.fillStyle = 'rgba(245,158,11,.16)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(245,158,11,.55)'; ctx.lineWidth = 1; ctx.stroke();
+
+    // Janela. Os dois gestos se distinguem de propósito: CORTAR mora nas bordas e é uma
+    // lâmina de altura cheia que engrossa no alvo; MOVER é o corpo da janela, que acende
+    // por inteiro. Antes as duas coisas eram o mesmo retângulo com o mesmo cursor, e não
+    // dava para saber o que ia acontecer antes de arrastar.
+    const v = view();
+    const x0 = idxToX(v.start, p), x1 = idxToX(v.end, p);
+    const zone = clsBrushDrag ? clsBrushDrag.kind : hoverZone;
+
+    ctx.fillStyle = 'rgba(8,15,29,.72)';
+    ctx.fillRect(p.l, 0, x0 - p.l, h); ctx.fillRect(x1, 0, p.r - x1, h);
+
+    // corpo da janela: acende de leve quando o gesto é mover
+    if (zone === 'pan') {
+      ctx.fillStyle = 'rgba(0,196,154,.07)';
+      ctx.fillRect(x0, 0, x1 - x0, h);
+    }
+    ctx.strokeStyle = zone === 'pan' ? '#00C49A' : 'rgba(0,196,154,.55)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + .5, .5, Math.max(1, x1 - x0) - 1, h - 1);
+
+    // alças de corte: lâmina de altura cheia, mais larga e clara quando é o alvo
+    const blade = (x, active) => {
+      const bw = active ? 4 : 2;
+      ctx.fillStyle = active ? '#7CF0D2' : '#00C49A';
+      ctx.fillRect(x - bw / 2, 0, bw, h);
+    };
+    blade(x0, zone === 'left');
+    blade(x1, zone === 'right');
+
+  }
+
+  function syncHead() {
+    const v = view();
+    const rangeEl = $('clsBrushRange');
+    if (rangeEl) {
+      rangeEl.textContent = t('cls_brush_range')
+        .replace('{a}', v.start + 1).replace('{b}', v.end + 1).replace('{n}', n);
+    }
+    const whole = !clsTurnView;
+    btn.disabled = whole;
+    btn.textContent = whole
+      ? t('cls_brush_same')
+      : t('cls_brush_classify').replace('{a}', v.start + 1).replace('{b}', v.end + 1);
+    // "Ver tudo" só apaga quando não há nada para desfazer: nem zoom, nem faixa
+    // classificada no lugar da sessão.
+    if (resetBtn) resetBtn.disabled = whole && !clsSliceActive;
+  }
+
+  function setView(start, end) {
+    clsTurnView = clsBrushClampView(start, end, n);
+    clsBrushApplyView();
+    draw();
+    syncHead();
+  }
+  clsBrushSetView = setView;   // o zoom por scroll dos gráficos escreve aqui
+  clsBrushRedraw = draw;
+
+  // x do mouse em coordenadas do canvas do brush; a conversão para turno passa pelo
+  // mesmo plotBounds do desenho, senão o clique cairia num turno diferente do que a
+  // faixa mostra debaixo do cursor.
+  const pos = ev => Math.max(0, Math.min(cv.getBoundingClientRect().width,
+    ev.clientX - cv.getBoundingClientRect().left));
+
+  // Uma definição só de "que gesto é este x", usada pelo cursor, pelo desenho e pelo
+  // mousedown — se divergissem, o cursor prometeria um gesto e o clique faria outro.
+  function zoneAt(x) {
+    const v = view(), p = plotBounds();
+    const x0 = idxToX(v.start, p), x1 = idxToX(v.end, p);
+    if (Math.abs(x - x0) <= CLS_BRUSH_HANDLE_PX) return 'left';
+    if (Math.abs(x - x1) <= CLS_BRUSH_HANDLE_PX) return 'right';
+    if (x > x0 && x < x1) return 'pan';
+    return 'new';
+  }
+  const cursorFor = z => z === 'left' || z === 'right' ? 'ew-resize'
+    : z === 'pan' ? 'grab' : 'crosshair';
+
+  cv.addEventListener('mousemove', ev => {
+    if (clsBrushDrag) return;          // durante o arrasto quem manda é o cursor do arrasto
+    const z = zoneAt(pos(ev));
+    cv.style.cursor = cursorFor(z);
+    const shown = z === 'new' ? null : z;
+    if (shown !== hoverZone) { hoverZone = shown; draw(); }
+  });
+  cv.addEventListener('mouseleave', () => {
+    if (hoverZone !== null) { hoverZone = null; draw(); }
+  });
+
+  cv.addEventListener('mousedown', ev => {
+    const x = pos(ev), v = view(), p = plotBounds();
+    const kind = zoneAt(x);
+    const drag = { kind, setView, xToIdx, view, plotBounds, cv };
+    if (kind === 'pan') { drag.grabIdx = xToIdx(x, p); drag.start = v.start; drag.end = v.end; }
+    else if (kind === 'new') drag.anchor = xToIdx(x, p);
+    clsBrushDrag = drag;
+    cv.style.cursor = kind === 'pan' ? 'grabbing' : cursorFor(kind);
+    draw();
+    ev.preventDefault();
+  });
+  cv.addEventListener('dblclick', () => setView(0, n - 1));
+
+  // listeners de janela são globais e o painel é re-renderizado a cada render:
+  // registrá-los uma vez só evita empilhar um por render.
+  if (!clsBrushWindowWired) {
+    clsBrushWindowWired = true;
+    window.addEventListener('mousemove', ev => {
+      const d = clsBrushDrag;
+      if (!d || !d.cv || !d.cv.isConnected) return;
+      const r = d.cv.getBoundingClientRect();
+      const x = Math.max(0, Math.min(r.width, ev.clientX - r.left));
+      const idx = d.xToIdx(x, d.plotBounds()), v = d.view();
+      if (d.kind === 'left') d.setView(Math.min(idx, v.end - CLS_BRUSH_MIN_SPAN + 1), v.end);
+      else if (d.kind === 'right') d.setView(v.start, Math.max(idx, v.start + CLS_BRUSH_MIN_SPAN - 1));
+      else if (d.kind === 'pan') d.setView(d.start + (idx - d.grabIdx), d.end + (idx - d.grabIdx));
+      else if (d.kind === 'new') {
+        const a = Math.min(d.anchor, idx), b = Math.max(d.anchor, idx);
+        if (b - a + 1 >= CLS_BRUSH_MIN_SPAN) d.setView(a, b);
+      }
+    });
+    window.addEventListener('mouseup', () => {
+      const d = clsBrushDrag;
+      clsBrushDrag = null;
+      if (d && d.cv && d.cv.isConnected) d.cv.style.cursor = '';
+      if (clsBrushRedraw) clsBrushRedraw();
+    });
+    window.addEventListener('resize', () => { if (clsBrushRedraw) clsBrushRedraw(); });
+  }
+
+  // classificar só a faixa: recorta o log pelos timestamps dela e roda o motor de novo.
+  // O local chat leva uma folga PARA TRÁS porque o cast que produz o dano do primeiro
+  // turno pode estar segundos antes dele (a granada explode em [cast+2, cast+4]). No
+  // server log a folga não existe: ela criaria turnos fora da faixa pedida.
+  btn.addEventListener('click', () => {
+    if (!clsTurnView) return;
+    const a = tr[clsTurnView.start], b = tr[clsTurnView.end];
+    if (!a || !b) return;
+    $('clsStatus').textContent = t('cls_brush_running');
+    try {
+      const sv = clsSliceLogByTs($('clsServerInput').value, a.ts, b.ts + 1);
+      const lc = clsSliceLogByTs($('clsLocalInput').value, a.ts - 5, b.ts + 1);
+      const sliced = classifyWithLocalChat(sv, lc, { trace: true });
+      clsTurnView = null;
+      clsSliceActive = true;
+      lastClsResult = sliced;
+      renderClassifier(sliced);
+      $('clsStatus').textContent = t('cls_status_done');
+    } catch (err) {
+      $('clsStatus').textContent = 'erro: ' + err.message;
+      console.error(err);
+    }
+  });
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (!clsSliceActive) { setView(0, n - 1); return; }
+      // O resultado em vigor é de uma faixa: voltar ao todo é reclassificar a sessão.
+      // Os textareas nunca foram tocados pelo recorte, então ainda têm o log completo.
+      $('clsStatus').textContent = t('cls_status_running');
+      try {
+        const full = classifyWithLocalChat($('clsServerInput').value, $('clsLocalInput').value, { trace: true });
+        clsTurnView = null;
+        clsSliceActive = false;
+        lastClsResult = full;
+        renderClassifier(full);
+        $('clsStatus').textContent = t('cls_status_done');
+      } catch (err) {
+        $('clsStatus').textContent = 'erro: ' + err.message;
+        console.error(err);
+      }
+    });
+  }
+
+  draw();
+  syncHead();
+}
+
+
+// Marca de turno sem classificação, rente ao eixo X dos gráficos de turno.
+const clsUnresolvedTicksPlugin = {
+  id: 'clsUnresolvedTicks',
+  beforeDatasetsDraw(chart) {
+    const flags = chart.$clsUnresolved;
+    if (!flags || !flags.length) return;
+    const area = chart.chartArea, ctx = chart.ctx, xs = chart.scales.x;
+    const from = clsTurnView ? clsTurnView.start : 0;
+    const to = clsTurnView ? clsTurnView.end : flags.length - 1;
+    ctx.save();
+    ctx.fillStyle = 'rgba(248,113,113,.75)';
+    for (let i = from; i <= to; i++) {
+      if (!flags[i]) continue;
+      const x = xs.getPixelForValue(i);
+      ctx.fillRect(x - 1, area.bottom - 4, 2, 4);
+    }
+    ctx.restore();
+  }
+};
+if (typeof Chart !== 'undefined' && !Chart.registry.plugins.get('clsUnresolvedTicks')) {
+  Chart.register(clsUnresolvedTicksPlugin);
+}
+
 // Gráficos do classificador (só log observado, sem linha de simulação): componentes por
 // turno, hits/turno, dano/turno, Impact Analyser e histograma por componente.
 function renderClassifierCharts(res, compDefs) {
@@ -939,11 +1411,19 @@ function renderClassifierCharts(res, compDefs) {
   clsTimelineComponentsChart = clsTimelineHitsChart = clsTimelineDamageChart = clsImpactChart = null;
   const series = res.temporalSeries || [];
   if (typeof Chart === 'undefined' || !series.length) return;
-  const labels = series.map((_, i) => i + 1);
+  // Labels como STRING de propósito: assim `scales.x.min/max` numérico é lido pelo
+  // CategoryScale como ÍNDICE de turno. Com labels numéricos ele procuraria o VALOR no
+  // array e a faixa sairia deslocada de um.
+  const labels = series.map((_, i) => String(i + 1));
   const gridColor = 'rgba(139,164,194,0.1)';
   const toRgba = (hex, a) => { const [r, g, b] = [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)].map(h => parseInt(h, 16)); return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'; };
   const scales = yTitle => ({
-    x: { grid: { color: gridColor }, ticks: { color: '#8BA4C2', font: { size: 10 }, maxTicksLimit: 12 }, title: { display: true, text: t('val_axis_turn'), color: '#8BA4C2' } },
+    x: {
+      grid: { color: gridColor }, ticks: { color: '#8BA4C2', font: { size: 10 }, maxTicksLimit: 12 },
+      title: { display: true, text: t('val_axis_turn'), color: '#8BA4C2' },
+      min: clsTurnView ? clsTurnView.start : undefined,
+      max: clsTurnView ? clsTurnView.end : undefined
+    },
     y: {
       grid: { color: gridColor },
       ticks: { color: '#8BA4C2', font: { size: 11 } },
@@ -959,11 +1439,24 @@ function renderClassifierCharts(res, compDefs) {
     const cv = $(canvasId);
     if (!cv) return null;
     try {
-      return new Chart(cv, {
+      const chart = new Chart(cv, {
         type: 'line',
-        data: { labels, datasets: [{ label: t('val_timeline_real'), data, borderColor: color, backgroundColor: toRgba(color, 0.12), borderWidth: 1.5, pointRadius: 0, tension: .25 }] },
-        options: { responsive: true, maintainAspectRatio: false, animation: false, onClick: clsChartClickHandler(res, hit => clsTurnByDataIndex(res, hit.index)), plugins: { legend: { display: false }, title: { display: true, text: title_, color: '#DDE6F3' } }, scales: scales() }
+        data: { labels, datasets: [{ label: title_, data, borderColor: color, backgroundColor: toRgba(color, 0.12), borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, tension: .25 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          interaction: CLS_CHART_INDEX_INTERACTION,
+          hover: CLS_CHART_INDEX_INTERACTION,
+          onClick: clsChartClickHandler(res, hit => clsTurnByDataIndex(res, hit.index), CLS_CHART_INDEX_INTERACTION),
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: title_, color: '#DDE6F3' },
+            tooltip: { enabled: false, external: clsChartExternalTooltip({}) }
+          },
+          scales: scales()
+        }
       });
+      chart.$clsCrosshair = true;
+      return chart;
     } catch (err) { console.error('[classifier chart] failed:', canvasId, err); return null; }
   };
   // componentes por turno — uma linha por componente/spell REAL da rotação (das linhas
@@ -990,16 +1483,50 @@ function renderClassifierCharts(res, compDefs) {
             label: clsRowLabel(r),
             data: componentTimeline(r),
             borderColor: color, backgroundColor: color,
-            borderWidth: 2, pointRadius: 0, tension: 0.35, fill: false
+            borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.35, fill: false
           };
         }) },
-        options: { responsive: true, maintainAspectRatio: false, animation: false, onClick: clsChartClickHandler(res, hit => clsTurnByDataIndex(res, hit.index)), plugins: { legend: { labels: { color: '#8BA4C2', font: { size: 11 } } }, title: { display: true, text: componentTitle, color: '#DDE6F3' } }, scales: scales(componentMetric === 'damage' ? t('cls_metric_damage') : t('cls_metric_hits')) }
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          interaction: CLS_CHART_INDEX_INTERACTION,
+          hover: CLS_CHART_INDEX_INTERACTION,
+          onClick: clsChartClickHandler(res, hit => clsTurnByDataIndex(res, hit.index), CLS_CHART_INDEX_INTERACTION),
+          plugins: {
+            legend: { labels: { color: '#8BA4C2', font: { size: 11 } } },
+            title: { display: true, text: componentTitle, color: '#DDE6F3' },
+            tooltip: { enabled: false, external: clsChartExternalTooltip({ hideZeros: true, showTotal: true }) }
+          },
+          scales: scales(componentMetric === 'damage' ? t('cls_metric_damage') : t('cls_metric_hits'))
+        }
       });
+      clsTimelineComponentsChart.$clsCrosshair = true;
     } catch (err) { console.error('[classifier chart] failed: clsTimelineComponents', err); }
   }
   clsTimelineHitsChart = lineChart('clsTimelineHits', selectedHits, t('val_timeline_hits'), '#3B82F6');
   clsTimelineDamageChart = lineChart('clsTimelineDamage', selectedDamage, t('val_timeline_damage'), '#F59E0B');
   clsImpactChart = lineChart('clsImpactAnalyser', movingImpact(selectedSeries), t('val_impact_analyser'), '#3B82F6');
+
+  // Os quatro gráficos de turno seguem a mesma faixa e mostram as mesmas marcas de turno
+  // sem classificação. O scroll sobre qualquer um deles dá zoom ancorado no turno que
+  // está debaixo do cursor.
+  const unresolvedFlags = clsUnresolvedFlags(res);
+  clsBrushCharts = [clsTimelineComponentsChart, clsTimelineHitsChart, clsTimelineDamageChart, clsImpactChart].filter(Boolean);
+  for (const chart of clsBrushCharts) {
+    chart.$clsUnresolved = unresolvedFlags;
+    chart.canvas.addEventListener('wheel', ev => {
+      if (!clsBrushSetView || labels.length < 2) return;
+      const area = chart.chartArea;
+      const px = ev.clientX - chart.canvas.getBoundingClientRect().left;
+      if (px < area.left || px > area.right) return;
+      ev.preventDefault();
+      const v = clsTurnView || { start: 0, end: labels.length - 1 };
+      const span = v.end - v.start + 1;
+      const newSpan = Math.max(8, Math.min(labels.length, Math.round(span * (ev.deltaY > 0 ? 1.25 : 0.8))));
+      const frac = (px - area.left) / Math.max(1, area.right - area.left);
+      const anchor = v.start + frac * (span - 1);
+      clsBrushSetView(anchor - frac * (newSpan - 1), anchor - frac * (newSpan - 1) + newSpan - 1);
+    }, { passive: false });
+  }
   for (const d of (compDefs || [])) {
     renderSmallComponentHistogram(d.canvas, c => { clsRowHistCharts.push(c); }, d.vals, null, d.label, undefined, d.color, {
       onClick: clsChartClickHandler(res, (hit, chart) => {
@@ -1032,6 +1559,8 @@ $('btnClassify').addEventListener('click', () => {
   $('clsStatus').textContent = t('cls_status_running');
   try {
     const res = classifyWithLocalChat(sv, lc, { trace: true });
+    clsTurnView = null;   // classificação nova = faixa volta a ser a sessão inteira
+    clsSliceActive = false;
     lastClsResult = res;
     renderClassifier(res);
     $('clsStatus').textContent = t('cls_status_done');
