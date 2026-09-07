@@ -446,7 +446,21 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
   background: var(--bg-surface); border: 1px solid var(--border);
   border-radius: var(--r); padding: 14px 16px;
 }
-.cls-summary-wide { margin-bottom: 18px; }
+.cls-summary-wide { margin-bottom: 18px; overflow-x: auto; }
+.cls-summary-perks .cls-kv { display: grid; grid-template-columns: max-content 1fr; gap: 14px; }
+.cls-summary-perks .cls-kv > * { white-space: nowrap; }
+.cls-summary-perks .cls-kv b { text-align: right; }
+.cls-summary-bounty-mobs {
+  border-top: 1px solid var(--border); margin-top: 12px; padding-top: 10px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; font-size: 12px;
+}
+.cls-summary-bounty-mobs span { color: var(--text-muted); }
+.cls-summary-bounty-mobs b { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; }
+@media (max-width: 1000px) { .cls-summary-perks { grid-column: 1 / -1; } }
+@media (max-width: 620px) {
+  .cls-summary-perks .cls-kv { grid-template-columns: 1fr; gap: 4px; }
+  .cls-summary-perks .cls-kv b { text-align: left; }
+}
 .cls-kv { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; font-size: 13px; }
 .cls-kv b { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-variant-numeric: tabular-nums; }
 /* rótulo | taxa | total, com os números alinhados por coluna */

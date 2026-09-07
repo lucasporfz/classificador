@@ -113,6 +113,17 @@ function clsCharmsEquipped(unified) {
     if (procs) charms.push({ name, procs, dmg: 0, byMob, kind: 'crit' });
   });
 
+  const leech = unified.leechSetup || {};
+  [
+    ['vampiric embrace', leech.vampiricMob, leech.vampiricBonus, 'Life'],
+    ["void's call", leech.voidsMob, leech.voidsBonus, 'Mana'],
+  ].forEach(([name, mob, bonus, channel]) => {
+    if (mob && bonus > 0) charms.push({
+      name, mob, bonus, channel, procs: 0, dmg: 0,
+      byMob: new Map([[mob, bonus]]), kind: 'leech',
+    });
+  });
+
   charms.sort((a, b) => (b.dmg - a.dmg) || (b.procs - a.procs));
   charms.forEach((charm, i) => {
     charm.color = CLS_CHARM_PALETTE[i % CLS_CHARM_PALETTE.length];
@@ -252,6 +263,14 @@ function clsSessionSummaryHtml(res, model) {
   const cap = s => String(s).charAt(0).toUpperCase() + String(s).slice(1);
   // f2 é local a renderClassifier em app.js; o resumo formata o seu próprio percentual
   const pct = v => (v == null ? '—' : (v * 100).toFixed(2) + '%');
+  const ladder = (unified._context || {}).combatMasteryLadder || {};
+  const bounty = unified.bountyTalismanSetup || {};
+  const bountyValue = axis => axis && axis.confidence !== 'unknown' &&
+    Number.isInteger(axis.level) && axis.bonus != null
+    ? t('cls_summary_level') + ' ' + axis.level + ' · +' + pct(axis.bonus) : null;
+  const server = (unified.facts || {}).server || {};
+  const bountyMobs = [...new Set([...(server.hits || []), ...(server.events || [])]
+    .filter(hit => hit.bountyTalisman && hit.mob).map(hit => hit.mob))];
 
   const spells = (res.damageSpells || []).map(clsSpellNameSafe)
     .concat((res.grenadeSpells || []).map(x => clsSpellNameSafe(x) + ' (' + t('cls_kind_grenade') + ')'));
@@ -273,39 +292,29 @@ function clsSessionSummaryHtml(res, model) {
         '<b class="cls-life">' + pct(leech.lifeBase) + '</b><b class="cls-life">' + clsFmtInt(model.life) + '</b></div>' +
       '<div class="cls-kv cls-kv3"><span>' + t('cls_summary_mana') + '</span>' +
         '<b class="cls-mana">' + pct(leech.manaBase) + '</b><b class="cls-mana">' + clsFmtInt(model.mana) + '</b></div>' +
-      ((leech.minorLifeCharm || leech.minorManaCharm) ?
-        '<div class="cls-kv"><span>' + t('cls_summary_minor_charm') + '</span><b>' +
-        esc([leech.minorLifeCharm, leech.minorManaCharm].filter(Boolean)
-          .map(c => c.mob + ' +' + pct(c.bonus)).join(' · ')) + '</b></div>' : '') +
-    '</div>';
-
-  const charmsCard =
-    '<div class="cls-summary-card"><div class="cls-summary-lab">' + t('cls_summary_charms') + '</div>' +
-      (model.charms.length ? model.charms.map(charm =>
-        '<div class="cls-kv"><span><i class="cls-charm-dot" style="background:' + charm.color + '"></i>' +
-          esc(cap(charm.name)) + (charm.kind === 'crit' ? ' <span class="cls-dim">(' + t('cls_summary_crit_charm') + ')</span>' : '') +
-        '</span><b class="cls-muted">' + esc(charm.mob) + '</b></div>').join('')
-        : '<div class="cls-dim">' + t('cls_summary_none') + '</div>') +
-      (model.charmTotal ? '<div class="cls-kv cls-kv-sum"><span>' + t('cls_summary_charm_damage') + '</span>' +
-        '<b class="cls-charm">' + clsFmtInt(model.charmTotal) + '</b></div>' : '') +
     '</div>';
 
   const perks = [
+    ['Combat Mastery', ladder.active
+      ? t('cls_summary_inferred') + ' · ' + pct(ladder.step) + ' ' + t('cls_summary_per_step') : null],
     ['BM (' + t('cls_summary_elem_pierce') + ')', unified.bmPierce ? '+' + pct(unified.bmPierce) : null],
     [t('cls_summary_weapon_pierce'), unified.weaponPhysicalPierce ? '+' + pct(unified.weaponPhysicalPierce) : null],
     [t('cls_summary_bestiary'), (unified.bestiaryClassDamageBonus || {}).bonus
       ? '+' + pct(unified.bestiaryClassDamageBonus.bonus) + ' (' + (unified.bestiaryClassDamageBonus.class || '?') + ')' : null],
     // omegaSetup vive no contexto do motor, não na raiz do resultado
     ['Omega', ((unified._context || {}).omegaSetup || {}).active ? '×' + unified._context.omegaSetup.multiplier : null],
-    ['Bounty Talisman', (((unified.bountyTalismanSetup || {}).damage) || {}).multiplier
-      ? '×' + unified.bountyTalismanSetup.damage.multiplier : null],
+    ['Bounty Talisman · ' + t('cls_summary_damage'), bountyValue(bounty.damage)],
+    ['Bounty Talisman · Life Leech', bountyValue(bounty.life)],
     ['Expose Weakness → mana', leech.exposeWeaknessManaPerk ? t('cls_summary_yes') : null],
   ].filter(p => p[1]);
   // O elemento do auto ataque só é inferido (e só faz diferença) no regime RP.
   if (model.vocation === 'paladin') perks.push([t('cls_summary_aa_element'), cap(unified.aaElement || '—')]);
   const perksCard = !perks.length ? '' :
-    '<div class="cls-summary-card"><div class="cls-summary-lab">' + t('cls_summary_perks') + '</div>' +
+    '<div class="cls-summary-card cls-summary-perks"><div class="cls-summary-lab">' + t('cls_summary_perks') + '</div>' +
       perks.map(p => '<div class="cls-kv"><span>' + esc(p[0]) + '</span><b>' + esc(p[1]) + '</b></div>').join('') +
+      (bountyMobs.length && (bountyValue(bounty.damage) || bountyValue(bounty.life))
+        ? '<div class="cls-summary-bounty-mobs"><span>' + t('cls_summary_bounty_mobs') + '</span><b>' +
+          bountyMobs.map(esc).join(' · ') + '</b></div>' : '') +
     '</div>';
 
   const creatures =
@@ -313,22 +322,27 @@ function clsSessionSummaryHtml(res, model) {
       '<table class="cls-table"><thead><tr><th>' + t('cls_summary_creature') + '</th>' +
         '<th style="text-align:right">' + t('cls_summary_hits') + '</th>' +
         '<th style="text-align:right">' + t('cls_summary_damage') + '</th>' +
-        '<th style="text-align:right">' + t('cls_summary_charm') + '</th></tr></thead><tbody>' +
+        '<th style="text-align:right">' + t('cls_summary_charm') + '</th>' +
+        '<th style="text-align:right">' + t('cls_summary_minor_charms') + '</th></tr></thead><tbody>' +
       model.mobs.map(mob => {
-        const list = model.charms.filter(charm => charm.byMob.get(mob.mob));
+        const list = model.charms.filter(charm => charm.kind !== 'leech' && charm.byMob.has(mob.mob));
+        const minor = model.charms.filter(charm => charm.kind === 'leech' && charm.byMob.has(mob.mob));
         return '<tr><td>' + esc(mob.mob) + '</td>' +
           '<td style="text-align:right">' + clsFmtInt(mob.hits) + '</td>' +
           '<td style="text-align:right">' + clsFmtInt(mob.dmg) + '</td>' +
           '<td style="text-align:right">' + (list.length ? list.map(charm =>
             '<i class="cls-charm-dot" style="background:' + charm.color + '"></i>' + esc(charm.name) +
             (charm.dmg ? ' · ' + clsFmtInt(charm.byMob.get(mob.mob)) : ' <span class="cls-dim">' + charm.byMob.get(mob.mob) + '×</span>')
+          ).join(' &nbsp; ') : '<span class="cls-dim">—</span>') + '</td>' +
+          '<td style="text-align:right">' + (minor.length ? minor.map(charm =>
+            '<i class="cls-charm-dot" style="background:' + charm.color + '"></i>' + esc(charm.name)
           ).join(' &nbsp; ') : '<span class="cls-dim">—</span>') + '</td></tr>';
       }).join('') +
       (model.charmUnattributed.procs ?
         '<tr><td class="cls-dim">' + t('cls_summary_charm_orphan') + '</td><td></td><td></td>' +
         '<td style="text-align:right" class="cls-dim">' + clsFmtInt(model.charmUnattributed.dmg) +
-        ' (' + model.charmUnattributed.procs + ' ' + t('cls_summary_procs') + ')</td></tr>' : '') +
+        ' (' + model.charmUnattributed.procs + ' ' + t('cls_summary_procs') + ')</td><td></td></tr>' : '') +
       '</tbody></table></div>';
 
-  return head + '<div class="cls-summary-cards">' + leechCard + charmsCard + perksCard + '</div>' + creatures;
+  return head + '<div class="cls-summary-cards">' + leechCard + perksCard + '</div>' + creatures;
 }
