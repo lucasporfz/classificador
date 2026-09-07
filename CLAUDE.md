@@ -96,7 +96,66 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
-**Baseline conhecido (medido em 01/Set/2026, após `make-leech-channel-abstention-explicit`).**
+**Baseline conhecido (medido em 07/Set/2026, após `model-combat-mastery-ladder-and-fix-omega-false-positive`).**
+Total de alvos: **44/49 OK**; gabarito **231/231**; invariantes **40/41** fixtures limpos, com a
+única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **20.174** turnos, **59** sem
+classificação, **41 pares**, 140 sessões. Os 2 alvos a mais (47→49) são os dois testes novos desta
+change, ambos verdes.
+
+As 5 falhas são as mesmas de sempre e todas **pré-existentes** — conjunto byte-idêntico ao de
+antes da change: `gabarito prioritario + invariantes mecanicas` (a falha do `bakradrone`),
+`experimental-ui-parity`, `mob-element-regime`, `unified-grav-san-ratio-witness` e
+`unified-spiritual-outburst-multistage`.
+
+**Drift desta change: ZERO turnos.** O diff do dump completo é **vazio** — 0 linhas em 20.174
+turnos de 41 pares. A change corrige **fatos de setup de sessão**, não classificação: em
+`picture` S0 o selo `Omega ×1.06` (falso positivo) desliga e o bônus de classe passa de
+inconclusivo a **sem bônus por prova**. As regras são **M-042** (escada de Combat Mastery, com
+`M-042a` teto e `M-042b` teto superior) e a cláusula nova de **M-041** (a postura é estado do
+proc de dano de charm, nas três leituras que usam o charm como testemunha).
+
+**Raio: 4 sessões com escada em 137 medidas** (`picture` S0 degrau 1%; `tom` S0 e `tom 2` S0
+degrau 2%; `crypt` S0 **não** tem escada e fica intacto — é o fixture onde o omega foi
+calibrado). Varredura em `reports/proto-charm-ladder-corpus.txt`.
+
+**Pendências declaradas de M-042:** (a) o degrau do Combat Mastery **não é revertido** — o dano
+base agregado de um knight com o perk carrega +0 a +6% (média ≈3%), precedente `M-037`; (b) sob
+escada, um bônus de classe **grande** deixa vários candidatos abaixo do teto e a classe abstém —
+só bônus pequenos, ou classes que exibam o degrau zero, ficam craváveis; (c) a via do teto
+superior de `M-042b` (omega por cima da escada) é **declarada e sem caso no corpus**, coberta só
+por teste sintético.
+
+**Baseline anterior, para referência (medido em 06/Set/2026, após `model-knight-protector-stance`).**
+Total de alvos: **42/47 OK**; gabarito **231/231**; invariantes **40/41** fixtures limpos, com a
+única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **20.174** turnos, **59** sem
+classificação. Corpus: **41 pares** (`picture` entrou em `logs/` em 06/Set/2026).
+
+As 5 falhas são as mesmas de sempre e todas **pré-existentes**: `gabarito prioritario +
+invariantes mecanicas` (a falha do `bakradrone`), `experimental-ui-parity`, `mob-element-regime`,
+`unified-grav-san-ratio-witness` e `unified-spiritual-outburst-multistage`. O alvo a mais (46→47)
+é `tests/unified-knight-stance.test.mjs`, novo desta change.
+
+**Drift desta change: 14 turnos, todos em `picture` e `ek boss`** (o mesmo personagem `Picture`),
+em 20.174 turnos de 41 pares. Zero drift nos outros 39 pares — inclusive em `bastion` e
+`night harpy`, que são knight mas só lançam `utito tempo`. A regra é **M-041** (postura de
+knight: Protector = ×0,85 pós-mitigação **e** divisor da base de leech; Blood Rage declarado e
+não revertido). Diagnóstico em `reports/picture-diagnostico.md`; revisão turno a turno em
+`reports/model-knight-protector-stance-review.txt`.
+
+Efeito no setup: `picture` sai de vida 28,5% / mana 18,5% para **25% / 16%** com **zero**
+contradições (eram 4, todas em Protector); `ek boss` sai de 58,75% / 19% para **50% / 16%**, com
+os encaixes exatos de mana subindo de 21 para 103. As quatro taxas novas são pontos limpos da
+grade de imbuement de D-020.
+
+**Pendências declaradas de M-041:** (a) o modelo do Protector não é exato — razão leech/dano
+medida `1,1657` contra `1,1765` previsto por `1/0,85`, resíduo de ≈0,9%, nada revertido a partir
+dele; (b) `ek boss` `19:39:12` passou de classificado para sem classificação (58→59), por um
+`Void's Call` de +1,2% faltando em `moonsilver sentinel` que a taxa antiga, inflada, mascarava —
+travado por caso de gabarito; (c) a coluna de dano base da tabela **não** desconta o Protector
+(decisão do usuário), então a linha de rotação do knight continua sendo a média das três
+posturas.
+
+**Baseline anterior, para referência (medido em 01/Set/2026, após `make-leech-channel-abstention-explicit`).**
 Total de alvos: **41/46 OK**; gabarito **217/217**; invariantes **39/40** fixtures limpos, com a
 única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **19.983** turnos.
 

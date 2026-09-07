@@ -1,0 +1,3006 @@
+
+Channel Server Log saved Mon Aug 31 10:45:40 2026
+10:44:23 You lose 355 hitpoints due to an attack by a quara plunderer. 
+10:44:23 You lose 886 hitpoints due to an attack by a quara looter. 
+10:44:23 You lose 298 hitpoints due to an attack by a quara looter. 
+10:44:24 You lose 152 hitpoints due to an attack by a quara raider. 
+10:44:24 You healed yourself for 2034 hitpoints. 
+10:44:25 You lose 351 hitpoints due to an attack by a quara raider. 
+10:44:25 You lose 347 hitpoints due to an attack by a quara raider. 
+10:44:25 You lose 263 hitpoints due to an attack by a quara raider. 
+10:44:25 You lose 283 hitpoints due to an attack by a quara looter. 
+10:44:25 You lose 300 hitpoints due to an attack by a quara looter. 
+10:44:25 You lose 234 hitpoints due to an attack by a quara looter. 
+10:44:25 You lose 249 hitpoints due to an attack by a quara raider. 
+10:44:25 A quara raider loses 1702 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:25 You were healed for 290 hitpoints. 
+10:44:25 You gained 201 mana.
+10:44:25 You gained 24156 experience points (active prey bonus, Animus mastery).
+10:44:25 A quara raider loses 1939 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:25 You were healed for 290 hitpoints. 
+10:44:25 You gained 201 mana.
+10:44:25 A quara raider loses 1505 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:25 You were healed for 94 hitpoints. 
+10:44:25 You gained 65 mana.
+10:44:25 A quara looter loses 1571 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:25 You were healed for 103 hitpoints. 
+10:44:25 You gained 64 mana.
+10:44:25 A quara plunderer loses 1891 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:25 You were healed for 94 hitpoints. 
+10:44:25 You gained 61 mana.
+10:44:25 A quara raider loses 1438 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:25 You were healed for 94 hitpoints. 
+10:44:25 You gained 65 mana.
+10:44:25 You gained 24156 experience points (active prey bonus, Animus mastery).
+10:44:25 A quara plunderer loses 1891 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:25 You were healed for 94 hitpoints. 
+10:44:25 You gained 61 mana.
+10:44:25 A quara looter loses 1571 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:25 You were healed for 103 hitpoints. 
+10:44:25 You gained 64 mana.
+10:44:25 A quara raider loses 1505 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:25 You were healed for 94 hitpoints. 
+10:44:25 You gained 65 mana.
+10:44:26 You lose 231 hitpoints due to an attack by a quara raider. 
+10:44:26 You lose 385 hitpoints due to an attack by a quara raider. 
+10:44:26 You healed yourself for 1821 hitpoints. 
+10:44:26 You lose 526 hitpoints due to an attack by a quara plunderer. 
+10:44:27 You dodged an attack. (Ruse)
+10:44:27 You lose 309 hitpoints due to an attack by a quara raider. 
+10:44:28 You healed yourself for 1831 hitpoints. 
+10:44:28 You lose 415 hitpoints due to an attack by a quara raider. 
+10:44:28 A quara plunderer loses 128 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:28 You were healed for 28 hitpoints. 
+10:44:28 You gained 18 mana.
+10:44:28 You gained 10 mana.
+10:44:28 You lose 151 hitpoints due to an attack by a quara raider. 
+10:44:28 You lose 354 hitpoints due to an attack by a quara raider. 
+10:44:28 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:28 You were healed for 61 hitpoints. 
+10:44:28 You gained 42 mana.
+10:44:28 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:28 You were healed for 61 hitpoints. 
+10:44:28 You gained 42 mana.
+10:44:28 A quara plunderer loses 1124 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:28 You were healed for 61 hitpoints. 
+10:44:28 You gained 40 mana.
+10:44:28 A quara plunderer loses 1124 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:28 You were healed for 61 hitpoints. 
+10:44:28 You gained 40 mana.
+10:44:28 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:28 You were healed for 61 hitpoints. 
+10:44:28 You gained 42 mana.
+10:44:28 A quara looter loses 934 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:28 You were healed for 67 hitpoints. 
+10:44:28 You gained 42 mana.
+10:44:29 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:29 You were healed for 28 hitpoints. 
+10:44:29 You gained 20 mana.
+10:44:29 A quara plunderer loses 561 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:29 You were healed for 28 hitpoints. 
+10:44:29 You gained 19 mana.
+10:44:29 A quara plunderer loses 561 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:29 You were healed for 28 hitpoints. 
+10:44:29 You gained 19 mana.
+10:44:29 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:29 You were healed for 28 hitpoints. 
+10:44:29 You gained 20 mana.
+10:44:29 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:29 You were healed for 31 hitpoints. 
+10:44:29 You gained 19 mana.
+10:44:29 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:29 You were healed for 31 hitpoints. 
+10:44:29 You gained 19 mana.
+10:44:29 A quara plunderer loses 167 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:29 You were healed for 28 hitpoints. 
+10:44:29 You gained 19 mana.
+10:44:29 You gained 25272 experience points (Animus mastery).
+10:44:29 You healed yourself for 318 hitpoints. 
+10:44:30 You lose 393 hitpoints due to an attack by a quara raider. 
+10:44:30 You lose 318 hitpoints due to an attack by a quara raider. 
+10:44:30 You lose 346 hitpoints due to an attack by a quara raider. 
+10:44:30 A quara raider loses 1861 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:30 You were healed for 116 hitpoints. 
+10:44:30 You gained 80 mana.
+10:44:30 A quara plunderer loses 2338 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:30 You were healed for 116 hitpoints. 
+10:44:30 You gained 76 mana.
+10:44:30 A quara raider loses 1861 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:30 You were healed for 116 hitpoints. 
+10:44:30 You gained 80 mana.
+10:44:30 A quara plunderer loses 2338 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:30 You were healed for 116 hitpoints. 
+10:44:30 You gained 76 mana.
+10:44:30 A quara raider loses 1861 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:30 You were healed for 116 hitpoints. 
+10:44:30 You gained 80 mana.
+10:44:30 A quara looter loses 1144 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:30 You were healed for 128 hitpoints. 
+10:44:30 You gained 79 mana.
+10:44:30 You gained 25638 experience points (active prey bonus, Animus mastery).
+10:44:30 A quara looter loses 1943 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:30 You were healed for 128 hitpoints. 
+10:44:30 You gained 79 mana.
+10:44:30 You lose 298 hitpoints due to an attack by a quara looter. 
+10:44:30 You lose 185 hitpoints due to an attack by a quara plunderer. 
+10:44:30 You lose 420 hitpoints due to an attack by a quara raider. 
+10:44:30 You lose 319 hitpoints due to an attack by a quara raider. 
+10:44:30 You healed yourself for 1443 hitpoints. 
+10:44:31 You lose 506 hitpoints due to an attack by a quara plunderer. 
+10:44:31 You lose 355 hitpoints due to an attack by a quara raider. 
+10:44:31 You lose 330 hitpoints due to an attack by a quara looter. 
+10:44:31 You healed yourself for 1187 hitpoints. 
+10:44:32 A quara raider loses 588 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+10:44:32 You gained 226 mana.
+10:44:32 You gained 24156 experience points (active prey bonus, Animus mastery).
+10:44:32 A quara raider loses 3004 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+10:44:32 You gained 226 mana.
+10:44:32 A quara plunderer loses 3773 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness, Onslaught)
+10:44:32 You gained 213 mana.
+10:44:32 A quara plunderer loses 327 hitpoints due to your attack. (active prey bonus, overflux charm, increased damage by Expose Weakness)
+10:44:32 You gained 25272 experience points (Animus mastery).
+10:44:32 A quara plunderer loses 2642 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness, Onslaught)
+10:44:32 You gained 121 mana.
+10:44:32 A quara looter loses 2196 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+10:44:32 You gained 126 mana.
+10:44:32 A quara raider loses 2104 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+10:44:32 You gained 129 mana.
+10:44:32 You lose 335 hitpoints due to an attack by a quara raider. 
+10:44:32 You lose 515 hitpoints due to an attack by a quara plunderer. 
+10:44:32 You lose 335 hitpoints due to an attack by a quara raider. 
+10:44:32 You healed yourself for 1185 hitpoints. 
+10:44:33 You lose 195 hitpoints due to an attack by a quara plunderer. 
+10:44:33 You lose 340 hitpoints due to an attack by a quara looter. 
+10:44:33 You lose 312 hitpoints due to an attack by a quara raider. 
+10:44:33 You lose 315 hitpoints due to an attack by a quara raider. 
+10:44:33 You lose 322 hitpoints due to an attack by a quara looter. 
+10:44:33 You healed yourself for 1484 hitpoints. 
+10:44:34 You lose 314 hitpoints due to an attack by a quara raider. 
+10:44:34 You lose 308 hitpoints due to an attack by a quara raider. 
+10:44:34 A quara raider loses 2200 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:34 You were healed for 127 hitpoints. 
+10:44:34 You gained 88 mana.
+10:44:34 A quara raider loses 2200 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:34 You were healed for 127 hitpoints. 
+10:44:34 You gained 88 mana.
+10:44:34 A quara plunderer loses 2764 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:34 You were healed for 128 hitpoints. 
+10:44:34 You gained 83 mana.
+10:44:34 A quara raider loses 2200 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:34 You were healed for 127 hitpoints. 
+10:44:34 You gained 88 mana.
+10:44:34 A quara looter loses 2297 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:34 You were healed for 113 hitpoints. 
+10:44:34 You gained 86 mana.
+10:44:34 A quara plunderer loses 2764 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:34 You gained 83 mana.
+10:44:34 A quara looter loses 2297 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:34 You gained 86 mana.
+10:44:34 A quara looter loses 2297 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:34 You gained 86 mana.
+10:44:35 You lose 371 hitpoints due to an attack by a quara raider. 
+10:44:35 You lose 258 hitpoints due to an attack by a quara raider. 
+10:44:35 You lose 155 hitpoints due to an attack by a quara plunderer. 
+10:44:35 You lose 306 hitpoints due to an attack by a quara looter. 
+10:44:35 You lose 270 hitpoints due to an attack by a quara looter. 
+10:44:35 You lose 319 hitpoints due to an attack by a quara raider. 
+10:44:35 You lose 310 hitpoints due to an attack by a quara looter. 
+10:44:35 You lose 383 hitpoints due to an attack by a quara raider. 
+10:44:35 You lose 186 hitpoints due to an attack by a quara raider. 
+10:44:35 You lose 321 hitpoints due to an attack by a quara looter. 
+10:44:35 You dodged an attack. (Ruse)
+10:44:35 You healed yourself for 2318 hitpoints. 
+10:44:36 You lose 308 hitpoints due to an attack by a quara raider. 
+10:44:36 A quara raider loses 3896 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:44:36 You were healed for 242 hitpoints. 
+10:44:36 You gained 167 mana.
+10:44:36 A quara plunderer loses 4003 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:36 You were healed for 199 hitpoints. 
+10:44:36 You gained 129 mana.
+10:44:36 A quara raider loses 3896 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:44:36 You were healed for 242 hitpoints. 
+10:44:36 You gained 167 mana.
+10:44:36 A quara raider loses 1678 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:44:36 You were healed for 182 hitpoints. 
+10:44:36 You gained 167 mana.
+10:44:36 You gained 24156 experience points (active prey bonus, Animus mastery).
+10:44:36 A quara raider loses 627 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:44:36 You gained 167 mana.
+10:44:36 You gained 24156 experience points (active prey bonus, Animus mastery).
+10:44:36 A quara plunderer loses 257 hitpoints due to your attack. (active prey bonus, overflux charm, increased damage by Expose Weakness)
+10:44:36 You gained 25272 experience points (Animus mastery).
+10:44:36 A quara looter loses 3326 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+10:44:36 You gained 134 mana.
+10:44:37 You lose 340 hitpoints due to an attack by a quara looter. 
+10:44:37 You healed yourself for 340 hitpoints. 
+10:44:37 You lose 192 hitpoints due to an attack by a quara raider. 
+10:44:37 You lose 371 hitpoints due to an attack by a quara raider. 
+10:44:37 You lose 321 hitpoints due to an attack by a quara looter. 
+10:44:37 You lose 308 hitpoints due to an attack by a quara looter. 
+10:44:38 You lose 318 hitpoints due to an attack by a quara looter. 
+10:44:38 You lose 228 hitpoints due to an attack by a quara raider. 
+10:44:38 You lose 244 hitpoints due to an attack by a quara raider. 
+10:44:38 You healed yourself for 1982 hitpoints. 
+10:44:39 You lose 316 hitpoints due to an attack by a quara raider. 
+10:44:39 You lose 329 hitpoints due to an attack by a quara raider. 
+10:44:39 You lose 295 hitpoints due to an attack by a quara raider. 
+10:44:39 A quara looter loses 1787 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:39 You were healed for 282 hitpoints. 
+10:44:39 You gained 173 mana.
+10:44:39 A quara raider loses 1713 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:39 You were healed for 256 hitpoints. 
+10:44:39 You gained 178 mana.
+10:44:39 A quara raider loses 1330 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:39 You were healed for 118 hitpoints. 
+10:44:39 You gained 82 mana.
+10:44:39 A quara raider loses 1330 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:39 You were healed for 118 hitpoints. 
+10:44:39 You gained 82 mana.
+10:44:39 A quara plunderer loses 1670 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:39 You were healed for 118 hitpoints. 
+10:44:39 You gained 77 mana.
+10:44:39 A quara raider loses 1330 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:39 You were healed for 44 hitpoints. 
+10:44:39 You gained 82 mana.
+10:44:39 You lose 310 hitpoints due to an attack by a quara looter. 
+10:44:39 You lose 310 hitpoints due to an attack by a quara looter. 
+10:44:39 You lose 303 hitpoints due to an attack by a quara looter. 
+10:44:40 You healed yourself for 923 hitpoints. 
+10:44:40 You lose 345 hitpoints due to an attack by a quara raider. 
+10:44:40 You lose 315 hitpoints due to an attack by a quara raider. 
+10:44:40 You lose 300 hitpoints due to an attack by a quara looter. 
+10:44:40 You lose 204 hitpoints due to an attack by a quara plunderer. 
+10:44:40 You lose 355 hitpoints due to an attack by a quara raider. 
+10:44:41 You healed yourself for 1519 hitpoints. 
+10:44:41 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:41 You gained 39 mana.
+10:44:41 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:41 You gained 39 mana.
+10:44:41 A quara plunderer loses 1114 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:41 You gained 36 mana.
+10:44:41 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:41 You gained 38 mana.
+10:44:41 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:41 You gained 39 mana.
+10:44:41 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:41 You gained 39 mana.
+10:44:41 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:41 You gained 38 mana.
+10:44:41 You lose 355 hitpoints due to an attack by a quara raider. 
+10:44:42 You lose 219 hitpoints due to an attack by a quara raider. 
+10:44:42 You lose 184 hitpoints due to an attack by a quara plunderer. 
+10:44:42 You lose 319 hitpoints due to an attack by a quara looter. 
+10:44:42 You dodged an attack. (Ruse)
+10:44:42 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:42 You were healed for 38 hitpoints. 
+10:44:42 You gained 23 mana.
+10:44:42 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:42 You were healed for 34 hitpoints. 
+10:44:42 You gained 24 mana.
+10:44:42 A quara plunderer loses 176 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:42 You were healed for 34 hitpoints. 
+10:44:42 You gained 23 mana.
+10:44:42 You gained 25272 experience points (Animus mastery).
+10:44:42 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:42 You were healed for 34 hitpoints. 
+10:44:42 You gained 24 mana.
+10:44:42 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:42 You were healed for 38 hitpoints. 
+10:44:42 You gained 23 mana.
+10:44:42 You healed yourself for 899 hitpoints. 
+10:44:43 You lose 137 hitpoints due to an attack by a quara raider. 
+10:44:43 A quara raider loses 1749 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:43 You were healed for 133 hitpoints. 
+10:44:43 You gained 92 mana.
+10:44:43 A quara raider loses 1749 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:43 You gained 92 mana.
+10:44:43 A quara looter loses 702 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:43 You gained 90 mana.
+10:44:43 You gained 25638 experience points (active prey bonus, Animus mastery).
+10:44:43 A quara looter loses 1827 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:43 You gained 90 mana.
+10:44:43 A quara looter loses 1827 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:43 You gained 90 mana.
+10:44:44 You lose 308 hitpoints due to an attack by a quara raider. 
+10:44:44 You lose 299 hitpoints due to an attack by a quara raider. 
+10:44:44 You lose 330 hitpoints due to an attack by a quara raider. 
+10:44:44 You lose 369 hitpoints due to an attack by a quara raider. 
+10:44:44 You lose 423 hitpoints due to an attack by a quara raider. 
+10:44:45 You healed yourself for 1609 hitpoints. 
+10:44:45 You lose 453 hitpoints due to an attack by a quara raider. 
+10:44:45 You lose 300 hitpoints due to an attack by a quara looter. 
+10:44:45 You lose 305 hitpoints due to an attack by a quara looter. 
+10:44:45 You lose 256 hitpoints due to an attack by a quara plunderer. 
+10:44:45 A quara raider loses 1654 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:45 You were healed for 448 hitpoints. 
+10:44:45 You gained 310 mana.
+10:44:45 A quara looter loses 1505 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:45 You were healed for 121 hitpoints. 
+10:44:45 You gained 75 mana.
+10:44:45 A quara raider loses 1443 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:45 You were healed for 110 hitpoints. 
+10:44:45 You gained 76 mana.
+10:44:45 A quara raider loses 1443 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:45 You were healed for 110 hitpoints. 
+10:44:45 You gained 76 mana.
+10:44:45 A quara looter loses 1505 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:45 You were healed for 121 hitpoints. 
+10:44:45 You gained 75 mana.
+10:44:45 A quara raider loses 1443 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:45 You were healed for 110 hitpoints. 
+10:44:45 You gained 76 mana.
+10:44:46 You healed yourself for 414 hitpoints. 
+10:44:46 You lose 363 hitpoints due to an attack by a quara raider. 
+10:44:47 You lose 357 hitpoints due to an attack by a quara raider. 
+10:44:47 You healed yourself for 720 hitpoints. 
+10:44:47 You lose 377 hitpoints due to an attack by a quara plunderer. 
+10:44:47 Momentum was triggered.
+10:44:47 You lose 260 hitpoints due to an attack by a quara raider. 
+10:44:47 You lose 405 hitpoints due to an attack by a quara raider. 
+10:44:47 You lose 319 hitpoints due to an attack by a quara looter. 
+10:44:47 You lose 307 hitpoints due to an attack by a quara looter. 
+10:44:47 You lose 329 hitpoints due to an attack by a quara looter. 
+10:44:48 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:48 You were healed for 56 hitpoints. 
+10:44:48 You gained 35 mana.
+10:44:48 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:48 You were healed for 51 hitpoints. 
+10:44:48 You gained 36 mana.
+10:44:48 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:48 You were healed for 51 hitpoints. 
+10:44:48 You gained 36 mana.
+10:44:48 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:48 You were healed for 51 hitpoints. 
+10:44:48 You gained 36 mana.
+10:44:48 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:48 You were healed for 51 hitpoints. 
+10:44:48 You gained 36 mana.
+10:44:48 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:48 You were healed for 56 hitpoints. 
+10:44:48 You gained 35 mana.
+10:44:48 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:48 You were healed for 51 hitpoints. 
+10:44:48 You gained 36 mana.
+10:44:48 A quara plunderer loses 1103 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:48 You were healed for 51 hitpoints. 
+10:44:48 You gained 34 mana.
+10:44:48 You lose 272 hitpoints due to an attack by a quara raider. 
+10:44:48 You healed yourself for 1847 hitpoints. 
+10:44:49 A quara looter loses 237 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:49 You gained 21 mana.
+10:44:49 You gained 25638 experience points (active prey bonus, Animus mastery).
+10:44:49 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:49 You gained 21 mana.
+10:44:49 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:49 You gained 21 mana.
+10:44:49 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:49 You gained 21 mana.
+10:44:49 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:49 You gained 21 mana.
+10:44:49 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:49 You gained 21 mana.
+10:44:49 You lose 108 hitpoints due to an attack by a quara raider. 
+10:44:49 You lose 68 hitpoints due to an attack by a quara plunderer. 
+10:44:49 You lose 162 hitpoints due to an attack by a quara raider. 
+10:44:50 A quara raider loses 1433 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:50 You were healed for 135 hitpoints. 
+10:44:50 You gained 94 mana.
+10:44:50 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:44:50 A quara raider loses 771 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:50 You were healed for 135 hitpoints. 
+10:44:50 You gained 94 mana.
+10:44:50 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:44:50 A quara raider loses 1773 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:50 You were healed for 68 hitpoints. 
+10:44:50 You gained 94 mana.
+10:44:50 A quara raider loses 1773 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:50 You gained 94 mana.
+10:44:50 A quara looter loses 1851 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:50 You gained 92 mana.
+10:44:50 You lose 329 hitpoints due to an attack by a quara raider. 
+10:44:51 You lose 284 hitpoints due to an attack by a quara looter. 
+10:44:51 You healed yourself for 609 hitpoints. 
+10:44:52 You lose 160 hitpoints due to an attack by a quara raider. 
+10:44:52 You lose 404 hitpoints due to an attack by a quara raider. 
+10:44:52 You lose 153 hitpoints due to an attack by a quara raider. 
+10:44:52 A quara looter loses 856 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:44:52 You were healed for 318 hitpoints. 
+10:44:52 You gained 195 mana.
+10:44:52 You gained 18891 experience points (active prey bonus, Animus mastery).
+10:44:52 A quara raider loses 1900 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:52 You were healed for 168 hitpoints. 
+10:44:52 You gained 116 mana.
+10:44:52 A quara raider loses 1900 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:52 You were healed for 168 hitpoints. 
+10:44:52 You gained 116 mana.
+10:44:52 A quara plunderer loses 1390 hitpoints due to your attack. (active prey bonus, overflux charm, increased damage by Expose Weakness)
+10:44:52 A quara plunderer loses 2386 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:52 You were healed for 63 hitpoints. 
+10:44:52 You gained 110 mana.
+10:44:52 A quara looter loses 105 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:44:52 You gained 209 mana.
+10:44:52 You gained 18891 experience points (active prey bonus, Animus mastery).
+10:44:52 A quara raider loses 1199 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:52 You gained 124 mana.
+10:44:52 You lose 208 hitpoints due to an attack by a quara plunderer. 
+10:44:52 You healed yourself for 208 hitpoints. 
+10:44:53 You lose 201 hitpoints due to an attack by a quara looter. 
+10:44:53 You lose 328 hitpoints due to an attack by a quara looter. 
+10:44:53 You lose 219 hitpoints due to an attack by a quara plunderer. 
+10:44:53 You healed yourself for 748 hitpoints. 
+10:44:54 You dodged an attack. (Ruse)
+10:44:54 You lose 347 hitpoints due to an attack by a quara raider. 
+10:44:54 A quara raider loses 96 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:54 You were healed for 27 hitpoints. 
+10:44:54 You gained 19 mana.
+10:44:54 You gained 10 mana.
+10:44:54 You lose 318 hitpoints due to an attack by a quara raider. 
+10:44:54 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:54 You were healed for 52 hitpoints. 
+10:44:54 You gained 36 mana.
+10:44:54 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:54 You were healed for 52 hitpoints. 
+10:44:54 You gained 36 mana.
+10:44:54 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:54 You were healed for 52 hitpoints. 
+10:44:54 You gained 36 mana.
+10:44:54 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:54 You were healed for 57 hitpoints. 
+10:44:54 You gained 35 mana.
+10:44:54 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:54 You were healed for 52 hitpoints. 
+10:44:54 You gained 36 mana.
+10:44:54 A quara plunderer loses 1114 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:54 You were healed for 52 hitpoints. 
+10:44:54 You gained 34 mana.
+10:44:54 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:54 You were healed for 52 hitpoints. 
+10:44:54 You gained 36 mana.
+10:44:54 A quara plunderer loses 1114 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:54 You were healed for 52 hitpoints. 
+10:44:54 You gained 34 mana.
+10:44:54 You lose 315 hitpoints due to an attack by a quara plunderer. 
+10:44:55 You lose 290 hitpoints due to an attack by a quara looter. 
+10:44:55 You lose 363 hitpoints due to an attack by a quara raider. 
+10:44:55 You healed yourself for 1185 hitpoints. 
+10:44:55 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:55 You gained 24 mana.
+10:44:55 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:55 You gained 24 mana.
+10:44:55 A quara plunderer loses 558 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:55 You gained 23 mana.
+10:44:55 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:55 You gained 24 mana.
+10:44:55 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:55 You gained 23 mana.
+10:44:55 You lose 481 hitpoints due to an attack by a quara raider. 
+10:44:55 You lose 347 hitpoints due to an attack by a quara plunderer. 
+10:44:55 You lose 290 hitpoints due to an attack by a quara looter. 
+10:44:56 You lose 172 hitpoints due to an attack by a quara plunderer. 
+10:44:56 You lose 310 hitpoints due to an attack by a quara raider. 
+10:44:56 You lose 361 hitpoints due to an attack by a quara raider. 
+10:44:56 You healed yourself for 1961 hitpoints. 
+10:44:56 A quara raider loses 102 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:56 You gained 20 mana.
+10:44:56 You gained 10 mana.
+10:44:57 A quara plunderer loses 1579 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:57 You gained 56 mana.
+10:44:57 A quara looter loses 1313 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:57 You gained 58 mana.
+10:44:57 A quara plunderer loses 1579 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:57 You gained 56 mana.
+10:44:57 A quara raider loses 1257 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:57 You gained 59 mana.
+10:44:57 A quara raider loses 1257 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:57 You gained 59 mana.
+10:44:57 A quara raider loses 1257 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:57 You gained 59 mana.
+10:44:57 You lose 340 hitpoints due to an attack by a quara raider. 
+10:44:57 You lose 302 hitpoints due to an attack by a quara looter. 
+10:44:57 You healed yourself for 642 hitpoints. 
+10:44:57 You lose 288 hitpoints due to an attack by a quara looter. 
+10:44:57 You lose 202 hitpoints due to an attack by a quara raider. 
+10:44:57 You lose 406 hitpoints due to an attack by a quara raider. 
+10:44:57 You lose 501 hitpoints due to an attack by a quara plunderer. 
+10:44:58 You lose 514 hitpoints due to an attack by a quara plunderer. 
+10:44:58 You lose 418 hitpoints due to an attack by a quara plunderer. 
+10:44:58 You lose 311 hitpoints due to an attack by a quara raider. 
+10:44:58 You lose 320 hitpoints due to an attack by a quara raider. 
+10:44:58 You lose 289 hitpoints due to an attack by a quara raider. 
+10:44:58 You lose 361 hitpoints due to an attack by a quara raider. 
+10:44:59 A quara looter loses 1712 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:59 You were healed for 271 hitpoints. 
+10:44:59 You gained 166 mana.
+10:44:59 A quara raider loses 1641 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:59 You were healed for 245 hitpoints. 
+10:44:59 You gained 170 mana.
+10:44:59 A quara plunderer loses 1601 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:59 You were healed for 87 hitpoints. 
+10:44:59 You gained 57 mana.
+10:44:59 A quara plunderer loses 1601 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:59 You were healed for 87 hitpoints. 
+10:44:59 You gained 57 mana.
+10:44:59 A quara raider loses 1274 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:59 You were healed for 87 hitpoints. 
+10:44:59 You gained 60 mana.
+10:44:59 A quara raider loses 1274 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:59 You were healed for 87 hitpoints. 
+10:44:59 You gained 60 mana.
+10:44:59 A quara plunderer loses 1601 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:44:59 You were healed for 87 hitpoints. 
+10:44:59 You gained 57 mana.
+10:44:59 A quara raider loses 1274 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:44:59 You were healed for 87 hitpoints. 
+10:44:59 You gained 60 mana.
+10:44:59 You healed yourself for 1537 hitpoints. 
+10:44:59 You lose 190 hitpoints due to an attack by a quara plunderer. 
+10:45:00 You lose 306 hitpoints due to an attack by a quara raider. 
+10:45:00 You healed yourself for 1527 hitpoints. 
+10:45:00 You lose 303 hitpoints due to an attack by a quara raider. 
+10:45:00 You lose 286 hitpoints due to an attack by a quara raider. 
+10:45:00 You lose 284 hitpoints due to an attack by a quara raider. 
+10:45:00 You lose 371 hitpoints due to an attack by a quara plunderer. 
+10:45:01 A quara raider loses 103 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:01 You were healed for 29 hitpoints. 
+10:45:01 You gained 20 mana.
+10:45:01 You gained 10 mana.
+10:45:01 A quara plunderer loses 1130 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:01 You were healed for 50 hitpoints. 
+10:45:01 You gained 32 mana.
+10:45:01 A quara raider loses 900 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:01 You were healed for 49 hitpoints. 
+10:45:01 You gained 34 mana.
+10:45:01 A quara looter loses 939 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:01 You were healed for 54 hitpoints. 
+10:45:01 You gained 34 mana.
+10:45:01 A quara raider loses 900 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:01 You were healed for 49 hitpoints. 
+10:45:01 You gained 34 mana.
+10:45:01 A quara plunderer loses 1130 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:01 You were healed for 50 hitpoints. 
+10:45:01 You gained 32 mana.
+10:45:01 A quara raider loses 900 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:01 You were healed for 49 hitpoints. 
+10:45:01 You gained 34 mana.
+10:45:01 A quara raider loses 900 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:01 You were healed for 49 hitpoints. 
+10:45:01 You gained 34 mana.
+10:45:01 A quara plunderer loses 1390 hitpoints due to your attack. (active prey bonus, overflux charm, increased damage by Expose Weakness)
+10:45:01 A quara plunderer loses 1130 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:01 You were healed for 50 hitpoints. 
+10:45:01 You gained 32 mana.
+10:45:01 A quara plunderer loses 1130 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:01 You were healed for 50 hitpoints. 
+10:45:01 You gained 32 mana.
+10:45:01 You dodged an attack. (Ruse)
+10:45:01 You lose 328 hitpoints due to an attack by a quara looter. 
+10:45:01 You lose 329 hitpoints due to an attack by a quara looter. 
+10:45:02 You lose 231 hitpoints due to an attack by a quara plunderer. 
+10:45:02 You healed yourself for 1653 hitpoints. 
+10:45:02 A quara plunderer loses 565 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:02 You gained 20 mana.
+10:45:02 A quara looter loses 470 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:02 You gained 21 mana.
+10:45:02 A quara raider loses 450 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:02 You gained 22 mana.
+10:45:02 A quara plunderer loses 565 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:02 You gained 20 mana.
+10:45:02 A quara raider loses 450 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:02 You gained 22 mana.
+10:45:02 A quara raider loses 450 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:02 You gained 22 mana.
+10:45:02 You lose 287 hitpoints due to an attack by a quara looter. 
+10:45:02 You lose 293 hitpoints due to an attack by a quara looter. 
+10:45:02 You lose 409 hitpoints due to an attack by a quara raider. 
+10:45:02 You lose 156 hitpoints due to an attack by a quara raider. 
+10:45:03 You lose 319 hitpoints due to an attack by a quara raider. 
+10:45:03 You healed yourself for 1464 hitpoints. 
+10:45:03 You lose 293 hitpoints due to an attack by a quara plunderer. 
+10:45:03 A quara raider loses 1756 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:03 You were healed for 119 hitpoints. 
+10:45:03 You gained 83 mana.
+10:45:03 A quara plunderer loses 2205 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:03 You were healed for 120 hitpoints. 
+10:45:03 You gained 78 mana.
+10:45:03 A quara plunderer loses 2205 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:03 You were healed for 50 hitpoints. 
+10:45:03 You gained 78 mana.
+10:45:03 A quara plunderer loses 2205 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:03 You gained 78 mana.
+10:45:03 A quara raider loses 1756 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:03 You gained 83 mana.
+10:45:03 A quara raider loses 1274 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:03 You gained 83 mana.
+10:45:03 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:45:04 You lose 283 hitpoints due to an attack by a quara looter. 
+10:45:04 You lose 350 hitpoints due to an attack by a quara raider. 
+10:45:04 You healed yourself for 633 hitpoints. 
+10:45:04 You lose 334 hitpoints due to an attack by a quara raider. 
+10:45:04 You lose 371 hitpoints due to an attack by a quara looter. 
+10:45:04 You lose 218 hitpoints due to an attack by a quara plunderer. 
+10:45:04 You lose 392 hitpoints due to an attack by a quara raider. 
+10:45:04 You lose 156 hitpoints due to an attack by a quara raider. 
+10:45:04 You lose 359 hitpoints due to an attack by a quara raider. 
+10:45:05 You lose 325 hitpoints due to an attack by a quara looter. 
+10:45:05 You lose 412 hitpoints due to an attack by a quara plunderer. 
+10:45:05 You lose 222 hitpoints due to an attack by a quara plunderer. 
+10:45:05 You healed yourself for 1697 hitpoints. 
+10:45:05 You lose 214 hitpoints due to an attack by a quara raider. 
+10:45:05 A quara plunderer loses 3220 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:05 You were healed for 112 hitpoints. 
+10:45:05 You gained 73 mana.
+10:45:05 A quara plunderer loses 3220 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:05 You were healed for 112 hitpoints. 
+10:45:05 You gained 73 mana.
+10:45:05 A quara raider loses 2564 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You were healed for 112 hitpoints. 
+10:45:05 You gained 77 mana.
+10:45:05 A quara raider loses 2564 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You were healed for 112 hitpoints. 
+10:45:05 You gained 77 mana.
+10:45:05 A quara raider loses 2564 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You were healed for 112 hitpoints. 
+10:45:05 You gained 77 mana.
+10:45:05 A quara looter loses 2676 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You were healed for 123 hitpoints. 
+10:45:05 You gained 76 mana.
+10:45:05 A quara plunderer loses 3220 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:05 You were healed for 112 hitpoints. 
+10:45:05 You gained 73 mana.
+10:45:05 A quara plunderer loses 3220 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:05 You were healed for 112 hitpoints. 
+10:45:05 You gained 73 mana.
+10:45:05 A quara plunderer loses 1470 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:05 You were healed for 112 hitpoints. 
+10:45:05 You gained 73 mana.
+10:45:05 You gained 16848 experience points (Animus mastery).
+10:45:05 A quara looter loses 2676 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You were healed for 123 hitpoints. 
+10:45:05 You gained 76 mana.
+10:45:05 A quara raider loses 2564 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You were healed for 112 hitpoints. 
+10:45:05 You gained 77 mana.
+10:45:05 A quara raider loses 2564 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You were healed for 52 hitpoints. 
+10:45:05 You gained 77 mana.
+10:45:05 A quara looter loses 2676 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You gained 76 mana.
+10:45:05 A quara raider loses 2564 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You gained 77 mana.
+10:45:05 A quara raider loses 2564 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:05 You gained 77 mana.
+10:45:05 You lose 338 hitpoints due to an attack by a quara raider. 
+10:45:05 You lose 175 hitpoints due to an attack by a quara plunderer. 
+10:45:06 You lose 296 hitpoints due to an attack by a quara raider. 
+10:45:06 You healed yourself for 809 hitpoints. 
+10:45:06 You lose 225 hitpoints due to an attack by a quara looter. 
+10:45:06 You lose 322 hitpoints due to an attack by a quara looter. 
+10:45:07 You lose 183 hitpoints due to an attack by a quara raider. 
+10:45:07 You healed yourself for 730 hitpoints. 
+10:45:07 You lose 209 hitpoints due to an attack by a quara plunderer. 
+10:45:07 You lose 228 hitpoints due to an attack by a quara looter. 
+10:45:07 You lose 283 hitpoints due to an attack by a quara looter. 
+10:45:07 Momentum was triggered.
+10:45:07 You lose 307 hitpoints due to an attack by a quara raider. 
+10:45:07 A quara plunderer loses 119 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:07 You were healed for 27 hitpoints. 
+10:45:07 You gained 17 mana.
+10:45:07 You gained 10 mana.
+10:45:07 A quara plunderer loses 3005 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:07 You were healed for 359 hitpoints. 
+10:45:07 You gained 233 mana.
+10:45:07 A quara looter loses 2497 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:07 You were healed for 394 hitpoints. 
+10:45:07 You gained 242 mana.
+10:45:07 A quara raider loses 1858 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:07 You were healed for 116 hitpoints. 
+10:45:07 You gained 80 mana.
+10:45:07 A quara raider loses 1858 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:07 You were healed for 116 hitpoints. 
+10:45:07 You gained 80 mana.
+10:45:07 A quara raider loses 1858 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:07 You were healed for 11 hitpoints. 
+10:45:07 You gained 80 mana.
+10:45:07 A quara raider loses 1858 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:07 You gained 80 mana.
+10:45:07 A quara raider loses 1858 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:07 You gained 80 mana.
+10:45:07 A quara plunderer loses 2333 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:07 You gained 75 mana.
+10:45:07 A quara raider loses 897 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:07 You gained 80 mana.
+10:45:07 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:45:08 You lose 355 hitpoints due to an attack by a quara raider. 
+10:45:08 You healed yourself for 355 hitpoints. 
+10:45:08 You lose 290 hitpoints due to an attack by a quara looter. 
+10:45:08 You lose 312 hitpoints due to an attack by a quara looter. 
+10:45:08 You lose 331 hitpoints due to an attack by a quara looter. 
+10:45:08 You lose 296 hitpoints due to an attack by a quara looter. 
+10:45:09 You lose 393 hitpoints due to an attack by a quara raider. 
+10:45:09 You lose 284 hitpoints due to an attack by a quara raider. 
+10:45:09 You lose 424 hitpoints due to an attack by a quara looter. 
+10:45:09 You lose 306 hitpoints due to an attack by a quara looter. 
+10:45:09 You lose 293 hitpoints due to an attack by a quara plunderer. 
+10:45:09 A quara raider loses 2681 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:09 You were healed for 182 hitpoints. 
+10:45:09 You gained 126 mana.
+10:45:09 A quara looter loses 2289 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+10:45:09 You were healed for 164 hitpoints. 
+10:45:09 You gained 101 mana.
+10:45:09 A quara looter loses 2289 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+10:45:09 You were healed for 164 hitpoints. 
+10:45:09 You gained 101 mana.
+10:45:09 A quara plunderer loses 2757 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:09 You were healed for 150 hitpoints. 
+10:45:09 You gained 97 mana.
+10:45:09 A quara raider loses 2681 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:09 You were healed for 182 hitpoints. 
+10:45:09 You gained 126 mana.
+10:45:09 A quara plunderer loses 2757 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:09 You were healed for 150 hitpoints. 
+10:45:09 You gained 97 mana.
+10:45:10 You lose 233 hitpoints due to an attack by a quara raider. 
+10:45:10 You lose 318 hitpoints due to an attack by a quara raider. 
+10:45:10 You healed yourself for 2081 hitpoints. 
+10:45:10 You lose 340 hitpoints due to an attack by a quara raider. 
+10:45:10 You lose 339 hitpoints due to an attack by a quara raider. 
+10:45:10 You lose 298 hitpoints due to an attack by a quara looter. 
+10:45:11 You lose 309 hitpoints due to an attack by a quara looter. 
+10:45:11 You lose 413 hitpoints due to an attack by a quara looter. 
+10:45:11 You lose 375 hitpoints due to an attack by a quara raider. 
+10:45:11 You healed yourself for 2276 hitpoints. 
+10:45:11 You lose 233 hitpoints due to an attack by a quara plunderer. 
+10:45:11 A quara raider loses 92 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:11 You were healed for 25 hitpoints. 
+10:45:11 You gained 18 mana.
+10:45:11 You gained 10 mana.
+10:45:12 A quara raider loses 650 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:12 You were healed for 44 hitpoints. 
+10:45:12 You gained 31 mana.
+10:45:12 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:45:12 A quara looter loses 1678 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:12 You were healed for 88 hitpoints. 
+10:45:12 You gained 54 mana.
+10:45:12 A quara raider loses 892 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:12 You were healed for 44 hitpoints. 
+10:45:12 You gained 31 mana.
+10:45:12 A quara plunderer loses 1122 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:12 You were healed for 45 hitpoints. 
+10:45:12 You gained 29 mana.
+10:45:12 A quara looter loses 1678 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:12 You were healed for 88 hitpoints. 
+10:45:12 You gained 54 mana.
+10:45:12 A quara raider loses 892 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:12 You were healed for 44 hitpoints. 
+10:45:12 You gained 31 mana.
+10:45:12 A quara raider loses 892 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:12 You were healed for 44 hitpoints. 
+10:45:12 You gained 31 mana.
+10:45:12 A quara plunderer loses 1122 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:12 You were healed for 12 hitpoints. 
+10:45:12 You gained 29 mana.
+10:45:12 A quara plunderer loses 1122 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:12 You gained 29 mana.
+10:45:12 A quara raider loses 892 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:12 You gained 31 mana.
+10:45:12 A quara looter loses 1678 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:12 You gained 54 mana.
+10:45:12 You lose 236 hitpoints due to an attack by a quara raider. 
+10:45:12 You lose 303 hitpoints due to an attack by a quara looter. 
+10:45:12 You lose 599 hitpoints due to an attack by a quara raider. 
+10:45:12 You lose 311 hitpoints due to an attack by a quara raider. 
+10:45:12 You healed yourself for 1449 hitpoints. 
+10:45:12 You lose 147 hitpoints due to an attack by a quara raider. 
+10:45:13 A quara raider loses 445 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:13 You were healed for 25 hitpoints. 
+10:45:13 You gained 17 mana.
+10:45:13 A quara plunderer loses 560 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:13 You were healed for 25 hitpoints. 
+10:45:13 You gained 16 mana.
+10:45:13 A quara plunderer loses 560 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:13 You were healed for 25 hitpoints. 
+10:45:13 You gained 16 mana.
+10:45:13 A quara looter loses 839 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:13 You were healed for 49 hitpoints. 
+10:45:13 You gained 30 mana.
+10:45:13 A quara raider loses 445 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:13 You were healed for 23 hitpoints. 
+10:45:13 You gained 17 mana.
+10:45:13 A quara raider loses 445 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:13 You gained 17 mana.
+10:45:13 A quara looter loses 839 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:13 You gained 30 mana.
+10:45:13 A quara plunderer loses 560 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:13 You gained 16 mana.
+10:45:13 A quara looter loses 839 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:13 You gained 30 mana.
+10:45:13 You lose 322 hitpoints due to an attack by a quara plunderer. 
+10:45:13 You lose 330 hitpoints due to an attack by a quara looter. 
+10:45:13 You lose 236 hitpoints due to an attack by a quara raider. 
+10:45:13 You lose 301 hitpoints due to an attack by a quara raider. 
+10:45:14 A quara plunderer loses 577 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:14 You were healed for 423 hitpoints. 
+10:45:14 You gained 275 mana.
+10:45:14 You gained 16848 experience points (Animus mastery).
+10:45:14 A quara raider loses 606 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:14 You were healed for 519 hitpoints. 
+10:45:14 You gained 360 mana.
+10:45:14 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:45:14 A quara raider loses 4788 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:14 You were healed for 247 hitpoints. 
+10:45:14 You gained 360 mana.
+10:45:14 A quara raider loses 3350 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:14 You gained 176 mana.
+10:45:14 A quara raider loses 3350 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:14 You gained 176 mana.
+10:45:14 A quara looter loses 2195 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+10:45:14 You gained 140 mana.
+10:45:14 You gained 18891 experience points (active prey bonus, Animus mastery).
+10:45:14 A quara plunderer loses 2459 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:14 You gained 135 mana.
+10:45:14 You gained 16848 experience points (Animus mastery).
+10:45:14 A quara raider loses 309 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:14 You gained 176 mana.
+10:45:14 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:45:14 You lose 197 hitpoints due to an attack by a quara raider. 
+10:45:14 You lose 390 hitpoints due to an attack by a quara raider. 
+10:45:14 You healed yourself for 587 hitpoints. 
+10:45:14 You lose 324 hitpoints due to an attack by a quara plunderer. 
+10:45:14 You lose 303 hitpoints due to an attack by a quara looter. 
+10:45:14 You lose 187 hitpoints due to an attack by a quara raider. 
+10:45:14 You lose 354 hitpoints due to an attack by a quara raider. 
+10:45:15 You lose 338 hitpoints due to an attack by a quara looter. 
+10:45:16 A quara raider loses 1667 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:16 You were healed for 359 hitpoints. 
+10:45:16 You gained 248 mana.
+10:45:16 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:45:16 A quara raider loses 3306 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:16 You were healed for 359 hitpoints. 
+10:45:16 You gained 248 mana.
+10:45:16 A quara raider loses 3306 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+10:45:16 You were healed for 359 hitpoints. 
+10:45:16 You gained 248 mana.
+10:45:16 You lose 206 hitpoints due to an attack by a quara raider. 
+10:45:16 You lose 333 hitpoints due to an attack by a quara looter. 
+10:45:16 You lose 289 hitpoints due to an attack by a quara looter. 
+10:45:16 You healed yourself for 1253 hitpoints. 
+10:45:16 You lose 217 hitpoints due to an attack by a quara plunderer. 
+10:45:16 You lose 426 hitpoints due to an attack by a quara plunderer. 
+10:45:16 You lose 255 hitpoints due to an attack by a quara plunderer. 
+10:45:17 You lose 303 hitpoints due to an attack by a quara raider. 
+10:45:17 You lose 277 hitpoints due to an attack by a quara raider. 
+10:45:17 You dodged an attack. (Ruse)
+10:45:18 You lose 286 hitpoints due to an attack by a quara looter. 
+10:45:18 A quara plunderer loses 129 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:18 You were healed for 29 hitpoints. 
+10:45:18 You gained 19 mana.
+10:45:18 You gained 10 mana.
+10:45:18 You lose 328 hitpoints due to an attack by a quara looter. 
+10:45:18 A quara plunderer loses 1122 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:18 You were healed for 52 hitpoints. 
+10:45:18 You gained 34 mana.
+10:45:18 A quara plunderer loses 1122 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:18 You were healed for 52 hitpoints. 
+10:45:18 You gained 34 mana.
+10:45:18 A quara raider loses 892 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:18 You were healed for 52 hitpoints. 
+10:45:18 You gained 36 mana.
+10:45:18 A quara raider loses 892 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:18 You were healed for 52 hitpoints. 
+10:45:18 You gained 36 mana.
+10:45:18 A quara raider loses 85 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:18 You were healed for 52 hitpoints. 
+10:45:18 You gained 36 mana.
+10:45:18 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:45:18 A quara looter loses 1678 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:18 You were healed for 103 hitpoints. 
+10:45:18 You gained 63 mana.
+10:45:18 A quara looter loses 1678 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:18 You were healed for 103 hitpoints. 
+10:45:18 You gained 63 mana.
+10:45:18 A quara looter loses 1521 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:18 You were healed for 103 hitpoints. 
+10:45:18 You gained 63 mana.
+10:45:18 You gained 18891 experience points (active prey bonus, Animus mastery).
+10:45:18 You healed yourself for 1494 hitpoints. 
+10:45:18 You lose 133 hitpoints due to an attack by a quara looter. 
+10:45:18 You lose 284 hitpoints due to an attack by a quara looter. 
+10:45:18 You lose 324 hitpoints due to an attack by a quara looter. 
+10:45:19 A quara plunderer loses 560 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:19 You were healed for 35 hitpoints. 
+10:45:19 You gained 23 mana.
+10:45:19 A quara raider loses 445 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:19 You were healed for 34 hitpoints. 
+10:45:19 You gained 24 mana.
+10:45:19 A quara plunderer loses 560 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:19 You were healed for 35 hitpoints. 
+10:45:19 You gained 23 mana.
+10:45:19 A quara looter loses 839 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+10:45:19 You were healed for 68 hitpoints. 
+10:45:19 You gained 42 mana.
+10:45:19 A quara raider loses 445 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:19 You were healed for 34 hitpoints. 
+10:45:19 You gained 24 mana.
+10:45:20 You healed yourself for 531 hitpoints. 
+10:45:20 A quara plunderer loses 131 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:20 You gained 19 mana.
+10:45:20 You gained 10 mana.
+10:45:20 A quara looter loses 1741 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:20 You gained 306 mana.
+10:45:20 A quara raider loses 1454 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:20 You gained 110 mana.
+10:45:20 A quara looter loses 1519 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:20 You gained 107 mana.
+10:45:20 A quara raider loses 779 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:20 You gained 110 mana.
+10:45:20 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:45:20 You lose 303 hitpoints due to an attack by a quara looter. 
+10:45:21 You healed yourself for 303 hitpoints. 
+10:45:21 You lose 375 hitpoints due to an attack by a quara plunderer. 
+10:45:21 You lose 180 hitpoints due to an attack by a quara plunderer. 
+10:45:22 You healed yourself for 555 hitpoints. 
+10:45:22 You lose 303 hitpoints due to an attack by a quara looter. 
+10:45:22 A quara plunderer loses 24 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:22 You were healed for 69 hitpoints. 
+10:45:22 You gained 45 mana.
+10:45:22 You gained 16848 experience points (Animus mastery).
+10:45:22 A quara plunderer loses 1130 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:22 You were healed for 69 hitpoints. 
+10:45:22 You gained 45 mana.
+10:45:22 A quara looter loses 939 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:22 You were healed for 76 hitpoints. 
+10:45:22 You gained 47 mana.
+10:45:22 A quara looter loses 599 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:22 You were healed for 76 hitpoints. 
+10:45:22 You gained 47 mana.
+10:45:22 You gained 18891 experience points (active prey bonus, Animus mastery).
+10:45:22 A quara raider loses 900 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:22 You were healed for 13 hitpoints. 
+10:45:22 You gained 48 mana.
+10:45:23 You lose 152 hitpoints due to an attack by a quara raider. 
+10:45:23 A quara looter loses 470 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:23 You were healed for 54 hitpoints. 
+10:45:23 You gained 34 mana.
+10:45:23 A quara plunderer loses 38 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+10:45:23 You were healed for 50 hitpoints. 
+10:45:23 You gained 32 mana.
+10:45:23 You gained 16848 experience points (Animus mastery).
+10:45:23 A quara raider loses 234 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:23 You were healed for 44 hitpoints. 
+10:45:23 You gained 34 mana.
+10:45:23 You gained 17799 experience points (active prey bonus, Animus mastery).
+10:45:24 You lose 324 hitpoints due to an attack by a quara looter. 
+10:45:24 You lose 328 hitpoints due to an attack by a quara looter. 
+10:45:25 A quara looter loses 102 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:25 You were healed for 30 hitpoints. 
+10:45:25 You gained 18 mana.
+10:45:25 You gained 10 mana.
+10:45:25 A quara looter loses 1379 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:25 You were healed for 396 hitpoints. 
+10:45:25 You gained 243 mana.
+10:45:26 You healed yourself for 226 hitpoints. 
+10:45:26 You lose 423 hitpoints due to an attack by a quara looter. 
+10:45:27 A quara looter loses 165 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+10:45:27 You were healed for 48 hitpoints. 
+10:45:27 You gained 29 mana.
+10:45:27 You gained 10 mana.
+10:45:28 You lose 320 hitpoints due to an attack by a quara looter. 
+10:45:28 A quara looter loses 1571 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:28 You were healed for 450 hitpoints. 
+10:45:28 You gained 276 mana.
+10:45:28 Screenshot for event Hotkey has been saved to location 'C:\Users\marce\AppData\Local\Tibia\packages\Tibia\screenshots'.
+10:45:28 You healed yourself for 241 hitpoints. 
+10:45:30 You lose 892 hitpoints due to an attack by a quara looter. 
+10:45:30 A quara looter loses 101 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:30 You were healed for 30 hitpoints. 
+10:45:30 You gained 18 mana.
+10:45:30 You gained 10 mana.
+10:45:30 A quara looter loses 1025 hitpoints due to your attack. (increased damage by Expose Weakness)
+10:45:30 You were healed for 528 hitpoints. 
+10:45:30 You gained 324 mana.
+10:45:30 You gained 18891 experience points (active prey bonus, Animus mastery).
+10:45:38 Channel Local Chat appended to 'C:\Users\marce\AppData\Local\Tibia\packages\Tibia\log\Local Chat.txt'.
+
+Channel Server Log saved Mon Aug 31 12:21:06 2026
+12:20:04 You lose 348 hitpoints due to an attack by a quara raider. 
+12:20:05 You lose 337 hitpoints due to an attack by a quara raider. 
+12:20:05 You lose 157 hitpoints due to an attack by a quara plunderer. 
+12:20:05 A quara raider loses 1693 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:05 You were healed for 253 hitpoints. 
+12:20:05 You gained 175 mana.
+12:20:05 A quara looter loses 1937 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+12:20:05 You were healed for 502 hitpoints. 
+12:20:05 You gained 308 mana.
+12:20:05 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:05 You healed yourself for 419 hitpoints. 
+12:20:05 You lose 403 hitpoints due to an attack by a quara raider. 
+12:20:06 You lose 333 hitpoints due to an attack by a quara looter. 
+12:20:06 You lose 435 hitpoints due to an attack by a quara plunderer. 
+12:20:06 You lose 313 hitpoints due to an attack by a quara looter. 
+12:20:07 You lose 307 hitpoints due to an attack by a quara raider. 
+12:20:07 You lose 316 hitpoints due to an attack by a quara plunderer. 
+12:20:07 A quara looter loses 3651 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+12:20:07 You were healed for 576 hitpoints. 
+12:20:07 You gained 354 mana.
+12:20:07 A quara plunderer loses 4394 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:07 You were healed for 524 hitpoints. 
+12:20:07 You gained 340 mana.
+12:20:07 A quara looter loses 2097 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+12:20:07 You were healed for 403 hitpoints. 
+12:20:07 You gained 247 mana.
+12:20:07 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:07 A quara raider loses 3016 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+12:20:07 You were healed for 450 hitpoints. 
+12:20:07 You gained 312 mana.
+12:20:07 You lose 336 hitpoints due to an attack by a quara raider. 
+12:20:07 You lose 186 hitpoints due to an attack by a quara plunderer. 
+12:20:07 You healed yourself for 672 hitpoints. 
+12:20:08 You lose 287 hitpoints due to an attack by a quara looter. 
+12:20:08 You lose 286 hitpoints due to an attack by a quara raider. 
+12:20:08 You healed yourself for 573 hitpoints. 
+12:20:09 You lose 320 hitpoints due to an attack by a quara looter. 
+12:20:09 A quara raider loses 216 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+12:20:09 You were healed for 59 hitpoints. 
+12:20:09 You gained 41 mana.
+12:20:09 You gained 10 mana.
+12:20:09 A quara plunderer loses 1144 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:09 You were healed for 57 hitpoints. 
+12:20:09 You gained 37 mana.
+12:20:09 A quara raider loses 912 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:09 You were healed for 57 hitpoints. 
+12:20:09 You gained 40 mana.
+12:20:09 A quara plunderer loses 1144 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:09 You were healed for 57 hitpoints. 
+12:20:09 You gained 37 mana.
+12:20:09 A quara raider loses 912 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:09 You were healed for 57 hitpoints. 
+12:20:09 You gained 40 mana.
+12:20:09 A quara looter loses 952 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:09 You were healed for 33 hitpoints. 
+12:20:09 You gained 39 mana.
+12:20:09 A quara looter loses 952 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:09 You gained 39 mana.
+12:20:09 A quara raider loses 912 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:09 You gained 40 mana.
+12:20:10 You lose 308 hitpoints due to an attack by a quara looter. 
+12:20:10 You lose 307 hitpoints due to an attack by a quara looter. 
+12:20:10 A quara looter loses 476 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:10 You were healed for 32 hitpoints. 
+12:20:10 You gained 20 mana.
+12:20:10 A quara looter loses 476 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:10 You were healed for 32 hitpoints. 
+12:20:10 You gained 20 mana.
+12:20:10 A quara plunderer loses 571 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:10 You were healed for 29 hitpoints. 
+12:20:10 You gained 19 mana.
+12:20:10 A quara raider loses 456 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:10 You were healed for 29 hitpoints. 
+12:20:10 You gained 20 mana.
+12:20:10 A quara looter loses 476 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:10 You were healed for 32 hitpoints. 
+12:20:10 You gained 20 mana.
+12:20:10 A quara raider loses 456 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:10 You were healed for 29 hitpoints. 
+12:20:10 You gained 20 mana.
+12:20:10 A quara looter loses 476 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:10 You were healed for 32 hitpoints. 
+12:20:10 You gained 20 mana.
+12:20:10 You lose 176 hitpoints due to an attack by a quara raider. 
+12:20:10 You healed yourself for 572 hitpoints. 
+12:20:10 You lose 224 hitpoints due to an attack by a quara raider. 
+12:20:11 A quara raider loses 117 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:11 You were healed for 81 hitpoints. 
+12:20:11 You gained 56 mana.
+12:20:11 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:11 A quara plunderer loses 1631 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:11 You were healed for 81 hitpoints. 
+12:20:11 You gained 53 mana.
+12:20:11 A quara plunderer loses 1113 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:11 You were healed for 62 hitpoints. 
+12:20:11 You gained 53 mana.
+12:20:11 You gained 25272 experience points (Animus mastery).
+12:20:11 A quara raider loses 1298 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:11 You gained 56 mana.
+12:20:11 A quara looter loses 1356 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:11 You gained 55 mana.
+12:20:11 A quara looter loses 1356 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:11 You gained 55 mana.
+12:20:11 A quara looter loses 1356 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:11 You gained 55 mana.
+12:20:11 You lose 128 hitpoints due to an attack by a quara plunderer. 
+12:20:11 You lose 302 hitpoints due to an attack by a quara raider. 
+12:20:11 You lose 343 hitpoints due to an attack by a quara raider. 
+12:20:11 You lose 319 hitpoints due to an attack by a quara raider. 
+12:20:11 You lose 949 hitpoints due to an attack by a quara looter. 
+12:20:12 You healed yourself for 2041 hitpoints. 
+12:20:12 You lose 369 hitpoints due to an attack by a quara raider. 
+12:20:12 You lose 420 hitpoints due to an attack by a quara raider. 
+12:20:13 You healed yourself for 789 hitpoints. 
+12:20:13 You lose 249 hitpoints due to an attack by a quara raider. 
+12:20:13 A quara looter loses 2358 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:13 You were healed for 245 hitpoints. 
+12:20:13 You gained 229 mana.
+12:20:13 A quara raider loses 2259 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:13 You gained 234 mana.
+12:20:13 A quara looter loses 1832 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:13 You gained 105 mana.
+12:20:13 A quara looter loses 1832 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:13 You gained 105 mana.
+12:20:13 A quara raider loses 1529 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:13 You gained 107 mana.
+12:20:13 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:13 A quara raider loses 1755 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:13 You gained 107 mana.
+12:20:13 You lose 131 hitpoints due to an attack by a quara plunderer. 
+12:20:13 You lose 156 hitpoints due to an attack by a quara raider. 
+12:20:13 You lose 376 hitpoints due to an attack by a quara raider. 
+12:20:14 You lose 506 hitpoints due to an attack by a quara raider. 
+12:20:14 You lose 300 hitpoints due to an attack by a quara looter. 
+12:20:14 You lose 319 hitpoints due to an attack by a quara looter. 
+12:20:14 You lose 295 hitpoints due to an attack by a quara looter. 
+12:20:14 You healed yourself for 2083 hitpoints. 
+12:20:14 You lose 330 hitpoints due to an attack by a quara raider. 
+12:20:14 You lose 304 hitpoints due to an attack by a quara raider. 
+12:20:15 You lose 355 hitpoints due to an attack by a quara plunderer. 
+12:20:15 You lose 217 hitpoints due to an attack by a quara raider. 
+12:20:15 A quara plunderer loses 119 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:15 You were healed for 27 hitpoints. 
+12:20:15 You gained 17 mana.
+12:20:15 You gained 10 mana.
+12:20:15 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:15 You were healed for 57 hitpoints. 
+12:20:15 You gained 35 mana.
+12:20:15 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:15 You were healed for 57 hitpoints. 
+12:20:15 You gained 35 mana.
+12:20:15 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:15 You were healed for 52 hitpoints. 
+12:20:15 You gained 36 mana.
+12:20:15 A quara plunderer loses 1114 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:15 You were healed for 52 hitpoints. 
+12:20:15 You gained 34 mana.
+12:20:15 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:15 You were healed for 57 hitpoints. 
+12:20:15 You gained 35 mana.
+12:20:15 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:15 You were healed for 52 hitpoints. 
+12:20:15 You gained 36 mana.
+12:20:15 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:15 You were healed for 52 hitpoints. 
+12:20:15 You gained 36 mana.
+12:20:15 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:15 You were healed for 57 hitpoints. 
+12:20:15 You gained 35 mana.
+12:20:15 You lose 428 hitpoints due to an attack by a quara plunderer. 
+12:20:16 You healed yourself for 1171 hitpoints. 
+12:20:16 You lose 411 hitpoints due to an attack by a quara raider. 
+12:20:16 You lose 255 hitpoints due to an attack by a quara raider. 
+12:20:16 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:16 You were healed for 31 hitpoints. 
+12:20:16 You gained 19 mana.
+12:20:16 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:16 You were healed for 31 hitpoints. 
+12:20:16 You gained 19 mana.
+12:20:16 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:16 You were healed for 28 hitpoints. 
+12:20:16 You gained 20 mana.
+12:20:16 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:16 You were healed for 31 hitpoints. 
+12:20:16 You gained 19 mana.
+12:20:16 A quara plunderer loses 558 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:16 You were healed for 28 hitpoints. 
+12:20:16 You gained 19 mana.
+12:20:16 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:16 You were healed for 28 hitpoints. 
+12:20:16 You gained 20 mana.
+12:20:16 A quara looter loses 368 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:16 You were healed for 31 hitpoints. 
+12:20:16 You gained 19 mana.
+12:20:16 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:16 You lose 348 hitpoints due to an attack by a quara raider. 
+12:20:16 You lose 312 hitpoints due to an attack by a quara raider. 
+12:20:17 You lose 291 hitpoints due to an attack by a quara looter. 
+12:20:17 You healed yourself for 1405 hitpoints. 
+12:20:17 You lose 286 hitpoints due to an attack by a quara looter. 
+12:20:17 You lose 304 hitpoints due to an attack by a quara looter. 
+12:20:17 You lose 558 hitpoints due to an attack by a quara raider. 
+12:20:17 You lose 300 hitpoints due to an attack by a quara raider. 
+12:20:17 You lose 341 hitpoints due to an attack by a quara raider. 
+12:20:17 A quara raider loses 1434 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:17 You were healed for 109 hitpoints. 
+12:20:17 You gained 76 mana.
+12:20:17 A quara plunderer loses 1801 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:17 You were healed for 110 hitpoints. 
+12:20:17 You gained 72 mana.
+12:20:17 A quara looter loses 1497 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:17 You were healed for 121 hitpoints. 
+12:20:17 You gained 74 mana.
+12:20:17 A quara raider loses 1434 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:17 You were healed for 109 hitpoints. 
+12:20:17 You gained 76 mana.
+12:20:17 A quara looter loses 1188 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:17 You were healed for 121 hitpoints. 
+12:20:17 You gained 74 mana.
+12:20:17 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:18 You lose 293 hitpoints due to an attack by a quara plunderer. 
+12:20:18 You lose 224 hitpoints due to an attack by a quara looter. 
+12:20:18 You lose 299 hitpoints due to an attack by a quara looter. 
+12:20:18 You lose 302 hitpoints due to an attack by a quara raider. 
+12:20:18 You lose 382 hitpoints due to an attack by a quara raider. 
+12:20:18 You healed yourself for 1793 hitpoints. 
+12:20:19 You lose 385 hitpoints due to an attack by a quara raider. 
+12:20:19 You lose 212 hitpoints due to an attack by a quara raider. 
+12:20:19 You lose 333 hitpoints due to an attack by a quara looter. 
+12:20:19 A quara raider loses 1918 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:19 You were healed for 99 hitpoints. 
+12:20:19 You gained 69 mana.
+12:20:19 A quara raider loses 1918 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:19 You were healed for 99 hitpoints. 
+12:20:19 You gained 69 mana.
+12:20:19 A quara plunderer loses 2410 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:19 You were healed for 100 hitpoints. 
+12:20:19 You gained 65 mana.
+12:20:19 A quara raider loses 1918 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:19 You were healed for 99 hitpoints. 
+12:20:19 You gained 69 mana.
+12:20:19 A quara looter loses 2002 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:19 You were healed for 110 hitpoints. 
+12:20:19 You gained 67 mana.
+12:20:19 A quara looter loses 2002 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:19 You were healed for 110 hitpoints. 
+12:20:19 You gained 67 mana.
+12:20:19 A quara looter loses 2002 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:19 You were healed for 110 hitpoints. 
+12:20:19 You gained 67 mana.
+12:20:19 A quara raider loses 1918 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:19 You were healed for 99 hitpoints. 
+12:20:19 You gained 69 mana.
+12:20:19 A quara plunderer loses 2410 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:19 You were healed for 100 hitpoints. 
+12:20:19 You gained 65 mana.
+12:20:19 A quara raider loses 1918 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:19 You were healed for 99 hitpoints. 
+12:20:19 You gained 69 mana.
+12:20:19 You lose 253 hitpoints due to an attack by a quara raider. 
+12:20:20 You lose 359 hitpoints due to an attack by a quara raider. 
+12:20:20 You lose 227 hitpoints due to an attack by a quara plunderer. 
+12:20:20 You lose 356 hitpoints due to an attack by a quara plunderer. 
+12:20:20 You lose 322 hitpoints due to an attack by a quara looter. 
+12:20:20 You lose 165 hitpoints due to an attack by a quara raider. 
+12:20:20 You lose 377 hitpoints due to an attack by a quara raider. 
+12:20:21 A quara looter loses 2704 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:21 You were healed for 427 hitpoints. 
+12:20:21 You gained 262 mana.
+12:20:21 A quara raider loses 2591 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:21 You were healed for 387 hitpoints. 
+12:20:21 You gained 268 mana.
+12:20:21 A quara looter loses 2100 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:21 You were healed for 169 hitpoints. 
+12:20:21 You gained 104 mana.
+12:20:21 A quara raider loses 2012 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:21 You were healed for 153 hitpoints. 
+12:20:21 You gained 106 mana.
+12:20:21 A quara raider loses 2012 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:21 You were healed for 153 hitpoints. 
+12:20:21 You gained 106 mana.
+12:20:21 A quara raider loses 2012 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:21 You were healed for 153 hitpoints. 
+12:20:21 You gained 106 mana.
+12:20:21 A quara raider loses 2012 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:21 You were healed for 153 hitpoints. 
+12:20:21 You gained 106 mana.
+12:20:22 You lose 148 hitpoints due to an attack by a quara raider. 
+12:20:22 You healed yourself for 1439 hitpoints. 
+12:20:22 You lose 385 hitpoints due to an attack by a quara raider. 
+12:20:22 You lose 304 hitpoints due to an attack by a quara raider. 
+12:20:22 You lose 270 hitpoints due to an attack by a quara raider. 
+12:20:23 You lose 318 hitpoints due to an attack by a quara raider. 
+12:20:23 You lose 318 hitpoints due to an attack by a quara looter. 
+12:20:23 A quara raider loses 98 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:23 You were healed for 27 hitpoints. 
+12:20:23 You gained 19 mana.
+12:20:23 You gained 10 mana.
+12:20:23 A quara raider loses 1620 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:23 You were healed for 94 hitpoints. 
+12:20:23 You gained 65 mana.
+12:20:23 A quara raider loses 1620 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:23 You were healed for 94 hitpoints. 
+12:20:23 You gained 65 mana.
+12:20:23 A quara raider loses 1620 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:23 You were healed for 94 hitpoints. 
+12:20:23 You gained 65 mana.
+12:20:23 A quara looter loses 1692 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:23 You were healed for 104 hitpoints. 
+12:20:23 You gained 64 mana.
+12:20:23 A quara plunderer loses 2035 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:23 You were healed for 94 hitpoints. 
+12:20:23 You gained 61 mana.
+12:20:23 A quara raider loses 1620 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:23 You were healed for 94 hitpoints. 
+12:20:23 You gained 65 mana.
+12:20:23 A quara plunderer loses 2035 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:23 You were healed for 94 hitpoints. 
+12:20:23 You gained 61 mana.
+12:20:23 A quara looter loses 1392 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:23 You were healed for 104 hitpoints. 
+12:20:23 You gained 64 mana.
+12:20:23 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:24 You lose 279 hitpoints due to an attack by a quara raider. 
+12:20:24 You lose 432 hitpoints due to an attack by a quara raider. 
+12:20:24 You lose 174 hitpoints due to an attack by a quara raider. 
+12:20:24 You healed yourself for 1681 hitpoints. 
+12:20:24 You lose 310 hitpoints due to an attack by a quara raider. 
+12:20:25 You lose 308 hitpoints due to an attack by a quara looter. 
+12:20:25 You lose 336 hitpoints due to an attack by a quara looter. 
+12:20:25 You healed yourself for 950 hitpoints. 
+12:20:25 A quara raider loses 96 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:25 You gained 19 mana.
+12:20:25 You gained 10 mana.
+12:20:26 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:26 You gained 38 mana.
+12:20:26 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:26 You gained 38 mana.
+12:20:26 A quara plunderer loses 1103 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:26 You gained 36 mana.
+12:20:26 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:26 You gained 38 mana.
+12:20:26 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:26 You gained 38 mana.
+12:20:26 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:26 You gained 38 mana.
+12:20:26 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:26 You gained 38 mana.
+12:20:26 You lose 308 hitpoints due to an attack by a quara raider. 
+12:20:26 You lose 300 hitpoints due to an attack by a quara raider. 
+12:20:26 You lose 352 hitpoints due to an attack by a quara raider. 
+12:20:26 You lose 315 hitpoints due to an attack by a quara looter. 
+12:20:26 You lose 244 hitpoints due to an attack by a quara looter. 
+12:20:26 You lose 484 hitpoints due to an attack by a quara raider. 
+12:20:26 You healed yourself for 2003 hitpoints. 
+12:20:26 You lose 332 hitpoints due to an attack by a quara raider. 
+12:20:27 A quara plunderer loses 551 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:27 You were healed for 30 hitpoints. 
+12:20:27 You gained 20 mana.
+12:20:27 A quara plunderer loses 551 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:27 You were healed for 30 hitpoints. 
+12:20:27 You gained 20 mana.
+12:20:27 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:27 You were healed for 33 hitpoints. 
+12:20:27 You gained 21 mana.
+12:20:27 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:27 You were healed for 33 hitpoints. 
+12:20:27 You gained 21 mana.
+12:20:27 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:27 You were healed for 30 hitpoints. 
+12:20:27 You gained 21 mana.
+12:20:27 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:27 You were healed for 30 hitpoints. 
+12:20:27 You gained 21 mana.
+12:20:28 A quara raider loses 2156 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:28 You were healed for 146 hitpoints. 
+12:20:28 You gained 223 mana.
+12:20:28 A quara raider loses 2156 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:28 You gained 223 mana.
+12:20:28 A quara plunderer loses 2103 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:28 You gained 83 mana.
+12:20:28 A quara raider loses 1673 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:28 You gained 88 mana.
+12:20:28 A quara raider loses 1455 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:28 You gained 88 mana.
+12:20:28 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:28 A quara looter loses 1747 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:28 You gained 86 mana.
+12:20:28 A quara raider loses 1673 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:28 You gained 88 mana.
+12:20:28 You lose 355 hitpoints due to an attack by a quara raider. 
+12:20:28 You lose 322 hitpoints due to an attack by a quara raider. 
+12:20:28 You lose 320 hitpoints due to an attack by a quara raider. 
+12:20:28 You lose 328 hitpoints due to an attack by a quara raider. 
+12:20:28 You healed yourself for 1321 hitpoints. 
+12:20:28 You lose 342 hitpoints due to an attack by a quara plunderer. 
+12:20:28 You lose 160 hitpoints due to an attack by a quara raider. 
+12:20:28 You lose 192 hitpoints due to an attack by a quara raider. 
+12:20:28 You lose 302 hitpoints due to an attack by a quara raider. 
+12:20:28 You lose 315 hitpoints due to an attack by a quara looter. 
+12:20:29 You lose 338 hitpoints due to an attack by a quara looter. 
+12:20:29 You lose 298 hitpoints due to an attack by a quara looter. 
+12:20:29 You dodged an attack. (Ruse)
+12:20:29 You healed yourself for 1947 hitpoints. 
+12:20:30 You lose 205 hitpoints due to an attack by a quara plunderer. 
+12:20:30 A quara raider loses 1362 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:30 You were healed for 85 hitpoints. 
+12:20:30 You gained 59 mana.
+12:20:30 A quara raider loses 1362 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:30 You were healed for 85 hitpoints. 
+12:20:30 You gained 59 mana.
+12:20:30 A quara raider loses 1362 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:30 You were healed for 35 hitpoints. 
+12:20:30 You gained 59 mana.
+12:20:30 A quara raider loses 1362 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:30 You gained 59 mana.
+12:20:30 A quara looter loses 2561 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+12:20:30 You gained 103 mana.
+12:20:30 A quara looter loses 2561 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+12:20:30 You gained 103 mana.
+12:20:30 A quara raider loses 861 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:30 You gained 59 mana.
+12:20:30 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:30 You lose 202 hitpoints due to an attack by a quara raider. 
+12:20:30 You lose 417 hitpoints due to an attack by a quara raider. 
+12:20:30 You lose 354 hitpoints due to an attack by a quara raider. 
+12:20:30 You lose 382 hitpoints due to an attack by a quara raider. 
+12:20:31 You lose 257 hitpoints due to an attack by a quara raider. 
+12:20:31 You lose 229 hitpoints due to an attack by a quara raider. 
+12:20:31 You lose 324 hitpoints due to an attack by a quara looter. 
+12:20:31 You lose 356 hitpoints due to an attack by a quara plunderer. 
+12:20:31 You lose 510 hitpoints due to an attack by a quara plunderer. 
+12:20:31 You healed yourself for 1715 hitpoints. 
+12:20:32 You lose 384 hitpoints due to an attack by a quara raider. 
+12:20:32 A quara looter loses 222 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:32 You were healed for 49 hitpoints. 
+12:20:32 You gained 30 mana.
+12:20:32 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:32 A quara looter loses 934 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:32 You were healed for 49 hitpoints. 
+12:20:32 You gained 30 mana.
+12:20:32 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:32 You were healed for 45 hitpoints. 
+12:20:32 You gained 31 mana.
+12:20:32 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:32 You were healed for 45 hitpoints. 
+12:20:32 You gained 31 mana.
+12:20:32 A quara looter loses 934 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:32 You were healed for 49 hitpoints. 
+12:20:32 You gained 30 mana.
+12:20:32 A quara plunderer loses 34 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:32 You were healed for 45 hitpoints. 
+12:20:32 You gained 29 mana.
+12:20:32 You gained 25272 experience points (Animus mastery).
+12:20:32 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:32 You were healed for 45 hitpoints. 
+12:20:32 You gained 31 mana.
+12:20:32 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:32 You were healed for 45 hitpoints. 
+12:20:32 You gained 31 mana.
+12:20:32 A quara plunderer loses 1124 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:32 You were healed for 45 hitpoints. 
+12:20:32 You gained 29 mana.
+12:20:32 A quara plunderer loses 1124 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:32 You were healed for 45 hitpoints. 
+12:20:32 You gained 29 mana.
+12:20:32 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:32 You were healed for 45 hitpoints. 
+12:20:32 You gained 31 mana.
+12:20:32 You lose 130 hitpoints due to an attack by a quara raider. 
+12:20:32 You lose 533 hitpoints due to an attack by a quara plunderer. 
+12:20:32 You lose 249 hitpoints due to an attack by a quara plunderer. 
+12:20:32 You healed yourself for 1814 hitpoints. 
+12:20:33 You lose 516 hitpoints due to an attack by a quara raider. 
+12:20:33 A quara plunderer loses 561 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:33 You were healed for 31 hitpoints. 
+12:20:33 You gained 20 mana.
+12:20:33 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:33 You were healed for 34 hitpoints. 
+12:20:33 You gained 21 mana.
+12:20:33 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:33 You were healed for 31 hitpoints. 
+12:20:33 You gained 21 mana.
+12:20:33 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:33 You were healed for 34 hitpoints. 
+12:20:33 You gained 21 mana.
+12:20:33 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:33 You were healed for 31 hitpoints. 
+12:20:33 You gained 21 mana.
+12:20:33 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:33 You were healed for 31 hitpoints. 
+12:20:33 You gained 21 mana.
+12:20:33 You lose 805 hitpoints due to an attack by a quara raider. 
+12:20:33 You lose 199 hitpoints due to an attack by a quara raider. 
+12:20:33 You lose 374 hitpoints due to an attack by a quara raider. 
+12:20:33 You healed yourself for 1736 hitpoints. 
+12:20:34 A quara looter loses 720 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:34 You were healed for 253 hitpoints. 
+12:20:34 You gained 179 mana.
+12:20:34 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:34 A quara raider loses 1141 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:34 You gained 183 mana.
+12:20:34 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:34 A quara raider loses 2438 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:34 You gained 162 mana.
+12:20:34 A quara raider loses 1706 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:34 A quara raider loses 1706 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:34 A quara raider loses 1706 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:34 A quara plunderer loses 2143 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:34 A quara looter loses 1781 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:34 A quara plunderer loses 2143 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:34 A quara raider loses 1706 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:34 You lose 322 hitpoints due to an attack by a quara raider. 
+12:20:34 You lose 349 hitpoints due to an attack by a quara raider. 
+12:20:34 You healed yourself for 671 hitpoints. 
+12:20:35 You lose 149 hitpoints due to an attack by a quara raider. 
+12:20:35 You lose 316 hitpoints due to an attack by a quara looter. 
+12:20:35 You lose 222 hitpoints due to an attack by a quara raider. 
+12:20:35 You lose 372 hitpoints due to an attack by a quara raider. 
+12:20:35 You lose 335 hitpoints due to an attack by a quara raider. 
+12:20:36 You healed yourself for 1394 hitpoints. 
+12:20:36 A quara raider loses 2954 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+12:20:36 You gained 156 mana.
+12:20:36 A quara raider loses 2168 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+12:20:36 You gained 156 mana.
+12:20:36 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:36 A quara raider loses 2954 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+12:20:36 You gained 156 mana.
+12:20:36 A quara raider loses 2356 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+12:20:36 You gained 22 mana.
+12:20:36 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:36 A quara looter loses 4625 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness, Onslaught)
+12:20:37 You lose 448 hitpoints due to an attack by a quara looter. 
+12:20:37 You lose 406 hitpoints due to an attack by a quara raider. 
+12:20:37 You lose 488 hitpoints due to an attack by a quara raider. 
+12:20:37 You lose 444 hitpoints due to an attack by a quara raider. 
+12:20:37 You lose 322 hitpoints due to an attack by a quara raider. 
+12:20:37 You lose 303 hitpoints due to an attack by a quara raider. 
+12:20:37 You lose 350 hitpoints due to an attack by a quara raider. 
+12:20:37 You lose 303 hitpoints due to an attack by a quara looter. 
+12:20:37 You lose 325 hitpoints due to an attack by a quara looter. 
+12:20:37 You healed yourself for 1552 hitpoints. 
+12:20:38 A quara raider loses 96 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:38 You were healed for 27 hitpoints. 
+12:20:38 You gained 19 mana.
+12:20:38 You gained 10 mana.
+12:20:38 You lose 195 hitpoints due to an attack by a quara plunderer. 
+12:20:38 You lose 166 hitpoints due to an attack by a quara plunderer. 
+12:20:38 You lose 316 hitpoints due to an attack by a quara looter. 
+12:20:38 A quara plunderer loses 1124 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:38 You were healed for 43 hitpoints. 
+12:20:38 You gained 28 mana.
+12:20:38 A quara plunderer loses 1124 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:38 You were healed for 43 hitpoints. 
+12:20:38 You gained 28 mana.
+12:20:38 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:38 You were healed for 43 hitpoints. 
+12:20:38 You gained 30 mana.
+12:20:38 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:38 You were healed for 43 hitpoints. 
+12:20:38 You gained 30 mana.
+12:20:38 A quara looter loses 934 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:38 You were healed for 47 hitpoints. 
+12:20:38 You gained 29 mana.
+12:20:38 A quara plunderer loses 1124 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:38 You were healed for 43 hitpoints. 
+12:20:38 You gained 28 mana.
+12:20:38 A quara plunderer loses 1124 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:38 You were healed for 43 hitpoints. 
+12:20:38 You gained 28 mana.
+12:20:38 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:38 You were healed for 43 hitpoints. 
+12:20:38 You gained 30 mana.
+12:20:38 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:38 You were healed for 43 hitpoints. 
+12:20:38 You gained 30 mana.
+12:20:38 A quara looter loses 934 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:38 You were healed for 47 hitpoints. 
+12:20:38 You gained 20 mana.
+12:20:38 A quara looter loses 934 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:38 You were healed for 47 hitpoints. 
+12:20:38 A quara looter loses 934 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:38 You were healed for 47 hitpoints. 
+12:20:38 You lose 320 hitpoints due to an attack by a quara raider. 
+12:20:38 You lose 271 hitpoints due to an attack by a quara raider. 
+12:20:39 You lose 303 hitpoints due to an attack by a quara looter. 
+12:20:39 You healed yourself for 2318 hitpoints. 
+12:20:39 You lose 508 hitpoints due to an attack by a quara raider. 
+12:20:39 You lose 345 hitpoints due to an attack by a quara raider. 
+12:20:39 You lose 492 hitpoints due to an attack by a quara raider. 
+12:20:39 A quara plunderer loses 561 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:39 You were healed for 24 hitpoints. 
+12:20:39 You gained 16 mana.
+12:20:39 A quara plunderer loses 561 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:39 You were healed for 24 hitpoints. 
+12:20:39 You gained 16 mana.
+12:20:39 A quara looter loses 198 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:39 You were healed for 26 hitpoints. 
+12:20:39 You gained 16 mana.
+12:20:39 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:39 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:39 You were healed for 23 hitpoints. 
+12:20:39 You gained 16 mana.
+12:20:39 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:39 You were healed for 23 hitpoints. 
+12:20:39 You gained 16 mana.
+12:20:39 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:39 You were healed for 26 hitpoints. 
+12:20:39 You gained 16 mana.
+12:20:39 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:39 You were healed for 23 hitpoints. 
+12:20:39 You gained 16 mana.
+12:20:39 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:39 You were healed for 23 hitpoints. 
+12:20:39 You gained 16 mana.
+12:20:39 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:39 You were healed for 26 hitpoints. 
+12:20:39 You gained 16 mana.
+12:20:39 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:39 You were healed for 26 hitpoints. 
+12:20:39 You gained 10 mana.
+12:20:40 You lose 302 hitpoints due to an attack by a quara looter. 
+12:20:40 You lose 286 hitpoints due to an attack by a quara looter. 
+12:20:40 You healed yourself for 1680 hitpoints. 
+12:20:40 You lose 140 hitpoints due to an attack by a quara plunderer. 
+12:20:40 A quara raider loses 2166 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:40 You were healed for 323 hitpoints. 
+12:20:40 You gained 224 mana.
+12:20:40 A quara plunderer loses 2722 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:40 You were healed for 325 hitpoints. 
+12:20:40 You gained 46 mana.
+12:20:40 A quara looter loses 1755 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:40 You were healed for 24 hitpoints. 
+12:20:40 A quara looter loses 1755 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:40 A quara raider loses 1682 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:41 You lose 295 hitpoints due to an attack by a quara raider. 
+12:20:41 You healed yourself for 295 hitpoints. 
+12:20:41 You lose 314 hitpoints due to an attack by a quara looter. 
+12:20:41 You lose 285 hitpoints due to an attack by a quara looter. 
+12:20:41 You lose 302 hitpoints due to an attack by a quara raider. 
+12:20:41 You lose 253 hitpoints due to an attack by a quara raider. 
+12:20:41 You lose 147 hitpoints due to an attack by a quara looter. 
+12:20:42 You lose 424 hitpoints due to an attack by a quara raider. 
+12:20:42 You lose 308 hitpoints due to an attack by a quara raider. 
+12:20:42 You lose 169 hitpoints due to an attack by a quara plunderer. 
+12:20:42 You lose 160 hitpoints due to an attack by a quara plunderer. 
+12:20:42 You lose 300 hitpoints due to an attack by a quara looter. 
+12:20:42 You lose 325 hitpoints due to an attack by a quara looter. 
+12:20:42 You lose 226 hitpoints due to an attack by a quara raider. 
+12:20:42 You lose 339 hitpoints due to an attack by a quara raider. 
+12:20:42 You healed yourself for 1481 hitpoints. 
+12:20:43 A quara raider loses 1572 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:43 You were healed for 75 hitpoints. 
+12:20:43 You gained 52 mana.
+12:20:43 A quara plunderer loses 1975 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:43 You were healed for 75 hitpoints. 
+12:20:43 You gained 49 mana.
+12:20:43 A quara plunderer loses 1391 hitpoints due to your attack. (active prey bonus, overflux charm, increased damage by Expose Weakness)
+12:20:43 A quara plunderer loses 1975 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:43 You were healed for 75 hitpoints. 
+12:20:43 You gained 49 mana.
+12:20:43 A quara looter loses 1642 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:43 You were healed for 83 hitpoints. 
+12:20:43 You gained 51 mana.
+12:20:43 A quara looter loses 1642 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:43 You were healed for 83 hitpoints. 
+12:20:43 You gained 51 mana.
+12:20:43 A quara raider loses 1572 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:43 You were healed for 75 hitpoints. 
+12:20:43 You gained 52 mana.
+12:20:43 A quara raider loses 1572 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:43 You were healed for 75 hitpoints. 
+12:20:43 You gained 52 mana.
+12:20:43 A quara raider loses 1572 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:43 You were healed for 75 hitpoints. 
+12:20:43 You gained 52 mana.
+12:20:43 A quara looter loses 1642 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:43 You were healed for 83 hitpoints. 
+12:20:43 You gained 51 mana.
+12:20:43 A quara raider loses 1572 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:43 You were healed for 75 hitpoints. 
+12:20:43 You gained 31 mana.
+12:20:43 A quara plunderer loses 1975 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:43 You were healed for 75 hitpoints. 
+12:20:43 A quara plunderer loses 1975 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:43 You were healed for 75 hitpoints. 
+12:20:43 You lose 323 hitpoints due to an attack by a quara looter. 
+12:20:43 You healed yourself for 1466 hitpoints. 
+12:20:43 You lose 340 hitpoints due to an attack by a quara looter. 
+12:20:44 You lose 167 hitpoints due to an attack by a quara plunderer. 
+12:20:44 You lose 410 hitpoints due to an attack by a quara raider. 
+12:20:44 You lose 261 hitpoints due to an attack by a quara raider. 
+12:20:44 You lose 314 hitpoints due to an attack by a quara raider. 
+12:20:44 You lose 286 hitpoints due to an attack by a quara looter. 
+12:20:45 You lose 331 hitpoints due to an attack by a quara plunderer. 
+12:20:45 A quara raider loses 99 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:45 You were healed for 27 hitpoints. 
+12:20:45 You gained 19 mana.
+12:20:45 You gained 10 mana.
+12:20:45 You lose 299 hitpoints due to an attack by a quara plunderer. 
+12:20:45 A quara plunderer loses 1391 hitpoints due to your attack. (active prey bonus, overflux charm, increased damage by Expose Weakness)
+12:20:45 A quara plunderer loses 1114 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:45 You were healed for 46 hitpoints. 
+12:20:45 You gained 30 mana.
+12:20:45 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:45 You were healed for 46 hitpoints. 
+12:20:45 You gained 32 mana.
+12:20:45 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:45 You were healed for 51 hitpoints. 
+12:20:45 You gained 31 mana.
+12:20:45 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:45 You were healed for 46 hitpoints. 
+12:20:45 You gained 32 mana.
+12:20:45 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:45 You were healed for 46 hitpoints. 
+12:20:45 You gained 32 mana.
+12:20:45 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:45 You were healed for 51 hitpoints. 
+12:20:45 You gained 31 mana.
+12:20:45 A quara plunderer loses 1114 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:45 You were healed for 46 hitpoints. 
+12:20:45 You gained 30 mana.
+12:20:45 A quara plunderer loses 1114 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:45 You were healed for 46 hitpoints. 
+12:20:45 You gained 30 mana.
+12:20:45 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:45 You were healed for 51 hitpoints. 
+12:20:45 You gained 27 mana.
+12:20:45 A quara plunderer loses 1114 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:45 You were healed for 46 hitpoints. 
+12:20:45 You lose 300 hitpoints due to an attack by a quara raider. 
+12:20:46 You lose 330 hitpoints due to an attack by a quara looter. 
+12:20:46 A quara plunderer loses 507 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:46 You were healed for 25 hitpoints. 
+12:20:46 You gained 25272 experience points (Animus mastery).
+12:20:46 A quara plunderer loses 558 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:46 You were healed for 25 hitpoints. 
+12:20:46 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:46 You were healed for 25 hitpoints. 
+12:20:46 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:46 You were healed for 27 hitpoints. 
+12:20:46 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:46 You were healed for 25 hitpoints. 
+12:20:46 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:46 You were healed for 27 hitpoints. 
+12:20:46 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:46 You were healed for 27 hitpoints. 
+12:20:46 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:46 You were healed for 25 hitpoints. 
+12:20:46 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:46 You were healed for 25 hitpoints. 
+12:20:46 You healed yourself for 2305 hitpoints. 
+12:20:46 You lose 354 hitpoints due to an attack by a quara plunderer. 
+12:20:46 You lose 256 hitpoints due to an attack by a quara raider. 
+12:20:46 You lose 393 hitpoints due to an attack by a quara raider. 
+12:20:46 You lose 332 hitpoints due to an attack by a quara looter. 
+12:20:46 You lose 336 hitpoints due to an attack by a quara looter. 
+12:20:47 A quara raider loses 1786 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:47 You were healed for 182 hitpoints. 
+12:20:47 You gained 126 mana.
+12:20:47 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:47 A quara looter loses 2152 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:47 You were healed for 201 hitpoints. 
+12:20:47 You gained 123 mana.
+12:20:47 A quara plunderer loses 2589 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:47 You were healed for 183 hitpoints. 
+12:20:47 You gained 21 mana.
+12:20:47 A quara raider loses 1348 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:47 You were healed for 182 hitpoints. 
+12:20:47 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:47 A quara plunderer loses 1812 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:47 You were healed for 111 hitpoints. 
+12:20:47 A quara looter loses 1505 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:47 You were healed for 121 hitpoints. 
+12:20:47 A quara looter loses 1505 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:47 You were healed for 121 hitpoints. 
+12:20:47 A quara raider loses 1443 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:47 You were healed for 110 hitpoints. 
+12:20:47 A quara plunderer loses 1812 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:47 You were healed for 111 hitpoints. 
+12:20:47 You healed yourself for 349 hitpoints. 
+12:20:47 You lose 396 hitpoints due to an attack by a quara raider. 
+12:20:47 You lose 508 hitpoints due to an attack by a quara raider. 
+12:20:48 You dodged an attack. (Ruse)
+12:20:48 You lose 320 hitpoints due to an attack by a quara looter. 
+12:20:48 You lose 446 hitpoints due to an attack by a quara raider. 
+12:20:48 You lose 241 hitpoints due to an attack by a quara plunderer. 
+12:20:48 You lose 409 hitpoints due to an attack by a quara raider. 
+12:20:48 You healed yourself for 2226 hitpoints. 
+12:20:49 You lose 300 hitpoints due to an attack by a quara looter. 
+12:20:49 You lose 370 hitpoints due to an attack by a quara plunderer. 
+12:20:49 A quara plunderer loses 2733 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:49 You were healed for 108 hitpoints. 
+12:20:49 You gained 70 mana.
+12:20:49 A quara raider loses 2177 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:49 You were healed for 108 hitpoints. 
+12:20:49 You gained 75 mana.
+12:20:49 A quara raider loses 2177 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:49 You were healed for 108 hitpoints. 
+12:20:49 You gained 75 mana.
+12:20:49 A quara plunderer loses 2733 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:49 You were healed for 108 hitpoints. 
+12:20:49 You gained 70 mana.
+12:20:49 A quara raider loses 2177 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:49 You were healed for 108 hitpoints. 
+12:20:49 You gained 75 mana.
+12:20:49 A quara plunderer loses 2733 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:49 You were healed for 108 hitpoints. 
+12:20:49 You gained 70 mana.
+12:20:49 A quara raider loses 2177 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:49 You were healed for 108 hitpoints. 
+12:20:49 You gained 75 mana.
+12:20:49 A quara looter loses 2272 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:49 You were healed for 8 hitpoints. 
+12:20:49 You gained 73 mana.
+12:20:49 A quara looter loses 2272 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:49 You gained 73 mana.
+12:20:49 A quara looter loses 2272 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:49 You gained 73 mana.
+12:20:49 A quara looter loses 2272 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:49 You gained 73 mana.
+12:20:49 You lose 315 hitpoints due to an attack by a quara looter. 
+12:20:49 You healed yourself for 311 hitpoints. 
+12:20:50 You lose 362 hitpoints due to an attack by a quara raider. 
+12:20:50 You lose 342 hitpoints due to an attack by a quara raider. 
+12:20:50 You lose 416 hitpoints due to an attack by a quara raider. 
+12:20:50 You lose 736 hitpoints due to an attack by a quara raider. 
+12:20:50 You lose 417 hitpoints due to an attack by a quara looter. 
+12:20:50 You lose 392 hitpoints due to an attack by a quara raider. 
+12:20:50 You healed yourself for 2403 hitpoints. 
+12:20:51 A quara raider loses 2148 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:51 You were healed for 124 hitpoints. 
+12:20:51 You gained 86 mana.
+12:20:51 A quara raider loses 2148 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:51 You were healed for 124 hitpoints. 
+12:20:51 You gained 86 mana.
+12:20:51 A quara raider loses 2148 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:51 You were healed for 14 hitpoints. 
+12:20:51 You gained 86 mana.
+12:20:51 A quara raider loses 2148 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:51 You gained 86 mana.
+12:20:51 A quara plunderer loses 2698 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:51 You gained 81 mana.
+12:20:51 A quara plunderer loses 976 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:51 You gained 81 mana.
+12:20:51 You gained 25272 experience points (Animus mastery).
+12:20:51 A quara looter loses 1535 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:51 You gained 84 mana.
+12:20:51 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:51 A quara plunderer loses 2698 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:51 You gained 81 mana.
+12:20:51 You lose 493 hitpoints due to an attack by a quara raider. 
+12:20:51 You lose 338 hitpoints due to an attack by a quara looter. 
+12:20:51 You healed yourself for 831 hitpoints. 
+12:20:52 You lose 320 hitpoints due to an attack by a quara raider. 
+12:20:52 You lose 212 hitpoints due to an attack by a quara looter. 
+12:20:52 You lose 206 hitpoints due to an attack by a quara raider. 
+12:20:52 You lose 306 hitpoints due to an attack by a quara raider. 
+12:20:52 You lose 278 hitpoints due to an attack by a quara raider. 
+12:20:52 You lose 385 hitpoints due to an attack by a quara raider. 
+12:20:52 You lose 394 hitpoints due to an attack by a quara plunderer. 
+12:20:53 A quara raider loses 411 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:53 You were healed for 468 hitpoints. 
+12:20:53 You gained 324 mana.
+12:20:53 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:53 A quara looter loses 888 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:53 You were healed for 180 hitpoints. 
+12:20:53 You gained 111 mana.
+12:20:53 You gained 25638 experience points (active prey bonus, Animus mastery).
+12:20:53 A quara plunderer loses 31 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:53 You were healed for 164 hitpoints. 
+12:20:53 You gained 107 mana.
+12:20:53 You gained 25272 experience points (Animus mastery).
+12:20:53 A quara raider loses 1505 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:53 You were healed for 164 hitpoints. 
+12:20:53 You gained 114 mana.
+12:20:53 You healed yourself for 1121 hitpoints. 
+12:20:53 You lose 186 hitpoints due to an attack by a quara raider. 
+12:20:54 You lose 313 hitpoints due to an attack by a quara looter. 
+12:20:54 You lose 302 hitpoints due to an attack by a quara looter. 
+12:20:54 You lose 383 hitpoints due to an attack by a quara raider. 
+12:20:54 You lose 376 hitpoints due to an attack by a quara raider. 
+12:20:54 You lose 310 hitpoints due to an attack by a quara plunderer. 
+12:20:54 You lose 200 hitpoints due to an attack by a quara raider. 
+12:20:54 You healed yourself for 2062 hitpoints. 
+12:20:55 You lose 284 hitpoints due to an attack by a quara looter. 
+12:20:55 A quara raider loses 89 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:55 You were healed for 25 hitpoints. 
+12:20:55 You gained 17 mana.
+12:20:55 You gained 10 mana.
+12:20:55 You lose 304 hitpoints due to an attack by a quara raider. 
+12:20:55 You lose 315 hitpoints due to an attack by a quara looter. 
+12:20:55 A quara looter loses 1683 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+12:20:55 You were healed for 97 hitpoints. 
+12:20:55 You gained 60 mana.
+12:20:55 A quara raider loses 1970 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+12:20:55 You were healed for 107 hitpoints. 
+12:20:55 You gained 74 mana.
+12:20:55 A quara plunderer loses 2025 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:55 You were healed for 88 hitpoints. 
+12:20:55 You gained 57 mana.
+12:20:55 A quara raider loses 1970 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+12:20:55 You were healed for 107 hitpoints. 
+12:20:55 You gained 74 mana.
+12:20:55 A quara raider loses 1970 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+12:20:55 You were healed for 107 hitpoints. 
+12:20:55 You gained 74 mana.
+12:20:55 A quara plunderer loses 2025 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:55 You were healed for 88 hitpoints. 
+12:20:55 You gained 57 mana.
+12:20:55 A quara raider loses 1148 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+12:20:55 You were healed for 107 hitpoints. 
+12:20:55 You gained 74 mana.
+12:20:55 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:55 A quara plunderer loses 1391 hitpoints due to your attack. (active prey bonus, overflux charm, increased damage by Expose Weakness)
+12:20:55 A quara plunderer loses 2025 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:55 You were healed for 88 hitpoints. 
+12:20:55 You gained 12 mana.
+12:20:55 A quara looter loses 1683 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+12:20:55 You were healed for 93 hitpoints. 
+12:20:56 You lose 503 hitpoints due to an attack by a quara plunderer. 
+12:20:56 A quara looter loses 841 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+12:20:56 You were healed for 68 hitpoints. 
+12:20:56 You gained 42 mana.
+12:20:56 A quara raider loses 805 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+12:20:56 You were healed for 62 hitpoints. 
+12:20:56 You gained 43 mana.
+12:20:56 A quara plunderer loses 1011 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:56 You were healed for 62 hitpoints. 
+12:20:56 You gained 41 mana.
+12:20:56 A quara plunderer loses 1011 hitpoints due to your critical attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:56 You were healed for 62 hitpoints. 
+12:20:56 You gained 34 mana.
+12:20:56 A quara looter loses 841 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+12:20:56 You were healed for 68 hitpoints. 
+12:20:56 You lose 388 hitpoints due to an attack by a quara raider. 
+12:20:56 Screenshot for event Hotkey has been saved to location 'C:\Users\marce\AppData\Local\Tibia\packages\Tibia\screenshots'.
+12:20:56 You lose 295 hitpoints due to an attack by a quara looter. 
+12:20:56 You lose 331 hitpoints due to an attack by a quara looter. 
+12:20:56 You lose 293 hitpoints due to an attack by a quara looter. 
+12:20:57 You lose 282 hitpoints due to an attack by a quara looter. 
+12:20:57 A quara raider loses 97 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:57 You were healed for 27 hitpoints. 
+12:20:57 You lose 301 hitpoints due to an attack by a quara plunderer. 
+12:20:57 You lose 302 hitpoints due to an attack by a quara looter. 
+12:20:57 You lose 197 hitpoints due to an attack by a quara raider. 
+12:20:57 You healed yourself for 1630 hitpoints. 
+12:20:57 You lose 228 hitpoints due to an attack by a quara raider. 
+12:20:58 You lose 336 hitpoints due to an attack by a quara looter. 
+12:20:58 A quara raider loses 1620 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:58 You were healed for 131 hitpoints. 
+12:20:58 You gained 91 mana.
+12:20:58 Automatic Bonus Reroll for prey slot 1 successfully applied.
+12:20:58 There are 35 Wildcards left.
+12:20:58 Automatic Bonus Reroll for prey slot 2 successfully applied.
+12:20:58 There are 34 Wildcards left.
+12:20:58 Automatic Bonus Reroll for prey slot 3 successfully applied.
+12:20:58 There are 33 Wildcards left.
+12:20:58 You gained 24156 experience points (active prey bonus, Animus mastery).
+12:20:58 A quara plunderer loses 1726 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:58 You were healed for 132 hitpoints. 
+12:20:58 You gained 86 mana.
+12:20:58 A quara looter loses 766 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:20:58 You were healed for 144 hitpoints. 
+12:20:58 You gained 89 mana.
+12:20:58 You gained 20241 experience points (Animus mastery).
+12:20:58 A quara raider loses 1367 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:58 You were healed for 131 hitpoints. 
+12:20:58 You gained 64 mana.
+12:20:58 You gained 20905 experience points (sinister embrace, Animus mastery).
+12:20:58 A quara plunderer loses 21 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:20:58 You were healed for 132 hitpoints. 
+12:20:58 You gained 25272 experience points (Animus mastery).
+12:20:58 You healed yourself for 803 hitpoints. 
+12:20:59 You lose 315 hitpoints due to an attack by a quara raider. 
+12:20:59 You lose 313 hitpoints due to an attack by a quara raider. 
+12:20:59 You healed yourself for 628 hitpoints. 
+12:21:00 You lose 302 hitpoints due to an attack by a quara looter. 
+12:21:00 You lose 153 hitpoints due to an attack by a quara raider. 
+12:21:00 You lose 272 hitpoints due to an attack by a quara raider. 
+12:21:00 A quara plunderer loses 1114 hitpoints due to your attack. (overflux charm, increased damage by Expose Weakness)
+12:21:00 A quara plunderer loses 350 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:21:00 You were healed for 262 hitpoints. 
+12:21:00 You gained 170 mana.
+12:21:00 You gained 25272 experience points (Animus mastery).
+12:21:00 A quara raider loses 1743 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:21:00 You were healed for 261 hitpoints. 
+12:21:00 You gained 180 mana.
+12:21:00 A quara plunderer loses 1360 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:21:00 You were healed for 148 hitpoints. 
+12:21:00 You gained 74 mana.
+12:21:00 A quara looter loses 1765 hitpoints due to your attack. (active prey bonus, increased damage by Expose Weakness)
+12:21:00 You were healed for 56 hitpoints. 
+12:21:00 A quara raider loses 1354 hitpoints due to your attack. (increased damage by Expose Weakness)
+12:21:00 You lose 174 hitpoints due to an attack by a quara looter. 
+12:21:00 You lose 454 hitpoints due to an attack by a quara looter. 
+12:21:01 You lose 387 hitpoints due to an attack by a quara plunderer. (active prey bonus)
+12:21:01 You lose 287 hitpoints due to an attack by a quara looter. 
+12:21:02 You healed yourself for 1298 hitpoints. 
+12:21:05 Momentum was triggered.
+
+Channel Server Log saved Mon Aug 31 13:06:43 2026
+13:05:39 A quara looter loses 2083 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:39 You gained 160 mana.
+13:05:39 You gained 25638 experience points (active prey bonus, Animus mastery).
+13:05:39 A quara plunderer loses 3120 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:39 You gained 154 mana.
+13:05:39 You lose 249 hitpoints due to an attack by a quara plunderer. 
+13:05:39 You lose 371 hitpoints due to an attack by a quara plunderer. 
+13:05:40 You lose 333 hitpoints due to an attack by a quara raider. 
+13:05:40 You lose 289 hitpoints due to an attack by a quara looter. 
+13:05:40 You healed yourself for 1238 hitpoints. 
+13:05:40 You lose 487 hitpoints due to an attack by a quara plunderer. 
+13:05:40 You lose 352 hitpoints due to an attack by a quara plunderer. 
+13:05:41 A quara plunderer loses 2758 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:41 You were healed for 187 hitpoints. 
+13:05:41 You gained 122 mana.
+13:05:41 A quara plunderer loses 2758 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:41 You were healed for 187 hitpoints. 
+13:05:41 You gained 122 mana.
+13:05:41 A quara plunderer loses 2758 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:41 You were healed for 187 hitpoints. 
+13:05:41 You gained 122 mana.
+13:05:41 A quara raider loses 3354 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+13:05:41 You were healed for 228 hitpoints. 
+13:05:41 You gained 158 mana.
+13:05:41 A quara looter loses 2864 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:41 You were healed for 50 hitpoints. 
+13:05:41 You gained 126 mana.
+13:05:41 A quara raider loses 3354 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+13:05:41 You gained 158 mana.
+13:05:41 You lose 315 hitpoints due to an attack by a quara raider. 
+13:05:41 You dodged an attack. (Ruse)
+13:05:41 You healed yourself for 315 hitpoints. 
+13:05:41 You lose 324 hitpoints due to an attack by a quara looter. 
+13:05:41 You lose 320 hitpoints due to an attack by a quara looter. 
+13:05:42 You healed yourself for 644 hitpoints. 
+13:05:43 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:43 You gained 38 mana.
+13:05:43 A quara plunderer loses 883 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:43 You gained 36 mana.
+13:05:43 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:43 You gained 38 mana.
+13:05:43 A quara plunderer loses 509 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:43 You gained 36 mana.
+13:05:43 You gained 32011 experience points (active prey bonus, Animus mastery).
+13:05:43 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:43 You gained 38 mana.
+13:05:43 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:43 You gained 38 mana.
+13:05:43 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:43 You gained 38 mana.
+13:05:43 You lose 205 hitpoints due to an attack by a quara plunderer. 
+13:05:43 You lose 402 hitpoints due to an attack by a quara raider. 
+13:05:43 You lose 392 hitpoints due to an attack by a quara plunderer. 
+13:05:43 You lose 346 hitpoints due to an attack by a quara plunderer. 
+13:05:43 You lose 308 hitpoints due to an attack by a quara raider. 
+13:05:44 You lose 285 hitpoints due to an attack by a quara looter. 
+13:05:44 You lose 304 hitpoints due to an attack by a quara looter. 
+13:05:44 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:44 You were healed for 39 hitpoints. 
+13:05:44 You gained 27 mana.
+13:05:44 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:44 You were healed for 39 hitpoints. 
+13:05:44 You gained 27 mana.
+13:05:44 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:44 You were healed for 39 hitpoints. 
+13:05:44 You gained 27 mana.
+13:05:44 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:44 You were healed for 43 hitpoints. 
+13:05:44 You gained 27 mana.
+13:05:44 You healed yourself for 2020 hitpoints. 
+13:05:45 You lose 300 hitpoints due to an attack by a quara looter. 
+13:05:45 You lose 308 hitpoints due to an attack by a quara looter. 
+13:05:45 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:45 You were healed for 230 hitpoints. 
+13:05:45 You gained 142 mana.
+13:05:45 You gained 25638 experience points (active prey bonus, Animus mastery).
+13:05:45 A quara looter loses 2006 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:45 You were healed for 230 hitpoints. 
+13:05:45 You gained 142 mana.
+13:05:45 A quara raider loses 1922 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:45 You were healed for 206 hitpoints. 
+13:05:45 You gained 145 mana.
+13:05:45 A quara raider loses 1345 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:45 You gained 83 mana.
+13:05:45 A quara looter loses 1405 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:45 You gained 81 mana.
+13:05:45 A quara plunderer loses 577 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:45 You gained 78 mana.
+13:05:45 You gained 32011 experience points (active prey bonus, Animus mastery).
+13:05:45 A quara plunderer loses 1352 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:45 You gained 78 mana.
+13:05:45 You lose 307 hitpoints due to an attack by a quara raider. 
+13:05:45 You lose 317 hitpoints due to an attack by a quara raider. 
+13:05:45 You healed yourself for 624 hitpoints. 
+13:05:46 You lose 162 hitpoints due to an attack by a quara plunderer. 
+13:05:46 You lose 308 hitpoints due to an attack by a quara raider. 
+13:05:46 You lose 389 hitpoints due to an attack by a quara raider. 
+13:05:46 You healed yourself for 855 hitpoints. 
+13:05:47 You lose 324 hitpoints due to an attack by a quara looter. 
+13:05:47 A quara raider loses 1547 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:47 You were healed for 118 hitpoints. 
+13:05:47 You gained 82 mana.
+13:05:47 A quara plunderer loses 1555 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:47 You were healed for 119 hitpoints. 
+13:05:47 You gained 77 mana.
+13:05:47 A quara raider loses 142 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:47 You were healed for 87 hitpoints. 
+13:05:47 You gained 82 mana.
+13:05:47 You gained 24156 experience points (active prey bonus, Animus mastery).
+13:05:47 A quara raider loses 1547 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:47 You gained 82 mana.
+13:05:47 A quara raider loses 1547 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:47 You gained 82 mana.
+13:05:47 You lose 303 hitpoints due to an attack by a quara raider. 
+13:05:47 You healed yourself for 303 hitpoints. 
+13:05:48 You lose 140 hitpoints due to an attack by a quara plunderer. 
+13:05:48 You lose 245 hitpoints due to an attack by a quara raider. 
+13:05:48 You lose 210 hitpoints due to an attack by a quara looter. 
+13:05:48 You lose 318 hitpoints due to an attack by a quara looter. 
+13:05:48 You lose 295 hitpoints due to an attack by a quara looter. 
+13:05:48 You lose 336 hitpoints due to an attack by a quara raider. 
+13:05:48 You healed yourself for 1544 hitpoints. 
+13:05:49 You lose 306 hitpoints due to an attack by a quara looter. 
+13:05:49 A quara looter loses 952 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:49 You were healed for 63 hitpoints. 
+13:05:49 You gained 39 mana.
+13:05:49 A quara looter loses 952 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:49 You were healed for 63 hitpoints. 
+13:05:49 You gained 39 mana.
+13:05:49 A quara raider loses 912 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:49 You were healed for 57 hitpoints. 
+13:05:49 You gained 40 mana.
+13:05:49 A quara plunderer loses 916 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:49 You were healed for 57 hitpoints. 
+13:05:49 You gained 37 mana.
+13:05:49 A quara raider loses 912 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:49 You were healed for 57 hitpoints. 
+13:05:49 You gained 40 mana.
+13:05:49 A quara plunderer loses 916 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:49 You were healed for 9 hitpoints. 
+13:05:49 You gained 37 mana.
+13:05:49 A quara raider loses 912 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:49 You gained 40 mana.
+13:05:49 You lose 244 hitpoints due to an attack by a quara raider. 
+13:05:49 You lose 131 hitpoints due to an attack by a quara raider. 
+13:05:50 A quara looter loses 476 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:50 You were healed for 28 hitpoints. 
+13:05:50 You gained 17 mana.
+13:05:50 A quara looter loses 476 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:50 You were healed for 28 hitpoints. 
+13:05:50 You gained 17 mana.
+13:05:50 A quara raider loses 456 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:50 You were healed for 25 hitpoints. 
+13:05:50 You gained 18 mana.
+13:05:50 A quara plunderer loses 458 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:50 You were healed for 25 hitpoints. 
+13:05:50 You gained 17 mana.
+13:05:50 A quara raider loses 456 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:50 You were healed for 25 hitpoints. 
+13:05:50 You gained 18 mana.
+13:05:50 A quara looter loses 476 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:50 You were healed for 28 hitpoints. 
+13:05:50 You gained 17 mana.
+13:05:50 A quara plunderer loses 458 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:50 You were healed for 25 hitpoints. 
+13:05:50 You gained 17 mana.
+13:05:50 A quara raider loses 456 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:50 You were healed for 25 hitpoints. 
+13:05:50 You gained 18 mana.
+13:05:50 A quara looter loses 476 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:50 You were healed for 28 hitpoints. 
+13:05:50 You gained 17 mana.
+13:05:50 You lose 266 hitpoints due to an attack by a quara raider. 
+13:05:50 You healed yourself for 400 hitpoints. 
+13:05:50 You lose 313 hitpoints due to an attack by a quara looter. 
+13:05:50 You lose 219 hitpoints due to an attack by a quara raider. 
+13:05:51 You lose 416 hitpoints due to an attack by a quara looter. 
+13:05:51 A quara raider loses 763 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+13:05:51 You were healed for 476 hitpoints. 
+13:05:51 You gained 330 mana.
+13:05:51 You gained 24156 experience points (active prey bonus, Animus mastery).
+13:05:51 A quara raider loses 4394 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+13:05:51 You were healed for 472 hitpoints. 
+13:05:51 You gained 330 mana.
+13:05:51 A quara raider loses 4394 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+13:05:51 You gained 330 mana.
+13:05:51 A quara raider loses 3077 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+13:05:51 You gained 145 mana.
+13:05:51 A quara looter loses 2376 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:51 You gained 115 mana.
+13:05:51 You gained 25638 experience points (active prey bonus, Animus mastery).
+13:05:51 A quara plunderer loses 2509 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:51 You gained 111 mana.
+13:05:51 A quara raider loses 3077 hitpoints due to your critical attack. (savage blow charm, increased damage by Expose Weakness)
+13:05:51 You gained 145 mana.
+13:05:51 A quara looter loses 2606 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:51 You gained 115 mana.
+13:05:51 A quara looter loses 2606 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:05:51 You gained 115 mana.
+13:05:51 Momentum was triggered.
+13:05:51 You lose 318 hitpoints due to an attack by a quara raider. 
+13:05:51 You lose 343 hitpoints due to an attack by a quara raider. 
+13:05:51 You lose 534 hitpoints due to an attack by a quara raider. 
+13:05:51 You lose 200 hitpoints due to an attack by a quara looter. 
+13:05:51 You lose 405 hitpoints due to an attack by a quara raider. 
+13:05:52 You lose 322 hitpoints due to an attack by a quara raider. 
+13:05:52 You lose 387 hitpoints due to an attack by a quara raider. 
+13:05:52 You lose 364 hitpoints due to an attack by a quara raider. 
+13:05:52 You lose 276 hitpoints due to an attack by a quara raider. 
+13:05:52 You lose 519 hitpoints due to an attack by a quara plunderer. 
+13:05:52 You healed yourself for 2431 hitpoints. 
+13:05:53 You lose 308 hitpoints due to an attack by a quara looter. 
+13:05:53 You lose 453 hitpoints due to an attack by a quara plunderer. 
+13:05:53 You lose 323 hitpoints due to an attack by a quara looter. 
+13:05:53 You lose 158 hitpoints due to an attack by a quara plunderer. 
+13:05:53 A quara plunderer loses 1337 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:53 You were healed for 83 hitpoints. 
+13:05:53 You gained 54 mana.
+13:05:53 A quara raider loses 1331 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:53 You were healed for 83 hitpoints. 
+13:05:53 You gained 58 mana.
+13:05:53 A quara looter loses 1388 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:53 You were healed for 91 hitpoints. 
+13:05:53 You gained 56 mana.
+13:05:53 A quara raider loses 1331 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:53 You were healed for 83 hitpoints. 
+13:05:53 You gained 58 mana.
+13:05:53 A quara plunderer loses 815 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:53 You were healed for 83 hitpoints. 
+13:05:53 You gained 54 mana.
+13:05:53 You gained 32011 experience points (active prey bonus, Animus mastery).
+13:05:53 A quara looter loses 1388 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:53 You were healed for 91 hitpoints. 
+13:05:53 You gained 56 mana.
+13:05:53 A quara looter loses 1388 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:53 You were healed for 91 hitpoints. 
+13:05:53 You gained 56 mana.
+13:05:53 You lose 190 hitpoints due to an attack by a quara raider. 
+13:05:53 You lose 322 hitpoints due to an attack by a quara raider. 
+13:05:53 You lose 318 hitpoints due to an attack by a quara looter. 
+13:05:53 You lose 330 hitpoints due to an attack by a quara looter. 
+13:05:53 You healed yourself for 1758 hitpoints. 
+13:05:53 You lose 322 hitpoints due to an attack by a quara looter. 
+13:05:54 You lose 387 hitpoints due to an attack by a quara raider. 
+13:05:54 You lose 185 hitpoints due to an attack by a quara raider. 
+13:05:54 You healed yourself for 2166 hitpoints. 
+13:05:55 You lose 324 hitpoints due to an attack by a quara looter. 
+13:05:55 You lose 192 hitpoints due to an attack by a quara plunderer. 
+13:05:55 You lose 310 hitpoints due to an attack by a quara raider. 
+13:05:55 You lose 227 hitpoints due to an attack by a quara plunderer. 
+13:05:55 You lose 483 hitpoints due to an attack by a quara plunderer. 
+13:05:55 You lose 349 hitpoints due to an attack by a quara raider. 
+13:05:55 A quara plunderer loses 93 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:55 You were healed for 26 hitpoints. 
+13:05:55 You gained 17 mana.
+13:05:55 You gained 10 mana.
+13:05:55 You lose 234 hitpoints due to an attack by a quara raider. 
+13:05:55 You lose 330 hitpoints due to an attack by a quara raider. 
+13:05:55 You lose 319 hitpoints due to an attack by a quara raider. 
+13:05:56 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:56 You were healed for 56 hitpoints. 
+13:05:56 You gained 35 mana.
+13:05:56 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:56 You were healed for 51 hitpoints. 
+13:05:56 You gained 36 mana.
+13:05:56 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:56 You were healed for 51 hitpoints. 
+13:05:56 You gained 36 mana.
+13:05:56 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:56 You were healed for 56 hitpoints. 
+13:05:56 You gained 35 mana.
+13:05:56 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:56 You were healed for 51 hitpoints. 
+13:05:56 You gained 36 mana.
+13:05:56 A quara plunderer loses 883 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:56 You were healed for 51 hitpoints. 
+13:05:56 You gained 34 mana.
+13:05:56 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:56 You were healed for 56 hitpoints. 
+13:05:56 You gained 35 mana.
+13:05:56 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:56 You were healed for 51 hitpoints. 
+13:05:56 You gained 36 mana.
+13:05:56 You lose 298 hitpoints due to an attack by a quara looter. 
+13:05:56 You lose 319 hitpoints due to an attack by a quara looter. 
+13:05:56 You lose 250 hitpoints due to an attack by a quara looter. 
+13:05:56 You healed yourself for 1708 hitpoints. 
+13:05:56 You lose 333 hitpoints due to an attack by a quara looter. 
+13:05:56 You lose 236 hitpoints due to an attack by a quara looter. 
+13:05:56 You lose 345 hitpoints due to an attack by a quara raider. 
+13:05:57 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:57 You were healed for 24 hitpoints. 
+13:05:57 You gained 17 mana.
+13:05:57 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:57 You were healed for 24 hitpoints. 
+13:05:57 You gained 17 mana.
+13:05:57 A quara plunderer loses 441 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:57 You were healed for 24 hitpoints. 
+13:05:57 You gained 16 mana.
+13:05:57 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:57 You were healed for 24 hitpoints. 
+13:05:57 You gained 17 mana.
+13:05:57 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:57 You were healed for 24 hitpoints. 
+13:05:57 You gained 17 mana.
+13:05:57 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:57 You were healed for 27 hitpoints. 
+13:05:57 You gained 17 mana.
+13:05:57 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:57 You were healed for 24 hitpoints. 
+13:05:57 You gained 17 mana.
+13:05:57 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:57 You were healed for 27 hitpoints. 
+13:05:57 You gained 17 mana.
+13:05:57 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:57 You were healed for 27 hitpoints. 
+13:05:57 You gained 17 mana.
+13:05:57 You healed yourself for 2163 hitpoints. 
+13:05:57 You lose 338 hitpoints due to an attack by a quara raider. 
+13:05:57 You lose 414 hitpoints due to an attack by a quara looter. 
+13:05:57 You lose 302 hitpoints due to an attack by a quara looter. 
+13:05:57 You lose 328 hitpoints due to an attack by a quara looter. 
+13:05:57 You lose 146 hitpoints due to an attack by a quara raider. 
+13:05:58 A quara plunderer loses 101 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:58 You were healed for 28 hitpoints. 
+13:05:58 You gained 18 mana.
+13:05:58 You gained 10 mana.
+13:05:58 A quara raider loses 2043 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:58 You were healed for 305 hitpoints. 
+13:05:58 You gained 211 mana.
+13:05:58 A quara raider loses 2043 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:58 You were healed for 305 hitpoints. 
+13:05:58 You gained 211 mana.
+13:05:58 A quara plunderer loses 1594 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:58 You were healed for 121 hitpoints. 
+13:05:58 You gained 79 mana.
+13:05:58 A quara raider loses 1586 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:58 You were healed for 121 hitpoints. 
+13:05:58 You gained 84 mana.
+13:05:58 A quara raider loses 1586 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:58 You were healed for 121 hitpoints. 
+13:05:58 You gained 84 mana.
+13:05:58 A quara looter loses 1656 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:58 You were healed for 133 hitpoints. 
+13:05:58 You gained 82 mana.
+13:05:58 A quara raider loses 1586 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:05:58 You were healed for 121 hitpoints. 
+13:05:58 You gained 84 mana.
+13:05:58 You lose 165 hitpoints due to an attack by a quara raider. 
+13:05:58 You lose 368 hitpoints due to an attack by a quara raider. 
+13:05:58 You lose 183 hitpoints due to an attack by a quara raider. 
+13:05:58 You lose 318 hitpoints due to an attack by a quara raider. 
+13:05:58 You lose 265 hitpoints due to an attack by a quara raider. 
+13:05:58 You healed yourself for 1568 hitpoints. 
+13:05:58 You lose 387 hitpoints due to an attack by a quara plunderer. 
+13:05:59 You lose 338 hitpoints due to an attack by a quara plunderer. 
+13:05:59 You lose 300 hitpoints due to an attack by a quara raider. 
+13:05:59 You healed yourself for 1025 hitpoints. 
+13:05:59 You lose 202 hitpoints due to an attack by a quara raider. 
+13:06:00 A quara raider loses 1362 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:00 You were healed for 93 hitpoints. 
+13:06:00 You gained 64 mana.
+13:06:00 A quara raider loses 1362 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:00 You were healed for 93 hitpoints. 
+13:06:00 You gained 64 mana.
+13:06:00 A quara plunderer loses 1369 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:00 You were healed for 16 hitpoints. 
+13:06:00 You gained 61 mana.
+13:06:00 A quara raider loses 1362 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:00 You gained 64 mana.
+13:06:00 A quara looter loses 1422 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:00 You gained 63 mana.
+13:06:00 A quara raider loses 1362 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:00 You gained 64 mana.
+13:06:00 You lose 347 hitpoints due to an attack by a quara raider. 
+13:06:00 You lose 438 hitpoints due to an attack by a quara plunderer. 
+13:06:00 You lose 160 hitpoints due to an attack by a quara plunderer. 
+13:06:00 You lose 125 hitpoints due to an attack by a quara looter. 
+13:06:00 You lose 426 hitpoints due to an attack by a quara looter. 
+13:06:00 You lose 150 hitpoints due to an attack by a quara raider. 
+13:06:00 You lose 341 hitpoints due to an attack by a quara raider. 
+13:06:00 You lose 253 hitpoints due to an attack by a quara raider. 
+13:06:00 You healed yourself for 1637 hitpoints. 
+13:06:00 You lose 297 hitpoints due to an attack by a quara looter. 
+13:06:00 You lose 302 hitpoints due to an attack by a quara looter. 
+13:06:00 You lose 303 hitpoints due to an attack by a quara looter. 
+13:06:00 You lose 260 hitpoints due to an attack by a quara looter. 
+13:06:01 You lose 303 hitpoints due to an attack by a quara looter. 
+13:06:01 You healed yourself for 2064 hitpoints. 
+13:06:01 You lose 362 hitpoints due to an attack by a quara plunderer. 
+13:06:02 A quara plunderer loses 107 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:02 You were healed for 30 hitpoints. 
+13:06:02 You gained 19 mana.
+13:06:02 You gained 10 mana.
+13:06:02 You lose 400 hitpoints due to an attack by a quara raider. 
+13:06:02 You lose 165 hitpoints due to an attack by a quara plunderer. 
+13:06:02 You lose 510 hitpoints due to an attack by a quara plunderer. 
+13:06:02 You lose 310 hitpoints due to an attack by a quara looter. 
+13:06:02 You lose 310 hitpoints due to an attack by a quara raider. 
+13:06:02 You lose 283 hitpoints due to an attack by a quara raider. 
+13:06:02 You lose 310 hitpoints due to an attack by a quara raider. 
+13:06:02 You lose 298 hitpoints due to an attack by a quara looter. 
+13:06:02 You healed yourself for 1616 hitpoints. 
+13:06:02 You lose 952 hitpoints due to an attack by a quara looter. 
+13:06:03 You lose 304 hitpoints due to an attack by a quara looter. 
+13:06:03 You lose 305 hitpoints due to an attack by a quara looter. 
+13:06:03 You lose 320 hitpoints due to an attack by a quara raider. 
+13:06:03 You lose 454 hitpoints due to an attack by a quara raider. 
+13:06:03 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 46 hitpoints. 
+13:06:03 You gained 32 mana.
+13:06:03 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 50 hitpoints. 
+13:06:03 You gained 31 mana.
+13:06:03 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 46 hitpoints. 
+13:06:03 You gained 32 mana.
+13:06:03 A quara plunderer loses 883 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 46 hitpoints. 
+13:06:03 You gained 30 mana.
+13:06:03 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 46 hitpoints. 
+13:06:03 You gained 32 mana.
+13:06:03 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 46 hitpoints. 
+13:06:03 You gained 32 mana.
+13:06:03 A quara plunderer loses 883 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 46 hitpoints. 
+13:06:03 You gained 30 mana.
+13:06:03 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 50 hitpoints. 
+13:06:03 You gained 31 mana.
+13:06:03 A quara raider loses 786 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 46 hitpoints. 
+13:06:03 You gained 32 mana.
+13:06:03 You gained 24156 experience points (active prey bonus, Animus mastery).
+13:06:03 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:03 You were healed for 46 hitpoints. 
+13:06:03 You gained 32 mana.
+13:06:03 You lose 427 hitpoints due to an attack by a quara raider. 
+13:06:03 You lose 524 hitpoints due to an attack by a quara raider. 
+13:06:03 You lose 393 mana due to an attack by a quara raider. 
+13:06:03 You lose 507 mana due to an attack by a quara plunderer. 
+13:06:04 You lose 353 mana due to an attack by a quara raider. 
+13:06:04 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 23 hitpoints. 
+13:06:04 You gained 16 mana.
+13:06:04 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 23 hitpoints. 
+13:06:04 You gained 16 mana.
+13:06:04 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 23 hitpoints. 
+13:06:04 You gained 16 mana.
+13:06:04 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 23 hitpoints. 
+13:06:04 You gained 16 mana.
+13:06:04 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 26 hitpoints. 
+13:06:04 You gained 16 mana.
+13:06:04 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 26 hitpoints. 
+13:06:04 You gained 16 mana.
+13:06:04 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 23 hitpoints. 
+13:06:04 You gained 16 mana.
+13:06:04 A quara plunderer loses 441 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 23 hitpoints. 
+13:06:04 You gained 15 mana.
+13:06:04 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 26 hitpoints. 
+13:06:04 You gained 16 mana.
+13:06:04 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:04 You were healed for 26 hitpoints. 
+13:06:04 You gained 16 mana.
+13:06:04 You healed yourself for 1800 hitpoints. 
+13:06:04 You lose 186 mana due to an attack by a quara plunderer. 
+13:06:04 You lose 180 mana due to an attack by a quara raider. 
+13:06:04 You lose 377 mana due to an attack by a quara raider. 
+13:06:04 You lose 285 mana due to an attack by a quara raider. 
+13:06:05 A quara looter loses 4021 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+13:06:05 You were healed for 634 hitpoints. 
+13:06:05 You gained 389 mana.
+13:06:05 A quara raider loses 2239 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:05 You were healed for 334 hitpoints. 
+13:06:05 You gained 231 mana.
+13:06:05 A quara plunderer loses 1748 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:05 You were healed for 119 hitpoints. 
+13:06:05 You gained 77 mana.
+13:06:05 A quara raider loses 1739 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:05 You were healed for 118 hitpoints. 
+13:06:05 You gained 82 mana.
+13:06:05 A quara raider loses 1739 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:05 You were healed for 118 hitpoints. 
+13:06:05 You gained 82 mana.
+13:06:05 A quara plunderer loses 1748 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:05 You were healed for 119 hitpoints. 
+13:06:05 You gained 77 mana.
+13:06:05 A quara looter loses 3124 hitpoints due to your critical attack. (low blow charm, increased damage by Expose Weakness)
+13:06:05 You were healed for 224 hitpoints. 
+13:06:05 You gained 138 mana.
+13:06:05 A quara raider loses 1739 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:05 You were healed for 118 hitpoints. 
+13:06:05 You gained 82 mana.
+13:06:05 You lose 339 mana due to an attack by a quara looter. 
+13:06:05 You lose 304 mana due to an attack by a quara looter. 
+13:06:05 You lose 318 mana due to an attack by a quara looter. 
+13:06:05 You lose 469 mana due to an attack by a quara raider. 
+13:06:05 You lose 384 mana due to an attack by a quara raider. 
+13:06:05 You healed yourself for 290 hitpoints. 
+13:06:05 You lose 315 mana due to an attack by a quara looter. 
+13:06:06 You lose 337 mana due to an attack by a quara looter. 
+13:06:06 You lose 289 mana due to an attack by a quara looter. 
+13:06:06 You lose 153 mana due to an attack by a quara raider. 
+13:06:06 You lose 320 mana due to an attack by a quara raider. 
+13:06:06 You lose 322 mana due to an attack by a quara looter. 
+13:06:06 You lose 288 mana due to an attack by a quara looter. 
+13:06:06 You lose 181 mana due to an attack by a quara raider. 
+13:06:06 You lose 380 mana due to an attack by a quara raider. 
+13:06:06 You lose 206 mana due to an attack by a quara raider. 
+13:06:07 A quara raider loses 2482 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 77 mana.
+13:06:07 A quara raider loses 2482 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 77 mana.
+13:06:07 A quara raider loses 2482 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 77 mana.
+13:06:07 A quara raider loses 2482 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 77 mana.
+13:06:07 A quara raider loses 2482 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 77 mana.
+13:06:07 A quara raider loses 2482 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 77 mana.
+13:06:07 A quara plunderer loses 2494 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 73 mana.
+13:06:07 A quara looter loses 259 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 75 mana.
+13:06:07 You gained 18891 experience points (active prey bonus, Animus mastery).
+13:06:07 A quara looter loses 2591 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 75 mana.
+13:06:07 A quara looter loses 2591 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 75 mana.
+13:06:07 A quara raider loses 2482 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 77 mana.
+13:06:07 A quara plunderer loses 2494 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 73 mana.
+13:06:07 A quara looter loses 2591 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 75 mana.
+13:06:07 A quara raider loses 2482 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:07 You gained 77 mana.
+13:06:07 You lose 127 mana due to an attack by a quara raider. 
+13:06:07 You lose 392 mana due to an attack by a quara raider. 
+13:06:07 You lose 304 mana due to an attack by a quara raider. 
+13:06:07 You lose 275 mana due to an attack by a quara raider. 
+13:06:07 You lose 357 mana due to an attack by a quara raider. 
+13:06:08 You lose 290 mana due to an attack by a quara looter. 
+13:06:08 You lose 304 mana due to an attack by a quara looter. 
+13:06:08 You lose 317 mana due to an attack by a quara looter. 
+13:06:08 You lose 373 mana due to an attack by a quara raider. 
+13:06:08 You lose 313 mana due to an attack by a quara raider. 
+13:06:09 You lose 255 mana due to an attack by a quara raider. 
+13:06:09 You lose 301 mana due to an attack by a quara looter. 
+13:06:09 You lose 308 mana due to an attack by a quara looter. 
+13:06:09 A quara raider loses 1940 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:09 You gained 91 mana.
+13:06:09 A quara raider loses 1940 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:09 You gained 91 mana.
+13:06:09 A quara raider loses 1940 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:09 You gained 91 mana.
+13:06:09 A quara looter loses 2025 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:09 You gained 89 mana.
+13:06:09 A quara plunderer loses 679 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:09 You gained 86 mana.
+13:06:09 You gained 23587 experience points (active prey bonus, Animus mastery).
+13:06:09 A quara looter loses 2025 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:09 You gained 89 mana.
+13:06:09 You dodged an attack. (Ruse)
+13:06:09 You lose 342 mana due to an attack by a quara raider. 
+13:06:10 You lose 109 mana due to an attack by a quara plunderer. 
+13:06:10 You lose 276 hitpoints due to an attack by a quara plunderer. 
+13:06:10 You lose 284 hitpoints due to an attack by a quara looter. 
+13:06:10 You lose 308 hitpoints due to an attack by a quara looter. 
+13:06:10 You lose 351 hitpoints due to an attack by a quara raider. 
+13:06:10 You healed yourself for 1215 hitpoints. 
+13:06:11 You lose 307 hitpoints due to an attack by a quara looter. 
+13:06:11 A quara plunderer loses 100 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:11 You were healed for 28 hitpoints. 
+13:06:11 You gained 18 mana.
+13:06:11 You lose 333 hitpoints due to an attack by a quara looter. 
+13:06:11 You gained 10 mana.
+13:06:11 A quara raider loses 2095 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:11 You were healed for 185 hitpoints. 
+13:06:11 You gained 128 mana.
+13:06:11 A quara raider loses 2095 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:11 You were healed for 185 hitpoints. 
+13:06:11 You gained 128 mana.
+13:06:11 A quara looter loses 2186 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:11 You were healed for 204 hitpoints. 
+13:06:11 You gained 125 mana.
+13:06:11 A quara looter loses 2186 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:11 You were healed for 38 hitpoints. 
+13:06:11 You gained 125 mana.
+13:06:11 A quara raider loses 60 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:11 You gained 90 mana.
+13:06:11 You gained 17799 experience points (active prey bonus, Animus mastery).
+13:06:11 A quara plunderer loses 1473 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:11 You gained 85 mana.
+13:06:11 A quara raider loses 1389 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:11 You gained 90 mana.
+13:06:11 You gained 17799 experience points (active prey bonus, Animus mastery).
+13:06:11 A quara looter loses 1530 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:11 You gained 88 mana.
+13:06:11 You lose 355 hitpoints due to an attack by a quara raider. 
+13:06:11 You lose 333 hitpoints due to an attack by a quara raider. 
+13:06:11 Momentum was triggered.
+13:06:11 You lose 350 hitpoints due to an attack by a quara raider. 
+13:06:11 You lose 299 hitpoints due to an attack by a quara looter. 
+13:06:11 You healed yourself for 1337 hitpoints. 
+13:06:12 You lose 324 hitpoints due to an attack by a quara looter. 
+13:06:12 You lose 335 hitpoints due to an attack by a quara looter. 
+13:06:12 You lose 346 hitpoints due to an attack by a quara looter. 
+13:06:12 You lose 590 hitpoints due to an attack by a quara raider. 
+13:06:13 You healed yourself for 1595 hitpoints. 
+13:06:13 You lose 337 hitpoints due to an attack by a quara raider. 
+13:06:13 You lose 545 hitpoints due to an attack by a quara raider. 
+13:06:13 A quara looter loses 106 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 31 hitpoints. 
+13:06:13 You gained 19 mana.
+13:06:13 You gained 10 mana.
+13:06:13 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 46 hitpoints. 
+13:06:13 You gained 32 mana.
+13:06:13 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 46 hitpoints. 
+13:06:13 You gained 32 mana.
+13:06:13 A quara raider loses 887 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 46 hitpoints. 
+13:06:13 You gained 32 mana.
+13:06:13 A quara plunderer loses 891 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 46 hitpoints. 
+13:06:13 You gained 30 mana.
+13:06:13 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 51 hitpoints. 
+13:06:13 You gained 31 mana.
+13:06:13 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 51 hitpoints. 
+13:06:13 You gained 31 mana.
+13:06:13 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 51 hitpoints. 
+13:06:13 You gained 31 mana.
+13:06:13 A quara looter loses 490 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 51 hitpoints. 
+13:06:13 You gained 31 mana.
+13:06:13 You gained 18891 experience points (active prey bonus, Animus mastery).
+13:06:13 A quara looter loses 926 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 51 hitpoints. 
+13:06:13 You gained 31 mana.
+13:06:13 A quara plunderer loses 891 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:13 You were healed for 46 hitpoints. 
+13:06:13 You gained 30 mana.
+13:06:13 You lose 232 hitpoints due to an attack by a quara plunderer. 
+13:06:13 You lose 250 hitpoints due to an attack by a quara raider. 
+13:06:14 You healed yourself for 844 hitpoints. 
+13:06:14 You lose 318 hitpoints due to an attack by a quara looter. 
+13:06:14 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:14 You were healed for 26 hitpoints. 
+13:06:14 You gained 18 mana.
+13:06:14 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:14 You were healed for 26 hitpoints. 
+13:06:14 You gained 18 mana.
+13:06:14 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:14 You were healed for 29 hitpoints. 
+13:06:14 You gained 18 mana.
+13:06:14 A quara plunderer loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:14 You were healed for 26 hitpoints. 
+13:06:14 You gained 17 mana.
+13:06:14 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:14 You were healed for 29 hitpoints. 
+13:06:14 You gained 18 mana.
+13:06:14 A quara looter loses 464 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:14 You were healed for 29 hitpoints. 
+13:06:14 You gained 18 mana.
+13:06:14 A quara plunderer loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:14 You were healed for 26 hitpoints. 
+13:06:14 You gained 17 mana.
+13:06:14 A quara raider loses 444 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:14 You were healed for 26 hitpoints. 
+13:06:14 You gained 18 mana.
+13:06:14 You lose 300 hitpoints due to an attack by a quara looter. 
+13:06:14 You lose 316 hitpoints due to an attack by a quara looter. 
+13:06:14 You lose 330 hitpoints due to an attack by a quara looter. 
+13:06:15 You lose 320 hitpoints due to an attack by a quara looter. 
+13:06:15 You lose 520 hitpoints due to an attack by a quara raider. 
+13:06:15 A quara looter loses 97 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:15 You were healed for 28 hitpoints. 
+13:06:15 You gained 18 mana.
+13:06:15 You lose 333 hitpoints due to an attack by a quara raider. 
+13:06:15 You gained 10 mana.
+13:06:15 You lose 248 hitpoints due to an attack by a quara raider. 
+13:06:15 You lose 357 hitpoints due to an attack by a quara raider. 
+13:06:15 You lose 330 hitpoints due to an attack by a quara raider. 
+13:06:15 A quara raider loses 1806 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:15 You were healed for 104 hitpoints. 
+13:06:15 You gained 73 mana.
+13:06:15 A quara plunderer loses 1814 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:15 You were healed for 105 hitpoints. 
+13:06:15 You gained 68 mana.
+13:06:15 A quara plunderer loses 1814 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:15 You were healed for 105 hitpoints. 
+13:06:15 You gained 68 mana.
+13:06:15 A quara looter loses 1884 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:15 You were healed for 115 hitpoints. 
+13:06:15 You gained 71 mana.
+13:06:15 A quara looter loses 572 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:15 You were healed for 115 hitpoints. 
+13:06:15 You gained 71 mana.
+13:06:15 You gained 18891 experience points (active prey bonus, Animus mastery).
+13:06:15 A quara raider loses 1794 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:15 You were healed for 104 hitpoints. 
+13:06:15 You gained 73 mana.
+13:06:15 You gained 17799 experience points (active prey bonus, Animus mastery).
+13:06:15 A quara looter loses 832 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:15 You were healed for 115 hitpoints. 
+13:06:15 You gained 71 mana.
+13:06:15 You gained 18891 experience points (active prey bonus, Animus mastery).
+13:06:15 A quara looter loses 1884 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:15 You were healed for 115 hitpoints. 
+13:06:15 You gained 71 mana.
+13:06:16 You healed yourself for 2249 hitpoints. 
+13:06:16 You lose 124 hitpoints due to an attack by a quara plunderer. 
+13:06:16 You lose 330 hitpoints due to an attack by a quara looter. 
+13:06:16 You lose 347 hitpoints due to an attack by a quara raider. 
+13:06:17 You lose 291 hitpoints due to an attack by a quara looter. 
+13:06:17 You lose 323 hitpoints due to an attack by a quara looter. 
+13:06:17 You lose 308 hitpoints due to an attack by a quara raider. 
+13:06:17 You lose 464 hitpoints due to an attack by a quara raider. 
+13:06:17 You lose 294 hitpoints due to an attack by a quara raider. 
+13:06:17 You lose 310 hitpoints due to an attack by a quara raider. 
+13:06:17 A quara plunderer loses 1921 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:17 You were healed for 521 hitpoints. 
+13:06:17 You gained 338 mana.
+13:06:17 A quara raider loses 755 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:17 You were healed for 147 hitpoints. 
+13:06:17 You gained 102 mana.
+13:06:17 You gained 17799 experience points (active prey bonus, Animus mastery).
+13:06:17 A quara raider loses 1666 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:17 You were healed for 147 hitpoints. 
+13:06:17 You gained 102 mana.
+13:06:17 A quara raider loses 1666 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:17 You were healed for 147 hitpoints. 
+13:06:17 You gained 102 mana.
+13:06:17 A quara plunderer loses 1674 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:17 You were healed for 148 hitpoints. 
+13:06:17 You gained 96 mana.
+13:06:18 You lose 173 hitpoints due to an attack by a quara plunderer. 
+13:06:18 You lose 506 hitpoints due to an attack by a quara plunderer. 
+13:06:18 You lose 365 hitpoints due to an attack by a quara plunderer. 
+13:06:18 You healed yourself for 2481 hitpoints. 
+13:06:18 You lose 168 hitpoints due to an attack by a quara plunderer. 
+13:06:18 You lose 230 hitpoints due to an attack by a quara raider. 
+13:06:18 You lose 298 hitpoints due to an attack by a quara looter. 
+13:06:19 You healed yourself for 936 hitpoints. 
+13:06:19 You lose 282 hitpoints due to an attack by a quara looter. 
+13:06:19 A quara plunderer loses 104 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:19 You were healed for 29 hitpoints. 
+13:06:19 You gained 19 mana.
+13:06:19 You gained 10 mana.
+13:06:20 You lose 333 hitpoints due to an attack by a quara looter. 
+13:06:20 You lose 441 hitpoints due to an attack by a quara raider. 
+13:06:20 You lose 347 hitpoints due to an attack by a quara plunderer. 
+13:06:20 A quara plunderer loses 883 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:20 You were healed for 48 hitpoints. 
+13:06:20 You gained 32 mana.
+13:06:20 A quara plunderer loses 883 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:20 You were healed for 48 hitpoints. 
+13:06:20 You gained 32 mana.
+13:06:20 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:20 You were healed for 48 hitpoints. 
+13:06:20 You gained 33 mana.
+13:06:20 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:20 You were healed for 48 hitpoints. 
+13:06:20 You gained 33 mana.
+13:06:20 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:20 You were healed for 48 hitpoints. 
+13:06:20 You gained 33 mana.
+13:06:20 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:20 You were healed for 48 hitpoints. 
+13:06:20 You gained 33 mana.
+13:06:20 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:20 You were healed for 53 hitpoints. 
+13:06:20 You gained 33 mana.
+13:06:20 A quara raider loses 879 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:20 You were healed for 48 hitpoints. 
+13:06:20 You gained 33 mana.
+13:06:20 A quara looter loses 918 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:20 You were healed for 53 hitpoints. 
+13:06:20 You gained 33 mana.
+13:06:20 You lose 337 hitpoints due to an attack by a quara raider. 
+13:06:20 You healed yourself for 1269 hitpoints. 
+13:06:20 You lose 188 hitpoints due to an attack by a quara raider. 
+13:06:21 A quara plunderer loses 441 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:21 You were healed for 28 hitpoints. 
+13:06:21 You gained 18 mana.
+13:06:21 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:21 You were healed for 28 hitpoints. 
+13:06:21 You gained 19 mana.
+13:06:21 A quara plunderer loses 441 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:21 You were healed for 28 hitpoints. 
+13:06:21 You gained 18 mana.
+13:06:21 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:21 You were healed for 28 hitpoints. 
+13:06:21 You gained 19 mana.
+13:06:21 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:21 You were healed for 28 hitpoints. 
+13:06:21 You gained 19 mana.
+13:06:21 A quara looter loses 459 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:21 You were healed for 31 hitpoints. 
+13:06:21 You gained 19 mana.
+13:06:21 A quara raider loses 439 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:21 You were healed for 17 hitpoints. 
+13:06:21 You gained 19 mana.
+13:06:21 Momentum was triggered.
+13:06:21 You lose 302 hitpoints due to an attack by a quara looter. 
+13:06:21 You lose 245 hitpoints due to an attack by a quara looter. 
+13:06:22 You lose 892 hitpoints due to an attack by a quara looter. 
+13:06:22 You lose 300 hitpoints due to an attack by a quara looter. 
+13:06:22 A quara plunderer loses 171 hitpoints due to your critical attack. (increased damage by Expose Weakness)
+13:06:22 You were healed for 47 hitpoints. 
+13:06:22 You gained 31 mana.
+13:06:22 You gained 10 mana.
+13:06:22 You healed yourself for 1616 hitpoints. 
+13:06:22 You lose 303 hitpoints due to an attack by a quara raider. 
+13:06:22 You lose 181 hitpoints due to an attack by a quara raider. 
+13:06:22 A quara raider loses 2012 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+13:06:22 You were healed for 159 hitpoints. 
+13:06:22 You gained 110 mana.
+13:06:22 You gained 17799 experience points (active prey bonus, Animus mastery).
+13:06:22 A quara raider loses 2335 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+13:06:22 You were healed for 159 hitpoints. 
+13:06:22 You gained 110 mana.
+13:06:22 A quara plunderer loses 231 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+13:06:22 You were healed for 159 hitpoints. 
+13:06:22 You gained 104 mana.
+13:06:22 You gained 23587 experience points (active prey bonus, Animus mastery).
+13:06:22 A quara raider loses 2335 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+13:06:22 You were healed for 79 hitpoints. 
+13:06:22 You gained 110 mana.
+13:06:22 A quara looter loses 2437 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+13:06:22 You gained 108 mana.
+13:06:22 A quara looter loses 2437 hitpoints due to your attack. (increased damage by Expose Weakness, Onslaught)
+13:06:22 You gained 108 mana.
+13:06:23 You lose 473 hitpoints due to an attack by a quara raider. 
+13:06:23 You lose 485 hitpoints due to an attack by a quara raider. 
+13:06:25 You lose 304 hitpoints due to an attack by a quara looter. 
+13:06:25 You healed yourself for 1262 hitpoints. 
+13:06:25 You lose 303 hitpoints due to an attack by a quara raider. 
+13:06:25 A quara plunderer loses 899 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:25 You were healed for 61 hitpoints. 
+13:06:25 You gained 40 mana.
+13:06:25 A quara looter loses 934 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:25 You were healed for 67 hitpoints. 
+13:06:25 You gained 42 mana.
+13:06:25 A quara raider loses 484 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:25 You were healed for 61 hitpoints. 
+13:06:25 You gained 42 mana.
+13:06:25 You gained 17799 experience points (active prey bonus, Animus mastery).
+13:06:25 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:25 You were healed for 61 hitpoints. 
+13:06:25 You gained 42 mana.
+13:06:25 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:25 You were healed for 53 hitpoints. 
+13:06:25 You gained 42 mana.
+13:06:25 A quara raider loses 894 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:25 You gained 42 mana.
+13:06:26 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:26 You gained 19 mana.
+13:06:26 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:26 You gained 19 mana.
+13:06:26 A quara looter loses 467 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:26 You gained 19 mana.
+13:06:26 A quara plunderer loses 449 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:26 You gained 19 mana.
+13:06:26 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:26 You gained 20 mana.
+13:06:26 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:26 You gained 20 mana.
+13:06:26 A quara raider loses 446 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:26 You gained 20 mana.
+13:06:26 You lose 313 hitpoints due to an attack by a quara looter. 
+13:06:27 You lose 636 hitpoints due to an attack by a quara raider. 
+13:06:27 A quara raider loses 950 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:27 You were healed for 207 hitpoints. 
+13:06:27 You gained 144 mana.
+13:06:27 You gained 17799 experience points (active prey bonus, Animus mastery).
+13:06:27 A quara looter loses 1992 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:27 You were healed for 229 hitpoints. 
+13:06:27 You gained 140 mana.
+13:06:27 A quara raider loses 1908 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:27 You were healed for 207 hitpoints. 
+13:06:27 You gained 144 mana.
+13:06:27 A quara looter loses 1257 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:27 You were healed for 199 hitpoints. 
+13:06:27 You gained 122 mana.
+13:06:27 A quara looter loses 1257 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:27 You were healed for 107 hitpoints. 
+13:06:27 You gained 122 mana.
+13:06:27 You lose 330 hitpoints due to an attack by a quara looter. 
+13:06:27 You lose 312 hitpoints due to an attack by a quara looter. 
+13:06:27 You healed yourself for 642 hitpoints. 
+13:06:29 A quara raider loses 1676 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:29 You gained 103 mana.
+13:06:29 A quara plunderer loses 1685 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:29 You gained 97 mana.
+13:06:29 A quara looter loses 1750 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:29 You gained 101 mana.
+13:06:29 A quara looter loses 1750 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:29 You gained 101 mana.
+13:06:29 You lose 308 hitpoints due to an attack by a quara looter. 
+13:06:29 You lose 346 hitpoints due to an attack by a quara raider. 
+13:06:29 You lose 249 hitpoints due to an attack by a quara plunderer. 
+13:06:29 You lose 530 hitpoints due to an attack by a quara plunderer. 
+13:06:29 You lose 170 hitpoints due to an attack by a quara plunderer. 
+13:06:29 You healed yourself for 1603 hitpoints. 
+13:06:30 You lose 442 hitpoints due to an attack by a quara looter. 
+13:06:31 You healed yourself for 442 hitpoints. 
+13:06:31 A quara raider loses 89 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:31 You gained 17 mana.
+13:06:31 You gained 10 mana.
+13:06:31 A quara raider loses 869 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:31 You gained 66 mana.
+13:06:31 A quara plunderer loses 874 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:31 You gained 62 mana.
+13:06:31 A quara looter loses 489 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:31 You gained 64 mana.
+13:06:31 You gained 18891 experience points (active prey bonus, Animus mastery).
+13:06:31 You lose 180 hitpoints due to an attack by a quara plunderer. 
+13:06:32 You healed yourself for 180 hitpoints. 
+13:06:32 You lose 540 hitpoints due to an attack by a quara plunderer. 
+13:06:32 A quara plunderer loses 437 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:32 You were healed for 48 hitpoints. 
+13:06:32 You gained 31 mana.
+13:06:32 A quara raider loses 435 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:32 You were healed for 48 hitpoints. 
+13:06:32 You gained 33 mana.
+13:06:32 A quara raider loses 435 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:32 You were healed for 48 hitpoints. 
+13:06:32 You gained 33 mana.
+13:06:32 You lose 300 hitpoints due to an attack by a quara looter. 
+13:06:32 You lose 294 hitpoints due to an attack by a quara looter. 
+13:06:33 You lose 182 hitpoints due to an attack by a quara plunderer. 
+13:06:33 A quara raider loses 1867 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:33 You were healed for 506 hitpoints. 
+13:06:33 You gained 350 mana.
+13:06:33 A quara raider loses 693 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:33 You were healed for 177 hitpoints. 
+13:06:33 You gained 122 mana.
+13:06:33 You gained 17799 experience points (active prey bonus, Animus mastery).
+13:06:33 A quara plunderer loses 791 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:33 You were healed for 178 hitpoints. 
+13:06:33 You gained 116 mana.
+13:06:33 You gained 23587 experience points (active prey bonus, Animus mastery).
+13:06:33 A quara looter loses 1699 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:33 You were healed for 195 hitpoints. 
+13:06:33 You gained 120 mana.
+13:06:33 You lose 793 hitpoints due to an attack by a quara raider. 
+13:06:33 You lose 442 hitpoints due to an attack by a quara raider. 
+13:06:33 You lose 527 hitpoints due to an attack by a quara raider. 
+13:06:33 You healed yourself for 1878 hitpoints. 
+13:06:34 You lose 181 hitpoints due to an attack by a quara plunderer. 
+13:06:34 You healed yourself for 177 hitpoints. 
+13:06:35 You lose 291 hitpoints due to an attack by a quara looter. 
+13:06:35 A quara raider loses 94 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:35 You were healed for 26 hitpoints. 
+13:06:35 You gained 18 mana.
+13:06:35 You gained 10 mana.
+13:06:35 A quara raider loses 2268 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:35 You were healed for 222 hitpoints. 
+13:06:35 You gained 154 mana.
+13:06:35 You gained 21222 experience points (active prey bonus, sinister embrace, Animus mastery).
+13:06:35 A quara plunderer loses 2530 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:35 You were healed for 43 hitpoints. 
+13:06:35 You gained 145 mana.
+13:06:35 A quara looter loses 202 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:35 You gained 151 mana.
+13:06:35 You gained 18891 experience points (active prey bonus, Animus mastery).
+13:06:35 A quara looter loses 1397 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:35 You gained 151 mana.
+13:06:35 You gained 18891 experience points (active prey bonus, Animus mastery).
+13:06:38 You lose 497 hitpoints due to an attack by a quara plunderer. 
+13:06:38 Screenshot for event Hotkey has been saved to location 'C:\Users\marce\AppData\Local\Tibia\packages\Tibia\screenshots'.
+13:06:39 You healed yourself for 497 hitpoints. 
+13:06:39 A quara plunderer loses 90 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:39 You gained 16 mana.
+13:06:39 You gained 10 mana.
+13:06:40 A quara plunderer loses 2692 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:40 You gained 473 mana.
+13:06:40 You lose 296 hitpoints due to an attack by a quara plunderer. 
+13:06:42 A quara plunderer loses 105 hitpoints due to your attack. (increased damage by Expose Weakness)
+13:06:42 You were healed for 29 hitpoints. 
+13:06:42 You gained 19 mana.
+13:06:42 You gained 10 mana.
+13:06:42 You lose 268 hitpoints due to an attack by a quara plunderer. 

@@ -95,7 +95,7 @@ varredura de invariantes mecanicos + todos os `tests/*.test.mjs`):
 node tools/run-unified-checks.mjs
 ```
 
-O runner executa primeiro o gabarito prioritário atual (160 casos), depois as
+O runner executa primeiro o gabarito prioritário (contagem obtida da execução), depois as
 invariantes mecânicas reutilizando classificações compatíveis no mesmo processo,
 e por fim os testes JS. O cache persistente é invalidado pelo conteúdo do motor,
 das sessões e das opções; cache nunca substitui dump ou gabarito.
@@ -103,11 +103,20 @@ das sessões e das opções; cache nunca substitui dump ou gabarito.
 **Nao usar `python`/`pytest`** — este repo e 100% Unified/JS e os wrappers Python
 foram removidos (nao tinham logica propria: eram `subprocess.run(["node", ...])`
 sobre estes mesmos alvos, e cobriam a menos que o runner atual). Falhas
-pre-existentes conhecidas, que falham em `HEAD` limpo: `experimental-ui-parity`,
-`mob-element-regime`, `unified-spiritual-outburst-multistage`.
-Com a cobertura canônica ampliada para todas as fixtures, a invariante também
-expõe o achado preexistente `invariants/ms boss` em `22:20:35` (M-009); não
-alterar a classificação apenas para esconder esse achado.
+pré-existentes devem ser medidas antes da mudança e comparadas depois dela.
+O último baseline documentado pelo Claude, em **01/Set/2026**, registra **41/46
+alvos OK**, gabarito **217/217**, invariantes **39/40 fixtures limpos** e dump com
+**19.983 turnos em 40 pares**. As cinco falhas registradas são: invariantes em
+`bakradrone 09:57:20` (limite de S-014f), `experimental-ui-parity`,
+`mob-element-regime`, `unified-grav-san-ratio-witness` e
+`unified-spiritual-outburst-multistage`. Estes números são históricos, não uma
+medição atual. O achado antigo de `ms boss 22:20:35` não substitui esse baseline.
+Não alterar classificação nem afrouxar invariantes para esconder falhas.
+
+A cobertura inclui todas as sessões de todos os pares, nos dois regimes
+(D-017a); somente `CORPUS_EXCLUSIONS` pode excluir fontes. Não reintroduzir
+filtro de data. Ao medir em outro worktree, confira que ele contém todos os
+`tests/*.test.mjs` do disco: arquivos ignorados pelo Git podem estar ausentes.
 
 ## Motor único e protocolo de correção
 
@@ -161,3 +170,42 @@ Skills do ciclo: `opsx:propose` (criar change + artefatos), `opsx:apply`
 `opsx:archive` (finalizar). Ao implementar um change, rode os mesmos
 [comandos obrigatórios](#comandos-obrigatórios-após-mudanças) acima antes de
 arquivar.
+
+## Contexto e recursos compartilhados com o Claude
+
+Este repositório é independente de `../claude`. Não espelhar mudanças no
+repositório original nem criar tasks OpenSpec de replicação para ele.
+O motor usado pela UI é `js/unified-classification-engine.js` via
+`js/unified-main.js`. Sessões datadas a partir de 16/Jun/2026 usam a tabela
+`js/mob-element-mods-post-2026-06-16.js`, selecionada pela data da sessão.
+
+O Codex lê diretamente os mesmos documentos, specs e ferramentas do projeto;
+não criar cópias de `docs/`, `openspec/` ou `tools/` dentro de `.codex/`.
+
+- `CONTEXT.md`: vocabulário do domínio; `docs/adr/`: decisões arquiteturais.
+- `docs/agents/domain.md`: organização dos documentos de domínio.
+- `docs/agents/issue-tracker.md`: GitHub Issues de `lucasporfz/classificador`.
+- `docs/agents/triage-labels.md`: labels canônicas de triagem.
+- `CLAUDE.md`: histórico de baselines, diagnósticos e pendências do Claude.
+  Leia as seções pertinentes à investigação; comandos históricos de harness
+  não substituem as ferramentas atuais listadas neste AGENTS.md.
+- `.codex/skills/classifier-turn-fix/SKILL.md`: workflow atualizado de correção,
+  com referências em `reference/` para identidade do corpus, triagem e tools.
+- `.agents/skills/`: skills compartilhadas, incluindo `diagnosing-bugs`,
+  `grilling`, `prototype`, `domain-modeling`, `tdd` e `code-review`.
+
+No Codex, os equivalentes dos comandos Claude `/opsx:propose`, `/opsx:apply`,
+`/opsx:explore`, `/opsx:sync` e `/opsx:archive` são, respectivamente, as skills
+`openspec-propose`, `openspec-apply-change`, `openspec-explore`,
+`openspec-sync-specs` e `openspec-archive-change` em `.codex/skills/`.
+Todos operam no mesmo diretório `openspec/`.
+
+### Navegação pelo grafo
+
+Se `graphify-out/graph.json` existir e a CLI estiver disponível, use
+`graphify query "<pergunta>"` para perguntas sobre o código, `graphify path
+"<A>" "<B>"` para relações e `graphify explain "<conceito>"` para conceitos.
+Use `graphify-out/wiki/index.md` para navegação ampla quando existir;
+`graphify-out/GRAPH_REPORT.md` fica para visão arquitetural ou contexto que as
+consultas não encontraram. Depois de mudanças de código, atualize com
+`graphify update .`. Sincronização apenas documental não exige regenerar o grafo.

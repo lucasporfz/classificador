@@ -122,6 +122,18 @@
     isMainHit,
       gravSanHitInWindow,
     gravSanMultiplierAtTs,
+    isKnightStanceKnownAt,
+    knightStanceAtTs,
+    knightStanceMultiplierAtTs,
+    knightStanceMultiplierForStance,
+    KNIGHT_PROTECTOR_INCANTATION,
+    KNIGHT_BLOOD_RAGE_INCANTATION,
+    KNIGHT_PROTECTOR_MULTIPLIER,
+    COMBAT_MASTERY_STEPS,
+    COMBAT_MASTERY_MAX_STEPS,
+    COMBAT_MASTERY_MIN_LEVELS,
+    COMBAT_MASTERY_LEVEL_TOLERANCE,
+    combatMasteryCeiling,
   } = root.UnifiedFormulas;
 
   const {
@@ -590,6 +602,33 @@
     return setup;
   }
 
+  // Postura de knight: linha do tempo de tres estados a partir dos casts do DONO do log
+  // (`playerCasts` ja vem filtrado por `selectedSpeaker`), com casamento EXATO da
+  // incantacao. Sessao sem cast de postura devolve conjunto vazio e a mecanica fica
+  // inerte — mesmo padrao de M-035/M-036/M-039/M-040.
+  function inferKnightStanceSetup(localFacts) {
+    const casts = ((localFacts && localFacts.playerCasts) || [])
+      .filter(c => {
+        const text = String((c && c.text) || '').trim().toLowerCase();
+        return text === KNIGHT_PROTECTOR_INCANTATION || text === KNIGHT_BLOOD_RAGE_INCANTATION;
+      })
+      .sort((a, b) => (+a.ts || 0) - (+b.ts || 0));
+    if (!casts.length) return { hasStanceCasts: false, timeline: [], source: 'no_knight_stance_cast' };
+
+    const timeline = [];
+    let state = 'unknown';
+    for (const c of casts) {
+      const text = String(c.text).trim().toLowerCase();
+      // `utito tempo` sai sempre para Blood Rage; `utamo tempo` liga o Protector, exceto
+      // quando ja esta ligado — o recast desliga e cai na neutra.
+      state = text === KNIGHT_BLOOD_RAGE_INCANTATION
+        ? 'blood_rage'
+        : (state === 'protector' ? 'neutral' : 'protector');
+      timeline.push({ ts: +c.ts, incantation: text, state });
+    }
+    return { hasStanceCasts: true, timeline, source: 'stance_casts_from_owner' };
+  }
+
   function inferGravSanSetup(serverFacts, localFacts, options, fallbackState) {
     if (options && options.gravSanBonus != null) {
       const bonus = +options.gravSanBonus || 0;
@@ -984,12 +1023,15 @@
   // Retorna { pierce, source, rows }. `pierce: null` = sem veredito (o chamador deve
   // usar a deteccao cross-mob existente).
   function inferBmPierceFromCharmDamage(serverFacts, context) {
+    const ladderActive = !!(context && context.combatMasteryLadder && context.combatMasteryLadder.active);
     const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
     const events = (serverFacts && serverFacts.events) || [];
     const byKey = new Map();
     for (const ev of events) {
       if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey || ev.bountyTalisman) continue;
       if (isWithinAnyWindow(ev.ts, windows)) continue;
+      // M-041: postura ainda nao observada => testemunha inutilizavel (D-006).
+      if (!isKnightStanceKnownAt(context, ev.ts)) continue;
       const sig = charmSignature(ev);
       const element = CHARM_ELEMENT_MAP[sig];
       if (!element) continue;
@@ -1007,8 +1049,10 @@
       // esperado da outra, e o residuo (effectiveMod com amp / sem amp) vira bonus
       // fantasma. BM fica de fora daqui de proposito -- ele e a hipotese sob teste.
       const amp = !!ev.elementalAmplification;
-      const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0);
-      if (!byKey.has(key)) byKey.set(key, { mob, sig, element, ew, amp, bmSensitive, values: [] });
+      // M-041 (emendada): mesma razao da amplification — postura e estado do proc.
+      const stance = knightStanceAtTs(context, ev.ts);
+      const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0) + '|' + stance;
+      if (!byKey.has(key)) byKey.set(key, { mob, sig, element, ew, amp, stance, bmSensitive, values: [] });
       byKey.get(key).values.push(ev.dmg);
     }
 
@@ -1020,7 +1064,10 @@
       const key = ELEMENT_KEYS[r.element];
       if (!key || !(mods[key] > 0)) continue;
       const mit = mitigationMultiplier(mods, context);
-      const base = mods.hitpoints * 0.05 * mit;
+      // M-041: o Protector alcanca o dano de charm; sem ele as duas hipoteses de pierce
+      // sao comparadas contra um previsto 15% alto demais em toda linha de Protector.
+      const stanceMultiplier = knightStanceMultiplierForStance(r.stance);
+      const base = mods.hitpoints * 0.05 * mit * stanceMultiplier;
       // Pierce OBSERVADO da linha (EW + amplification), pela mesma funcao canonica que o
       // dano normal usa. O contexto vai sem `bmPierce` porque BM e a hipotese testada
       // logo abaixo: somar as duas coisas aqui achataria as hipoteses e as tornaria
@@ -1035,20 +1082,29 @@
         ? base * effectiveMod(+mods[key], pierceObserved + BM_PIERCE_HYPOTHESIS)
         : expectedNoBm;
       if (!(expectedNoBm > 0)) continue;
+      const levels = charmWitnessLevels(r.values);
       rows.push({
-        mob: r.mob, charm: r.sig, element: r.element, ew: r.ew, n: r.values.length,
+        mob: r.mob, charm: r.sig, element: r.element, ew: r.ew, stance: r.stance, n: r.values.length,
         cls: normalizeName(mods.bestiaryClass || ''), observed: median(r.values),
         expectedNoBm, expectedBm, bmSensitive: r.bmSensitive,
+        levels, minLevel: levels.length ? levels[0] : null,
       });
     }
     if (!rows.length) return { pierce: null, source: 'no_charm_witness_rows', rows: [] };
 
     // Passo 1: bônus de classe medido SÓ pelos elementos imunes ao BM.
+    // M-042: sob escada, a razao de cada linha imune vira TETO do multiplicador de classe,
+    // e o teto da classe e o MENOR deles — pelo mesmo motivo que o perk so soma. Fora da
+    // escada, segue a mediana das razoes, como antes.
     const immuneRatiosByClass = new Map();
     for (const r of rows) {
       if (r.bmSensitive || !r.cls) continue;
+      const ratio = ladderActive
+        ? (r.minLevel != null ? r.minLevel / r.expectedNoBm : null)
+        : r.observed / r.expectedNoBm;
+      if (ratio == null) continue;
       const arr = immuneRatiosByClass.get(r.cls) || [];
-      arr.push(r.observed / r.expectedNoBm);
+      arr.push(ratio);
       immuneRatiosByClass.set(r.cls, arr);
     }
 
@@ -1062,10 +1118,22 @@
         witnesses.push(Object.assign({}, r, { vote: null, reason: 'class_without_bm_immune_witness' }));
         continue;
       }
-      const classMult = median(immune);
+      const classMult = ladderActive ? Math.min(...immune) : median(immune);
       const eNo = r.expectedNoBm * classMult, eBm = r.expectedBm * classMult;
-      const fitsNo = Math.abs(r.observed - eNo) <= Math.max(2, eNo * CHARM_EXPECTED_TOLERANCE_RATIO);
-      const fitsBm = Math.abs(r.observed - eBm) <= Math.max(2, eBm * CHARM_EXPECTED_TOLERANCE_RATIO);
+      // M-042: sob escada, cada hipotese e testada como LIMITE contra o menor nivel; fora
+      // dela, como igualdade contra a mediana. Linha sem nivel de >=3 procs nao vota.
+      let fitsNo, fitsBm;
+      if (ladderActive) {
+        if (r.minLevel == null) {
+          witnesses.push(Object.assign({}, r, { vote: null, reason: 'no_level_above_proc_floor', classMult }));
+          continue;
+        }
+        fitsNo = eNo <= r.minLevel + COMBAT_MASTERY_LEVEL_TOLERANCE;
+        fitsBm = eBm <= r.minLevel + COMBAT_MASTERY_LEVEL_TOLERANCE;
+      } else {
+        fitsNo = Math.abs(r.observed - eNo) <= Math.max(2, eNo * CHARM_EXPECTED_TOLERANCE_RATIO);
+        fitsBm = Math.abs(r.observed - eBm) <= Math.max(2, eBm * CHARM_EXPECTED_TOLERANCE_RATIO);
+      }
       let vote = null, reason = 'fits_neither_hypothesis';
       if (fitsNo && !fitsBm) { vote = 0; votesNoBm++; reason = 'fits_no_bm_only'; }
       else if (fitsBm && !fitsNo) { vote = BM_PIERCE_HYPOTHESIS; votesBm++; reason = 'fits_bm_only'; }
@@ -1208,13 +1276,127 @@
     };
   }
 
-  function inferOmegaPerk(serverFacts, context) {
+  // M-042 — ESCADA de Combat Mastery no canal de testemunha de charm.
+  //
+  // Combat Mastery e perk de roda, exclusivo de knight, que soma dano conforme a vida
+  // FALTANTE do alvo. Ele responde ao MESMO gatilho do omega (M-039), e e por isso que o
+  // detector de omega o confundia: omega e BINARIO (dois niveis, razao x1,06) e Combat
+  // Mastery e GRADUADO (varios niveis espacados de um degrau). O discriminador e a FORMA.
+  //
+  // A deteccao usa SO os niveis observados: nao precisa de tabela de mob, de pierce nem de
+  // classificacao, porque a evidencia e a RAZAO entre niveis. Isso e o que permite `tom`
+  // provar a escada pelo `overpower charm`, cujo dano escala com a vida do proprio jogador
+  // e nunca fecha a formula de M-036 — ele ainda assim sofre o ajuste do perk.
+  //
+  // Os TETOS sao derivados das constantes declaradas (ver M-042 em unified-formulas.js):
+  // x1,09 com degrau de 1% e x1,18 com degrau de 2%.
+
+  // Niveis de uma linha: valores de dano repetidos ao menos CHARM_WITNESS_MIN_PROCS vezes
+  // (mesmo piso de M-036/C-012a/M-039 — um proc avulso pode estar truncado pela vida
+  // restante do alvo), em ordem crescente.
+  function charmWitnessLevels(values) {
+    const counts = new Map();
+    for (const v of values) counts.set(v, (counts.get(v) || 0) + 1);
+    return [...counts.entries()]
+      .filter(([, n]) => n >= CHARM_WITNESS_MIN_PROCS)
+      .map(([value]) => value)
+      .sort((a, b) => a - b);
+  }
+
+  // Uma linha e escada quando >=3 dos seus niveis caem na grade
+  // `menorNivel x (1 + degrau x n)`, com `n` inteiro dentro do teto daquele degrau.
+  //
+  // Nivel que NAO cai na grade e contaminacao e e ignorado (D-006) — ele nao desqualifica
+  // a linha. Desqualificar seria pior que inutil: era o comportamento da primeira versao e
+  // ele reabria o falso positivo, porque sem escada o detector de omega volta ao caminho
+  // legado e le o sexto degrau (x1,06) como se fosse o perk. A forma dessa contaminacao
+  // esta no corpus: `crypt mage | freeze` exibe 665, 705 e 1098, e o 1098 esta a x1,6511.
+  //
+  // A ancora e o MENOR nivel porque o perk so soma: ele e o mais proximo da base real.
+  // Com a contaminacao ignorada, `crypt mage` fica com 2 niveis na grade (665 e 705),
+  // abaixo do piso de 3, e continua NAO sendo escada — que e o resultado correto, porque
+  // `crypt` e de um paladino e Combat Mastery e exclusivo de knight.
+  function combatMasteryLadderForLevels(levels) {
+    if (!levels || levels.length < COMBAT_MASTERY_MIN_LEVELS) return null;
+    const base = levels[0];
+    if (!(base > 0)) return null;
+    // Os dois degraus podem encaixar >=3 niveis da mesma linha (a grade de 1% e um
+    // refinamento da de 2%), entao vence o que EXPLICA MAIS niveis; empate fica com o
+    // menor. Medido em `tom`: a grade de 2% cobre os 8 niveis e a de 1% so 5, porque os
+    // tres mais altos precisariam de n>9 e estouram o teto — o degrau real e 2% (arma de
+    // duas maos). Em `picture` e o inverso: 1% cobre os 4 e 2% cobre 1.
+    let best = null;
+    for (const step of COMBAT_MASTERY_STEPS) {
+      const ceiling = combatMasteryCeiling(step);
+      const onGrid = levels.filter(value => {
+        if (value / base > ceiling) return false;
+        const n = Math.round((value / base - 1) / step);
+        if (n < 0 || n > COMBAT_MASTERY_MAX_STEPS) return false;
+        return Math.abs(value - base * (1 + step * n)) <= COMBAT_MASTERY_LEVEL_TOLERANCE;
+      });
+      if (onGrid.length < COMBAT_MASTERY_MIN_LEVELS) continue;
+      if (!best || onGrid.length > best.onGrid.length) best = { step, ceiling, base, onGrid };
+    }
+    return best;
+  }
+
+  function inferCombatMasteryLadder(serverFacts, context) {
     const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
     const events = (serverFacts && serverFacts.events) || [];
     const byKey = new Map();
     for (const ev of events) {
       if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey || ev.bountyTalisman) continue;
       if (isWithinAnyWindow(ev.ts, windows)) continue;
+      // M-041: postura ainda nao observada => proc inutilizavel (D-006).
+      if (!isKnightStanceKnownAt(context, ev.ts)) continue;
+      const sig = charmSignature(ev);
+      const element = CHARM_ELEMENT_MAP[sig];
+      if (!element) continue;
+      const mob = normalizeName(ev.mob);
+      if (!mob) continue;
+      const ew = /expose weakness/i.test(ev.rawLine || '');
+      const amp = !!ev.elementalAmplification;
+      const stance = knightStanceAtTs(context, ev.ts);
+      const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0) + '|' + stance;
+      if (!byKey.has(key)) byKey.set(key, { mob, charm: sig, element, ew, amp, stance, values: [] });
+      byKey.get(key).values.push(ev.dmg);
+    }
+
+    const rows = [];
+    for (const r of byKey.values()) {
+      if (r.values.length < CHARM_WITNESS_MIN_PROCS) continue;
+      const levels = charmWitnessLevels(r.values);
+      if (!levels.length) continue;
+      const ladder = combatMasteryLadderForLevels(levels);
+      rows.push({
+        mob: r.mob, charm: r.charm, element: r.element, ew: r.ew, amp: r.amp, stance: r.stance,
+        n: r.values.length, levels, ladder: !!ladder,
+        step: ladder ? ladder.step : null,
+        span: levels.length > 1 ? levels[levels.length - 1] / levels[0] : 1,
+      });
+    }
+
+    const ladders = rows.filter(r => r.ladder);
+    if (!ladders.length) {
+      return { active: false, step: null, ceiling: null, rows, source: rows.length ? 'no_ladder_in_charm_witness' : 'no_charm_witness_rows' };
+    }
+    // O degrau e fato do personagem (nivel do perk + arma), logo unico na sessao. Quando as
+    // linhas discordarem, o MAIOR degrau e o conservador: ele produz o maior teto e, com
+    // isso, a menor chance de acusar omega falso.
+    const step = ladders.reduce((acc, r) => Math.max(acc, r.step), 0);
+    return { active: true, step, ceiling: combatMasteryCeiling(step), rows, ladderRows: ladders.length, source: 'ladder_in_charm_witness' };
+  }
+
+  function inferOmegaPerk(serverFacts, context) {
+    const ladder = context && context.combatMasteryLadder;
+    const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
+    const events = (serverFacts && serverFacts.events) || [];
+    const byKey = new Map();
+    for (const ev of events) {
+      if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey || ev.bountyTalisman) continue;
+      if (isWithinAnyWindow(ev.ts, windows)) continue;
+      // M-041: postura ainda nao observada => testemunha inutilizavel (D-006).
+      if (!isKnightStanceKnownAt(context, ev.ts)) continue;
       const sig = charmSignature(ev);
       const element = CHARM_ELEMENT_MAP[sig];
       if (!element) continue;
@@ -1224,8 +1406,13 @@
       // populacoes de pierce diferentes e nunca podem compartilhar nivel.
       const ew = /expose weakness/i.test(ev.rawLine || '');
       const amp = !!ev.elementalAmplification;
-      const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0);
-      if (!byKey.has(key)) byKey.set(key, { mob, charm: sig, element, ew, amp, values: [] });
+      // M-041 (emendada): a postura do knight e estado do proc, igual a EW e a
+      // amplification. O Protector corta 15% do dano causado e isso alcanca o charm
+      // (medido em `picture`: razao Protector/neutra = 0,850), entao procs de posturas
+      // diferentes sao populacoes distintas e nunca compartilham nivel.
+      const stance = knightStanceAtTs(context, ev.ts);
+      const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0) + '|' + stance;
+      if (!byKey.has(key)) byKey.set(key, { mob, charm: sig, element, ew, amp, stance, values: [] });
       byKey.get(key).values.push(ev.dmg);
     }
     if (!byKey.size) return { active: false, multiplier: 1, source: 'no_elemental_charm_evidence_outside_grav_san', rows: [] };
@@ -1243,7 +1430,10 @@
       // ancora nao fecharia numa sessao que o tenha. Ele cancela na razao (b), entao
       // entra so aqui.
       const classMultiplier = bestiaryClassMultiplierForHit({ mob: r.mob }, context);
-      const expected = mods.hitpoints * 0.05 * mit * effectiveMod(+mods[key], pierce) * classMultiplier;
+      // M-041: o Protector e multiplicador pos-mitigacao e alcanca o charm; o previsto da
+      // linha tem de carrega-lo, senao a linha de Protector nunca ancora.
+      const stanceMultiplier = knightStanceMultiplierForStance(r.stance);
+      const expected = mods.hitpoints * 0.05 * mit * effectiveMod(+mods[key], pierce) * classMultiplier * stanceMultiplier;
       if (!(expected > 0)) continue;
 
       const counts = new Map();
@@ -1256,15 +1446,34 @@
       const anchorTolerance = Math.max(2, expected * CHARM_EXPECTED_TOLERANCE_RATIO);
       const anchor = levels.find(L => Math.abs(L.value - expected) <= anchorTolerance);
       const row = {
-        mob: r.mob, charm: r.charm, element: r.element, ew: r.ew, amp: r.amp,
+        mob: r.mob, charm: r.charm, element: r.element, ew: r.ew, amp: r.amp, stance: r.stance,
         n: r.values.length, expected, levels,
         baseLevel: anchor ? anchor.value : null, omegaLevel: null,
       };
       if (anchor) {
-        const wanted = anchor.value * OMEGA_MULTIPLIER;
-        const omegaTolerance = Math.max(2, wanted * CHARM_EXPECTED_TOLERANCE_RATIO);
-        const omega = levels.find(L => L.value !== anchor.value && Math.abs(L.value - wanted) <= omegaTolerance);
-        if (omega) { row.omegaLevel = omega.value; row.ratio = omega.value / anchor.value; }
+        if (ladder && ladder.active) {
+          // M-042: sob escada, um nivel a x1,06 do ancorado NAO prova omega — o sexto
+          // degrau da escada de 1% E exatamente x1,06. O que prova e um nivel ACIMA do
+          // teto que a escada sozinha alcanca, e ainda assim sobre a grade estendida
+          // `(1 + degrau x n) x 1,06`. Nivel fora das duas grades e contaminacao (D-006):
+          // e a forma do `crypt mage 1098`, a x1,6511 do ancorado.
+          const omega = levels.find(L => {
+            if (L.value === anchor.value) return false;
+            const ratio = L.value / anchor.value;
+            if (ratio <= ladder.ceiling) return false;
+            for (let n = 0; n <= COMBAT_MASTERY_MAX_STEPS; n++) {
+              const wanted = anchor.value * (1 + ladder.step * n) * OMEGA_MULTIPLIER;
+              if (Math.abs(L.value - wanted) <= COMBAT_MASTERY_LEVEL_TOLERANCE) return true;
+            }
+            return false;
+          });
+          if (omega) { row.omegaLevel = omega.value; row.ratio = omega.value / anchor.value; }
+        } else {
+          const wanted = anchor.value * OMEGA_MULTIPLIER;
+          const omegaTolerance = Math.max(2, wanted * CHARM_EXPECTED_TOLERANCE_RATIO);
+          const omega = levels.find(L => L.value !== anchor.value && Math.abs(L.value - wanted) <= omegaTolerance);
+          if (omega) { row.omegaLevel = omega.value; row.ratio = omega.value / anchor.value; }
+        }
       }
       rows.push(row);
     }
@@ -1274,16 +1483,21 @@
     if (confirmed.length) {
       return { active: true, multiplier: OMEGA_MULTIPLIER, source: 'confirmed_by_charm_damage', rows, confirmedRows: confirmed.length, anchoredRows: anchored.length };
     }
+    if (ladder && ladder.active) {
+      return { active: false, multiplier: 1, source: 'combat_mastery_ladder_without_level_above_ceiling', rows, anchoredRows: anchored.length, ladderStep: ladder.step };
+    }
     if (!anchored.length) return { active: false, multiplier: 1, source: 'no_anchored_charm_witness_row', rows };
     return { active: false, multiplier: 1, source: 'charm_witness_without_omega_level', rows, anchoredRows: anchored.length };
   }
 
   function inferBestiaryClassDamageBonus(serverFacts, context) {
+    const ladder = context && context.combatMasteryLadder;
     const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
     const events = (serverFacts && serverFacts.events) || [];
     const charmEvents = events
       .filter(ev => ev && ev.kind === 'charm' && ev.dmg > 0 && !ev.isPrey && !ev.bountyTalisman)
       .filter(ev => !isWithinAnyWindow(ev.ts, windows))
+      .filter(ev => isKnightStanceKnownAt(context, ev.ts))
       .map(ev => ({ ev, element: CHARM_ELEMENT_MAP[charmSignature(ev)], ew: /expose weakness/i.test(ev.rawLine || '') }))
       .filter(x => !!x.element);
     if (!charmEvents.length) return { bonus: 0, multiplier: 1, class: null, source: 'no_elemental_charm_evidence_outside_grav_san' };
@@ -1295,13 +1509,16 @@
       // D-010c: mesma razao do detector de BM -- a amplification e estado de pierce da
       // linha observada e separa populacoes que nao podem dividir mediana.
       const amp = !!ev.elementalAmplification;
-      const key = mob + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0);
-      if (!byKey.has(key)) byKey.set(key, { mob, element, ew, amp, values: [] });
+      // M-041 (emendada): a postura entra na chave pelo mesmo motivo que a amplification
+      // — procs de posturas diferentes sao populacoes distintas e nao podem dividir mediana.
+      const stance = knightStanceAtTs(context, ev.ts);
+      const key = mob + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0) + '|' + stance;
+      if (!byKey.has(key)) byKey.set(key, { mob, element, ew, amp, stance, values: [] });
       byKey.get(key).values.push(ev.dmg);
     }
 
     const rows = [];
-    for (const { mob, element, ew, amp, values } of byKey.values()) {
+    for (const { mob, element, ew, amp, stance, values } of byKey.values()) {
       // Exige repetição: um único proc pode estar truncado pela vida restante do alvo.
       if (values.length < 3) continue;
       const mods = getMobMods(mob, context);
@@ -1313,10 +1530,15 @@
       const pierce = pierceForElement(element, { exposeWeakness: ew, elementalAmplification: amp }, context);
       const mod = effectiveMod(+mods[key], pierce);
       const mit = mitigationMultiplier(mods, context);
-      const expected = mods.hitpoints * 0.05 * mit * mod;
+      // M-041: o Protector alcanca o dano de charm e tem de entrar no previsto.
+      const stanceMultiplier = knightStanceMultiplierForStance(stance);
+      const expected = mods.hitpoints * 0.05 * mit * mod * stanceMultiplier;
       if (!(expected > 0)) continue;
       const observed = median(values);
-      rows.push({ mob, element, ew, amp, class: normalizeName(mods.bestiaryClass), observed, expected, ratio: observed / expected, n: values.length });
+      // M-042: sob escada, o teste deixa de ser igualdade contra a mediana e passa a ser
+      // limite superior contra o MENOR nivel — por isso a linha carrega os dois.
+      const levels = charmWitnessLevels(values);
+      rows.push({ mob, element, ew, amp, stance, class: normalizeName(mods.bestiaryClass), observed, expected, ratio: observed / expected, n: values.length, levels, minLevel: levels.length ? levels[0] : null });
     }
     if (!rows.length) return { bonus: 0, multiplier: 1, class: null, source: 'no_mob_with_bestiary_class_and_hitpoints', rows };
 
@@ -1325,6 +1547,37 @@
       const arr = byClass.get(r.class) || [];
       arr.push(r);
       byClass.set(r.class, arr);
+    }
+
+    // M-042 — REGRA DO TETO. Sob escada de Combat Mastery, a mediana da linha cai num
+    // degrau qualquer e o teste de igualdade inventa bonus (medido em `picture`:
+    // `mammal +3,0%` pela mediana, `reptile +2,0%` pelo menor nivel com a tolerancia
+    // larga). O fato mecanico e que o perk SO SOMA: o menor nivel da linha e um LIMITE
+    // SUPERIOR do dano sem bonus, entao um candidato e ELIMINADO quando o previsto com ele
+    // passa desse nivel. O veredito da classe e a INTERSECAO dos sobreviventes das suas
+    // linhas — vazio prova ausencia de bonus, um crava, mais de um abstem (D-006).
+    if (ladder && ladder.active) {
+      const perClass = [];
+      for (const [cls, clsRows] of byClass) {
+        const voting = clsRows.filter(r => r.minLevel != null);
+        if (!voting.length) { perClass.push({ class: cls, verdict: 'no_voting_row', surviving: [] }); continue; }
+        let surviving = BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES.slice();
+        for (const r of voting) {
+          surviving = surviving.filter(b => (r.expected * (1 + b)) <= r.minLevel + COMBAT_MASTERY_LEVEL_TOLERANCE);
+        }
+        perClass.push({
+          class: cls,
+          surviving,
+          verdict: surviving.length === 0 ? 'no_bonus_proved' : surviving.length === 1 ? 'unique' : 'ambiguous',
+          ceilings: voting.map(r => r.minLevel / r.expected),
+        });
+      }
+      const unique = perClass.filter(p => p.verdict === 'unique');
+      if (unique.length === 1) {
+        const p = unique[0];
+        return { bonus: p.surviving[0], multiplier: 1 + p.surviving[0], class: p.class, source: 'confirmed_by_charm_ceiling_under_ladder', rows, perClass };
+      }
+      return { bonus: 0, multiplier: 1, class: null, source: 'charm_ceiling_under_ladder', rows, perClass };
     }
 
     let best = null;
@@ -1520,6 +1773,9 @@
     context.bountyTalismanSetup = explicitBountyTalismanSetup
       || unknownBountyTalismanSetup('first_pass_without_bounty_setup');
     context.transcendenceWindows = (serverFacts.transcendenceTriggers || []).map(t => [t.ts, t.ts + TRANSCENDENCE_WINDOW_SECONDS]);
+    // Antes de qualquer inferencia que reverta dano: o multiplicador de postura entra em
+    // `postMultiplier` e no divisor da base de leech, entao tudo a jusante precisa ve-lo.
+    context.stanceSetup = inferKnightStanceSetup(localFacts);
     context.gravSanSetup = inferGravSanSetup(serverFacts, localFacts, options || {});
     if (!explicitBountyTalismanSetup) {
       context.bountyTalismanSetup = inferBountyTalismanDamageSetup(
@@ -1527,6 +1783,10 @@
         context.gravSanSetup,
       );
     }
+    // M-042: a escada de Combat Mastery e lida so dos niveis observados de charm (nao usa
+    // tabela de mob, pierce nem classificacao), entao roda ANTES das tres leituras que ela
+    // governa — bonus de classe, omega e o atalho de BM por charm.
+    context.combatMasteryLadder = inferCombatMasteryLadder(serverFacts, context);
     context.bestiaryClassBonus = inferBestiaryClassDamageBonus(serverFacts, context);
     // M-039: depois do bonus de classe, porque a ancora da testemunha de omega precisa
     // dele para bater com o dano de charm observado (a razao x1,06 em si nao depende).
@@ -1840,6 +2100,7 @@
       )).sort(),
       goldLeechObservationsSample: goldLeechObservations.slice(0, 20),
       gravSanSetup: context.gravSanSetup,
+      stanceSetup: context.stanceSetup,
       aaElement: context.aaElement || 'physical',
       aaElementDetection: aaElementDetection || { element: 'physical', source: 'not_run', counts: null, eligible: 0 },
       weaponPhysicalPierce: context.weaponPhysicalPierce || 0,
@@ -1895,7 +2156,12 @@
         getMobMods: options && options.getMobMods,
         useFloat16Mitigation: options && options.useFloat16Mitigation !== undefined ? options.useFloat16Mitigation : true,
         gravSanSetup: inferGravSanSetup(server, local, options || {}),
+        stanceSetup: inferKnightStanceSetup(local),
       };
+      // M-042: o atalho de BM tambem consome a testemunha de charm, entao precisa saber da
+      // escada antes de decidir. Fica fora do literal acima porque o detector le
+      // `gravSanSetup`/`stanceSetup` do proprio contexto — mesma ordem de buildContext.
+      charmProbeContext.combatMasteryLadder = inferCombatMasteryLadder(server, charmProbeContext);
       const charmBm = inferBmPierceFromCharmDamage(server, charmProbeContext);
       if (charmBm && charmBm.pierce != null) {
         const detection = {
@@ -1959,7 +2225,9 @@
     parseServerFacts,
     parseLocalChat,
     inferGravSanSetup,
+    inferKnightStanceSetup,
     inferBestiaryClassDamageBonus,
+    inferCombatMasteryLadder,
     inferOmegaPerk,
     // Exportada para diagnóstico/validação. AINDA NÃO ligada ao fluxo de classificação:
     // o gate de controle negativo (task 3 do change infer-bm-pierce-from-charm-damage)

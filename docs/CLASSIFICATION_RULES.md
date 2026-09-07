@@ -449,6 +449,275 @@
     turnos sem classificação com holy `+4%`, `darklight rp` de `1` para `25`. Enquanto não
     modelado, o efeito declarado é viés de **−1,8%** no dano base holy de uma sessão que tenha
     o perk, sem consequência para classificação.
+
+- **M-041 — Postura de knight: três estados de dano, dirigidos por cast:**
+  `ESTADO: decidida e IMPLEMENTADA em 06/Set/2026 (change `model-knight-protector-stance`).`
+
+  O knight alterna entre **três** posturas durante a caçada, e as três produzem níveis de dano
+  diferentes:
+
+  | postura | incantação | efeito declarado pelo jogo |
+  |---|---|---|
+  | **Protector** | `utamo tempo` | 30% de shielding; reduz dano recebido **e o dano causado em 15%** |
+  | **Blood Rage** | `utito tempo` | **+25% de skill** de sword/axe/club; +15% de dano recebido |
+  | neutra | — | nenhuma das duas |
+
+  A postura é **fato observado**, não inferido por estatística: cada troca aparece como cast no
+  Local Chat do dono do log. O dano é confirmação, nunca fonte.
+
+  **Máquina de estados.** `utito tempo` leva sempre a Blood Rage. `utamo tempo` liga o
+  Protector, **exceto** quando ele já está ligado — o recast desliga e cai na neutra. A postura
+  **não expira por tempo**: fica ligada até o próximo cast (confirmado pelo usuário em
+  06/Set/2026; o corpus não decide sozinho, o trecho mais longo medido é de `3min37s` após um
+  `utamo tempo` e ali a predição de dano bateu).
+
+  **O casamento da incantação é EXATO.** Só `utamo tempo` e `utito tempo`. `utamo tempo san` e
+  `utito tempo san` são spells de **paladino** e não participam: casamento por substring acusa
+  **14** fixtures do corpus contra os **4** reais, e daria `−15%` de dano fantasma a um
+  paladino. Os casts são os do **dono do log** (`playerCasts`, já filtrado por
+  `selectedSpeaker`) — logs de pack mostram todo mundo falando no mesmo chat, e um knight da
+  party não muda a postura do dono.
+
+  **A troca vale a partir do segundo SEGUINTE ao cast.** Dentro de um mesmo segundo não existe
+  ordem observável entre a fala do Local Chat e a linha do Server Log, então o hit que cai no
+  segundo do cast pertence à postura **anterior**. As duas únicas observações do corpus que
+  discriminam concordam: `picture` `20:47:37` (a última contradição da taxa vencedora vira
+  capped-low e o canal fecha em zero) e `ek boss` `19:41:37` (o turno para de perder o
+  auto-ataque).
+
+  **Protector é `×0,85` pós-mitigação E sai do divisor da base de leech.** É o mesmo par que
+  `D-030` já usa para `utevo grav san`: o multiplicador mexe no dano exibido sem mexer no
+  leech, então ele sai da base. Medido em `picture`: charm Protector/neutra `0,850`, hits de
+  arma `0,8365`, e razão leech/dano `1,1657` contra `1/0,85 = 1,1765` previsto. Ele atinge o
+  dano de charm também.
+
+  **Blood Rage é declarado e NÃO revertido.** O `+25%` vem da **skill**, logo o dano maior é o
+  dano real e o leech sobe junto — não há multiplicador a remover (medido: razão leech/dano
+  Blood Rage/neutra `0,9854`, e charm `1,00`, porque o charm é 5% do HP máximo do alvo e não
+  usa skill). Mesma disciplina de `M-037` para o decay de Chained Penance: a regra declara a
+  mecânica e o motor não reconstrói o fator. **Limitação aceita:** o dano base agregado
+  (`A-006`) de um knight continua misturando postura neutra com Blood Rage — um intervalo de
+  25%. Reverter o `+25%` foi rejeitado por medição: o observado é `+25,54%`, e a sobra de
+  `0,4%` é da ordem da tolerância de exatidão same-mob (`S-004a`), que decide fronteira de
+  componente.
+
+  **Postura desconhecida é abstenção (`D-006`), nunca postura neutra assumida.** Antes do
+  primeiro cast de postura observado na sessão o estado é `unknown`: o hit não recebe
+  multiplicador, não vira testemunha de dano de charm (`M-036`/`M-039`/`C-012a`) e não vira
+  observação-ouro de leech (`C-006`). Alcance medido: `bastion` S0, 3 hits de 1.492.
+
+  **A postura é estado do proc de dano de charm** (acrescentado em 07/Set/2026, change
+  `model-combat-mastery-ladder-and-fix-omega-false-positive`). O Protector alcança o charm, e
+  postura conhecida não basta: as três leituras que usam o charm como testemunha
+  (`M-036`, `M-039`, `C-012a`) DEVEM incluir a postura na **chave de agrupamento** das
+  linhas-testemunha e multiplicar o valor previsto por `0,85` quando o proc estiver em Protector
+  — exatamente como já fazem com Expose Weakness e `active elemental amplification`. Procs de
+  posturas diferentes são populações distintas e nunca compartilham mediana ou nível. Blood Rage
+  e a postura neutra não alteram o previsto (o charm é `5%` do HP máximo do alvo e não usa
+  skill; medido, razão Blood Rage/neutra `1,00`).
+
+  Medido em `picture`: com o desconto, `gorerilla | freeze | Protector` observa `728` contra
+  `728,1` previstos; `hulking prehemoth | divine wrath | Protector` observa `971` contra `971,1`;
+  `gore horn | enflame | Protector` observa `928` contra `928,9`. As linhas-testemunha vão de
+  `5` para `11` e as ancoradas de `2` para `5`. **Sem essa separação, a escada de `M-042` é
+  invisível:** a linha `sabretooth | wound` junta o `819` do Protector com os `927–973` do Blood
+  Rage, e o conjunto não cai em grade nenhuma. Alcance: só `picture` — `ek boss` não tem
+  nenhuma linha de charm no Server Log, e `bastion`/`night harpy` são de `13/Jun/2026`
+  (pré-cutoff, tabela sem `hitpoints`, zero linhas ancoradas).
+
+  **Detector inerte onde não há postura.** Sessão sem cast exato de postura do dono não muda em
+  nada — mesmo padrão de `M-035`/`M-036`/`M-039`/`M-040`.
+
+  **Por que isto é regra de classificação e não só de métrica.** A taxa de leech da sessão é
+  votada contra o dano exibido; sem descontar o Protector ela vira meio-termo entre dois
+  regimes que diferem `17,6%` na razão leech/dano. A prova é direta: **as contradições da taxa
+  vencedora são todas de hits em Protector** — `4` de `4` no canal de vida do `picture`, `5` de
+  `5` no de mana do `ek boss`. Com o desconto, as taxas caem em pontos limpos da grade de
+  `D-020` (`0,25` e `0,50` de vida = 1 e 2 slots de Life Leech Powerful; `0,16` de mana = os 2
+  slots no teto), contra `0,285`/`0,5875`/`0,19`/`0,185` de antes, e `N_leech`/`H-005e` passam
+  a decidir com a taxa certa.
+
+  **Raio medido: 4 sessões de 4 fixtures** (`bastion` S0, `ek boss` S0, `night harpy` S0,
+  `picture` S0). `bastion` e `night harpy` só lançam `utito tempo` e, como Blood Rage não é
+  revertido, ficam byte-idênticos. Drift: **14 turnos**, todos em `picture` e `ek boss` (mesmo
+  personagem `Picture`), em 20.177 turnos de 41 pares.
+
+  Casos-prova (todos por inversão do leech, `H-005e`): `picture` `20:46:15` → `A0 + Berserk 8`
+  (o primeiro hit declara `N ≈ 8,4`, logo não é AA single-target); `20:49:11` → `A1 + Berserk 2`
+  e `20:50:13` → `A1 + Front Sweep 3` (primeiro hit declara `N = 1` nos dois canais, sufixo
+  declara `k−1`). `ek boss` `19:41:43`, `19:41:47`, `19:41:51`, `19:42:02`, `19:42:33`,
+  `19:42:39`, `19:43:34`, `19:44:09`, `19:44:29` e `19:44:33` → todos `A1 + spell 3`, com a
+  vida sugada do primeiro hit em **metade exata** do dano (a taxa base a `N = 1`).
+
+  - **M-041-nota — Pendências declaradas.** (a) O modelo do Protector **não é exato**: a razão
+    leech/dano medida é `1,1657` contra `1,1765` previsto por `1/0,85`, resíduo de `≈0,9%`.
+    Nada é revertido a partir dessa diferença e nenhuma tolerância nova foi criada; ela fica
+    registrada como limite conhecido, no mesmo estilo de `S-004c-nota`. (b) `ek boss`
+    `19:39:12` passa de classificado para **sem classificação** com a taxa corrigida: é um hit
+    único de `moonsilver sentinel` (`349`, mana `70`) cuja mana excede o esperado por **1
+    ponto** além da tolerância. A causa é anterior a esta regra e está identificada: os **6**
+    hits que contradizem a taxa de mana dessa sessão são todos do **mesmo** mob e todos pedem
+    `≈0,1705` contra os `0,16` do personagem — a assinatura de um `Void's Call` de `+1,2%`
+    (`D-021`) em `moonsilver sentinel`, que o gate turn-local de `D-021a` não encontra porque a
+    caçada é de boss e quase não tem componente com 2 mobs distintos. Sob a taxa antiga,
+    inflada, a contradição ficava mascarada. Pendência aceita pelo usuário em 06/Set/2026.
+  (D-006, D-020, D-023, D-030, C-006, H-005e, M-036, M-037, M-039, S-004a, A-006)
+
+- **M-042 — Combat Mastery: escada de dano por vida faltante do alvo (declarada, não revertida):**
+  `ESTADO: decidida e IMPLEMENTADA em 07/Set/2026 (change `model-combat-mastery-ladder-and-fix-omega-false-positive`).`
+
+  Existe um perk de **roda de habilidade**, exclusivo de **knight**, que soma dano conforme a
+  vida **faltante do alvo**: `+1%` a cada `14/12/10%` de vida faltante nos níveis `1/2/3`, com o
+  bônus **dobrado** enquanto o personagem empunha arma de duas mãos. Ele é **graduado** — o
+  mesmo alvo passa por vários degraus ao longo da luta.
+
+  **Ele NÃO é o perk omega, e confundi-los é o defeito que esta regra conserta.** Os dois
+  respondem ao mesmo gatilho (vida baixa do alvo) e por isso o detector de `M-039` os misturava,
+  mas as assinaturas são diferentes e mensuráveis:
+
+  | | omega (`M-039`) | Combat Mastery (`M-042`) |
+  |---|---|---|
+  | origem | proficiência de **arma** | **roda** de habilidade |
+  | vocação | todas | **só knight** |
+  | forma | **binária** `×1,06`: dois níveis | **escada**: vários níveis, um por degrau |
+  | no motor | segundo original candidato | **declarado, não revertido** |
+
+  `M-039` foi calibrada em `crypt`, cujo dono é **paladino** — Combat Mastery está excluído ali,
+  e o texto de `M-039` **permanece intacto**.
+
+  **Declarada e não revertida.** O motor **não observa vida de criatura**, então ele não escolhe
+  o degrau de um hit. Reverter exigiria admitir **oito** originais candidatos separados por `1%`,
+  e `M-039` já declara o risco com apenas **dois** ("os dois intervalos candidatos do mesmo hit
+  se sobrepõem e admiti-los livremente faria a interseção quase sempre fechar"). Com oito, o gate
+  de exatidão same-mob de `S-004a` — que decide fronteira de componente — deixaria de
+  discriminar. Mesma disciplina de `M-037` (decay de Chained Penance) e do `+25%` de Blood Rage
+  em `M-041`. **Limitação declarada:** o dano base agregado (`A-006`) de um knight com o perk
+  carrega `+0` a `+6%` sem correção (média medida `≈ +3%` em `picture`). A classificação não
+  depende disso: medido, **72 de 73** pares same-espécie a 1–2 degraus já caem no mesmo
+  componente, e a dispersão same-espécie **não** é maior nos turnos sem AA (`16,7%` acima de
+  `1,04` contra `30,6%` nos turnos com AA).
+
+  **Detecção por sessão, no canal de testemunha de charm.** Uma linha-testemunha — agrupada por
+  `(mob, charm, elemento, Expose Weakness, amplification, postura)`, fora de janela de
+  `utevo grav san` e com postura conhecida (`M-041`) — é **escada** quando **3 ou mais** dos seus
+  níveis (piso de `≥3` procs de `M-036`, cada) caem sobre a grade `menorNível × (1 + s·n)`, com
+  `s` entre `{1%; 2%}` e `n` inteiro em `[0; 9]`, dentro de `1` ponto de dano. Entre os dois
+  degraus vence o que **explica mais níveis**; empate fica com o menor. Quando linhas
+  diferentes da mesma sessão elegem degraus diferentes, a sessão adota o **maior**: o degrau é
+  fato do personagem (nível do perk + arma), logo único, e o maior produz o maior teto — a
+  escolha conservadora, que minimiza a chance de acusar omega falso.
+
+  **O piso de 3 níveis não é calibração.** Omega é **binário** e produz exatamente **dois**
+  níveis; `3` é o mínimo que distingue um perk graduado de um binário. Com piso `2`, toda
+  testemunha de omega viraria "escada".
+
+  **A tolerância de `1` ponto é constante nova, derivada de medição** — não é a folga de
+  `S-004c`, que mede outra coisa (o resíduo do modelo de omega sobre originais revertidos).
+  Dano de charm é determinístico e o modelo bate a `≤1` ponto nas linhas ancoradas: resíduos de
+  encaixe `0,27` / `0,81` / `0,35` em `picture`, `0,1` a `0,8` em `tom`, `0,10` no `705` de
+  `crypt`; o nível que precisa ser **rejeitado** (`1098` de `crypt`) erra por mais de `350`.
+  Aprovada pelo usuário em 07/Set/2026.
+
+  **O detector NÃO é gated por vocação, e isso é deliberado.** Combat Mastery é exclusivo de
+  knight, mas a vocação é inferida **depois** deste detector em `buildContext`, e
+  `stanceSetup.hasStanceCasts` não serve de proxy — `tom` é knight e não lança postura nenhuma.
+  A contenção é a **forma**: duas populações não são escada, então uma testemunha de omega
+  (binária) nunca é confundida com uma escada. Medido: `crypt` (paladino) tem `2` níveis em
+  `roaming dread` e `cyclursus` e `2` níveis na grade em `crypt mage` — as três abaixo do piso
+  de `3`, e a inércia **não** depende da contaminação do `1098`.
+
+  **Os tetos são derivados, não calibrados:** no nível 3 cabem `floor(99/10) = 9` degraus, logo o
+  teto é `1 + s·9` — `×1,09` com degrau de `1%` e `×1,18` com degrau de `2%`. O degrau é
+  observável na escada; o nível do perk e a arma não são, então usa-se o **maior** teto
+  compatível com o degrau observado (conservador: nunca acusa omega falso, pode perder um omega
+  real). Decisão do usuário em 07/Set/2026.
+
+  **Nível fora da grade é contaminação e é ignorado (`D-006`) — ele não desqualifica a linha.**
+  Desqualificar reabre o falso positivo: sem escada, o detector de omega volta ao caminho legado
+  e lê o sexto degrau (`×1,06`) como se fosse o perk. Caso-prova da forma: `crypt mage | freeze`
+  exibe `665`, `705` e `1098`, e o `1098` está a `×1,6511` — fora de toda grade e de todo teto.
+  Ignorado ele, sobram `2` níveis na grade, abaixo do piso de `3`, e a linha **não** é escada —
+  que é o resultado correto, porque `crypt` é de paladino.
+
+  **A linha NÃO precisa ancorar na fórmula de `M-036` para provar a escada.** A evidência é a
+  **razão entre níveis observados**, que não depende de o previsto fechar. Caso-prova: `tom` e
+  `tom 2` (o mesmo `Kikaro`) só têm a linha de `overpower charm`, cujo dano escala com a vida do
+  **próprio personagem** e nunca fecha a fórmula (previsto `591,8`, observado `835–935`); ainda
+  assim ela sofre o ajuste do perk, e os oito níveis espaçados de `2%` identificam a escada.
+
+  - **M-042a — Sob escada, multiplicador uniforme da sessão é testado como TETO contra o menor
+    nível.** O fato mecânico é que Combat Mastery **só soma, nunca subtrai**: o menor nível
+    observado de uma linha é um **limite superior** do dano sem o perk. Portanto, para os
+    multiplicadores uniformes da sessão que consomem esta testemunha — bônus de dano contra
+    classe de bestiário (`M-036`) e pierce de Battle Momentum (`C-012a`) —, um candidato `b` é
+    **eliminado** quando `previsto × (1 + b) > menorNível + 1`. O veredito da classe é a
+    **interseção** dos candidatos sobreviventes de todas as suas linhas: conjunto vazio ⇒ a
+    classe fica **sem bônus, por prova**; exatamente um ⇒ esse bônus; mais de um ⇒ a classe é
+    não-discriminante e **abstém** (`D-006`), com o motivo registrado (`U-006`).
+
+    A tolerância de `1` ponto é a mesma do encaixe na grade (constante nova, derivada de
+    medição — ver acima). A tolerância larga de `M-036` (`max(2; previsto × 1,25%)`) **não**
+    serve aqui: num dano de `≈1000` ela vale `12,5` pontos, **mais** que o degrau de `1%`, e faz
+    candidatos vizinhos sobreviverem juntos — o mesmo defeito que `C-006a`(2) já documentou para
+    encaixe.
+
+    **Por que o teto, e não abstenção do canal.** A primeira proposta abstinha o canal inteiro
+    sob escada; o usuário a **rejeitou** em 07/Set/2026 porque um knight pode ter Combat Mastery
+    **e** reward de bestiário ao mesmo tempo, e apagar o canal tornaria o segundo indetectável
+    para sempre. Com o teto, a classe que exibir o **degrau zero** ainda crava o bônus.
+    Caso-prova sintético: uma classe com `+2%` real cujo menor nível é `previsto × 1,02` deixa
+    **só** o `+2%` sobreviver.
+
+    **Medido em `picture`** (as três classes fecham **sem bônus, por prova**): `mammal` com tetos
+    `0,9990` / `0,9999` / `1,0001`; `reptile` com `1,0095` / `1,0191`; `giant` com `0,9995` /
+    `0,9999` — todos abaixo do menor candidato da grade (`+2%`). **Contraprova do que a regra
+    evita:** com a postura corrigida mas **sem** o teto, a mediana infere `mammal +3,0%` e o
+    menor nível com a tolerância larga infere `reptile +2,0%` — dois falsos, ambos medidos.
+
+    **Limitação declarada:** o teto elimina só o que está acima dele, então um bônus grande
+    (ex.: `+5%` real) deixa `2%`–`5%` todos abaixo e a classe **abstém**. É a mesma recusa de
+    decidir de `D-021a` e `C-006a`(2). Caso do corpus: `tom`/`tom 2`, classe `human`, teto
+    `1,411` — doze candidatos sobrevivem e a classe abstém.
+
+    **A mesma limitação vale, e é mais apertada, no canal de `C-012a`.** Ali as duas hipóteses
+    (`pierce 0` e `0,04`) diferem por poucos pontos percentuais, da ordem de um ou dois degraus
+    da escada, então sob escada é comum as duas caberem abaixo do teto — e o canal devolve
+    "não-discriminante", caindo no fallback de `C-012` como já faz quando não há testemunha. Ele
+    só decide quando a hipótese alta estoura o teto, que é o caso de `picture`
+    (`sabretooth | wound`: `926,9` cabe em `927`, `943,8` não). O canal nunca pode **confirmar**
+    BM sob escada — só recusá-lo.
+
+  - **M-042b — Sob escada, o perk omega só é provável acima do TETO SUPERIOR.** Um nível a
+    `×1,06` do ancorado **não** confirma omega em sessão com escada: o sexto degrau da escada de
+    `1%` **é** exatamente `×1,06`. O que confirma é um nível cuja razão ao ancorado esteja
+    **acima do teto** de Combat Mastery para o degrau observado **e** sobre a grade estendida
+    `(1 + s·n) × 1,06`, com `n` inteiro em `[0; 9]` — faixa que a escada sozinha não alcança em
+    nenhum nível do perk nem com arma de duas mãos.
+
+    O omega **não** é avaliado pelo teste de teto de `M-042a`: ele é **por-hit e binário**, não
+    multiplicador uniforme, então hits sem omega continuam presentes, o menor nível continua
+    sendo o nível sem omega, e aquele teste o eliminaria em toda sessão com escada. **A simetria
+    é a regra:** multiplicador uniforme é limitado pelo **piso** da escada; multiplicador por-hit
+    é revelado pelo **teto** dela.
+
+    Caminho **declarado e sem caso no corpus atual** — nenhum knight dos 41 pares tem os dois
+    perks. Coberto por teste sintético, no mesmo estilo do Override 2 de `M-031` e do risco de
+    Stage 1/2 de `M-016e`.
+
+  **Raio medido: 4 sessões de 3 fixtures, em 137 sessões de 41 pares**
+  (varredura em `reports/proto-charm-ladder-corpus.txt`). Escada detectada em `picture` S0
+  (degrau `1%`, span `1,0496`), `tom` S0 e `tom 2` S0 (degrau `2%`, spans `1,1198`/`1,1196`).
+  `crypt` S0 **não** tem escada. Sessão sem escada é byte-idêntica — mesmo padrão de
+  `M-035`/`M-036`/`M-039`/`M-040`/`M-041`.
+
+  Casos-prova. **O falso positivo que a regra mata:** `picture` S0, linha
+  `sabretooth | wound charm` em Blood Rage, níveis `927 · 936 · 954 · 973` (degraus `n = 0, 1, 3,
+  5` da grade de `1%`, resíduos `0,27` / `0,81` / `0,35`). O detector de `M-039` ancorava em `927`
+  e aceitava `973` por ele cair na janela de `×1,06` (`[970,3 ; 995,0]`) — razão real `1,0496`.
+  Com `M-042`, a sessão fica **sem omega**. **O que a regra preserva:** `crypt` S0 continua com
+  omega ativo por `cyclursus | zap charm` (`659 ×124` e `699 ×35`, razão `1,0607`, dois níveis).
+  (D-006, M-036, M-037, M-039, M-041, S-004a, S-004c, C-012a, A-006, U-006)
+
 ### Runas
 
 - **M-017 — Sinal de execução:** `Using one of N … runes` é sinal **primário** de classificação, no mesmo nível da mudança de crit-state (D-007). Comprova a execução da runa; não inventa dano onde não existe bloco determinístico compatível.

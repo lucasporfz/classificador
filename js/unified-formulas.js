@@ -261,6 +261,50 @@
   // reports/crypt-omega-prototipo.md.
   const OMEGA_MULTIPLIER = 1.06;
 
+  // Postura de knight — tres estados, dirigidos pelos casts do DONO do log:
+  //   Protector  (`utamo tempo`): -15% de dano CAUSADO, multiplicador plano pos-mitigacao,
+  //                               FORA da base de leech (o leech e creditado sobre o dano
+  //                               de antes da reducao);
+  //   Blood Rage (`utito tempo`): +25% de skill de sword/axe/club — o dano maior E o dano
+  //                               real e o leech sobe junto, entao nao ha o que reverter;
+  //   neutra:                     nenhuma das duas (recast de `utamo tempo` desliga).
+  // O casamento e EXATO: `utamo tempo san`/`utito tempo san` sao spells de paladino.
+  const KNIGHT_PROTECTOR_INCANTATION = 'utamo tempo';
+  const KNIGHT_BLOOD_RAGE_INCANTATION = 'utito tempo';
+  const KNIGHT_PROTECTOR_MULTIPLIER = 0.85;
+
+  // M-042 — Combat Mastery: perk de roda, exclusivo de knight, que soma dano conforme a
+  // vida FALTANTE do alvo (+1% a cada 14/12/10% faltante nos niveis 1/2/3), DOBRADO com
+  // arma de duas maos. O motor nao observa vida de criatura, entao a regra DECLARA a
+  // mecanica e NAO reverte o degrau — mesma disciplina de M-037 e do +25% de Blood Rage.
+  //
+  // Os TETOS sao DERIVADOS destas constantes, nunca calibrados: no nivel 3 cabem
+  // floor(99/10) = 9 degraus, entao o teto e `1 + degrau x 9` — x1.09 com degrau de 1%
+  // (escudo/uma mao) e x1.18 com degrau de 2% (duas maos). O degrau e observavel na
+  // propria escada; o nivel do perk e a arma nao sao, entao usa-se o MAIOR teto
+  // compativel com o degrau observado (conservador: nunca acusa omega falso).
+  const COMBAT_MASTERY_STEPS = Object.freeze([0.01, 0.02]);
+  const COMBAT_MASTERY_MAX_STEPS = 9;
+  // Piso de niveis para uma linha ser escada. NAO e calibracao: omega e BINARIO e produz
+  // exatamente DOIS niveis, entao 3 e o minimo que distingue um perk graduado de um
+  // binario. Baixar para 2 tornaria toda testemunha de omega uma "escada".
+  const COMBAT_MASTERY_MIN_LEVELS = 3;
+  // Folga de encaixe na grade e do teste de teto. E constante NOVA (nao e a
+  // OMEGA_CROSS_STATE_TOLERANCE de S-004c, que mede outra coisa: o residuo do modelo de
+  // omega sobre originais revertidos). O valor vem de MEDICAO: dano de charm e
+  // deterministico e o modelo bate a <=1 ponto nas linhas ancoradas do corpus —
+  // `picture` 728 vs 728,1 / 971 vs 971,1 / 928 vs 928,9 / 927 vs 926,9; os residuos de
+  // encaixe na grade sao 0,27 / 0,81 / 0,35 em `picture`, 0,1 a 0,8 em `tom` e 0,10 no
+  // 705 de `crypt`. O nivel que precisa ser REJEITADO (1098 de `crypt`) erra por 350+.
+  // A tolerancia larga de M-036 (`max(2, esperado x 1,25%)`) nao serve: vale ~12 pontos
+  // num dano de ~1000, MAIOR que o degrau de 1%, e engoliria a escada inteira.
+  // Valor aprovado pelo usuario em 07/Set/2026.
+  const COMBAT_MASTERY_LEVEL_TOLERANCE = 1;
+
+  function combatMasteryCeiling(step) {
+    return 1 + step * COMBAT_MASTERY_MAX_STEPS;
+  }
+
   // S-004c: a atribuicao de omega e ESTADO do hit no gate de exatidao same-mob, entao dois
   // hits do mesmo mob cuja atribuicao DIFERE sao comparacao cross-state e ganham esta folga.
   // O valor NAO e escolhido: e o residuo medido do modelo de omega. Em `crypt`, dos blocos
@@ -663,6 +707,7 @@
       m *= damage.multiplier;
     }
     m *= gravSanMultiplierAtTs(context, hit && hit.ts, hit);
+    m *= knightStanceMultiplierAtTs(context, hit && hit.ts);
     m *= bestiaryClassMultiplierForHit(hit, context);
     m *= omegaMultiplierForHit(hit, context);
     return m;
@@ -1051,6 +1096,43 @@
     return (setup.windows || []).some(w => ts >= w.start && ts <= w.end);
   }
 
+  // A troca de postura vale a partir do segundo SEGUINTE ao cast: dentro de um mesmo
+  // segundo nao existe ordem observavel entre a fala do Local Chat e a linha do Server
+  // Log, e as duas unicas observacoes do corpus que discriminam apontam para a postura
+  // anterior (`picture` 20:47:37 e `ek boss` 19:41:37, ambos segundo de um `utito tempo`).
+  // Antes do primeiro cast observado o estado e `unknown` — evidencia ausente, nunca
+  // postura neutra assumida.
+  function knightStanceAtTs(context, ts) {
+    const setup = context && context.stanceSetup;
+    if (!setup || !setup.hasStanceCasts || !Number.isFinite(+ts)) return 'unknown';
+    let state = 'unknown';
+    for (const entry of setup.timeline || []) {
+      if (entry.ts >= +ts) break;
+      state = entry.state;
+    }
+    return state;
+  }
+
+  // Dono unico do mapeamento postura -> multiplicador. As testemunhas de charm (M-036,
+  // M-039, C-012a) carregam a postura ja resolvida na linha, nao o `ts` de cada proc,
+  // entao consomem esta forma; o resto do motor consome a variante por `ts` abaixo.
+  function knightStanceMultiplierForStance(stance) {
+    return stance === 'protector' ? KNIGHT_PROTECTOR_MULTIPLIER : 1;
+  }
+
+  function knightStanceMultiplierAtTs(context, ts) {
+    return knightStanceMultiplierForStance(knightStanceAtTs(context, ts));
+  }
+
+  // Um hit anterior ao primeiro cast de postura observado carrega um multiplicador nao
+  // determinado: ele nao pode votar na taxa de leech da sessao nem servir de testemunha de
+  // dano de charm (D-006). Sessao sem postura nenhuma nao tem hit desconhecido.
+  function isKnightStanceKnownAt(context, ts) {
+    const setup = context && context.stanceSetup;
+    if (!setup || !setup.hasStanceCasts || !Number.isFinite(+ts)) return true;
+    return knightStanceAtTs(context, ts) !== 'unknown';
+  }
+
   function gravSanMultiplierAtTs(context, ts, hit) {
     const setup = context && context.gravSanSetup;
     if (!setup || !(setup.bonus > 0) || !Number.isFinite(+ts)) return 1;
@@ -1154,6 +1236,18 @@
     FIELD_LEVEL_MAX_RATIO,
     gravSanHitInWindow,
     gravSanMultiplierAtTs,
+    knightStanceAtTs,
+    knightStanceMultiplierAtTs,
+    knightStanceMultiplierForStance,
+    isKnightStanceKnownAt,
+    KNIGHT_PROTECTOR_INCANTATION,
+    KNIGHT_BLOOD_RAGE_INCANTATION,
+    KNIGHT_PROTECTOR_MULTIPLIER,
+    COMBAT_MASTERY_STEPS,
+    COMBAT_MASTERY_MAX_STEPS,
+    COMBAT_MASTERY_MIN_LEVELS,
+    COMBAT_MASTERY_LEVEL_TOLERANCE,
+    combatMasteryCeiling,
     VERSION,
     CUTOFF_KEY,
     PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS,

@@ -35,13 +35,38 @@ Uma característica passiva do personagem que não é vocação nem equipamento
 diretamente observável, e por isso precisa ser inferida da sessão (ex.: BM, que
 adiciona pierce elemental). Tratado como parte do setup.
 
+**Testemunha de charm**:
+O dano de um proc de charm ofensivo, usado como prova de fatos da sessão. Ele é fixo
+por mob (o jogo não sorteia) e não depende de classificação nenhuma, então qualquer
+multiplicador oculto do personagem aparece nele como um segundo nível exato. É o único
+canal do motor que mede perk sem depender de turno resolvido.
+_Avoid_: proc de charm (que é o evento), dano de charm (que é o número).
+
 **Omega**:
 Nome que este projeto deu a um perk de dano que o jogo não anota em lugar nenhum do
 server log: ele multiplica o dano por um fator fixo quando o alvo está com pouca vida.
 O nome é nosso porque a mecânica não tem nome observável — nenhum sufixo, nenhuma
-linha, nenhuma incantação a revela. O que a revela é o dano de charm, que é fixo por
-mob e por isso denuncia qualquer multiplicador oculto como um segundo nível exato.
+linha, nenhuma incantação a revela. O que a revela é a testemunha de charm.
+Omega é **binário**: o hit tem ou não tem o bônus, e a testemunha exibe exatamente dois
+níveis. É isso que o separa do Combat Mastery, que responde ao mesmo gatilho — vida
+baixa do alvo — mas de forma graduada.
 _Avoid_: bônus de execute, low-hp bonus, perk dos 6%.
+
+**Combat Mastery**:
+Perk de roda de habilidade, exclusivo de knight, que soma dano conforme a vida
+**faltante** do alvo, em passos discretos. Ao contrário do omega, ele é **graduado**:
+uma mesma criatura aparece na testemunha de charm em vários níveis, um por passo. É
+mecânica declarada e não revertida — o motor reconhece que ela existe na sessão, mas
+não decide em que passo um hit estava, porque o log não mostra a vida das criaturas.
+_Avoid_: perk de execute do knight, roda de dano.
+
+**Escada**:
+A assinatura de um perk graduado na testemunha de charm: três ou mais níveis de dano
+da mesma criatura, espaçados por múltiplos inteiros de um mesmo degrau. A escada é o
+que distingue um perk graduado de um binário, e reconhecê-la numa sessão significa que
+a testemunha inteira daquela sessão carrega um passo desconhecido — logo deixa de
+provar qualquer outro perk.
+_Avoid_: níveis do charm, degraus (que é a unidade, não a forma).
 
 **Estado do hit**:
 O conjunto de fatos que valem para um hit individual (e não para o componente inteiro

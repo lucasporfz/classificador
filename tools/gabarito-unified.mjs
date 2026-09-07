@@ -1533,6 +1533,76 @@ export const CASES = [
     sharedCountCheck({ arrow: 4, spell: 0, rune: 0, grenade: 0 })),
   C('moonsilver/05:18:26-granada-aa-caldera', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:18:26',
     sharedCountCheck({ arrow: 13, spell: 15, rune: 0, grenade: 10 })),
+  // Postura de knight (change model-knight-protector-stance). O Protector (`utamo tempo`)
+  // tira 15% do dano DEPOIS da conta de leech, entao o leech e creditado sobre o dano cheio.
+  // Sem modelar isso, a taxa de leech votada e um meio-termo entre dois regimes que diferem
+  // 17,6% na razao leech/dano — e as contradicoes da taxa vencedora sao TODAS de hits em
+  // Protector (4 de 4 no canal de vida do `picture`, 5 de 5 no de mana do `ek boss`).
+  //
+  // O esperado abaixo NAO vem de rodar o motor. Ele vem da inversao do leech (H-005e): a
+  // razao entre o leech observado e o leech esperado a N=1 E o proprio areaFactor(N), logo
+  // o hit DECLARA em quantos alvos bateu. Com a taxa corrigida (`picture` vida 25% / mana
+  // 16%; `ek boss` vida 50% / mana 16% — todos pontos limpos da grade de imbuement de
+  // D-020, contra os 28,5%/58,75%/19%/18,5% de hoje), os numeros sao inequivocos.
+  //
+  // `picture` (sem cabecalho de sessao/data):
+  //   20:46:15 — o 1o hit (sabretooth 845, vida 43 / mana 28) declara N ~ 8,7 e 8,4: ele
+  //     acertou 8 alvos, logo nao e AA single-target. Separar um AA dai e AA fantasma
+  //     (H-005), e o turno inteiro e a Berserk de 8 hits.
+  //   20:49:11 — 1o hit (gore horn 641, vida 155 / mana 99) declara N = 1,03 / 1,04 nos dois
+  //     canais; o sufixo declara N = 2,06 e 2,11 (= k-1). A1 + Berserk 2.
+  //   20:50:13 — 1o hit (sabretooth 783, vida 185 / mana 119) declara N = 1,06; o sufixo
+  //     declara 3,17 e 3,08 (= k-1); o 3o hit e overkill e nao estima. A1 + Front Sweep 3.
+  C('picture/20:46:15-protector-sem-aa-fantasma', 'picture server log.txt', 'picture local chat.txt', '20:46:15',
+    // O rotulo completo, e nao so `Berserk`: `includes('Berserk')` casaria tambem com
+    // `Fierce Berserk (exori gran)`, que e outra spell.
+    spellNoAaCheck(8, 'Berserk (exori)')),
+  C('picture/20:49:11-protector-aa-mais-berserk', 'picture server log.txt', 'picture local chat.txt', '20:49:11',
+    sharedCountCheck({ arrow: 1, spell: 2, rune: 0, grenade: 0 })),
+  C('picture/20:50:13-protector-aa-mais-front-sweep', 'picture server log.txt', 'picture local chat.txt', '20:50:13',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  // `ek boss` (mesmo personagem `Picture`, sem cabecalho de sessao/data). Nos dez turnos
+  // abaixo o 1o hit tem vida sugada = METADE EXATA do dano, que e a taxa base de vida a
+  // N=1 (0,50) — a assinatura de auto-ataque single-target —, e o bloco seguinte declara
+  // N=3 nos dois canais. Em `19:41:43` e `19:41:51` a vida esta capada (jogador cheio) e o
+  // canal que decide e o de mana, com o mesmo desenho: 1o hit N=1,00, sufixo N~3,00.
+  C('ek boss/19:41:43-protector-aa-mais-fierce-berserk', 'ek boss server log.txt', 'ek boss local chat.txt', '19:41:43',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  C('ek boss/19:41:47-protector-aa-mais-berserk', 'ek boss server log.txt', 'ek boss local chat.txt', '19:41:47',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  C('ek boss/19:41:51-protector-aa-mais-fierce-berserk', 'ek boss server log.txt', 'ek boss local chat.txt', '19:41:51',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  C('ek boss/19:42:02-protector-aa-mais-berserk', 'ek boss server log.txt', 'ek boss local chat.txt', '19:42:02',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  C('ek boss/19:42:33-protector-aa-mais-berserk', 'ek boss server log.txt', 'ek boss local chat.txt', '19:42:33',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  C('ek boss/19:42:39-protector-aa-mais-fierce-berserk', 'ek boss server log.txt', 'ek boss local chat.txt', '19:42:39',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  C('ek boss/19:43:34-protector-aa-mais-amp-kor', 'ek boss server log.txt', 'ek boss local chat.txt', '19:43:34',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  C('ek boss/19:44:09-protector-aa-mais-amp-kor', 'ek boss server log.txt', 'ek boss local chat.txt', '19:44:09',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  C('ek boss/19:44:29-protector-aa-mais-fierce-berserk', 'ek boss server log.txt', 'ek boss local chat.txt', '19:44:29',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  C('ek boss/19:44:33-protector-aa-mais-berserk', 'ek boss server log.txt', 'ek boss local chat.txt', '19:44:33',
+    sharedCountCheck({ arrow: 1, spell: 3, rune: 0, grenade: 0 })),
+  // Pendencia declarada de M-041-nota (b), travada aqui para nao voltar a resolver em
+  // silencio: hit unico de `moonsilver sentinel` (349, mana 70) cuja mana excede o esperado
+  // por 1 ponto alem da tolerancia sob a taxa corrigida. A causa e anterior a esta regra —
+  // os 6 hits que contradizem a taxa de mana da sessao sao todos deste mob e todos pedem
+  // ~0,1705 contra os 0,16 do personagem, a assinatura de um `Void's Call` de +1,2% (D-021)
+  // que o gate turn-local de D-021a nao encontra numa cacada de boss. Sob a taxa antiga,
+  // inflada, a contradicao ficava mascarada.
+  C('ek boss/19:39:12-protector-pendencia-void-call', 'ek boss server log.txt', 'ek boss local chat.txt', '19:39:12',
+    turn => {
+      if (turn.status === 'resolved') {
+        return `esperado sem classificacao (pendencia M-041-nota b); got resolved ${JSON.stringify(counts(turn))}`;
+      }
+      const c = counts(turn);
+      return (c.arrow === 0 && c.spell === 0 && c.rune === 0 && c.grenade === 0)
+        ? null
+        : `esperado nenhum componente classificado; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

@@ -38,6 +38,8 @@
     isMainHit,
     median,
     gravSanMultiplierAtTs,
+    knightStanceMultiplierAtTs,
+    isKnightStanceKnownAt,
     normalizeName,
     getMobMods,
     percentile,
@@ -78,6 +80,11 @@
       }
     }
     divisor *= gravSanMultiplierAtTs(context, hit && hit.ts, hit);
+    // Postura Protector: o -15% e aplicado DEPOIS da conta de leech, entao o leech e
+    // creditado sobre o dano de antes da reducao. Medido em `picture`, a razao leech/dano
+    // sob Protector e 1,1657 vezes a da postura neutra, contra 1/0,85 = 1,1765 previsto.
+    // Blood Rage nao entra: o +25% vem da skill, logo o dano maior E o dano real.
+    divisor *= knightStanceMultiplierAtTs(context, hit && hit.ts);
     // M-039: omega NAO entra neste divisor, DE PROPOSITO. O que sai daqui e so
     // multiplicador que infla o dano exibido SEM inflar o leech (prey, Bounty, grav san --
     // ver D-030). Omega e o contrario: medido em `crypt` sobre pares a x1,060, a razao de
@@ -307,6 +314,14 @@
           // ainda contém um multiplicador desconhecido e não pode votar no próprio
           // setup de leech que será usado para inferi-lo.
           if (pendingGravSanWindows.some(w => h.ts >= w.start && h.ts <= w.end)) continue;
+          // M-041: postura de knight ainda nao observada. A base de dano deste hit depende
+          // de um multiplicador nao determinado, entao ele nao vota na taxa (D-006). A
+          // exclusao e contada no setup para aparecer no diagnostico da sessao.
+          if (!isKnightStanceKnownAt(context, h.ts)) {
+            const stance = context && context.stanceSetup;
+            if (stance) stance.goldObservationsSkipped = (stance.goldObservationsSkipped || 0) + 1;
+            continue;
+          }
           const life = cloneHitForGoldObservation(h, 'life', +h.lifeLeech || 0, gold.n, gold.source, context);
           const mana = cloneHitForGoldObservation(h, 'mana', +h.manaLeech || 0, gold.n, gold.source, context);
           if (life) observations.push(life);
