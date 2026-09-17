@@ -77,6 +77,9 @@
     expectedLeech,
   } = root.UnifiedSetupInference;
 
+  // C2: os tres records com lifetime declarado (SessionSetup/ResolutionState/HitScope).
+  const SessionContext = root.UnifiedSessionContext;
+
   // H-005f — jurisdição do veto `h005_merged_leech_exact_blocks_aa_split`.
   // Lista NORMATIVA: só os `reason` que casam aqui podem ser revertidos pelo veto.
   // Qualquer `reason` ausente nasce PROTEGIDO — o veto encolhe por decisão, nunca cresce
@@ -817,16 +820,14 @@
     const strict = resolveTurnInner(turn, facts, context);
     if (!context || !context.omegaSetup || !context.omegaSetup.active) return strict;
     if (strict && strict.status === 'resolved') return strict;
-    const previous = context._omegaCrossStateTolerance;
-    context._omegaCrossStateTolerance = OMEGA_CROSS_STATE_TOLERANCE;
-    try {
-      const relaxed = resolveTurnInner(turn, facts, context);
-      if (relaxed && relaxed.status === 'resolved') {
-        relaxed.omegaCrossStateToleranceUsed = OMEGA_CROSS_STATE_TOLERANCE;
-        return relaxed;
-      }
-    } finally {
-      context._omegaCrossStateTolerance = previous;
+    // HitScope derivado: a tolerancia e ligada de DENTRO da resolucao, como ultimo
+    // recurso, e some com ela.
+    const relaxed = SessionContext.withHitScopeField(
+      context, '_omegaCrossStateTolerance', OMEGA_CROSS_STATE_TOLERANCE,
+      () => resolveTurnInner(turn, facts, context));
+    if (relaxed && relaxed.status === 'resolved') {
+      relaxed.omegaCrossStateToleranceUsed = OMEGA_CROSS_STATE_TOLERANCE;
+      return relaxed;
     }
     // A passada relaxada MUTA `turn` (actions, rotulo de omega por hit, componentId/label
     // dos hits) e o resultado estrito aponta para os MESMOS objetos. Como ela nao resolveu,
@@ -1046,31 +1047,17 @@
   // status interessa; nenhum componente deste resolve auxiliar é aproveitado.
   function turnResolvesWithoutCast(turn, cast, facts, context) {
     if (!context) return true;
-    const saved = context.consolidatedGrenadeCasts;
-    try {
-      context.consolidatedGrenadeCasts = new Set([cast]);
+    return SessionContext.withOnlyConsolidatedGrenadeCast(context, cast, () => {
       const t = resolveTurn(turn, facts, context);
       return !!(t && t.status === 'resolved');
-    } finally {
-      context.consolidatedGrenadeCasts = saved;
-    }
+    });
   }
 
   function buildGrenadeCastAssignments(turns, facts, context) {
-    const savedConsumed = context && context.consolidatedGrenadeCasts;
-    const savedSpells = context && context.consolidatedSpellCasts;
-    const savedRunes = context && context.consolidatedRuneUses;
-    const savedPreassigned = context && context.preassignedGrenadeCasts;
-    if (context) {
-      // Passe de sondagem: cada turno é resolvido isolado, fora de ordem e várias
-      // vezes. Nenhum consumo (N-007/N-008) vale aqui — `null` desliga os três
-      // conjuntos, e o `finally` os devolve.
-      context.consolidatedGrenadeCasts = null;
-      context.consolidatedSpellCasts = null;
-      context.consolidatedRuneUses = null;
-      context.preassignedGrenadeCasts = null;
-      context.grenadeAssignmentOnly = true;
-    }
+    // Passe de sondagem, um ResolutionState proprio: cada turno e resolvido isolado,
+    // fora de ordem e varias vezes. Nenhum consumo (N-007/N-008) vale aqui — os tres
+    // conjuntos ficam desligados, e o `finally` os devolve.
+    const savedProbeState = SessionContext.enterProbeResolutionState(context);
     // Um cast pode ter mais de um turno candidato (a janela [c+2,c+4] de M-023 cruza a
     // fronteira de turnos de 2s). Guardamos TODOS os candidatos, em vez de dobrar num
     // "melhor" durante o laço, porque o desempate por dependência (T-003, abaixo) precisa
@@ -1258,13 +1245,7 @@
         winner.nextTurn.hits.splice(0, winner.prefix.length);
       }
     } finally {
-      if (context) {
-        context.consolidatedGrenadeCasts = savedConsumed;
-        context.consolidatedSpellCasts = savedSpells;
-        context.consolidatedRuneUses = savedRunes;
-        context.preassignedGrenadeCasts = savedPreassigned;
-        delete context.grenadeAssignmentOnly;
-      }
+      SessionContext.exitProbeResolutionState(context, savedProbeState);
     }
     return assigned;
   }

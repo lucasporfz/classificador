@@ -209,7 +209,6 @@
     effectiveManaLeech,
     hitLeechFit,
     actionsNearTurn,
-    resetConsolidatedActions,
     possibleShapes,
     segmentations,
     candidateFromShape,
@@ -273,6 +272,9 @@
     firstHitSharesExactOriginalWithRest,
     actionLabel,
   } = root.UnifiedValidation;
+
+  // C2: os tres records com lifetime declarado (SessionSetup/ResolutionState/HitScope).
+  const SessionContext = root.UnifiedSessionContext;
 
   const {
     enrichHitEvidence,
@@ -1821,7 +1823,12 @@
   }
 
   function buildContext(serverFacts, localFacts, options) {
-    const context = Object.assign({}, options || {});
+    // C2: os tres records (SessionSetup congelado com `epoch`, ResolutionState,
+    // HitScope) sao instalados AQUI, no topo, e nao no fim — as inferencias de
+    // setup deste mesmo corpo (grav san, bounty, omega) fazem save/restore de
+    // setup e executam validacao de bloco, e essas substituicoes precisam contar
+    // no `epoch`.
+    const context = SessionContext.create(Object.assign({}, options || {}));
     context.options = options || {};
     context.sessionDateKey = serverFacts.sessionDateKey;
     context.mobModsPre = options && options.mobModsPre;
@@ -2052,14 +2059,19 @@
         // fÃ­sicos reais ficam â‰¤ ~1.9; um valor acima disso quebra a reversÃ£o do bloco AA
         // (physical_no_candidate). SÃ³ o fÃ­sico Ã© limitado â€” holy/runa/granada chegam a ~1.99.
         if (est.byComponent.physical > CRIT_BOOTSTRAP_MAX) est.byComponent.physical = CRIT_BOOTSTRAP_MAX;
-        context.critSetup.byComponent = est.byComponent;
-        context.critSetup.evidence = est.evidence;
-        context.critSetup.source = 'bucket_two_pass';
+        // C2: substituicao, nao mutacao em-lugar — o SessionSetup e congelado e cada
+        // troca incrementa `epoch`. Os tres campos entram num unico bump.
+        SessionContext.replaceSetup(context, {
+          critSetup: Object.assign({}, context.critSetup, {
+            byComponent: est.byComponent,
+            evidence: est.evidence,
+            source: 'bucket_two_pass',
+          }),
+        });
       }
     };
     if (shouldGoldInferLeech) {
-      context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-      resetConsolidatedActions(context);
+      SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
       resolvedWithoutLeech = turns.map(t => resolveTurn(t, facts, context));
       refineCritByComponent(resolvedWithoutLeech);
       const frozenBountyDamage = inferBountyDamageFromFrozenComponents(
@@ -2068,14 +2080,15 @@
       );
       if (context.bountyTalismanSetup.damage.confidence === 'unknown'
         && frozenBountyDamage.confidence !== 'unknown') {
-        context.bountyTalismanSetup.damage = frozenBountyDamage;
-        if (context._revCache) context._revCache.clear();
-        context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-        resetConsolidatedActions(context);
+        context.bountyTalismanSetup = Object.assign({}, context.bountyTalismanSetup, { damage: frozenBountyDamage });
+        SessionContext.invalidateReversalCache(context);
+        SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
         resolvedWithoutLeech = turns.map(t => resolveTurn(t, facts, context));
         refineCritByComponent(resolvedWithoutLeech);
       } else {
-        context.bountyTalismanSetup.damage.fallbackConfirmation = frozenBountyDamage;
+        context.bountyTalismanSetup = Object.assign({}, context.bountyTalismanSetup, {
+          damage: Object.assign({}, context.bountyTalismanSetup.damage, { fallbackConfirmation: frozenBountyDamage }),
+        });
       }
       goldLeechObservations = collectGoldLeechObservations(resolvedWithoutLeech, context);
       const charmCandidates = detectCharmCandidateMobsFromColocatedTurns(resolvedWithoutLeech, context);
@@ -2087,7 +2100,7 @@
       );
       context.bountyTalismanSetup = context.leechSetup.bountyTalismanSetup
         || unknownBountyTalismanSetup('gold_observations_without_bounty_setup');
-      if (context._revCache) context._revCache.clear();
+      SessionContext.invalidateReversalCache(context);
       context.gravSanSetup = inferGravSanSetup(server, local, options || {}, {
         context,
         resolvedTurns: resolvedWithoutLeech,
@@ -2096,8 +2109,7 @@
         // D-030: depois de fixar o tier global, repete o refinamento que pode depender
         // da reversão do multiplicador. A votação continua apoiada exclusivamente nos
         // componentes congelados da primeira passada.
-        context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-        resetConsolidatedActions(context);
+        SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
         refineCritByComponent(turns.map(t => resolveTurn(t, facts, context)));
       }
       // S-007: eixo do bloco de AA por sessao. Roda DEPOIS do crit por-componente e do
@@ -2110,18 +2122,16 @@
       // passada final, que e quem consome context.weaponPhysicalPierce na reversao.
       weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(resolvedWithoutLeech, context);
       context.weaponPhysicalPierce = weaponPhysicalPierceDetection.pierce;
-      if (context._revCache) context._revCache.clear();
+      SessionContext.invalidateReversalCache(context);
       // M-016e: sÃ³ depois do leech real (nÃ£o o bootstrap) Ã© que o cluster
       // vida/mana-por-dano Ã© confiÃ¡vel para corrigir um estÃ¡gio atrasado que a
       // 1Âª passada (sem leech) nÃ£o conseguiu provar por reversÃ£o elemental.
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
-      context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-      resetConsolidatedActions(context);
+      SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
       resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
       detectExecutionerTiers(resolvedTurns);
     } else {
-      context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-      resetConsolidatedActions(context);
+      SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
       const pass1 = turns.map(t => resolveTurn(t, facts, context));
       refineCritByComponent(pass1);
       context.gravSanSetup = inferGravSanSetup(server, local, options || {}, {
@@ -2129,8 +2139,7 @@
         resolvedTurns: pass1,
       });
       if (context.gravSanSetup.source === 'inferred_from_damage_leech_in_grav_san_windows') {
-        context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-        resetConsolidatedActions(context);
+        SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
         refineCritByComponent(turns.map(t => resolveTurn(t, facts, context)));
       }
       aaElementDetection = inferAaElementForSession(turns, local, context);
@@ -2139,10 +2148,9 @@
       // passada final, que e quem consome context.weaponPhysicalPierce na reversao.
       weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(pass1, context);
       context.weaponPhysicalPierce = weaponPhysicalPierceDetection.pierce;
-      if (context._revCache) context._revCache.clear();
+      SessionContext.invalidateReversalCache(context);
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
-      context.preassignedGrenadeCasts = buildGrenadeCastAssignments(turns, facts, context);
-      resetConsolidatedActions(context);
+      SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
       resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
       detectExecutionerTiers(resolvedTurns);
     }

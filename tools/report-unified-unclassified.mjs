@@ -63,7 +63,7 @@ function loadEngine() {
   const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
   const ctx = { console: silent, Math, JSON, Array, Object, Number, String, Map, Set, Date, isFinite, isNaN, parseInt, parseFloat, Float32Array, Int32Array };
   vm.createContext(ctx);
-  for (const file of ['js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js']) {
+  for (const file of ['js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js']) {
     vm.runInContext(read(path.join(ROOT, file)), ctx, { filename: file });
   }
   return ctx;

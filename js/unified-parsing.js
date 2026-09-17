@@ -519,7 +519,7 @@
         && Number.isFinite(+other.ts) && Math.abs(other.ts - echoTs) <= 1);
       // Esta prova é pré-formação e não deve povoar o cache global de reversão
       // usado por todas as partições da sessão (logs longos têm muitos casts).
-      const stageContext = Object.assign({}, context || {}, { _revCache: new Map() });
+      const stageContext = root.UnifiedSessionContext.deriveWithFreshReversalCache(context);
       const primaryEvidence = new Map(primaryWindow.map(h => [h.id, elementalOriginalCandidates(h, profile.element, stageContext)]));
       const echoEvidence = new Map(echoCandidates.map(h => [h.id, elementalOriginalCandidates(h, profile.element, stageContext)]));
       // M-016d-1/D-006: por fração candidata, cada hit não-overkill do segundo do

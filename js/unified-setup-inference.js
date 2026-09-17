@@ -49,6 +49,9 @@
     isChainedPenanceAction,
   } = root.UnifiedFormulas;
 
+  // C2: os tres records com lifetime declarado (SessionSetup/ResolutionState/HitScope).
+  const SessionContext = root.UnifiedSessionContext;
+
   const {
     buildTurns,
   } = root.UnifiedParsing;
@@ -913,7 +916,7 @@
             life: previous && previous.life
               || unknownBountyTalismanAxis('frozen_component_candidate'),
           };
-          if (context._revCache) context._revCache.clear();
+          SessionContext.invalidateReversalCache(context);
         }
         const row = {
           level,
@@ -951,7 +954,7 @@
     } finally {
       if (context) {
         context.bountyTalismanSetup = previous;
-        if (context._revCache) context._revCache.clear();
+        SessionContext.invalidateReversalCache(context);
       }
     }
     ranked.sort((a, b) =>

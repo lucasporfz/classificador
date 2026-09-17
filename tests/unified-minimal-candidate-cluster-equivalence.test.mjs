@@ -5,7 +5,7 @@ import vm from 'node:vm';
 const context = { console, Math, JSON, Array, Object, Number, String, Map, WeakMap, Set, isFinite, isNaN, parseInt, parseFloat, Date, Float32Array, Int32Array };
 vm.createContext(context);
 for (const file of [
-  'js/unified-formulas.js',
+  'js/unified-session-context.js', 'js/unified-formulas.js',
   'js/unified-parsing.js',
   'js/unified-setup-inference.js',
   'js/unified-validation.js',

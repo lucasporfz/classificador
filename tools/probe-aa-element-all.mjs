@@ -14,7 +14,7 @@ import { discoverFixturePairs } from './fixture-pairs.mjs';
 
 const ROOT = process.cwd();
 const read = p => fs.readFileSync(p, 'utf8');
-const ENGINE_FILES = ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'];
+const ENGINE_FILES = ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'];
 
 function freshCtx() {
   const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };

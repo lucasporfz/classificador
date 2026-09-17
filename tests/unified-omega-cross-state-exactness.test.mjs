@@ -15,7 +15,7 @@ import vm from 'node:vm';
 
 const ENGINE_FILES = [
   'js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js',
-  'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js',
+  'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js',
   'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js',
 ];
 const silent = { log() {}, warn() {}, error() {}, info() {}, debug() {} };

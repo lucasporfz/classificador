@@ -55,6 +55,9 @@
     leechDamageBasis,
     leechSetupConfidence,
   } = root.UnifiedSetupInference;
+
+  // C2: os tres records com lifetime declarado (SessionSetup/ResolutionState/HitScope).
+  const SessionContext = root.UnifiedSessionContext;
   function effectiveLifeLeech(hit, setup) {
     const base = setup && setup.lifeBase ? setup.lifeBase : 0;
     const withMinor = setup && setup.vampiricMob
@@ -613,10 +616,7 @@
   // Instala a atribuicao SOB TESTE (escopo + marcados) enquanto `fn` roda. `postMultiplier`
   // e `leechDamageBasis` leem dai; fora do escopo continuam lendo `hit.omegaActive`.
   function withOmegaAssignment(context, scope, marked, fn) {
-    if (!context) return fn();
-    const prev = context._omegaAssignment;
-    context._omegaAssignment = { scope, marked };
-    try { return fn(); } finally { context._omegaAssignment = prev; }
+    return SessionContext.withHitScopeField(context, '_omegaAssignment', { scope, marked }, fn);
   }
 
   // Busca a atribuicao pelo NIVEL do bloco, em O(n x niveis) — sem explosao combinatoria,
@@ -705,9 +705,7 @@
   }
 
   function validatePhysicalBlockUnderAssignment(block, context) {
-    const prevKey = context && context._activeCritKey;
-    if (context) context._activeCritKey = critKeyForBlock(block);
-    try {
+    return SessionContext.withHitScopeField(context, '_activeCritKey', critKeyForBlock(block), () => {
       const intervals = [];
       let known = 0, unknown = 0;
       for (const h of block.hits.filter(h => !h.overkill)) {
@@ -730,9 +728,7 @@
       }
       if (intervals.length && !inter) return { ok: false, rule: 'S-004/S-005/S-007', reason: 'physical_intersection_empty', known, unknown };
       return { ok: true, known, unknown, intersection: inter, physicalToleranceUsed: toleranceUsed };
-    } finally {
-      if (context) context._activeCritKey = prevKey;
-    }
+    });
   }
 
   // `intersectIntervalTol(a, b, tolerance)` trata `a` ausente (`null`) como
@@ -1409,9 +1405,7 @@
   }
 
   function validateElementalBlockUnderAssignment(block, element, context) {
-    const prevCritKey = context && context._activeCritKey;
-    if (context) context._activeCritKey = critKeyForBlock(block);
-    try {
+    return SessionContext.withHitScopeField(context, '_activeCritKey', critKeyForBlock(block), () => {
     if (!element || element === 'unknown') return { ok: true, known: 0, unknown: block.hits.length, reason: 'unknown_action_element' };
     if (element === 'physical') return validatePhysicalBlock(block, context);
     // V26: Terra Burst / exevo ulus tera has a global bonus level (+20/+40/+60),
@@ -1509,9 +1503,7 @@
 
     if (sets.length && !inter.length) return { ok: false, rule: 'S-004/S-005/H-001', reason: 'elemental_intersection_empty', element, known, unknown, tolerance };
     return { ok: true, known, unknown, intersection: inter, element, tolerance };
-    } finally {
-      if (context) context._activeCritKey = prevCritKey;
-    }
+    });
   }
 
 
@@ -1648,19 +1640,16 @@
     return [true, false];
   }
 
+  // Unico campo do HitScope que e ENTRADA da validacao de bloco: quem chama decide o
+  // modo de grav san ANTES de entrar. Os outros tres campos do HitScope sao setados de
+  // dentro da validacao e por isso sao derivados, nao entrada.
   function withGravSanBlockMode(context, block, active, fn) {
     if (active == null) return fn();
-    const previous = context.gravSanHitOverride;
-    const next = Object.assign({}, previous || {});
+    const next = Object.assign({}, SessionContext.gravSanOverrideOf(context) || {});
     for (const h of (block && block.hits || [])) {
       if (h && h.id != null && gravSanHitInWindow(context, h)) next[h.id] = !!active;
     }
-    context.gravSanHitOverride = next;
-    try { return fn(); }
-    finally {
-      if (previous === undefined) delete context.gravSanHitOverride;
-      else context.gravSanHitOverride = previous;
-    }
+    return SessionContext.withHitScopeField(context, 'gravSanHitOverride', next, fn);
   }
 
   function blockValidationScoreForMode(result) {

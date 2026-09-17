@@ -96,6 +96,48 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
+**Medição de C2 (17/Set/2026, `session-context-records`, refactor de estrutura, drift ZERO).**
+C2 do survey `reports/architecture-deepening-candidates.md`: o saco `context` (40 campos, tres
+naturezas misturadas) virou tres records com lifetime declarado, em `js/unified-session-context.js`
+(novo, carrega ANTES de `unified-formulas.js`). Baseline do working tree antes da change: **45/53**
+alvos, gabarito **237/238**, invariantes **42/43**, dump **21.101** linhas. Depois: **46/54** (o alvo
+a mais e `tests/unified-session-context-records.test.mjs`, verde), **as mesmas 8 falhas, nenhuma
+nova**, gabarito 237/238, invariantes 42/43, e o **diff do dump VAZIO** nas 21.101 linhas dos 43
+pares. Nenhuma regra mudou; `docs/CLASSIFICATION_RULES.md` nao foi tocado.
+
+Os tres records, todos acessiveis pelos MESMOS campos de `context` de sempre (accessors, para
+sobreviver ao `<script src>` em escopo global, sem tocar nas 114 assinaturas):
+
+- **SessionSetup** — congelado, substituido INTEIRO, com `epoch` que incrementa a cada
+  substituicao. 11 campos (`critSetup`, `leechSetup`, `gravSanSetup`, `bountyTalismanSetup`,
+  `stanceSetup`, `omegaSetup`, `combatMasteryLadder`, `bestiaryClassBonus`, `aaElement`,
+  `weaponPhysicalPierce`, `bmPierce`). Instalado no TOPO de `buildContext`, nao no fim, senao as
+  inferencias do proprio corpo (grav san, bounty, omega) fazem save/restore invisivel ao `epoch`.
+- **ResolutionState** — vive uma varredura e morre explicito (`beginResolutionPass`, 7 sites).
+  6 campos, mais `enterProbeResolutionState`/`exitProbeResolutionState` e
+  `invalidateReversalCache` (os 6 `_revCache.clear()` espalhados).
+- **HitScope** — escopo dinamico por bloco/hit, um construtor nomeado por campo. A divisao
+  `HIT_SCOPE_INPUT_FIELDS` (so `gravSanHitOverride`) vs `HIT_SCOPE_DERIVED_FIELDS`
+  (`_activeCritKey`, `_omegaAssignment`, `_omegaCrossStateTolerance`) esta na ESTRUTURA: so o
+  primeiro e entrada da validacao de bloco e pode entrar numa chave de cache; os outros tres sao
+  setados de dentro dela. Confundir isso foi o que quebrou 90 turnos na 1a tentativa de 4.1.
+
+**`_revCache` NAO foi chaveado por `epoch`, de proposito.** `bmDeterministicVerdict` e
+`bmPhysicalDeterministicVerdict` (`unified-setup-inference.js`) trocam `bmPierce` **sem** limpar o
+cache, ao contrario dos outros tres probes de setup, que limpam. Chavear por `epoch` consertaria
+essa inconsistencia e portanto MUDARIA resultado. Fica como decisao explicita de C1/C3, com
+medicao — nao de carona num refactor neutro.
+
+**Numero para C1:** `epoch` chega a **130** numa sessao de 161 turnos (`murcion`). Os probes de
+hipotese de setup dominam, nao as 4 varreduras — uma chave de cache por `epoch` puro invalida a
+cada probe.
+
+**Armadilhas medidas nesta change:** (a) o motor **nao** e o unico chamador desta camada — testes e
+ferramentas de diagnostico montam `context` a mao, sem os records, entao os helpers escrevem por
+`context[campo]` e nao pelo record (4 testes quebraram por isso antes da correcao); (b) medir com
+`dump-unified --pair` par a par exige filtro por nome EXATO: `--pair` casa por substring e
+`server log rp.txt` puxa `murcion`/`darklight`, `barrage Server Log.txt` puxa `mazzerinbarrage`.
+
 **Medição em rascunho (17/Set/2026, `fix-physical-axis-timing-family`, diff de 23 turnos APROVADO pelo usuário; candidate ainda NÃO promovido).**
 Baseline do working tree antes da change: **44/52** alvos, gabarito **237/238**, invariantes
 **42/43**, dump **21.098** turnos / **284** sem classificação (o corpus e o working tree

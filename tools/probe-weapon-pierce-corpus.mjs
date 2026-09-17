@@ -15,7 +15,7 @@ import { splitSessions, pairSessions } from './unified-corpus.mjs';
 
 const ROOT = process.cwd();
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
-const FILES = ['js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'];
+const FILES = ['js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'];
 const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
 const ctx = { console: silent, Math, JSON, Array, Object, Number, String, Map, Set, WeakMap, Date, isFinite, isNaN, parseInt, parseFloat, Float32Array, Int32Array };
 ctx.globalThis = ctx; ctx.window = ctx;
