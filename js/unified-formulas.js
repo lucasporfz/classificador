@@ -221,6 +221,144 @@
     }
     return levels;
   }
+  // D-010g (emenda de 14/Sep/2026): testemunha de Bounty Damage pelo dano de charm.
+  // O charm ofensivo e fixo por mob, entao todos os procs de uma linha
+  // `(mob, charm, estado de pierce)` saem da MESMA base pos-mitigacao inteira `A` (bonus de
+  // classe e postura ja dentro dela). Sobre `A` incidem, em passos discretos sucessivos, o
+  // Bounty (so no proc marcado) e o `utevo grav san` (so no proc da janela). Os passos
+  // pos-mitigacao sao FLOOR (D-010a); CEIL/FLOOR so e admitido no estagio `E` da ancora de
+  // HP. Admitir CEIL tambem aqui deixava `(classe 2%, nivel 16)` fechar 1891 em `drone bounty`.
+  const BOUNTY_CHARM_EPSILON = 1e-9;
+  function bountyCharmStep(values, multiplier) {
+    if (!(multiplier > 0) || multiplier === 1) return values;
+    return Array.from(new Set(values.map(v => Math.floor(v * multiplier + BOUNTY_CHARM_EPSILON))));
+  }
+
+  function bountyCharmAdmittedBases(proc, bountyMultiplier) {
+    const gravSan = proc.gravSanMultiplier > 0 ? proc.gravSanMultiplier : 1;
+    const center = proc.dmg / ((proc.marked ? bountyMultiplier : 1) * gravSan);
+    const out = [];
+    for (let A = Math.max(1, Math.floor(center) - 2); A <= Math.ceil(center) + 2; A++) {
+      let values = [A];
+      if (proc.marked) values = bountyCharmStep(values, bountyMultiplier);
+      values = bountyCharmStep(values, gravSan);
+      if (values.includes(proc.dmg)) out.push(A);
+    }
+    return out;
+  }
+
+  // Voto modal SEM depender do nivel candidato (emenda de D-010g, decisao do usuario em
+  // 14/Sep/2026): dentro do mesmo estado (marca, grav san) so o valor mais repetido vota.
+  // Valor minoritario abaixo dele e truncamento por vida restante; acima dele e nivel nao
+  // modelado (caso: `uhax 3` S1, poison charm sem marca 3891 = 2161 × 1,80, dois procs). Os
+  // dois ficam fora e aparecem no diagnostico. Empate no topo deixa o estado sem voto.
+  // Comparar entre estados dependeria do nivel testado e deixaria um nivel errado descartar
+  // justamente o controle sem marca que o refuta.
+  function bountyCharmExcludedProcs(procs) {
+    const byState = new Map();
+    for (const p of procs) {
+      const key = (p.marked ? 1 : 0) + '|' + (p.gravSanMultiplier || 1);
+      if (!byState.has(key)) byState.set(key, []);
+      byState.get(key).push(p);
+    }
+    const excluded = new Set();
+    for (const list of byState.values()) {
+      const counts = new Map();
+      for (const p of list) counts.set(p.dmg, (counts.get(p.dmg) || 0) + 1);
+      const ranked = Array.from(counts).sort((a, b) => b[1] - a[1]);
+      const tiedTop = ranked.length > 1 && ranked[1][1] === ranked[0][1];
+      for (const p of list) if (tiedTop || p.dmg !== ranked[0][0]) excluded.add(p);
+    }
+    return excluded;
+  }
+
+  // Veredito de UMA linha para os niveis dados. Duas leituras (D-010g):
+  //  1. base comum: com proc marcado E proc sem marca, o nivel precisa admitir um `A`
+  //     comum a todos os procs nao truncados; o bonus de classe cancela;
+  //  2. ancora de HP: `hpBaseA0` (base prevista pela tabela, sem classe) passa pelo passo de
+  //     classe e precisa cair entre os `A` admitidos. Classe desconhecida enumera a grade de
+  //     M-036 com o zero; so vota com par (classe, nivel) unico, ou com classe conhecida.
+  // `allowedLevels` null = a linha nao discrimina; [] = contradiz todo nivel.
+  function bountyCharmRowVerdict(row, levels) {
+    const procs = (row && row.procs) || [];
+    const excludedSet = bountyCharmExcludedProcs(procs);
+    const kept = procs.filter(p => !excludedSet.has(p));
+    const hasMarked = kept.some(p => p.marked);
+    const hasUnmarked = kept.some(p => !p.marked);
+    const distinct = [];
+    const seen = new Set();
+    for (const p of kept) {
+      const key = (p.marked ? 1 : 0) + '|' + (p.gravSanMultiplier || 1) + '|' + p.dmg;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      distinct.push(p);
+    }
+    const commonBaseDiscriminating = hasMarked && hasUnmarked;
+    const admittedByLevel = new Map();
+    const commonBaseLevels = [];
+    const commonBases = {};
+    for (const level of levels || []) {
+      const multiplier = 1 + bountyTalismanBonusForLevel(level);
+      let common = null;
+      for (const p of distinct) {
+        const admitted = bountyCharmAdmittedBases(p, multiplier);
+        common = common == null ? admitted : common.filter(a => admitted.includes(a));
+        if (!common.length) break;
+      }
+      common = common || [];
+      admittedByLevel.set(level, common);
+      if (commonBaseDiscriminating && common.length) {
+        commonBaseLevels.push(level);
+        commonBases[level] = common;
+      }
+    }
+    const hpBaseA0 = row && Array.isArray(row.hpBaseA0) && row.hpBaseA0.length ? row.hpBaseA0 : null;
+    const classBonuses = row && Array.isArray(row.classBonuses) && row.classBonuses.length ? row.classBonuses : [0];
+    const hpAnchorPairs = [];
+    let hpAnchorVote = 'unavailable';
+    if (hasMarked && hpBaseA0) {
+      for (const level of levels || []) {
+        const admitted = admittedByLevel.get(level) || [];
+        if (!admitted.length) continue;
+        for (const classBonus of classBonuses) {
+          const predicted = bountyCharmStep(hpBaseA0, 1 + classBonus);
+          if (predicted.some(a => admitted.includes(a))) hpAnchorPairs.push({ classBonus, level });
+        }
+      }
+      if (!hpAnchorPairs.length) hpAnchorVote = 'contradiction';
+      else if (classBonuses.length === 1) hpAnchorVote = 'known_class';
+      else if (hpAnchorPairs.length === 1) hpAnchorVote = 'unique';
+      else hpAnchorVote = 'abstain';
+    }
+    let allowedLevels = commonBaseDiscriminating ? commonBaseLevels.slice() : null;
+    if (hpAnchorVote === 'contradiction') {
+      allowedLevels = [];
+    } else if (hpAnchorVote === 'unique' || hpAnchorVote === 'known_class') {
+      const anchorLevels = Array.from(new Set(hpAnchorPairs.map(p => p.level)));
+      allowedLevels = allowedLevels == null ? anchorLevels : allowedLevels.filter(l => anchorLevels.includes(l));
+    }
+    return {
+      excluded: procs.filter(p => excludedSet.has(p)),
+      commonBaseDiscriminating,
+      commonBaseLevels,
+      commonBases,
+      hpAnchorPairs,
+      hpAnchorVote,
+      allowedLevels,
+    };
+  }
+
+  // Unanimidade entre linhas discriminantes: a intersecao dos niveis permitidos. `null`
+  // quando nenhuma linha discrimina; `[]` quando elas conflitam.
+  function bountyCharmSessionLevels(rowVerdicts) {
+    let acc = null;
+    for (const r of rowVerdicts || []) {
+      if (!r || !Array.isArray(r.allowedLevels)) continue;
+      acc = acc == null ? r.allowedLevels.slice() : acc.filter(l => r.allowedLevels.includes(l));
+    }
+    return acc;
+  }
+
   const WEAPON_LEECH_BONUS = 0.005;
   const MAX_WEAPON_LEECH_BONUSES = 10;
 
@@ -564,7 +702,8 @@
   }
 
   function sessionDateKey(text) {
-    const months = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
+    // D-016: o cliente grava setembro ora como `Sep`, ora como `Sept` (`drone bounty`).
+    const months = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Sept: 9, Oct: 10, Nov: 11, Dec: 12 };
     const m = /saved\s+\w+\s+(\w+)\s+(\d+)\s+\d{2}:\d{2}:\d{2}\s+(\d{4})/i.exec(String(text || ''));
     if (!m) return null;
     const month = months[m[1]] || 0;
@@ -1318,6 +1457,11 @@
     halfToFloat,
     f16round,
     sessionDateKey,
+    bountyCharmStep,
+    bountyCharmAdmittedBases,
+    bountyCharmExcludedProcs,
+    bountyCharmRowVerdict,
+    bountyCharmSessionLevels,
     effectiveMod,
     invFloor,
     invCeil,

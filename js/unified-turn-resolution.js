@@ -64,6 +64,7 @@
     grenadeCandidateWindowInvalid,
     validateCandidate,
     promotePhysicalAxisSingleBlockByLeech,
+    neutralizePhysicalAxisTimingFamily,
     allSpellManaLeechHomogeneous,
     compareValidated,
     validateTerraBurstBonusBlock,
@@ -916,6 +917,7 @@
       if (isPartialEdgeMissingEvidence(turn, rejected, context)) return partialEdgeMissingEvidenceTurn(turn, rejected);
       return unresolvedTurn(turn, rejected, 'no_valid_partition');
     }
+    neutralizePhysicalAxisTimingFamily(candidates);
     candidates.sort(compareValidated);
     promotePhysicalAxisSingleBlockByLeech(candidates);
     // Rede de segurança 2 (leech-cardinalidade): uma fronteira pode ser visível SÓ pela
@@ -930,6 +932,7 @@
       pass = runShapes(null);
       candidates = pass.candidates;
       rejected = pass.rejected;
+      neutralizePhysicalAxisTimingFamily(candidates);
       candidates.sort(compareValidated);
       promotePhysicalAxisSingleBlockByLeech(candidates);
     }

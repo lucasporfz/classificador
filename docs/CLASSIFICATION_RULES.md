@@ -127,9 +127,23 @@
 
   **Dependência declarada — o piso NÃO é independente da classificação de turno.** A contagem vem do **bloco já classificado**, não dos alvos do cast: o motor não observa "alvos", observa hits atribuídos a um componente. Um auto-ataque fundido por engano dentro do bloco de amp kor infla a contagem e empurra o tier **para cima**. Isso é o inverso do viés do dano (que empurra para baixo), então os dois erros **não se cancelam** — um turno mal cortado troca um erro sistemático por outro. Não é hipótese: o próprio `tom 2` `12:58:06` tinha 5 hits no bloco antes da correção da guarda de `H-005g` (na mesma change), e com aquela classificação o piso cravaria `×2.50`. Consequência aceita: o piso é tão confiável quanto a fronteira de componente da sessão, e uma sessão com fusão de AA não detectada produz tier alto sem sintoma visível.
 
-- **M-035 — Sub-linhas central/side de beams de sorcerer:** os beams `Energy Beam (exevo vis lux)`, `Great Energy Beam (exevo gran vis lux)` e `Great Death Beam (exevo max mort)` viram reta de 3 com a mastery de beam (1 central + 2 laterais); os laterais causam uma fração base `F = 0,70` do dano do beam central. O bônus de dano da Beam Mastery por alvo atingido é aplicado **por sub-linha** (`central` e `side` contam seus próprios alvos, com cap de 3 alvos), então a fração observada no log pode ser `0,70 × bonus_side / bonus_central`, usando o tier de mastery do personagem (`+10%`/`+12%`/`+14%` por alvo). O leech também é cardinal por sub-linha: um segmento central de 1 hit pode fechar `N_leech=1` sem ser AA. Esta regra rotula por tier (`central`/`side`) os hits de um componente de beam; para classificação de turno, um beam validado por esses subníveis continua sendo **uma única spell concreta**, e a cardinalidade de leech de uma sub-linha não é evidência positiva de AA por si só. Cada hit ganha `beamSide` e a linha de rotação ganha sub-linhas `central`/`side` (mesmo encanamento do Terra Burst).
+- **M-035 — Sub-linhas central/side de beams de sorcerer:** os beams `Energy Beam (exevo vis lux)`, `Great Energy Beam (exevo gran vis lux)` e `Great Death Beam (exevo max mort)` viram reta de 3 com a mastery de beam (1 central + 2 laterais), e os laterais causam uma **fração** do dano do beam central. A Beam Mastery tem **três stages**, e cada um fixa **ao mesmo tempo** essa fração e o bônus de dano por alvo atingido — os dois são o mesmo eixo, não constantes independentes:
 
-- **M-035a — A isenção de beam vale só dentro da fração declarada:** por M-035, dois níveis no mesmo mob e mesmo estado são mecânica declarada, e por isso não disparam o veto de exatidão same-mob (S-004a) nem podem virar evidência positiva de AA (H-005c). Essa isenção termina onde a mecânica termina: a fração observada vive em `0,70 × bonus_side / bonus_central`, cujo extremo inferior é o lateral sem bônus contra o central saturado em 3 alvos — `0,70 / (1 + 0,14 × 3) ≈ 0,493`. Uma razão same-mob **abaixo** desse mínimo não é sub-linha nenhuma: nenhum tier de mastery a produz, e tratá-la como mecânica declarada apaga evidência real de fronteira. O limite é **derivado** das constantes já declaradas nesta regra, não um limiar novo. Caso-prova: `Mrowdy 2`/`ms boss` `17:16:37` — `roaming dread` com `112` e `2448` no mesmo estado (razão `0,046`, enquanto a sub-linha exigiria ≈`1714`); o `112` é o AA de varinha, confirmado pela distribuição de AA da própria sessão nesse mob (mediana `124` em `1020` hits), e o turno é `A1 + Great Energy Beam`. Contra-exemplo que permanece isento: `kim` `16:13:26`, `stalking stalk` `1155/1650 = 0,700` exato.
+  | stage | fração lateral | bônus por alvo | teto do bônus |
+  |---|---|---|---|
+  | 1 | `0,25` | `+10%` | `+30%` (3 alvos) |
+  | 2 | `0,40` | `+12%` | `+36%` (3 alvos) |
+  | 3 | `0,70` | `+14%` | `+42%` (3 alvos) |
+
+  As frações admissíveis de sub-linha saem desses pares. É **proibido** combinar a fração de um stage com o bônus de outro: `0,70` com `+10%` descreve um personagem que não existe. Era exatamente o que o modelo antigo permitia — fração fixa em `0,70` (o valor do stage 3, tratado como se fosse a mecânica inteira) e taxa por alvo escolhida livre a cada cast —, e era o que sustentava `kim` `16:15:56` (`t = 0,10` com `F = 0,70`, na mesma sessão em que os outros 73 casts fecham em `t = 0,14`). Com os pares atrelados esse cast deixa de ter sub-linha; o turno continua resolvido como `Great Energy Beam` de 7 hits.
+
+  **Ambiguidade declarada — como o bônus é contado.** A tooltip da mastery diz "for each target hit by **the central beam**", o que faria o bônus incidir igual nas duas sub-linhas e **cancelar** na razão, que seria sempre a própria fração do stage. O corpus tem testemunha limpa dos dois lados: `kim` `16:12:55` — dois hits no mesmo mob e mesmo estado (`2011` e `1580`, razão `0,7857`), sem liberdade de partição, contra `0,7860` previsto por `0,70 × 1,28/1,14` **com cada sub-linha contando os próprios alvos** — e `dlc ms`, com dezenas de casts em `0,700` exato e contagens diferentes nas duas sub-linhas. Enquanto não houver evidência que separe as duas leituras, **ambas ficam admissíveis por stage**, e a ambiguidade fica registrada aqui em vez de decidida em silêncio. O teste que a resolveria: um cast com todos os hits âncora, sem overkill e sem hit sobrando, em que as duas leituras prevejam valores separados por mais que a tolerância.
+
+  **Pendência declarada — o stage não é cravado por sessão.** O stage é propriedade do personagem, como o tier do Executioner em `M-034a`, então deveria ser único dentro de uma sessão; o motor ainda escolhe stage por cast e admitiria uma sessão de stages mistos. Nenhum log do corpus exercita stage 1 ou 2 — todos são stage 3 —, então as duas famílias novas entram sem testemunha real, cobertas só por teste sintético (mesmo padrão de `M-042b`).
+
+  O leech também é cardinal por sub-linha: um segmento central de 1 hit pode fechar `N_leech=1` sem ser AA. Esta regra rotula por tier (`central`/`side`) os hits de um componente de beam; para classificação de turno, um beam validado por esses subníveis continua sendo **uma única spell concreta**, e a cardinalidade de leech de uma sub-linha não é evidência positiva de AA por si só. Cada hit ganha `beamSide` e a linha de rotação ganha sub-linhas `central`/`side` (mesmo encanamento do Terra Burst).
+
+- **M-035a — A isenção de beam vale só dentro da fração declarada:** por M-035, dois níveis no mesmo mob e mesmo estado são mecânica declarada, e por isso não disparam o veto de exatidão same-mob (S-004a) nem podem virar evidência positiva de AA (H-005c). Essa isenção termina onde a mecânica termina: a fração observada vive na família de pares de `M-035` (fração do stage, com ou sem o bônus por sub-linha), cujo extremo inferior é o lateral sem bônus contra o central saturado em 3 alvos, **minimizado sobre os três stages** — `0,25 / (1 + 0,10 × 3) ≈ 0,192`. O valor anterior (`0,70 / (1 + 0,14 × 3) ≈ 0,493`) era o mínimo do stage 3 tratado como se fosse o mínimo da mecânica inteira; com a tabela de stages ele deixa de ser o piso, e razões entre `0,192` e `0,493` passam a caber na mecânica declarada (território de stage 1/2, sem testemunha no corpus atual). Uma razão same-mob **abaixo** desse mínimo não é sub-linha nenhuma: nenhum tier de mastery a produz, e tratá-la como mecânica declarada apaga evidência real de fronteira. O limite é **derivado** das constantes já declaradas nesta regra, não um limiar novo. Caso-prova: `Mrowdy 2`/`ms boss` `17:16:37` — `roaming dread` com `112` e `2448` no mesmo estado (razão `0,046`, enquanto a sub-linha exigiria ≈`1714`); o `112` é o AA de varinha, confirmado pela distribuição de AA da própria sessão nesse mob (mediana `124` em `1020` hits), e o turno é `A1 + Great Energy Beam`. Contra-exemplo que permanece isento: `kim` `16:13:26`, `stalking stalk` `1155/1650 = 0,700` exato.
 
   Beam é 100% elemental determinístico, mas o **elemento efetivo depende da postura/stance** do sorcerer (energy pode virar death/fire), então o elemento não é assumido do perfil: o motor reverte cada hit por-mob testando `{death, energy, fire}` (D-010a) e escolhe o elemento de menor spread intra-nível somado sobre os casts (perfil como desempate quando houver empate real). A reversão por-mob normaliza mitigação/modificador, então o split funciona com mobs de espécies diferentes no mesmo cast e cada cast é auto-suficiente. No espaço revertido, o nível alto = central e o baixo = side; cada cast é validado contra os pares finitos `0,70 × bonus_side / bonus_central`, onde `bonus_*` vem da contagem de hits daquela sub-linha sob um dos tiers oficiais da mastery. Um hit que não bate em nenhum dos dois (contaminação por outra spell no mesmo canal elemental — ex.: `exevo mort ora`/Death Echo no canal death — ou dano de overkill truncado) fica sem tier (`null`, agrupado em `central` na exibição, conservador), nunca forçado num tier com `F` errado. Death Echo (`exevo mort ora`) e Energy Wave (`exevo vis hur`) NÃO são reclassificados como beam.
 
@@ -918,20 +932,52 @@ L=25 -> 12,5%
 L=26 -> 12,75%
 ```
 
-  O nível de dano é inferido por sessão antes da classificação local. Quando
-  houver proc determinístico comparável do mesmo `(mob, charm, estado de
-  Expose Weakness e demais modificadores conhecidos)`, com e sem Bounty, essa é
-  a testemunha primária: cada lado precisa do mesmo piso de `>=3` procs de
-  C-012a/M-036, o cluster dominante protege contra truncamento por vida
-  restante e o candidato deve reproduzir o valor marcado pelo round-trip
-  discreto de D-010a. Prey+Bounty continua excluído dessa prova enquanto sua
-  composição não estiver comprovada. Procs dentro de janela ainda não resolvida
-  de `utevo grav san` também não podem votar.
+  O nível de dano é inferido por sessão antes da classificação local. A
+  testemunha primária é o **dano de charm ofensivo**, que é fixo por mob (sem
+  sorteio): `hitpoints × 0,05` passa pela cadeia discreta de D-010a com
+  `m = effectiveMod(mod do elemento, pierce da linha)` e a mitigation do mob, e
+  produz a base pós-mitigation `A`. Sobre `A` incidem, em `FLOOR` sucessivos, os
+  multiplicadores pós-mitigation conhecidos da linha: bônus de classe (M-036),
+  Bounty e `utevo grav san`. Por isso a testemunha **não exige controle sem
+  Bounty no mesmo estado**: Expose Weakness, amplification e grav san entram como
+  termos conhecidos da conta, e cada estado observado é mais uma linha da mesma
+  equação. Há duas leituras, e as duas precisam concordar quando existirem:
+
+  1. **Base comum no mesmo mob:** para cada `(mob, charm, estado de pierce)`, o
+     candidato precisa admitir um `A` inteiro que reproduza exatamente os procs
+     **modais** da linha — marcados e sem marca, fora e dentro de janela de grav san
+     cujo tier já esteja resolvido. Basta **um** proc sem marca do mesmo mob e
+     estado, porque o bônus de classe está dentro de `A` e cancela; o piso de
+     `>=3` procs não se aplica a esta leitura.
+  2. **Âncora de HP:** o `A` previsto por `hitpoints` precisa estar entre os `A`
+     admitidos, aceitando `CEIL` e `FLOOR` no estágio `E` (V15). Como bônus de
+     classe e Bounty multiplicam o mesmo proc, esta leitura só vota quando o
+     bônus da classe do mob estiver conhecido — inclusive ausência provada — ou
+     quando a enumeração conjunta `({0} ∪ grade de M-036) × nível` tiver um único
+     par compatível. Fora disso, um mob sempre marcado confunde classe com
+     Bounty e a leitura se abstém.
+
+  **Só o valor modal vota** (decisão do usuário em `14/Sep/2026`): dentro de cada
+  estado da linha — marcado ou não, em janela de grav san ou não —, vota apenas o
+  valor mais repetido; empate no topo deixa o estado sem voto. Valor minoritário
+  **abaixo** do modal é truncamento por vida restante; **acima** dele é nível não
+  modelado. Os dois ficam fora da conta e aparecem no diagnóstico. O critério é
+  por estado e não depende do nível testado — comparar entre estados deixaria um
+  nível errado descartar justamente o controle que o refuta. Proc que mata o alvo
+  (`killedTarget`) não vota. Caso do nível não modelado: `uhax 3` S1,
+  `walking pillar | poison | EW`, 39 procs sem marca em `2161` e 2 em `3891`
+  (`×1,80`, `13:45:30` e `13:45:41`, sem `critical` na linha); sem esta cláusula
+  os dois derrubavam o nível 26. Prey+Bounty continua excluído dessa prova enquanto sua composição não
+  estiver comprovada. Proc em janela de `utevo grav san` com tier ainda não
+  resolvido não vota.
 
   O veredito exige vencedor único e unanimidade entre todas as linhas
-  discriminantes. Se não existir testemunha comparável suficiente, o fallback
+  discriminantes. Se não existir testemunha de charm suficiente, o fallback
   pode usar somente componentes determinísticos ou Mana Leech cujo `N_leech`
-  já esteja congelado por evidência independente do candidato. Aplicar um nível
+  já esteja congelado por evidência independente do candidato. Componente do
+  fallback só vota quando seus hits **sem marca** já compartilham original sem
+  nenhum candidato aplicado; o original desconhecido dos hits marcados não o
+  desqualifica. Aplicar um nível
   não pode mover fronteira, alterar cardinalidade ou promover a própria
   observação a “ouro” para depois votar nesse mesmo nível. Capped-low e
   overkill não fixam nível. A grade não recebe teto arbitrário: somente níveis
@@ -958,6 +1004,21 @@ L=26 -> 12,75%
   25 e 27 não reproduzem nenhum dos dois pares. O Terra Wave `13:39:15`
   confirma o mesmo nível por original comum 1290. S0, salva em `30/Jun/2026`,
   não contém Bounty e não herda esse setup.
+
+  Caso-prova da testemunha sem controle comparável (emenda confirmada pelo
+  usuário em `14/Sep/2026`): `drone bounty` S0, salva em `14/Sep/2026`, Bounty
+  só em `converter` (613 de 644 hits; `hitpoints 29600`, mitigation 5,31, físico
+  1,2). Wound charm observado: marcado `1891` (sem EW, 8×) e `1954` (EW, 12×);
+  marcado com grav san `2117` e `2188`; **sem marca, todos dentro de janela de
+  grav san**, `1882` e `1945` (3 procs no total). A regra anterior abstinha,
+  porque os controles sem marca eram só 3, divididos por EW e todos em janela.
+  Pela base comum, `F = FLOOR(FLOOR(A × Bounty) × 1,12)` reproduz os seis valores
+  apenas com **nível 25** (`+12,5%`), com `A = 1681` sem EW e `A = 1737` com EW,
+  para qualquer bônus de classe. Pela âncora de HP, só com os procs marcados fora
+  de grav san, a enumeração de 13 classes × níveis 0–80 admite um único par:
+  classe 0, nível 25 (`1681,69 × 1,125 = 1891,9 → 1891`;
+  `1737,75 × 1,125 = 1954,97 → 1954`; nível 24 prevê 1887/1950, nível 26
+  1896/1959). As duas leituras concordam.
 - **D-011 — Overkill:** não participa de interseções, médias, magnitude ou comparação de leech. A proibição de leech aqui se refere à *razão* leech/dano; o leech **absoluto** permanece válido em overkill conforme D-019.
 - **D-011a — Atribuição de XP exige continuidade causal:** uma linha de XP só
   prova overkill do hit anterior quando a relação permanece contínua na ordem
@@ -1154,6 +1215,22 @@ lifeLeechEfetivo(hit sem marca) =
   D-010g; o gate turn-local de D-021a deve consumir razões normalizadas ou
   excluir temporariamente hits marcados, para não converter Bounty em minor
   charm falso.
+
+  Quando o mob candidato a `Vampiric Embrace` é o mesmo mob que carrega a marca,
+  bônus de charm e Bounty Life inflam o mesmo leech e a avaliação conjunta não
+  os separa só com hits marcados: somente hits **sem marca** desse mob medem o
+  charm. Eles só discriminam acima do mesmo piso de evidência de D-021a (≥20
+  observações de vida sem marca do mob, em ≥3 turnos distintos); abaixo dele o
+  nível de Life fica `unknown`, e com ele o canal de **vida** dos hits marcados
+  se abstém na validação (o de mana continua valendo). Caso medido: `drone
+  bounty` S0, com Damage 25. Contando só os hits marcados de `converter`, os
+  pares `(Vampiric, nível)` `(0 / L21)`, `(1,6% / L11)`, `(2,4% / L8)` e
+  `(3,2% / L5)` reproduzem exatamente `192`, `191`, `183` e `163` dos 282 hits —
+  a mesma taxa efetiva de ≈0,558, indistinguível. Os 3 hits sem marca de
+  `converter` (dois deles exatos em `+3,2%`) apontariam para L5, que coincide com
+  o relato do dono do log ("upei uns 5 níveis a menos"), mas não chegam ao piso:
+  o motor não crava. Sem esta cláusula, o ranking cravava L44 e, depois de medir o
+  charm só nos hits sem marca, L52 (`+19,25%`) — nível refutado pelo dono do log.
 
   Empate, evidência apenas capped-low/overkill ou ausência de intervalo finito
   deixam o nível `unknown`. Nesse estado o Bounty não pode ser usado como veto
@@ -2099,14 +2176,23 @@ runa single-target.
 - **V-023:** falso candidato a granada não pode quebrar um bloco físico coerente.
 - **V-024:** o sinal de alinhamento cast↔turno (proximidade entre o timestamp do
   cast e o centro temporal de um bloco) não é nenhum dos quatro critérios de
-  V-020 e não pode decidir a fronteira do bloco AA × Barrage quando degenera —
-  isto é, quando o cast e todos os hits do bloco físico caem no mesmo segundo,
-  tornando esse alinhamento verdadeiro para qualquer ponto de corte candidato e
-  equivalente a maximizar o tamanho do bloco de Barrage. Nesse caso a fronteira
-  segue V-020 (intervalo físico, depois leech) como se o sinal de alinhamento
-  estivesse empatado entre os candidatos. Restrito a spells/runas físicos de
-  área (topologia `area`); spells físicos single-target (ex. `exori gran con`,
-  Strong Ethereal Spear) têm ordem AA→spell própria (H-005) e não são afetados.
+  V-020 e não pode decidir a fronteira do bloco AA × spell/runa física de área
+  quando degenera — isto é, quando o teste de alinhamento é verdadeiro para
+  **todos** os cortes candidatos válidos que ligam a mesma ação física de área
+  logo após o bloco de AA, qualquer que seja o número de componentes da partição
+  (inclusive com granada) e mesmo com o AA no segundo anterior ao cast. Cast e
+  todos os hits do bloco físico no mesmo segundo é o exemplo mais comum, não a
+  definição. Nesse caso a fronteira segue V-020 (intervalo físico, depois leech)
+  como se o sinal de alinhamento estivesse empatado entre esses candidatos. A
+  condição é avaliada sobre o conjunto dos candidatos, nunca par a par, para que
+  a escolha não dependa da ordem de comparação. Candidatos com ações diferentes
+  não são afetados. Restrito a spells/runas físicos de área (topologia `area`);
+  spells físicos single-target têm ordem AA→spell própria (H-005). Casos-prova:
+  `mazzerinbarrage` `09/Jul/2026` `01:21:21` → `A11 + Ethereal Barrage 11 +
+  Divine Grenade 12` (cast e AA+Barrage em `:21`, granada em `:22`; o corte
+  A10/S12 só vencia por alinhamento e exigia contradição de leech); `15 sept` S1
+  `03:35:37`, com o setup de pierce confirmado → `A9 + Ethereal Barrage 9` (AA
+  em `:37`, cast e Barrage em `:38`; forma do caso-gabarito 26).
 - **V-025 — Componente único do eixo físico compete com cortes AA+spell por
   leech (extensão de S-017/S-018/S-019, H-001/H-003/H-004 ao eixo físico):** o
   prior estrutural "AA vem primeiro" (`mechanicalOrder`) não pode eliminar a
@@ -2401,8 +2487,8 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   A rate base do personagem e o minor charm por-mob (D-021) devem ser resolvidos **conjuntamente**, nunca em duas etapas sequenciais onde a base é votada cega a mob e o charm só é testado depois, em cima da base já fixada. Um mob com minor charm real não pode distorcer a base votada para os demais mobs só porque domina o volume de observações da sessão, e um bônus de charm real não pode ser descartado só porque, testado sobre uma base ainda errada, parece piorar o ajuste — a busca deve avaliar a combinação `(base, bônus por mob)` que melhor explica a sessão inteira, sempre restrita à grade de D-020 e aos charms de D-021.
   Quando houver Bounty Talisman (D-010g/D-022b), o setup da sessão deve
   carregar dois candidatos independentes: nível de dano e nível de Life Leech.
-  O dano deve ser inferido primeiro pela testemunha determinística de charm
-  comparável de D-010g, quando ela existir. Somente na ausência real dessa
+  O dano deve ser inferido primeiro pela testemunha de dano de charm de D-010g
+  (base comum no mesmo mob e âncora de HP), quando ela existir. Somente na ausência real dessa
   testemunha o fallback pode usar componentes-ouro ou Mana Leech de `N`
   conhecido, sempre congelados antes de testar o nível. Depois de normalizar o
   dano, a vida deve ser resolvida conjuntamente com base e minor charm. O alvo

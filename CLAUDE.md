@@ -96,6 +96,74 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
+**Medição em rascunho (17/Set/2026, `fix-physical-axis-timing-family`, diff de 23 turnos APROVADO pelo usuário; candidate ainda NÃO promovido).**
+Baseline do working tree antes da change: **44/52** alvos, gabarito **237/238**, invariantes
+**42/43**, dump **21.098** turnos / **284** sem classificação (o corpus e o working tree
+cresceram desde 14/Set; `unified-experimental-coverage` passou a falhar por contagem 238 vs 232).
+Depois da change: **45/53** (o alvo a mais é `tests/unified-physical-axis-timing-family.test.mjs`,
+verde), mesmas 8 falhas, gabarito 237/238, invariantes 42/43, dump 21.098 / **292**. Drift: 23
+turnos em `15 sept`, `Crypt`, `drone bounty` e `mazzerinbarrage`, todos aprovados na revisão turno a
+turno (`reports/fix-physical-axis-timing-family-summary.md`). A regra é **V-024** emendada
+(degeneração de `timing` por família). Baseline salvo em
+`reports/unified-dump/baselines/fix-physical-axis-timing-family/`. Armadilha medida: `dump-unified
+--pairs` com 21 pares e cache frio estoura 4 GB de heap — rodar em lotes.
+
+**Baseline conhecido (medido em 14/Set/2026, após `infer-drone-bounty-talisman`).**
+Total de alvos: **45/52 OK**; gabarito **237/238**; invariantes **41/42** fixtures limpos. Dump:
+**20.400** turnos, **59** sem classificação (eram 167). As 7 falhas são as mesmas do baseline medido
+antes da change: `gabarito prioritario + invariantes mecanicas` (falhas `tom 2/13:04:16` e
+`bakradrone 09:57:20`), `experimental-ui-parity`, `mob-element-regime`, `unified-executioner-overkill`,
+`unified-grav-san-ratio-witness`, `unified-overkill-xp-continuity` e
+`unified-spiritual-outburst-multistage`. `unified-executioner-overkill`, `unified-overkill-xp-continuity`
+e o caso `tom 2/13:04:16` já falhavam no working tree antes desta change. O alvo a mais é
+`tests/unified-drone-bounty-charm-witness.test.mjs`.
+
+**Drift: 111 turnos, todos em `drone bounty`** (RP, 14/Sep/2026, cabeçalho `Sept`), que sai de 108 para
+0 sem classificação. As regras são **D-010g** (emendada: testemunha de Bounty Damage pelo dano de
+charm, com base comum no mesmo mob e âncora de HP, sem exigir controle sem marca, e voto só do
+valor modal) e **D-022b** (emendada: Vampiric Embrace no mob marcado só se mede nos hits sem marca;
+abaixo do piso de D-021a a Life fica `unknown` e o canal de vida dos marcados se abstém). Resultado:
+Bounty Damage **25**; Bounty Life **unknown** (`bounty_life_vampiric_confound`). Revisão em
+`reports/infer-drone-bounty-talisman-review.md`.
+
+**Pendências declaradas:** (a) Bounty Life de `drone bounty` indeterminável — os pares
+`(Vampiric, nível)` `0/L21`, `1,6%/L11`, `2,4%/L8` e `3,2%/L5` fecham 192/191/183/163 dos 282 hits
+marcados, e `converter` tem só 3 hits sem marca (o dono do log confirma um nível baixo, ~5);
+(b) o fallback por componentes do `uhax 3` deixou de confirmar o nível 26 (9 encaixes, 3
+contradições), com a asserção do teste trocada por decisão do usuário; (c) `js/app.js` (UI) não lê
+`Sept`.
+
+**Baseline anterior (medido em 10/Set/2026, após `pair-beam-mastery-stage-fraction-and-rate`).**
+Total de alvos: **45/50 OK**; gabarito **231/231**; invariantes **40/41** fixtures limpos, com a
+única falha em `bakradrone 09:57:20` (declarada em S-014f). As 5 falhas são as mesmas de sempre e
+todas **pré-existentes**: `gabarito prioritario + invariantes mecanicas` (a falha do `bakradrone`),
+`experimental-ui-parity`, `mob-element-regime`, `unified-grav-san-ratio-witness` e
+`unified-spiritual-outburst-multistage`. O alvo a mais (49→50) é
+`tests/unified-beam-mastery-stages.test.mjs`, novo desta change. (A rodada completa mediu 44/49
+porque o teste novo entrou no disco depois da varredura começar; `--tests` sozinho, já com ele,
+dá 45/49.)
+
+**Sem dump nesta change, por decisão do usuário:** a correção é de modelo, não de resultado — não
+existe log de stage 1 ou 2 de Beam Mastery no corpus, então nenhum turno pode exibir a mudança. O
+gate usado foi `run-unified-checks` completo (gabarito + invariantes sobre todos os pares) mais uma
+varredura dirigida das frações de sub-linha em `kim`, `dlc ms` e `death echo` (192 casts): o único
+efeito observável é o cast `kim` `16:15:56`, que perde os marcadores `beamSide` por só fechar com um
+par impossível (`F = 0,70` com `+10%` por alvo); o turno continua `resolved` como `Great Energy Beam`
+de 7 hits. Em `dlc ms`/`death echo` o diff é vazio a menos do rótulo (`rate=0` → `stage=3` na leitura
+cancelante), com fração esperada, contagens e clusters idênticos.
+
+A regra é **M-035** (os três stages da Beam Mastery atrelam fração lateral e bônus por alvo:
+`0,25·10%`, `0,40·12%`, `0,70·14%`, teto de 3 alvos) e **M-035a** (o piso da isenção de exatidão
+same-mob passa a ser o mínimo sobre os stages, `≈ 0,192`, no lugar do mínimo do stage 3, `0,493`).
+
+**Pendências declaradas de M-035:** (a) **ambiguidade de como o bônus é contado** — a tooltip diz
+"per target hit by the central beam" (o bônus cancelaria na razão), mas `kim` `16:12:55` (dois hits
+no mesmo mob e estado, `0,7857`, sem liberdade de partição) só fecha com cada sub-linha contando os
+próprios alvos, enquanto `dlc ms` tem dezenas de casts em `0,700` exato; as duas leituras ficam
+admissíveis por stage; (b) o **stage não é cravado por sessão**, embora seja propriedade do
+personagem (precedente `M-034a`); (c) stage 1 e 2 entram **sem testemunha real** no corpus, cobertos
+só por teste sintético (precedente `M-042b`).
+
 **Baseline conhecido (medido em 07/Set/2026, após `model-combat-mastery-ladder-and-fix-omega-false-positive`).**
 Total de alvos: **44/49 OK**; gabarito **231/231**; invariantes **40/41** fixtures limpos, com a
 única falha em `bakradrone 09:57:20` (declarada em S-014f). Dump: **20.174** turnos, **59** sem

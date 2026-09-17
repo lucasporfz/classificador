@@ -74,11 +74,30 @@
     return normalizeName(hit.mob) === normalizeName(setup.voidsMob) ? base + (setup.voidsBonus || 0) : base;
   }
 
+  // D-010g/D-022b/D-006: com o nivel de Bounty Damage desconhecido, o dano exibido de um
+  // hit marcado carrega um multiplicador desconhecido e a base de leech e evidencia
+  // ausente — nem valida nem reprova N, e nunca cai no dano bruto.
+  function bountyDamageBasisUnknown(hit, context) {
+    if (!hit || !hit.bountyTalisman) return false;
+    const damage = context && context.bountyTalismanSetup && context.bountyTalismanSetup.damage;
+    return !(damage && damage.confidence !== 'unknown' && damage.multiplier > 1);
+  }
+
+  // D-022b: com o nivel de Bounty Life desconhecido, o canal de VIDA de um hit marcado carrega
+  // um multiplicador desconhecido e se abstem; o canal de mana continua valendo.
+  function bountyLifeLevelUnknown(hit, setup) {
+    if (!hit || !hit.bountyTalisman) return false;
+    return !(setup && setup.bountyTalismanLifeConfidence
+      && setup.bountyTalismanLifeConfidence !== 'unknown'
+      && setup.bountyTalismanLifeBonus > 0);
+  }
+
   function hitLeechFit(hit, setup, n, block, context) {
     if (!isMainHit(hit)) return { usable: false, ok: true, reason: 'not_main_hit' };
     const life = +hit.lifeLeech || 0;
     const mana = +hit.manaLeech || 0;
     if (!(life > 0) && !(mana > 0)) return { usable: false, ok: true, reason: 'no_positive_leech_or_cap' };
+    if (bountyDamageBasisUnknown(hit, context)) return { usable: false, ok: true, reason: 'bounty_damage_basis_unknown' };
     if (!setup || (!(setup.lifeBase > 0) && !(setup.manaBase > 0))) return { usable: false, ok: true, reason: 'leech_setup_unknown' };
 
     const officialFit = hitAcceptsLeechNAnyOfficialRate(hit, setup, n, block, context);
@@ -100,7 +119,7 @@
     const lifeRate = effectiveLifeLeech(hit, setup);
     const manaRate = effectiveManaLeech(hit, setup);
 
-    if (life > 0 && lifeRate > 0) {
+    if (life > 0 && lifeRate > 0 && !bountyLifeLevelUnknown(hit, setup)) {
       if (hit.overkill) out.channels.life = { interval: realDamageIntervalFromLeech(life, lifeRate, n) };
       else {
         const expected = expectedLeech(hit.dmg, lifeRate, n);
@@ -1033,12 +1052,17 @@
   // quebra. So se aplica a acoes elementais concretas (nao fisicas); sem elemento
   // conhecido nao ha evidencia (nem positiva nem negativa) por este caminho.
   // M-035: beams de sorcerer (Energy Beam, Great Energy Beam, Great Death Beam)
-  // tem sub-linhas central/side. O bonus de Beam Mastery por alvo e por sub-linha,
-  // entao a fracao observada e 0.70 * bonusSide / bonusCentral.
+  // tem sub-linhas central/side. A Beam Mastery tem TRES stages, e cada um fixa ao
+  // mesmo tempo a fracao lateral e o bonus por alvo — os dois sao o mesmo eixo, nao
+  // constantes independentes. Combinar a fracao de um stage com o bonus de outro
+  // descreve um personagem que nao existe.
   const BEAM_ACTION_WORDS = new Set(['exevo vis lux', 'exevo gran vis lux', 'exevo max mort']);
   const BEAM_EFFECTIVE_ELEMENTS = ['death', 'energy', 'fire'];
-  const BEAM_BASE_SIDE_FRACTION = 0.70;
-  const BEAM_MASTERY_TARGET_RATES = [0, 0.10, 0.12, 0.14];
+  const BEAM_MASTERY_STAGES = [
+    { stage: 1, sideFraction: 0.25, targetRate: 0.10 },
+    { stage: 2, sideFraction: 0.40, targetRate: 0.12 },
+    { stage: 3, sideFraction: 0.70, targetRate: 0.14 },
+  ];
   function isBeamAction(action) {
     return !!(action && BEAM_ACTION_WORDS.has(normalizeName(action.text || '')));
   }
@@ -1047,19 +1071,39 @@
     return 1 + (+rate || 0) * Math.min(3, Math.max(0, +hitCount || 0));
   }
 
+  // M-035: as duas leituras de COMO o bonus por alvo e contado, ambas admissiveis por
+  // stage enquanto a ambiguidade nao for resolvida por evidencia nova.
+  //   - 'central': a tooltip diz "for each target hit by the central beam", ou seja o
+  //     bonus incide igual nas duas sub-linhas e CANCELA na razao, que fica sendo a
+  //     propria fracao do stage. Testemunha: `dlc ms`, dezenas de casts em 0,700 exato
+  //     com contagens diferentes nas duas sub-linhas.
+  //   - 'subline': cada sub-linha conta os proprios alvos (cap 3). Testemunha: `kim`
+  //     `16:12:55`, dois hits no mesmo mob e mesmo estado (2011 e 1580 => 0,7857) sem
+  //     liberdade de particao, contra 0,7860 previsto por 0,70 x 1,28/1,14.
+  function beamStageFractions(stage, sideCount, centralCount) {
+    const cancelling = stage.sideFraction;
+    const perSubline = stage.sideFraction
+      * beamMasteryMultiplier(sideCount, stage.targetRate)
+      / beamMasteryMultiplier(centralCount, stage.targetRate);
+    const out = [{ fraction: cancelling, counting: 'central' }];
+    if (perSubline !== cancelling) out.push({ fraction: perSubline, counting: 'subline' });
+    return out;
+  }
+
   function representativeOriginal(originals) {
     const vals = (originals || []).filter(v => Number.isFinite(v)).sort((a, b) => a - b);
     if (!vals.length) return null;
     return (vals[0] + vals[vals.length - 1]) / 2;
   }
 
-  // M-035: a menor fracao side/central que a mecanica declarada consegue produzir. O
-  // bonus de Beam Mastery e por sub-linha e satura em 3 alvos, entao a razao observada
-  // vive em `0,70 x mult(side)/mult(central)`, cujo extremo inferior e o side sem bonus
-  // contra o central saturado. Constante DERIVADA das declaradas acima, nao um limiar
-  // novo: ~0,493.
-  const BEAM_MIN_SUBLINE_FRACTION = BEAM_BASE_SIDE_FRACTION
-    / beamMasteryMultiplier(3, Math.max(...BEAM_MASTERY_TARGET_RATES));
+  // M-035a: a menor fracao side/central que a mecanica declarada consegue produzir,
+  // minimizada sobre TODOS os stages — o lateral sem bonus contra o central saturado em
+  // 3 alvos, no stage de menor fracao. Constante DERIVADA da tabela de stages, nao um
+  // limiar novo: 0,25 / 1,30 ~= 0,192. O valor antigo (~0,493) era o minimo do stage 3
+  // tratado como se fosse o minimo da mecanica inteira.
+  const BEAM_MIN_SUBLINE_FRACTION = Math.min(...BEAM_MASTERY_STAGES.map(
+    st => st.sideFraction / beamMasteryMultiplier(3, st.targetRate)
+  ));
 
   // S-004a/M-035/H-005c: a isencao de beam da exatidao same-mob existe porque central e
   // side sao dois niveis declarados no MESMO mob. Ela so vale quando a divergencia
@@ -1154,10 +1198,10 @@
             const centralHits = central.map(x => x.hit).concat(assignment.central);
             if (!beamSublineLeechOk(sideHits, action, context)) continue;
             if (!beamSublineLeechOk(centralHits, action, context)) continue;
-            for (const rate of BEAM_MASTERY_TARGET_RATES) {
-              const expectedFraction = BEAM_BASE_SIDE_FRACTION
-                * beamMasteryMultiplier(sideHits.length, rate)
-                / beamMasteryMultiplier(centralHits.length, rate);
+            for (const stage of BEAM_MASTERY_STAGES) {
+              for (const hypothesis of beamStageFractions(stage, sideHits.length, centralHits.length)) {
+              const expectedFraction = hypothesis.fraction;
+              const rate = stage.targetRate;
               const expectedSide = centralCluster.center * expectedFraction;
               const tolerance = elementalClusterTolerance(expectedSide);
               const delta = Math.abs(sideCluster.center - expectedSide);
@@ -1167,6 +1211,8 @@
                 ok: true,
                 element,
                 rate,
+                stage: stage.stage,
+                bonusCounting: hypothesis.counting,
                 expectedFraction,
                 beamFraction: sideCluster.center / centralCluster.center,
                 sideCount: sideHits.length,
@@ -1182,6 +1228,7 @@
                 tolerance,
                 reason: 'beam_subline_mastery_cluster',
               });
+              }
             }
           }
         }
@@ -1227,11 +1274,13 @@
         ambiguousHits.push(hits[i]);
         delete hits[i].beamSide;
         delete hits[i].beamMasteryTargetRate;
+        delete hits[i].beamMasteryStage;
         continue;
       }
       const tier = tiers.values().next().value;
       hits[i].beamSide = tier === 's' ? 'side' : 'central';
       hits[i].beamMasteryTargetRate = best.rate;
+      hits[i].beamMasteryStage = best.stage;
       if (tier === 's') resolvedSideHits.push(hits[i]);
       else resolvedCentralHits.push(hits[i]);
     }
@@ -1244,6 +1293,8 @@
       beamFraction: best.beamFraction,
       beamExpectedFraction: best.expectedFraction,
       beamMasteryTargetRate: best.rate,
+      beamMasteryStage: best.stage,
+      beamBonusCounting: best.bonusCounting,
       beamSideCount: resolvedSideHits.length,
       beamCentralCount: resolvedCentralHits.length,
       beamAmbiguousCount: ambiguousHits.length,
@@ -1973,37 +2024,45 @@
     return !!(det && det.ok && det.intersection && det.intersection.length);
   }
 
-  // V-020 (docs/CLASSIFICATION_RULES.md, "Ethereal Barrage"): a fronteira do eixo
-  // físico (AA × spell físico DE ÁREA, ex. exori dir moe) segue timestamp,
+  // V-020/V-024 (docs/CLASSIFICATION_RULES.md, "Ethereal Barrage"): a fronteira do
+  // eixo físico (AA × spell/runa física DE ÁREA, ex. exori dir moe) segue timestamp,
   // crit-state, intervalo físico e leech — NÃO o sinal genérico `timing`
-  // (alinhamento cast↔centro-de-bloco). `timing` degenera quando o cast e todos os
-  // hits do turno caem no mesmo segundo: `|action.ts − centerTs| <= 1` fica
-  // verdadeiro para QUALQUER ponto de corte do bloco arrow→spell físico, então
-  // `timing` deixa de discriminar fronteiras e vira só "tamanho do bloco de
-  // spell" — um viés estrutural a favor de maximizar o bloco físico. A checagem é
-  // sobre o conjunto de hits COMBINADO (arrow + spell) do candidato: para um dado
-  // shape arrow>spell físico, esse conjunto é o mesmo turno inteiro independente de
-  // onde o corte cai, então o resultado é idêntico para todo candidato desse shape
-  // — não é uma heurística de "mesmo segundo" isolada por bloco. Restrito a
-  // `topology === 'area'`: spells físicos single-target (ex. exori gran con,
-  // Strong Ethereal Spear) têm ordem AA→spell própria (H-005) e não fazem parte
-  // do eixo AA × Barrage — sem essa restrição o gate flipava turnos de
-  // single-target físico incorretamente (ex. murcion ts=32155, exori gran con).
-  function physicalAxisTimingDegenerate(candidate) {
-    const comps = candidate.components || [];
-    if (comps.length !== 2 || !comps[0] || comps[0].comp !== 'arrow') return false;
-    const spellBlock = comps[1];
-    if (!spellBlock || (spellBlock.comp !== 'spell' && spellBlock.comp !== 'rune')) return false;
-    const action = spellBlock.action;
-    const profile = action && action.profile;
-    const element = profile && profile.element;
-    const topology = profile && profile.topology;
-    if (element !== 'physical' || topology !== 'area' || !action || !(action.ts >= 0)) return false;
-    const allHits = (comps[0].hits || []).concat(spellBlock.hits || []);
-    if (!allHits.length) return false;
-    let minTs = Infinity, maxTs = -Infinity;
-    for (const h of allHits) { if (h.ts < minTs) minTs = h.ts; if (h.ts > maxTs) maxTs = h.ts; }
-    return minTs === maxTs && minTs === action.ts;
+  // (alinhamento cast↔centro-de-bloco). `timing` degenera quando o teste de
+  // alinhamento (`|action.ts − centerTs| <= 1`) vale para TODOS os candidatos válidos
+  // do turno que ligam a MESMA ação física logo após o bloco `arrow`: aí ele não
+  // discrimina fronteira nenhuma e só mede o tamanho do bloco físico. O efeito é
+  // empate: a contribuição desse bloco sai de `timing` em todos os membros; a de
+  // outros blocos (granada) fica. A condição é da FAMÍLIA, nunca do par — por par o
+  // comparador perde a transitividade quando um membro cruza o segundo (ciclo medido
+  // em `15 sept` S1 03:34:01). Chamada antes de cada `candidates.sort(compareValidated)`;
+  // parte sempre de `timingRaw`, porque a enumeração guiada e a completa reaproveitam
+  // as mesmas validações (`valCache`) com famílias diferentes. Restrito a
+  // `topology === 'area'`: spells físicos single-target (ex. exori gran con) têm
+  // ordem AA→spell própria (H-005) e não fazem parte do eixo.
+  function physicalAxisTimingBlock(comps) {
+    for (let i = 1; i < comps.length; i++) {
+      const prev = comps[i - 1], b = comps[i];
+      if (!prev || prev.comp !== 'arrow' || !b || (b.comp !== 'spell' && b.comp !== 'rune')) continue;
+      const profile = b.action && b.action.profile;
+      if (profile && profile.element === 'physical' && profile.topology === 'area' && b.action.ts >= 0) return b;
+    }
+    return null;
+  }
+
+  function neutralizePhysicalAxisTimingFamily(candidates) {
+    const families = new Map();
+    for (const v of candidates || []) {
+      const s = v && v.score;
+      if (!s) continue;
+      s.timing = s.timingRaw;
+      if (!s.physicalAxisAction) continue;
+      if (!families.has(s.physicalAxisAction)) families.set(s.physicalAxisAction, []);
+      families.get(s.physicalAxisAction).push(s);
+    }
+    for (const members of families.values()) {
+      if (!members.every(s => s.physicalAxisTiming > 0)) continue;
+      for (const s of members) s.timing = s.timingRaw - s.physicalAxisTiming;
+    }
   }
 
   // docs/CLASSIFICATION_RULES.md S-017/S-018/S-019, H-001/H-003/H-004 (extensão ao
@@ -2131,7 +2190,8 @@
     if (comps.length > 1 && comps[0] && comps[0].comp === 'arrow' && comps.slice(1).some(b => b && (b.comp === 'spell' || b.comp === 'rune' || b.comp === 'grenade')) && !arrowPrefixIsAbsorbable(comps, context)) {
       mechanicalOrder = comps.reduce((sum, b) => sum + ((b.hits || []).filter(isMainHit).length), 0);
     }
-    const physDegenerate = physicalAxisTimingDegenerate(candidate);
+    const physicalAxisBlock = physicalAxisTimingBlock(comps);
+    let physicalAxisTiming = 0;
     const timingDemoted = elementalSameSecondTimingDemoted(candidate, actions);
     for (const b of candidate.components) {
       if (b.comp === 'grenade') {
@@ -2150,15 +2210,19 @@
       if (b.action) {
         const centerTs = Math.round(mean(b.hits.map(h => h.ts)));
         actionRecencyPenalty += Math.abs((b.action.ts || centerTs) - centerTs);
-        const physicalBlock = b.action.profile && b.action.profile.element === 'physical';
-        const timingApplies = !(physicalBlock && physDegenerate);
-        if (timingApplies && b.comp === 'spell' && Math.abs((b.action.ts || centerTs) - centerTs) <= 1) timing += b.hits.length;
-        if (timingApplies && b.comp === 'rune' && Math.abs((b.action.ts || centerTs) - centerTs) <= 1) timing += b.hits.length;
+        const aligned = (b.comp === 'spell' || b.comp === 'rune') && Math.abs((b.action.ts || centerTs) - centerTs) <= 1;
+        if (aligned) timing += b.hits.length;
+        if (aligned && b === physicalAxisBlock) physicalAxisTiming = b.hits.length;
         if (b.comp === 'grenade' && b.hits.every(h => h.ts >= b.action.ts + 2 && h.ts <= b.action.ts + 4)) timing += b.hits.length;
       }
     }
     return {
+      // `timing` é ajustado por neutralizePhysicalAxisTimingFamily antes da ordenação;
+      // `timingRaw` e a contribuição do bloco físico ficam para o ajuste ser idempotente.
       timing,
+      timingRaw: timing,
+      physicalAxisAction: physicalAxisBlock ? physicalAxisBlock.action : null,
+      physicalAxisTiming,
       mechanicalOrder,
       timestampSplitPenalty: tsSplitPenalty,
       deterministicHits,
@@ -2706,6 +2770,8 @@
     if (!hit || !isMainHit(hit) || !(n >= 1)) return { usable: false, ok: true, reason: 'not_main_or_invalid_n' };
     const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
     if (!(observed > 0)) return { usable: false, ok: true, reason: 'no_' + channel + '_leech' };
+    if (bountyDamageBasisUnknown(hit, context)) return { usable: false, ok: true, reason: 'bounty_damage_basis_unknown' };
+    if (channel === 'life' && bountyLifeLevelUnknown(hit, setup)) return { usable: false, ok: true, reason: 'bounty_life_level_unknown' };
     const rates = leechEffectiveRateCandidates(setup, channel, block, hit, context);
     if (!rates.length) return { usable: false, ok: true, reason: channel + '_setup_unknown' };
     const matches = [];
@@ -3119,7 +3185,7 @@
     validateCandidate,
     timestampSplitPenalty,
     arrowPrefixIsAbsorbable,
-    physicalAxisTimingDegenerate,
+    neutralizePhysicalAxisTimingFamily,
     physicalAxisSingleBlockAction,
     physicalAxisSplitIsPhysical,
     promotePhysicalAxisSingleBlockByLeech,

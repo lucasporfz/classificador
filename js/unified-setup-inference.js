@@ -664,7 +664,12 @@
       for (const B of cfg.bases) {
         let bestPick = null;
         for (const mob of mobs) {
-          const scoped = observations.filter(o => o.channel === cfg.channel && o.mob === mob);
+          // D-022b: no canal de vida, hit marcado por Bounty carrega o multiplicador de Bounty
+          // Life junto com o eventual Vampiric Embrace do mesmo mob, e a busca conjunta não
+          // separa os dois só com ele. O nível do charm é medido apenas nos hits SEM marca;
+          // os marcados continuam na pontuação agregada da sessão logo abaixo.
+          const scoped = observations.filter(o => o.channel === cfg.channel && o.mob === mob
+            && !(cfg.channel === 'life' && o.bountyTalisman));
           const baseScore = scoreGoldBaseWithMobException(scoped, cfg.channel, B, null, 0, perkOptions);
           for (const bonus of cfg.bonuses || []) {
             if (!(bonus > 0)) continue;
@@ -831,6 +836,13 @@
     return 0;
   }
 
+  // D-010g: o fallback só crava nível com unanimidade — ao menos um encaixe, nenhuma
+  // contradição, e nenhum outro nível também limpo. Menos contradições não é veredito.
+  function bountyFallbackVerdict(ranked) {
+    const clean = (ranked || []).filter(r => r && r.contradictions === 0 && r.fits > 0);
+    return clean.length === 1 ? clean[0] : null;
+  }
+
   // D-010g/C-006: fallback estritamente posterior ao witness de charm. As
   // fronteiras, a ação e N já vêm congelados de uma passada que não usa este
   // candidato; cada nível apenas reverte o dano dos mesmos hits.
@@ -850,10 +862,20 @@
         );
         if (!action || !element || element === 'unknown' || element === 'physical') continue;
         if (isTerraBurstAction(action) || isChainedPenanceAction(action)) continue;
-        if (!deterministic.ok || deterministic.unknown > 0) continue;
+        // D-010g: o original desconhecido dos hits MARCADOS é causado pelo próprio eixo em
+        // inferência e não desqualifica o componente. O que o qualifica é os hits SEM marca
+        // já compartilharem original sem nenhum candidato aplicado.
+        if (!deterministic.ok) continue;
         const marked = main.filter(hit => hit.bountyTalisman);
         const control = main.filter(hit => !hit.bountyTalisman);
         if (!marked.length || !control.length) continue;
+        const controlOriginals = control.map(hit => elementalOriginalCandidates(hit, element, context));
+        if (controlOriginals.some(result => !result || !result.known || !result.originals || !result.originals.length)) continue;
+        let controlCommon = new Set(controlOriginals[0].originals);
+        for (const result of controlOriginals.slice(1)) {
+          controlCommon = new Set(result.originals.filter(original => controlCommon.has(original)));
+        }
+        if (!controlCommon.size) continue;
         const maxMarked = Math.max(...marked.map(hit => hit.dmg));
         const minControl = Math.min(...control.map(hit => hit.dmg));
         if (!(minControl > 0)) continue;
@@ -935,19 +957,13 @@
     ranked.sort((a, b) =>
       a.contradictions - b.contradictions || b.fits - a.fits || a.level - b.level
     );
-    const best = ranked[0] || null;
-    const tied = best
-      ? ranked.filter(candidate =>
-        candidate.contradictions === best.contradictions
-        && candidate.fits === best.fits
-      )
-      : [];
-    if (!best || best.fits === 0 || tied.length !== 1) {
+    const best = bountyFallbackVerdict(ranked);
+    if (!best) {
       return Object.assign(
         unknownBountyTalismanAxis('frozen_component_bounty_tie_or_insufficient_evidence'),
         {
           evidenceCount: components.length,
-          contradictions: best ? best.contradictions : 0,
+          contradictions: ranked[0] ? ranked[0].contradictions : 0,
           ranked: ranked.slice(0, 12),
         },
       );
@@ -1030,6 +1046,35 @@
     };
   }
 
+  // D-022b (emenda de 14/Sep/2026): quando um mob marcado por Bounty é também candidato a
+  // Vampiric Embrace, charm e Bounty Life inflam o mesmo leech, e só os hits SEM marca
+  // desse mob medem o charm. Abaixo do piso de evidência de D-021a eles não discriminam, e
+  // o nível de Life não pode ser cravado. Caso-prova: `drone bounty` S0 — os pares
+  // (Vampiric 0 / L21), (1,6% / L11), (2,4% / L8) e (3,2% / L5) fecham 192/191/183/163 dos
+  // 282 hits marcados, e `converter` tem só 3 hits sem marca.
+  function bountyLifeVampiricConfound(lifeAxis, observations, charmCandidates) {
+    const markedMobs = new Set(observations
+      .filter(o => o.channel === 'life' && o.bountyTalisman && o.mob)
+      .map(o => o.mob));
+    const suspects = new Set(((charmCandidates && charmCandidates.life) || []).filter(mob => markedMobs.has(mob)));
+    const picked = lifeAxis && lifeAxis.channel && lifeAxis.channel.candidateMob;
+    if (picked && markedMobs.has(picked)) suspects.add(picked);
+    for (const mob of suspects) {
+      const unmarked = observations.filter(o => o.channel === 'life' && o.mob === mob && !o.bountyTalisman);
+      const turns = new Set(unmarked.map(o => o.ts));
+      if (unmarked.length < CHARM_DETECTOR_MIN_HITS || turns.size < CHARM_DETECTOR_MIN_TURNS) {
+        return {
+          mob,
+          unmarkedObservations: unmarked.length,
+          unmarkedTurns: turns.size,
+          minObservations: CHARM_DETECTOR_MIN_HITS,
+          minTurns: CHARM_DETECTOR_MIN_TURNS,
+        };
+      }
+    }
+    return null;
+  }
+
   function inferLeechSetupJointBaseAndCharm(goldObservations, charmCandidates, context) {
     const observations = goldObservations || [];
     const minorResult = {};
@@ -1050,7 +1095,7 @@
       lifeCfg,
       charmCandidates,
     );
-    const lifeAxis = damageKnown
+    const rankedLifeAxis = damageKnown
       ? inferBountyLifeAxis(
         bountyLifeLevelCandidates(observations, lifeBaseline),
         observations,
@@ -1059,6 +1104,15 @@
         context,
       )
       : unknownBountyTalismanAxis('bounty_damage_axis_unknown');
+    const lifeConfound = rankedLifeAxis.confidence !== 'unknown'
+      ? bountyLifeVampiricConfound(rankedLifeAxis, observations, charmCandidates)
+      : null;
+    const lifeAxis = lifeConfound
+      ? Object.assign(unknownBountyTalismanAxis('bounty_life_vampiric_confound'), {
+        confound: lifeConfound,
+        ranked: rankedLifeAxis.ranked,
+      })
+      : rankedLifeAxis;
     const life = lifeAxis.confidence !== 'unknown'
       ? lifeAxis.channel
       : lifeBaseline;
@@ -1928,6 +1982,8 @@
     inferLeechSetupJointBaseAndCharm,
     inferLeechSetupFromGoldObservations,
     inferBountyDamageFromFrozenComponents,
+    bountyFallbackVerdict,
+    rankGoldChannelCandidates,
     inferLeechSetupFallback,
     collectTrustedLeechObservationsFromRuneUses,
     isTrustedLeechVoteCredible,

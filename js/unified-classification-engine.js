@@ -50,6 +50,9 @@
     VOIDS_BONUSES,
     bountyTalismanBonusForLevel,
     bountyTalismanLevelsWithinBonus,
+    bountyCharmStep,
+    bountyCharmRowVerdict,
+    bountyCharmSessionLevels,
     WEAPON_LEECH_BONUS,
     MAX_WEAPON_LEECH_BONUSES,
     SPELL_LEECH_BONUS_CANDIDATES,
@@ -233,7 +236,7 @@
     validateCandidate,
     timestampSplitPenalty,
     arrowPrefixIsAbsorbable,
-    physicalAxisTimingDegenerate,
+    neutralizePhysicalAxisTimingFamily,
     physicalAxisSingleBlockAction,
     physicalAxisSplitIsPhysical,
     promotePhysicalAxisSingleBlockByLeech,
@@ -505,99 +508,164 @@
     return { rows, ranked, unanimous };
   }
 
-  function bountyCharmStateKey(ev) {
-    return [
-      normalizeName(ev.mob),
-      charmSignature(ev),
-      ev.exposeWeakness ? 'ew' : 'no_ew',
-      ev.isPrey ? 'prey' : 'no_prey',
-      ev.elementalAmplification ? 'amplified' : 'not_amplified',
-      ev.realCrit ? 'crit' : 'not_crit',
-      ev.onslaught ? 'onslaught' : 'no_onslaught',
-    ].join('|');
+  // D-010g (emenda de 14/Sep/2026): o tier de `utevo grav san` so entra na conta do charm
+  // quando esta resolvido. Tier pendente ou em conflito deixa o proc da janela fora.
+  const BOUNTY_CHARM_GRAV_SAN_RESOLVED_SOURCES = new Set([
+    'option_gravSanBonus',
+    'inferred_from_charm_damage_in_grav_san_windows',
+  ]);
+
+  // Linhas-testemunha de Bounty Damage: `(mob, charm, elemento, EW, amplification, postura)`.
+  // Procs marcados e sem marca entram na MESMA linha — o controle sem marca no mesmo estado
+  // deixou de ser exigido, porque o valor sem marca e previsivel pela base comum e pelo HP.
+  // Ficam fora: Prey (composicao com Bounty nao comprovada), proc que matou o alvo,
+  // `overpower charm` (escala com a vida do personagem, C-012a) e postura desconhecida.
+  function buildBountyCharmRows(events, context) {
+    const gravSan = context && context.gravSanSetup;
+    const windows = (gravSan && gravSan.windows) || [];
+    const gravSanResolved = !!(gravSan && gravSan.bonus > 0
+      && BOUNTY_CHARM_GRAV_SAN_RESOLVED_SOURCES.has(gravSan.source));
+    const rows = new Map();
+    for (const ev of events || []) {
+      if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.killedTarget || ev.isPrey) continue;
+      const charm = charmSignature(ev);
+      const element = CHARM_ELEMENT_MAP[charm];
+      if (!element || charm === 'overpower') continue;
+      if (!isKnightStanceKnownAt(context, ev.ts)) continue;
+      const inWindow = isWithinAnyWindow(ev.ts, windows);
+      if (inWindow && !gravSanResolved) continue;
+      const mob = normalizeName(ev.mob);
+      if (!mob) continue;
+      const ew = !!ev.exposeWeakness || /expose weakness/i.test(ev.rawLine || '');
+      const amp = !!ev.elementalAmplification;
+      const stance = knightStanceAtTs(context, ev.ts);
+      const key = [mob, charm, element, ew ? 'ew' : 'no_ew', amp ? 'amplified' : 'not_amplified', stance].join('|');
+      if (!rows.has(key)) rows.set(key, { key, mob, charm, element, ew, amp, stance, procs: [] });
+      rows.get(key).procs.push({
+        dmg: ev.dmg,
+        marked: !!ev.bountyTalisman,
+        gravSanMultiplier: inWindow ? (1 + gravSan.bonus) : 1,
+        ts: ev.ts,
+      });
+    }
+    return Array.from(rows.values());
   }
 
-  function inferBountyTalismanDamageSetup(serverFacts, gravSanSetup) {
-    const allCharmEvents = ((serverFacts && serverFacts.events) || [])
-      .filter(ev => ev && ev.kind === 'charm' && ev.dmg > 0)
-      .filter(ev => !ev.killedTarget && !ev.overpowerCharm)
-      .filter(ev => !ev.isPrey && !ev.elementalAmplification)
-      .filter(ev => !isWithinAnyWindow(ev.ts, gravSanSetup && gravSanSetup.windows));
-    if (!allCharmEvents.some(ev => ev.bountyTalisman)) {
+  // Base pos-mitigacao prevista pela tabela (M-036), SEM bonus de classe: `E` admite CEIL e
+  // FLOOR (V15), `A = FLOOR(E × mitigacao)`, e o Protector (M-041) entra como passo discreto.
+  function bountyCharmHpBaseA0(row, context) {
+    const mods = getMobMods(row.mob, context);
+    if (!mods || !(mods.hitpoints > 0)) return null;
+    const key = ELEMENT_KEYS[row.element];
+    if (!key || !(mods[key] > 0)) return null;
+    const pierce = pierceForElement(row.element, { exposeWeakness: row.ew, elementalAmplification: row.amp }, context);
+    const raw = mods.hitpoints * 0.05 * effectiveMod(+mods[key], pierce);
+    const mit = mitigationMultiplier(mods, context);
+    const bases = new Set();
+    for (const e of [Math.ceil(raw - 1e-9), Math.floor(raw + 1e-9)]) {
+      for (const a of bountyCharmStep([Math.floor(e * mit + 1e-9)], knightStanceMultiplierForStance(row.stance))) bases.add(a);
+    }
+    return Array.from(bases).sort((a, b) => a - b);
+  }
+
+  // Classe conhecida fixa o bonus; desconhecida enumera `{0} ∪ grade de M-036` (C-012a:
+  // proibido assumir classe 1 sem testemunha).
+  function bountyCharmClassBonuses(row, context) {
+    const mods = getMobMods(row.mob, context);
+    const cls = mods && mods.bestiaryClass ? normalizeName(mods.bestiaryClass) : null;
+    const known = context && context.bestiaryClassBonus;
+    if (cls && known && known.class && normalizeName(known.class) === cls && known.multiplier > 1) {
+      return [known.multiplier - 1];
+    }
+    return [0].concat(BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES);
+  }
+
+  function bountyCharmModal(procs) {
+    const counts = new Map();
+    for (const p of procs) counts.set(p.dmg, (counts.get(p.dmg) || 0) + 1);
+    const ranked = Array.from(counts).sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+    return ranked.length ? { damage: ranked[0][0], count: ranked[0][1] } : null;
+  }
+
+  function inferBountyTalismanDamageSetup(serverFacts, context) {
+    const rows = buildBountyCharmRows((serverFacts && serverFacts.events) || [], context);
+    if (!rows.some(row => row.procs.some(p => p.marked))) {
       return unknownBountyTalismanSetup('no_bounty_talisman_damage_fact');
     }
-    const evaluation = evaluateComparableCharmWitnesses(allCharmEvents, {
-      keyOf: bountyCharmStateKey,
-      isAffected: ev => !!ev.bountyTalisman,
-      minimumControlSamples: 3,
-      minimumAffectedSamples: 3,
-      representative: 'mode',
-      candidatesForRows: rows => {
-        if (!rows.length) return [];
-        const maxMultiplier = Math.max(...rows.map(row =>
-          (row.affectedDamage + 1) / row.controlDamage
-        ));
-        return bountyTalismanLevelsWithinBonus(maxMultiplier - 1)
-          .map(level => ({
-            level,
-            bonus: bountyTalismanBonusForLevel(level),
-            multiplier: 1 + bountyTalismanBonusForLevel(level),
-          }));
-      },
-      matchCandidate: (row, candidate) => {
-        const intervals = inversePostMultiplierIntervals(
-          row.affectedDamage,
-          candidate.multiplier,
-        );
-        const ok = intervals.some(([lo, hi]) =>
-          row.controlDamage >= lo && row.controlDamage <= hi
-        );
-        const error = Math.min(...intervals.map(([lo, hi]) =>
-          row.controlDamage < lo ? lo - row.controlDamage
-            : (row.controlDamage > hi ? row.controlDamage - hi : 0)
-        ));
-        return { ok, error, intervals };
-      },
-    });
-    const winner = evaluation.unanimous.length === 1
-      ? evaluation.unanimous[0]
-      : null;
-    const setup = unknownBountyTalismanSetup(
-      evaluation.rows.length
+    // Intervalo finito de niveis imposto pela evidencia: a base de cada linha e limitada
+    // por baixo pelo proc sem marca (base exata) ou pela ancora de HP (classe >= 0).
+    let maxBonus = -Infinity;
+    for (const row of rows) {
+      row.hpBaseA0 = bountyCharmHpBaseA0(row, context);
+      row.classBonuses = bountyCharmClassBonuses(row, context);
+      const marked = row.procs.filter(p => p.marked);
+      if (!marked.length) continue;
+      const lowerBases = row.procs.filter(p => !p.marked).map(p => Math.floor(p.dmg / p.gravSanMultiplier) - 2)
+        .concat(row.hpBaseA0 ? [row.hpBaseA0[0] - 2] : []);
+      if (!lowerBases.length) continue;
+      const minBase = Math.max(1, Math.min(...lowerBases));
+      const maxMarked = Math.max(...marked.map(p => (p.dmg + 1) / p.gravSanMultiplier));
+      maxBonus = Math.max(maxBonus, maxMarked / minBase - 1);
+    }
+    const levels = bountyTalismanLevelsWithinBonus(maxBonus);
+    const verdicts = rows.map(row => Object.assign({ row }, bountyCharmRowVerdict(row, levels)));
+    const sessionLevels = bountyCharmSessionLevels(verdicts);
+    const discriminating = verdicts.filter(v => Array.isArray(v.allowedLevels));
+    const diagnostics = verdicts.map(v => ({
+      key: v.row.key,
+      procs: v.row.procs.length,
+      marked: v.row.procs.filter(p => p.marked).length,
+      unmarked: v.row.procs.filter(p => !p.marked).length,
+      excluded: v.excluded.map(p => p.dmg),
+      hpBaseA0: v.row.hpBaseA0,
+      commonBaseLevels: v.commonBaseLevels,
+      hpAnchorVote: v.hpAnchorVote,
+      hpAnchorPairs: v.hpAnchorPairs.slice(0, 12),
+      allowedLevels: v.allowedLevels,
+    }));
+    if (!sessionLevels || sessionLevels.length !== 1) {
+      const setup = unknownBountyTalismanSetup(discriminating.length
         ? 'comparable_charm_damage_conflict'
-        : 'comparable_charm_damage_insufficient',
-    );
-    if (!winner) {
-      setup.damage.evidenceCount = evaluation.rows.length;
-      setup.damage.ranked = evaluation.ranked.slice(0, 12).map(entry => ({
-        level: entry.candidate.level,
-        bonus: entry.candidate.bonus,
-        votes: entry.votes,
-        witnessCount: evaluation.rows.length,
-      }));
+        : 'comparable_charm_damage_insufficient');
+      setup.damage.evidenceCount = discriminating.length;
+      setup.damage.candidateLevels = sessionLevels;
+      setup.damage.rows = diagnostics;
       return setup;
     }
+    const level = sessionLevels[0];
+    const bonus = bountyTalismanBonusForLevel(level);
+    const witnesses = [];
+    for (const v of verdicts) {
+      if (!v.commonBaseDiscriminating) continue;
+      const excluded = new Set(v.excluded);
+      const kept = v.row.procs.filter(p => !excluded.has(p));
+      for (const gravSanMultiplier of new Set(kept.map(p => p.gravSanMultiplier))) {
+        const control = bountyCharmModal(kept.filter(p => !p.marked && p.gravSanMultiplier === gravSanMultiplier));
+        const affected = bountyCharmModal(kept.filter(p => p.marked && p.gravSanMultiplier === gravSanMultiplier));
+        if (!control || !affected) continue;
+        witnesses.push({
+          key: v.row.key,
+          gravSanMultiplier,
+          controlDamage: control.damage,
+          affectedDamage: affected.damage,
+          controlCount: control.count,
+          affectedCount: affected.count,
+        });
+      }
+    }
+    const setup = unknownBountyTalismanSetup('comparable_charm_damage');
     setup.damage = {
-      level: winner.candidate.level,
-      bonus: winner.candidate.bonus,
-      multiplier: winner.candidate.multiplier,
+      level,
+      bonus,
+      multiplier: 1 + bonus,
       confidence: 'strong',
-      source: 'comparable_charm_damage',
-      evidenceCount: evaluation.rows.length,
+      source: verdicts.some(v => v.commonBaseDiscriminating && v.commonBaseLevels.includes(level))
+        ? 'comparable_charm_damage'
+        : 'charm_damage_hp_anchor',
+      evidenceCount: discriminating.length,
       contradictions: 0,
-      witnesses: evaluation.rows.map(row => ({
-        key: row.key,
-        controlDamage: row.controlDamage,
-        affectedDamage: row.affectedDamage,
-        controlCount: row.controlCount,
-        affectedCount: row.affectedCount,
-      })),
-      ranked: evaluation.ranked.slice(0, 12).map(entry => ({
-        level: entry.candidate.level,
-        bonus: entry.candidate.bonus,
-        votes: entry.votes,
-        witnessCount: evaluation.rows.length,
-      })),
+      witnesses,
+      rows: diagnostics,
     };
     return setup;
   }
@@ -1777,17 +1845,16 @@
     // `postMultiplier` e no divisor da base de leech, entao tudo a jusante precisa ve-lo.
     context.stanceSetup = inferKnightStanceSetup(localFacts);
     context.gravSanSetup = inferGravSanSetup(serverFacts, localFacts, options || {});
-    if (!explicitBountyTalismanSetup) {
-      context.bountyTalismanSetup = inferBountyTalismanDamageSetup(
-        serverFacts,
-        context.gravSanSetup,
-      );
-    }
     // M-042: a escada de Combat Mastery e lida so dos niveis observados de charm (nao usa
     // tabela de mob, pierce nem classificacao), entao roda ANTES das tres leituras que ela
     // governa — bonus de classe, omega e o atalho de BM por charm.
     context.combatMasteryLadder = inferCombatMasteryLadder(serverFacts, context);
     context.bestiaryClassBonus = inferBestiaryClassDamageBonus(serverFacts, context);
+    // D-010g: depois do bonus de classe, que decide se a ancora de HP pode votar. Sem
+    // circularidade: o detector de classe ja exclui os procs marcados por Bounty.
+    if (!explicitBountyTalismanSetup) {
+      context.bountyTalismanSetup = inferBountyTalismanDamageSetup(serverFacts, context);
+    }
     // M-039: depois do bonus de classe, porque a ancora da testemunha de omega precisa
     // dele para bater com o dano de charm observado (a razao x1,06 em si nao depende).
     context.omegaSetup = inferOmegaPerk(serverFacts, context);
@@ -2229,6 +2296,8 @@
     inferBestiaryClassDamageBonus,
     inferCombatMasteryLadder,
     inferOmegaPerk,
+    buildBountyCharmRows,
+    inferBountyTalismanDamageSetup,
     // Exportada para diagnóstico/validação. AINDA NÃO ligada ao fluxo de classificação:
     // o gate de controle negativo (task 3 do change infer-bm-pierce-from-charm-damage)
     // precisa fechar antes de ela virar decisão primária de bmPierce.

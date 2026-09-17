@@ -13,7 +13,7 @@ const read = file => fs.readFileSync(file, 'utf8');
 
 // Split por porção (`Channel … saved`) para inferência de crit/leech por-porção — evita
 // contaminação cross-porção que aparecia ao passar o arquivo inteiro num stream só.
-const MONTHS = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
+const MONTHS = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Sept: 9, Oct: 10, Nov: 11, Dec: 12 };
 function splitSessions(text) {
   const headerRe = /^Channel .+ saved /;
   const sessions = []; let cur = null;

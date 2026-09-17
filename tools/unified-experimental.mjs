@@ -48,7 +48,7 @@ function splitSessions(text) {
 }
 
 function parseSessionDate(session) {
-  const months = { Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12 };
+  const months = { Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Sept:9,Oct:10,Nov:11,Dec:12 };
   const m = /saved \w+ (\w+) +(\d+) (\d{2}):(\d{2}):(\d{2}) (\d{4})/.exec(session.header || '');
   if (!m) return null;
   return { year:+m[6], month:months[m[1]] || 0, day:+m[2], saveSec:+m[3] * 3600 + +m[4] * 60 + +m[5] };

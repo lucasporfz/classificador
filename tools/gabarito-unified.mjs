@@ -478,8 +478,15 @@ export const CASES = [
   // hipótese "fundido no bloco arrow contíguo" (N=13, esperado life≈111/mana≈33)
   // do que "sozinho" (N=1, esperado life≈654/mana≈197; observado 99/30) — :21 é o
   // candidato sem resíduo e vence. Ver design.md do change pra prova detalhada.
+  // Corte AA × Ethereal Barrage CORRIGIDO para A11 S11 G12 em 17/Set/2026
+  // (openspec/changes/fix-physical-axis-timing-family, decisão do usuário). O esperado
+  // antigo (A10 S12 G12) foi gravado pela prova da POSSE da granada, não do corte, e só
+  // vencia pelo alinhamento cast↔bloco degenerado (V-024): cast `exori dir moe` e os 22
+  // hits de AA+Barrage em `:21`, granada em `:22`. A10 tem 3 capped-low e B12 carrega 1
+  // contradição de leech com folga física 4; A11/B11 fecham leech 22/22 com folga 0
+  // (V-020, S-014/S-014e). A granada (G12) é a mesma nas duas leituras.
   C('mazzerinbarrage/01:21:21', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '01:21:21',
-    t => { const c = counts(t); return (c.arrow === 10 && c.spell === 12 && c.rune === 0 && c.grenade === 12) ? null : `esperado A10 S12 G12; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '09/Jul/2026'),
+    t => { const c = counts(t); return (c.arrow === 11 && c.spell === 11 && c.rune === 0 && c.grenade === 12) ? null : `esperado A11 S11 G12; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '09/Jul/2026'),
   // Guarda: o turno vizinho (:23, cast+4) continua resolvido, agora sem a granada
   // (que pertence a :21) e sem o hit órfão — os 13+14=27 hits fecham como AA+Caldera
   // puro, sem resíduo.
@@ -1507,6 +1514,37 @@ export const CASES = [
         ? null
         : `esperado Executioner's Throw; got ${spell && spell.actionLabel || '-'}`;
     }),
+  // D-011a/S-014e: XP do overpower em skirmisher não mata o chastener anterior.
+  C('tom 2/13:04:16-overkill-other-mob', 'tom 2 server log.txt', 'tom 2 local chat.txt', '13:04:16',
+    turn => {
+      const c = counts(turn);
+      if (!(c.arrow === 1 && c.spell === 4 && c.rune === 0 && c.grenade === 0)) return 'esperado A1 S4';
+      const spell = turn.components.find(comp => comp.comp === 'spell');
+      const hit = spell.hits.find(h => h.seq === 6103);
+      if (!hit || hit.dmg !== 1260 || hit.overkill !== false) return 'chastener 1260 não herda XP do skirmisher';
+      const virtual = spell.hits.filter(h => h.virtual && h.mob === 'raubritter skirmisher' && h.dmg === 0);
+      return virtual.length === 1 ? null : 'preservar um virtual legítimo do skirmisher na spell';
+    }),
+  // D-010g/D-022b (change infer-drone-bounty-talisman): `drone bounty` S0 (14/Sep/2026,
+  // cabeçalho `Sept`). Bounty Damage 25 pela testemunha de charm e Bounty Life indeterminado
+  // com o canal de vida dos hits marcados em abstenção. Só entram turnos confirmados por
+  // timing E magnitude (reports/infer-drone-bounty-talisman-review.md).
+  ...[
+    ['06:56:09', 3, 3, 'Ethereal Barrage'],
+    ['06:59:59', 6, 6, 'Ethereal Barrage'],
+    ['07:00:30', 8, 10, 'Ethereal Barrage'],
+    ['07:00:41', 4, 4, 'Divine Caldera'],
+    ['07:02:19', 4, 6, 'Divine Caldera'],
+    ['07:03:53', 7, 10, 'Divine Caldera'],
+  ].map(([ts, arrow, spell, label]) =>
+    C(`drone bounty/${ts}`, 'drone bounty Server Log.txt', 'drone bounty Local Chat.txt', ts, turn => {
+      const c = counts(turn);
+      if (!(c.arrow === arrow && c.spell === spell && c.rune === 0 && c.grenade === 0)) {
+        return `esperado A${arrow} S${spell}; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const comp = turn.components.find(x => x.comp === 'spell');
+      return comp && String(comp.actionLabel || '').includes(label) ? null : `esperado ${label}; got ${comp && comp.actionLabel || '-'}`;
+    })),
   // M-040 — perk de pierce fisico da arma, fixture `moonsilver` (RP, pack de 5 mobs,
   // 26/Ago/2026). Sem o perk a sessao fica com 78 de 192 turnos sem classificacao; em 77
   // deles o motor JA enumera o corte certo e o descarta so porque a intersecao fisica do
