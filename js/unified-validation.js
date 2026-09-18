@@ -875,8 +875,10 @@
         const original = chosenOriginals[i];
         const modes = (x.modesByOriginal && x.modesByOriginal.get(Math.round(original))) || [];
         const preferred = modes.find(m => m.active) || modes[0] || { active: false, multiplier: 1 };
-        x.hit.terraBurstBonusActive = !!preferred.active;
-        x.hit.terraBurstBonusMultiplier = preferred.multiplier || 1;
+        recordHitStamp(context, x.hit, {
+          terraBurstBonusActive: !!preferred.active,
+          terraBurstBonusMultiplier: preferred.multiplier || 1,
+        });
         return {
           dmg: x.hit.dmg,
           mob: x.hit.mob,
@@ -899,11 +901,9 @@
         const offOk = !!(off && off.known && off.originals && off.originals.length);
         const onOk = !!(on && on.known && on.originals && on.originals.length);
         if (offOk !== onOk) {
-          h.terraBurstBonusActive = onOk;
-          h.terraBurstBonusMultiplier = onOk ? best.level : 1;
+          recordHitStamp(context, h, { terraBurstBonusActive: onOk, terraBurstBonusMultiplier: onOk ? best.level : 1 });
         } else {
-          h.terraBurstBonusActive = null;
-          h.terraBurstBonusMultiplier = null;
+          recordHitStamp(context, h, { terraBurstBonusActive: null, terraBurstBonusMultiplier: null });
         }
       }
 
@@ -1268,15 +1268,15 @@
       const tiers = new Set(assignmentSignatures.map(signature => signature[i]));
       if (tiers.size !== 1) {
         ambiguousHits.push(hits[i]);
-        delete hits[i].beamSide;
-        delete hits[i].beamMasteryTargetRate;
-        delete hits[i].beamMasteryStage;
+        recordHitStamp(context, hits[i], null, ['beamSide', 'beamMasteryTargetRate', 'beamMasteryStage']);
         continue;
       }
       const tier = tiers.values().next().value;
-      hits[i].beamSide = tier === 's' ? 'side' : 'central';
-      hits[i].beamMasteryTargetRate = best.rate;
-      hits[i].beamMasteryStage = best.stage;
+      recordHitStamp(context, hits[i], {
+        beamSide: tier === 's' ? 'side' : 'central',
+        beamMasteryTargetRate: best.rate,
+        beamMasteryStage: best.stage,
+      });
       if (tier === 's') resolvedSideHits.push(hits[i]);
       else resolvedCentralHits.push(hits[i]);
     }
@@ -1682,7 +1682,219 @@
     return 0;
   }
 
+  // --- C1: a validacao de bloco tem identidade -----------------------------
+  //
+  // O bloco era, ao mesmo tempo, a DESCRICAO da particao candidata e a FOLHA de
+  // resultado: `candidateFromShape` criava o literal `{comp, start, end, hits}` e o
+  // validador escrevia `action`, `deterministic`, `leech`, `gravSanActive` e
+  // `omegaHits` nele — e ainda trocava `block.hits` por
+  // `block.hits.concat(leech.virtualZeroHits)`. Descricao e resultado sendo o mesmo
+  // objeto, nao existia valor para chavear, e a MESMA validacao de bloco era repetida
+  // 10-26x entre as particoes do mesmo turno (3,2 M chamadas em `15 sept`): o bloco
+  // `arrow[0..3)` aparece em todo candidato [arrow,spell], [arrow,rune],
+  // [arrow,spell,grenade]... com qualquer corte posterior.
+  //
+  // Agora sao dois valores: o PEDIDO (bloco + elemento + ambiente, resumido por
+  // `blockValidationKey`) e o RESULTADO (congelado, compartilhado). A memoizacao e
+  // detalhe de implementacao de `validateBlockDeterministicAndLeechWithGravModes`, e
+  // `applyBlockResult` e o unico lugar que aplica um resultado num bloco.
+  //
+  // EFEITOS POR HIT. Dois validadores deterministicos rotulam o proprio hit —
+  // `validateTerraBurstBonusBlock` (terraBurstBonus*) e `validateBeamSublineBlock`
+  // (beamSide, beamMastery*) — e esses rotulos sao lidos DEPOIS da resolucao
+  // (unified-turn-resolution.js:1386, unified-main.js:133/274/500,
+  // tools/gabarito-unified.mjs:47). Como os objetos de hit sao compartilhados por
+  // todas as particoes, pular a chamada num acerto de cache pularia a escrita e
+  // mudaria o rotulo exibido. Por isso a escrita vira EFEITO REGISTRADO: as duas
+  // funcoes chamam `recordHitStamp`, e `applyBlockResult` reaplica na ordem de
+  // execucao, tanto no acerto quanto na falta. Fora da memoizacao (validate*Block
+  // chamado direto por unified-turn-resolution / unified-setup-inference /
+  // firstHitSeparationFixesSameMobExactness, ou por um teste) nao ha coletor e a
+  // escrita continua imediata, exatamente como sempre foi.
+  //
+  // Os dois modos de grav san rodam sempre que o bloco encosta numa janela, e o
+  // rotulo que fica no hit e o do ULTIMO modo executado, nao o do modo vencedor.
+  // Isso e comportamento de hoje e esta preservado de proposito: os efeitos sao
+  // registrados na ordem de execucao dos modos.
+  function applyHitStamp(op) {
+    if (!op || !op.hit) return;
+    if (op.set) for (const field in op.set) op.hit[field] = op.set[field];
+    if (op.del) for (const field of op.del) delete op.hit[field];
+  }
+
+  function recordHitStamp(context, hit, set, del) {
+    const op = { hit, set: set || null, del: del || null };
+    const collector = context && context._hitStampCollector;
+    if (collector) collector.push(op);
+    else applyHitStamp(op);
+  }
+
+  // A chave. Cada campo esta aqui porque muda o resultado:
+  //
+  //  - setupFingerprint: os 11 campos do SessionSetup (crit, leech, grav san, bounty,
+  //    postura, omega, escada de combat mastery, bonus de classe, aaElement, pierce de
+  //    arma, bmPierce). Impressao digital, NAO `epoch` — ver unified-session-context.js.
+  //  - identidade do TURNO: `buildGrenadeCastAssignments` clona turnos com hits
+  //    concatenados (`originWithPrefix`), entao `(turn.ts, start, end)` NAO identifica
+  //    o conjunto de hits. Foi essa colisao que quebrou 90 turnos na chave ingenua.
+  //  - CONTEUDO de `turn.actions`: e o unico canal pelo qual o ResolutionState chega ao
+  //    validador (`actionsNearTurn` filtra pelas acoes ja consumidas e pelo mapa
+  //    cast->turno pre-atribuido), e `validateLeechBlock` cai em
+  //    `chooseActionForComponent(..., turn.actions)` quando o bloco nao tem acao.
+  //    `actionsNearTurn` devolve exatamente `{spellCasts, runeUses, grenadeCasts}` e e
+  //    reconstruido a cada `resolveTurnInner`, entao a IDENTIDADE do objeto muda a cada
+  //    revisita do mesmo turno mesmo quando as acoes disponiveis sao as mesmas — o que
+  //    perderia todo o reuso entre varreduras. A chave usa a lista de acoes (identidade
+  //    de cada acao, em ordem), que e o que a validacao consegue observar.
+  //  - comp / element / identidade da acao do bloco: entradas diretas.
+  //  - hits, em ordem, cada um com o estado do override AMBIENTE de grav san:
+  //    `withGravSanBlockMode` parte do mapa ambiente e so sobrescreve os hits em janela.
+  //    `gravSanHitOverride` e o unico campo do HitScope que e ENTRADA (C2).
+  //  - `_omegaCrossStateTolerance`: derivado em relacao a RESOLUCAO (resolveTurn liga a
+  //    folga na passada relaxada), mas ENTRADA em relacao ao bloco — e lido de dentro da
+  //    validacao (omegaCrossStateArmed).
+  //
+  // Devolve null — memoizacao DESLIGADA — em dois casos: contexto montado a mao (teste
+  // ou ferramenta de diagnostico, sem os records de C2) e contexto com um campo
+  // DERIVADO do HitScope ja armado na entrada, que seria chavear por um valor que a
+  // propria validacao produz.
+  // Teto de entradas do cache de bloco. Ver a nota no ponto de insercao.
+  const BLOCK_CACHE_MAX_ENTRIES = 50000;
+
+  // Impressao digital do conjunto de acoes oferecido ao turno, memoizada pelo objeto
+  // que `actionsNearTurn` devolveu (calculada uma vez por resolveTurnInner).
+  const actionsFingerprints = new WeakMap();
+
+  function actionsFingerprint(actions) {
+    if (!actions) return '0';
+    let fingerprint = actionsFingerprints.get(actions);
+    if (fingerprint === undefined) {
+      const parts = [];
+      for (const list of [actions.spellCasts, actions.runeUses, actions.grenadeCasts]) {
+        const ids = [];
+        for (const action of list || []) ids.push(SessionContext.identityId(action));
+        parts.push(ids.join('.'));
+      }
+      fingerprint = parts.join('/');
+      actionsFingerprints.set(actions, fingerprint);
+    }
+    return fingerprint;
+  }
+
+  function blockValidationKey(block, element, context, turn) {
+    if (!context || !block) return null;
+    if (context._activeCritKey || context._omegaAssignment) return null;
+    const setupFingerprint = SessionContext.setupFingerprint(context);
+    if (setupFingerprint == null) return null;
+    const override = SessionContext.gravSanOverrideOf(context);
+    let hitKey = '';
+    for (const hit of (block.hits || [])) {
+      const id = hit && hit.id != null ? hit.id : ('@' + SessionContext.identityId(hit));
+      let state = '?';
+      if (override && hit && hit.id != null && Object.prototype.hasOwnProperty.call(override, hit.id)) {
+        state = override[hit.id] ? '+' : '-';
+      }
+      hitKey += id + state + ';';
+    }
+    return setupFingerprint
+      + '|' + (block.comp || '')
+      + '|' + (element || '')
+      + '|' + SessionContext.identityId(block.action)
+      + '|' + SessionContext.identityId(turn)
+      + '|' + actionsFingerprint(turn && turn.actions)
+      + '|' + (+context._omegaCrossStateTolerance || 0)
+      + '|' + hitKey;
+  }
+
+  // Unico ponto de mutacao do bloco a partir de um resultado de validacao.
+  //
+  // `deterministic` e `leech` saem COPIADOS porque o resultado e compartilhado entre
+  // candidatos e o motor escreve neles a jusante: `leech.overriddenByRuneUsingPrecedence`
+  // / `leech.overrideReason` logo abaixo, e `comp.deterministic.executionerBonusLevel`
+  // em unified-classification-engine.js. Os hits virtuais tambem sao clonados, mantendo
+  // a invariante de hoje `block.virtualZeroHits === block.leech.virtualZeroHits`.
+  function applyBlockResult(block, result) {
+    for (const op of (result && result.hitStamps) || []) applyHitStamp(op);
+    block.gravSanActive = result.gravSanActive;
+    block.gravSanTested = result.gravSanTested;
+    block.gravSanModeCandidates = result.gravSanModeCandidates;
+    const det = Object.assign({}, result.deterministic);
+    block.deterministic = det;
+    // M-039: a atribuicao de omega pertence a ESTE bloco desta particao candidata. Os
+    // objetos de hit sao compartilhados entre todas as particoes, entao o rotulo NAO
+    // pode ser gravado no hit aqui — so quando a particao vencedora for consolidada.
+    block.omegaHits = (det && det.omegaHits) || null;
+    const leech = Object.assign({}, result.leech);
+    if (leech.virtualZeroHits && leech.virtualZeroHits.length) {
+      const virtuals = leech.virtualZeroHits.map(hit => Object.assign({}, hit));
+      leech.virtualZeroHits = virtuals;
+      block.virtualZeroHits = virtuals;
+      block.hits = block.hits.concat(virtuals);
+    }
+    block.leech = leech;
+    return { det, leech };
+  }
+
   function validateBlockDeterministicAndLeechWithGravModes(block, element, context, turn) {
+    const key = blockValidationKey(block, element, context, turn);
+    const cache = key == null ? null : SessionContext.blockCacheFor(context);
+    if (cache) {
+      // O cache vive a varredura inteira e morre com o cache de reversao. Zerar a cada
+      // troca de turno parece economia de memoria, mas mata exatamente o reuso que
+      // existe: o MESMO turno e resolvido varias vezes (bootstrap sem leech, refino de
+      // crit, passada final, sonda de granada, passada relaxada de omega), e nessas
+      // revisitas o setup e os hits costumam ser identicos. Medido em `15 sept` S3
+      // (440.976 validacoes de bloco): zerando por turno e chaveando `turn.actions` pela
+      // identidade do objeto, 61,7% de acerto; mantendo a varredura e chaveando pelo
+      // conteudo das acoes, 79,1%.
+      const memo = cache.get(key);
+      if (memo) {
+        cache.hits++;
+        return memo;
+      }
+      cache.misses++;
+    }
+    const stamps = [];
+    const previousCollector = context ? context._hitStampCollector : undefined;
+    if (context) context._hitStampCollector = stamps;
+    let computed;
+    try {
+      computed = computeBlockValidation(block, element, context, turn);
+    } finally {
+      if (context) context._hitStampCollector = previousCollector;
+    }
+    computed.hitStamps = stamps;
+    const result = Object.freeze(computed);
+    if (cache) {
+      // Teto de memoria, nao de reuso. Cada entrada segura o veredito deterministico e o
+      // de leech com os encaixes por hit dentro, e uma sessao de pack grande mantem ~50 mil
+      // entradas vivas por varredura — sem teto nenhum, o dump do corpus inteiro estoura
+      // 8 GB de heap. O teto e alto DE PROPOSITO: ele so existe para o caso patologico.
+      //
+      // Medido em `15 sept` S0 (967.951 validacoes de bloco, 175 turnos):
+      //   sem teto          84,1% de acerto, 82,8 s, ~1,2 GB de cache vivo;
+      //   teto 50.000       84,1% de acerto, 84,4 s, 1 despejo — nada perdido;
+      //   teto 20.000       72,4% de acerto, 144,8 s — o teto corta DENTRO da varredura.
+      //
+      // O teto tem que ficar acima do conjunto de trabalho de uma varredura; o que mantem
+      // a memoria sob controle no caso normal nao e ele, e o fato de o cache morrer junto
+      // com o de reversao (`invalidateReversalCache`), 4-6 vezes por sessao.
+      if (cache.size >= BLOCK_CACHE_MAX_ENTRIES) {
+        // Descarta a METADE MAIS ANTIGA, nao o cache inteiro: um Map itera na ordem de
+        // insercao. Despejar nunca muda resultado — isto e memo puro.
+        let drop = cache.size >> 1;
+        for (const oldest of cache.keys()) {
+          cache.delete(oldest);
+          if (--drop <= 0) break;
+        }
+        cache.evictions++;
+      }
+      cache.set(key, result);
+    }
+    return result;
+  }
+
+  function computeBlockValidation(block, element, context, turn) {
     const modes = gravSanModesForBlock(block, context);
     const results = [];
     for (const mode of modes) {
@@ -1857,24 +2069,13 @@
       if (block.comp === 'rune') element = action && action.profile ? action.profile.element : 'unknown';
 
       const modeResult = validateBlockDeterministicAndLeechWithGravModes(block, element, context, turn);
-      const det = modeResult.deterministic;
-      const leech = modeResult.leech;
-      block.gravSanActive = modeResult.gravSanActive;
-      block.gravSanTested = modeResult.gravSanTested;
-      block.gravSanModeCandidates = modeResult.gravSanModeCandidates;
-      block.deterministic = det;
-      // M-039: a atribuicao de omega pertence a ESTE bloco desta particao candidata. Os
-      // objetos de hit sao compartilhados entre todas as particoes, entao o rotulo NAO
-      // pode ser gravado no hit aqui — so quando a particao vencedora for consolidada.
-      block.omegaHits = (det && det.omegaHits) || null;
+      // C1: uma chamada aplica o resultado no bloco — inclusive os efeitos por hit e as
+      // copias de deterministic/leech que o motor muta a jusante.
+      const applied = applyBlockResult(block, modeResult);
+      const det = applied.det;
+      const leech = applied.leech;
       diagnostics.push({ kind: 'deterministic', block, result: det, gravSanActive: block.gravSanActive, gravSanTested: block.gravSanTested });
       if (!det.ok) violations.push(Object.assign({ block }, det));
-
-      if (leech && leech.virtualZeroHits && leech.virtualZeroHits.length) {
-        block.virtualZeroHits = leech.virtualZeroHits;
-        block.hits = block.hits.concat(leech.virtualZeroHits);
-      }
-      block.leech = leech;
       diagnostics.push({ kind: 'leech', block, result: leech, gravSanActive: block.gravSanActive, gravSanTested: block.gravSanTested });
       if (block.comp === 'grenade') {
         const impactTimestamps = new Set(block.hits.map(h => Number.isFinite(h.ordTs) ? h.ordTs : h.ts));
@@ -3170,6 +3371,9 @@
     blockValidationScoreForMode,
     compareBlockModeResult,
     validateBlockDeterministicAndLeechWithGravModes,
+    computeBlockValidation,
+    blockValidationKey,
+    applyBlockResult,
     validateLeechBlockOfficialRates,
     validateCandidate,
     timestampSplitPenalty,

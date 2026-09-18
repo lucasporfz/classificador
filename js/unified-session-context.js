@@ -77,6 +77,7 @@
     'consolidatedRuneUses',
     'grenadeAssignmentOnly',
     '_revCache',
+    '_blockCache',
   ]);
 
   // --- HitScope: escopo dinamico por bloco/hit. ---
@@ -201,6 +202,10 @@
   // (`Map.clear()`), nos mesmos pontos de sempre — ver o cabecalho.
   function invalidateReversalCache(context) {
     if (context && context._revCache) context._revCache.clear();
+    // C1: o cache de validacao de bloco tem o MESMO lifetime do cache de reversao —
+    // ele memoiza exatamente o que a reversao alimenta, e por isso morre nos mesmos
+    // pontos, nao num lifetime proprio.
+    if (context && context._blockCache) context._blockCache.clear();
   }
 
   // Passe de SONDAGEM: as acoes da varredura em curso ficam escondidas (nenhum
@@ -252,7 +257,10 @@
   // que nao devem povoar o cache global da sessao. Mesma forma do
   // `Object.assign({}, context, { _revCache: new Map() })` de sempre.
   function deriveWithFreshReversalCache(context) {
-    return Object.assign({}, context || {}, { _revCache: new Map() });
+    // O derivado e um objeto PLANO (o Object.assign copia os accessors como valores),
+    // entao ele nao tem `setup` e a memoizacao de bloco ja fica desligada nele; o
+    // `_blockCache: null` deixa isso explicito em vez de herdar o Map da sessao.
+    return Object.assign({}, context || {}, { _revCache: new Map(), _blockCache: null });
   }
 
   // --- HitScope: um construtor nomeado por campo. ---------------------------
@@ -276,6 +284,72 @@
     return context ? context.gravSanHitOverride : undefined;
   }
 
+  // --- Identidade: o valor que C1 usa para chavear -------------------------
+  //
+  // Ids de identidade por objeto (um inteiro por objeto, para a vida do processo).
+  // Servem para dizer "e o MESMO turno / a MESMA acao / o MESMO turn.actions" sem
+  // depender de campo de dominio: `turn.ts` nao identifica turno (o assignment de
+  // granada clona turnos com hits concatenados) e acao nao tem id estavel.
+  const identityIds = new WeakMap();
+  let nextIdentityId = 1;
+
+  function identityId(value) {
+    if (value === null || (typeof value !== 'object' && typeof value !== 'function')) return 0;
+    let id = identityIds.get(value);
+    if (id === undefined) {
+      id = nextIdentityId++;
+      identityIds.set(value, id);
+    }
+    return id;
+  }
+
+  // Impressao digital do SessionSetup: a identidade dos 11 campos, memoizada por
+  // record (o record e congelado e substituido INTEIRO, entao isto e calculado uma
+  // vez por epoch).
+  //
+  // POR QUE NAO O `epoch`. O epoch e monotonico: todo probe de hipotese de setup faz
+  // save/restore, e o restore cria um record NOVO com o MESMO conteudo e um epoch
+  // maior. Chavear cache por epoch puro jogaria o cache fora a cada probe — e os
+  // probes dominam (o epoch chega a 130 numa sessao de 161 turnos em `murcion`). A
+  // impressao digital volta a ser igual no restore, entao o cache sobrevive a sonda.
+  //
+  // Os dois tem exatamente a mesma exposicao a mutacao ANINHADA de setup (nenhum dos
+  // dois a enxerga). O que sustenta os dois e a invariante de C2: setup e substituido,
+  // nunca mutado em-lugar.
+  const setupFingerprints = new WeakMap();
+
+  function setupFingerprint(context) {
+    const record = context && context.setup;
+    if (!record) return null;
+    let fingerprint = setupFingerprints.get(record);
+    if (fingerprint === undefined) {
+      const parts = [];
+      for (const field of SETUP_FIELDS) {
+        const value = record[field];
+        parts.push(value !== null && (typeof value === 'object' || typeof value === 'function')
+          ? '#' + identityId(value)
+          : 'v' + String(value));
+      }
+      fingerprint = parts.join(',');
+      setupFingerprints.set(record, fingerprint);
+    }
+    return fingerprint;
+  }
+
+  // O cache de bloco mora no ResolutionState, ao lado do `_revCache`.
+  function blockCacheFor(context) {
+    if (!context) return null;
+    let cache = context._blockCache;
+    if (!cache) {
+      cache = new Map();
+      cache.hits = 0;
+      cache.misses = 0;
+      cache.evictions = 0;
+      context._blockCache = cache;
+    }
+    return cache;
+  }
+
   const API = {
     SETUP_FIELDS,
     RESOLUTION_FIELDS,
@@ -292,6 +366,9 @@
     deriveWithFreshReversalCache,
     withHitScopeField,
     gravSanOverrideOf,
+    identityId,
+    setupFingerprint,
+    blockCacheFor,
   };
 
   root.UnifiedSessionContext = API;

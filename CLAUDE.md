@@ -96,6 +96,46 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
+**Medição de C1 (17/Set/2026, `block-validation-identity`, otimização, drift ZERO, 4,79×).**
+C1 do survey `reports/architecture-deepening-candidates.md`, passo 2 da sequência (C2 → **C1** → C3).
+A validação de bloco virou um par pedido/resultado: `blockValidationKey` resume a entrada,
+`validateBlockDeterministicAndLeechWithGravModes` devolve um resultado **congelado e memoizado**, e
+**`applyBlockResult` é o único ponto de mutação do bloco**. Baseline (`d835fa8`): 46/54 alvos,
+gabarito 237/238, invariantes 42/43, dump 21.101 linhas, `15 sept` em 1137,2 s. Depois: **47/55**
+(o alvo a mais é `tests/unified-block-validation-identity.test.mjs`, verde), **as mesmas 8 falhas**,
+gabarito 237/238, invariantes 42/43, **diff do dump VAZIO** e `15 sept` em **237,2 s (4,79×)**. A
+saída do `run-unified-checks` é byte-idêntica à do baseline a menos do teste novo. Nenhuma regra
+mudou; `docs/CLASSIFICATION_RULES.md` não foi tocado. Detalhes em
+`reports/c1-block-validation-identity.md`.
+
+**A chave é a parte delicada, e três coisas nela são decisão medida:** (a) ela usa a **impressão
+digital** do `SessionSetup` (identidade dos 11 campos, memoizada por record), **não** o `epoch` —
+o epoch é monotônico e todo probe de setup faz save/restore, então chavear por ele mataria o cache
+a cada sonda (o epoch chega a 130 numa sessão de 161 turnos); (b) `turn.actions` entra pelo
+**conteúdo**, não pela identidade do objeto, que é reconstruído a cada `resolveTurnInner` — chavear
+pela identidade custa 84,1% → 61,7% de acerto; (c) `_omegaCrossStateTolerance` **entra** na chave
+(é derivado em relação à resolução, mas entrada em relação ao bloco), enquanto `_activeCritKey` e
+`_omegaAssignment` **não podem** entrar: se um deles estiver armado na entrada, a memoização
+desliga. Com contexto montado à mão (teste, ferramenta de diagnóstico) o cache também fica
+desligado. **`_revCache` continua não chaveado por `epoch`** — a inconsistência dos dois probes de
+`bmPierce` segue declarada, para C3.
+
+**Armadilha achada nesta change, e que o protótipo de 4.1 nunca exercitou:** dois validadores
+determinísticos **escrevem rótulos nos objetos de hit**, que são compartilhados por todas as
+partições — `validateTerraBurstBonusBlock` (`terraBurstBonus*`) e `validateBeamSublineBlock`
+(`beamSide`, `beamMastery*`, que também apaga). Esses rótulos são lidos **depois** da resolução
+(`unified-turn-resolution.js:1386`, `unified-main.js`, `tools/gabarito-unified.mjs`, dois testes).
+Memoizar sem tratar isso pula a escrita e muda o rótulo exibido — `15 sept` não tem Terra Burst nem
+Beam, por isso o protótipo não viu. Agora a escrita é **efeito registrado** (`recordHitStamp`),
+reaplicado por `applyBlockResult` na ordem de execução, no acerto e na falta de cache.
+
+**Consequência operacional: `node tools/dump-unified.mjs` sem `--pair` estoura 8 GB.** O cache custa
+**+260 MB de pico** por sessão viva (2540 → 2800 MB em `15 sept` S0), e o dump monolítico, que já
+acumulava os 43 pares num processo só, passou a cruzar o limite. O dump completo agora sai por
+**`node tools/dump-unified-per-pair.mjs`** (um processo por par, na ordem de `discoverPairs()`,
+filtrando por nome exato porque `--pair` casa por substring). Verificado: 21.101 linhas
+byte-idênticas ao dump monolítico.
+
 **Medição de C2 (17/Set/2026, `session-context-records`, refactor de estrutura, drift ZERO).**
 C2 do survey `reports/architecture-deepening-candidates.md`: o saco `context` (40 campos, tres
 naturezas misturadas) virou tres records com lifetime declarado, em `js/unified-session-context.js`
