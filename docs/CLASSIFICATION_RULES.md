@@ -421,13 +421,24 @@
   dentro de um bloco de AA: o bloco é um componente só, logo todos os seus hits vêm do mesmo
   `O`, e um pierce faltante desloca `d = f(dmg, physicalModEff, …)` de forma **diferente por
   mob**, porque `effectiveMod` é não-linear no `physicalDmgMod` base (enche 1:1 até `1,0` e
-  conta metade do excedente). Métrica: `margem = min(upper) − max(lower)` sobre os hits
-  não-overkill e não-prey do bloco; negativa ⇒ bloco vazio. Tiers avaliados: **`[0; 0,09]`**.
-  O tier selecionado é aquele em que **nenhum** bloco elegível fica vazio, e só é adotado se
-  for o **único** a satisfazer isso. Bloco elegível: componente `arrow` de turno resolvido com
-  **≥ 3 hits** não-overkill e **≥ 2 mobs distintos** (mesmo piso de H-003; sem mob distinto
-  não há o que discriminar). O detector **não reclassifica** por tier — reusa os blocos de uma
-  resolução já feita e refaz só `physicalOriginalInterval`.
+  conta metade do excedente). O teste físico canônico é `validatePhysicalBlock` sobre os hits
+  não-overkill e não-prey; um tier contradiz a testemunha quando a interseção física não fecha
+  em todos os modos admissíveis. Tiers avaliados: **`[0; 0,09]`**. O tier selecionado é aquele
+  em que **nenhum** bloco testemunha fica vazio, e só é adotado se for o **único** a satisfazer
+  isso. Um bloco testemunha precisa de **≥ 3 hits** não-overkill e não-virtual e **≥ 2 mobs
+  distintos** (mesmo piso de H-003; sem mob distinto não há o que discriminar). O teste por tier
+  é feito sobre as testemunhas selecionadas no
+  caminho canônico; ele não adota uma classificação integral alternativa da sessão.
+
+  **Seleção da testemunha antes do tier.** Para evitar circularidade com a resolução sob
+  pierce `0`, o detector seleciona testemunhas nos turnos brutos: exige exatamente um cast
+  ofensivo de spell do dono, sem runa nem granada disponível, e confirmação de leech em cada
+  bloco candidato. Para cada fronteira `arrow → spell` apoiada, preserva somente o prefixo AA
+  comum quando há mais de uma fronteira; modos admissíveis de grav san permanecem alternativas.
+  A posse de granada é sondada nos dois tiers e só é congelada quando coincide entre eles.
+  O teste de cada tier usa `validatePhysicalBlock` com a mesma chave crítica e o mesmo conjunto
+  de modos; um tier contradiz a testemunha apenas quando falha em todos os modos. A adoção de
+  `0,09` continua exigindo corroboração de **≥ 3 blocos, ≥ 2 turnos e ≥ 2 mobs**.
 
   **Abstém-se (D-006) devolvendo `0`** quando mais de um tier satisfaz o critério, quando
   nenhum satisfaz, ou quando há menos de 3 blocos elegíveis. Mais de um tier significa que a

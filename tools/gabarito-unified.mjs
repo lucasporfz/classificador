@@ -138,6 +138,20 @@ const savageBlowIdentityCheck = turn => {
   return mislabeled.length ? `savageBlow marcado tambem como lowBlow em ${mislabeled.length} hits` : null;
 };
 export const CASES = [
+  // M-036/M-039/S-007: eight observed physical hits, no offensive action;
+  // the unobserved midpoint of normal/Omega charm damage cannot add slime +3%.
+  C('15 sept/03:31:24-bestiary-omega-witness', '15 sept Server Log.txt', '15 sept Local Chat.txt', '03:31:24',
+    sharedCountCheck({ arrow: 8, spell: 0, rune: 0, grenade: 0 }), '15/Sep/2026'),
+  // M-040: testemunhas de AA físico selecionadas por leech passam a resolver sob o
+  // tier único de 0,09% nas quatro sessões do mesmo log.
+  C('15 sept/S0/03:24:34-physical-pierce-witness', '15 sept Server Log.txt', '15 sept Local Chat.txt', '03:24:34',
+    sharedCountCheck({ arrow: 6, spell: 5, rune: 0, grenade: 0 }), '15/Sep/2026'),
+  C('15 sept/S1/03:31:31-physical-pierce-witness', '15 sept Server Log.txt', '15 sept Local Chat.txt', '03:31:31',
+    sharedCountCheck({ arrow: 7, spell: 11, rune: 0, grenade: 0 }), '15/Sep/2026'),
+  C('15 sept/S2/03:38:03-physical-pierce-witness', '15 sept Server Log.txt', '15 sept Local Chat.txt', '03:38:03',
+    sharedCountCheck({ arrow: 9, spell: 9, rune: 0, grenade: 10 }), '15/Sep/2026'),
+  C('15 sept/S3/04:54:33-physical-pierce-witness', '15 sept Server Log.txt', '15 sept Local Chat.txt', '04:54:33',
+    sharedCountCheck({ arrow: 12, spell: 11, rune: 0, grenade: 13 }), '15/Sep/2026'),
   // ms boss S25: Ultimate Healing é tentativa observada, não ação ofensiva.
   // O cast concreto de Energy Wave no mesmo segundo explica o único hit.
   C('ms boss/22:19:01-energy-wave', 'ms boss server log.txt', 'ms boss local chat.txt', '22:19:01',

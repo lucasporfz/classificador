@@ -1262,62 +1262,99 @@
   const WEAPON_PIERCE_MIN_BLOCK_MOBS = 2;   // sem mob distinto nao ha o que discriminar
   const WEAPON_PIERCE_MIN_BLOCKS = 3;
 
-  function weaponPierceEligibleBlocks(resolvedTurns) {
-    const blocks = [];
-    for (const turn of resolvedTurns || []) {
-      if (!turn || turn.status !== 'resolved') continue;
-      for (const comp of turn.components || []) {
-        if (!comp || comp.comp !== 'arrow') continue;
-        const hits = (comp.hits || []).filter(h => h && !h.overkill && !h.isPrey && h.dmg != null);
-        if (hits.length < WEAPON_PIERCE_MIN_BLOCK_HITS) continue;
-        const mobs = new Set(hits.map(h => normalizeName(h.mob)).filter(Boolean));
-        if (mobs.size < WEAPON_PIERCE_MIN_BLOCK_MOBS) continue;
-        blocks.push({ ts: turn.ts, hits, mobs });
-      }
-    }
-    return blocks;
-  }
-
-  // margem = min(upper) - max(lower). Negativa => a intersecao fisica do bloco e vazia.
-  function weaponPierceBlockMargin(block, context) {
-    let lower = -Infinity, upper = Infinity, known = 0;
-    for (const hit of block.hits) {
-      const rev = physicalOriginalInterval(hit, context);
-      if (!rev || !rev.interval) continue;
-      if (rev.interval[0] > lower) lower = rev.interval[0];
-      if (rev.interval[1] < upper) upper = rev.interval[1];
-      known++;
-    }
-    if (known < WEAPON_PIERCE_MIN_BLOCK_HITS) return null;
-    return upper - lower;
-  }
-
-  function weaponPierceEvaluateTier(blocks, context, tier) {
-    const previous = context.weaponPhysicalPierce;
-    const previousCache = context._revCache;
-    context.weaponPhysicalPierce = tier;
-    context._revCache = new Map();
-    try {
-      const margins = blocks.map(b => weaponPierceBlockMargin(b, context));
-      const empty = [];
-      margins.forEach((m, i) => { if (m != null && m < 0) empty.push(blocks[i]); });
-      const measured = margins.filter(m => m != null).length;
-      return { tier, measured, empty, qualifies: measured > 0 && empty.length === 0 };
-    } finally {
-      context.weaponPhysicalPierce = previous;
-      context._revCache = previousCache;
-    }
-  }
-
-  function inferWeaponPhysicalPierce(resolvedTurns, context) {
+  function inferWeaponPhysicalPierce(turns, facts, context) {
     const inactive = source => ({ pierce: 0, active: false, source, tiers: WEAPON_PHYSICAL_PIERCE_TIERS, corroboration: null });
     // S-007b: em sessao de municao de area elemental a metrica e ruido (`thunder arrow`
     // acusa 145 de 148 blocos vazios em TODO tier). O gate nao e otimizacao, e correcao.
     if (!context || context.aaElement !== 'physical') return inactive('aa_element_not_physical');
-    const blocks = weaponPierceEligibleBlocks(resolvedTurns);
-    if (blocks.length < WEAPON_PIERCE_MIN_BLOCKS) return inactive('insufficient_eligible_blocks');
+    const savedProbeState = SessionContext.enterProbeResolutionState(context);
+    const previousPierce = context.weaponPhysicalPierce;
+    const previousPreassigned = context.preassignedGrenadeCasts;
+    try {
+      const assignments = WEAPON_PHYSICAL_PIERCE_TIERS.map(tier => {
+        context.weaponPhysicalPierce = tier;
+        SessionContext.invalidateReversalCache(context);
+        const probeTurns = (turns || []).map(t => Object.assign({}, t, {
+          hits: (t.hits || []).map(h => Object.assign({}, h, { omegaActive: false })),
+        }));
+        return buildGrenadeCastAssignments(probeTurns, facts, context);
+      });
+      context.weaponPhysicalPierce = previousPierce;
+      SessionContext.invalidateReversalCache(context);
+      context.preassignedGrenadeCasts = new Map(
+        [...(assignments[0] || [])].filter(([cast, ts]) => assignments[1] && assignments[1].get(cast) === ts),
+      );
 
-    const evaluations = WEAPON_PHYSICAL_PIERCE_TIERS.map(t => weaponPierceEvaluateTier(blocks, context, t));
+      const evidence = [];
+      for (const input of turns || []) {
+        const turn = Object.assign({}, input, {
+          hits: (input.hits || []).map(h => Object.assign({}, h, { omegaActive: false })),
+        });
+        const actions = actionsNearTurn(turn, facts, context);
+        turn.actions = actions;
+        if (actions.spellCasts.length !== 1 || actions.runeUses.length || actions.grenadeCasts.length) continue;
+
+        const supportModes = block => {
+          block.action = chooseActionForComponent(block.comp, block.hits, actions);
+          if (!validateCritHomogeneity(block).ok) return [];
+          const result = gravSanModesForBlock(block, context).filter(mode => withGravSanBlockMode(context, block, mode, () => {
+            const verdict = validateLeechBlock(block, context, turn);
+            const clean = block.hits.filter(h => !h.overkill && !h.virtual && !h.zeroDamageDodge);
+            const channels = clean.flatMap(h => ['life', 'mana'].map(channel => ({
+              observed: channel === 'life' ? h.lifeLeech : h.manaLeech,
+              fit: observedLeechAcceptsN(h, context.leechSetup, block.hits.length, channel, block, context),
+            })));
+            return verdict.ok
+              && !verdict.virtualZeroHits?.length
+              && channels.some(x => x.observed > 0 && x.fit.usable && x.fit.ok)
+              && !channels.some(x => x.fit.tooHigh);
+          }));
+          return result;
+        };
+
+        if (['arrow', 'spell'].some(comp =>
+          supportModes(candidateFromShape(turn, [comp], [turn.hits.length]).components[0]).length,
+        )) continue;
+
+        const cuts = [];
+        for (let n = 1; n < turn.hits.length; n++) {
+          const candidate = candidateFromShape(turn, ['arrow', 'spell'], [n, turn.hits.length]);
+          const modes = candidate.components.map(supportModes);
+          if (modes.every(m => m.length)) cuts.push({ components: candidate.components, modes, n });
+        }
+        if (!cuts.length) continue;
+
+        let chosen = cuts[0];
+        if (cuts.length > 1) {
+          chosen = {
+            components: [cuts[0].components[0]],
+            modes: [[...new Set(cuts.flatMap(c => c.modes[0]))]],
+          };
+        }
+        for (let i = 0; i < chosen.components.length; i++) {
+          const block = chosen.components[i];
+          if (block.comp !== 'arrow' && block.action?.profile?.element !== 'physical') continue;
+          const hits = block.hits.filter(h => !h.overkill && !h.isPrey && !h.virtual && !h.zeroDamageDodge && h.dmg != null);
+          const mobs = new Set(hits.map(h => normalizeName(h.mob)).filter(Boolean));
+          if (hits.length < WEAPON_PIERCE_MIN_BLOCK_HITS || mobs.size < WEAPON_PIERCE_MIN_BLOCK_MOBS) continue;
+          const tests = WEAPON_PHYSICAL_PIERCE_TIERS.map(tier => {
+            context.weaponPhysicalPierce = tier;
+            SessionContext.invalidateReversalCache(context);
+            return chosen.modes[i].some(mode => withGravSanBlockMode(context, block, mode, () =>
+              validatePhysicalBlock(Object.assign({}, block, { hits }), context).ok,
+            ));
+          });
+          evidence.push({ ts: turn.ts, hits: hits.length, mobs, tests });
+        }
+      }
+
+      if (evidence.length < WEAPON_PIERCE_MIN_BLOCKS) return inactive('insufficient_eligible_blocks');
+      const evaluations = WEAPON_PHYSICAL_PIERCE_TIERS.map((tier, index) => ({
+        tier,
+        measured: evidence.length,
+        empty: evidence.filter(e => !e.tests[index]),
+        qualifies: evidence.every(e => e.tests[index]),
+      }));
     const qualifying = evaluations.filter(e => e.qualifies);
     // D-006: mais de um tier qualificado significa que a sessao NAO discrimina, nao que o
     // perk existe; nenhum qualificado significa bloco contaminado. Nos dois casos, abstem-se.
@@ -1330,12 +1367,12 @@
     // Corroboracao exigida por M-040: os blocos que o tier destrava tem de ser varios, em
     // turnos distintos e mobs distintos -- um unico bloco contaminado nao pode eleger o perk.
     const baseline = evaluations.find(e => e.tier === 0);
-    const unlocked = baseline ? baseline.empty : [];
+    const unlocked = baseline ? baseline.empty.filter(e => e.tests[1]) : [];
     const corroboration = {
       blocks: unlocked.length,
       turns: new Set(unlocked.map(b => b.ts)).size,
       mobs: new Set(unlocked.flatMap(b => Array.from(b.mobs))).size,
-      eligibleBlocks: blocks.length,
+      eligibleBlocks: evidence.length,
     };
     return {
       pierce: chosen.tier,
@@ -1344,6 +1381,11 @@
       tiers: WEAPON_PHYSICAL_PIERCE_TIERS,
       corroboration,
     };
+    } finally {
+      context.weaponPhysicalPierce = previousPierce;
+      context.preassignedGrenadeCasts = previousPreassigned;
+      SessionContext.exitProbeResolutionState(context, savedProbeState);
+    }
   }
 
   // M-042 — ESCADA de Combat Mastery no canal de testemunha de charm.
@@ -1604,10 +1646,25 @@
       const stanceMultiplier = knightStanceMultiplierForStance(stance);
       const expected = mods.hitpoints * 0.05 * mit * mod * stanceMultiplier;
       if (!(expected > 0)) continue;
-      const observed = median(values);
+      let observed = median(values);
       // M-042: sob escada, o teste deixa de ser igualdade contra a mediana e passa a ser
       // limite superior contra o MENOR nivel — por isso a linha carrega os dois.
       const levels = charmWitnessLevels(values);
+      if (!(ladder && ladder.active)) {
+        // M-036/M-039: a midpoint between observed base and Omega is not a
+        // uniform reward. Reuse the anchored, repeated levels of the witness.
+        const anchor = levels.find(level =>
+          Math.abs(level - expected) <= Math.max(2, expected * CHARM_EXPECTED_TOLERANCE_RATIO));
+        if (anchor != null && levels.some(level => level !== anchor &&
+          Math.abs(level - anchor * OMEGA_MULTIPLIER) <=
+            Math.max(2, anchor * OMEGA_MULTIPLIER * CHARM_EXPECTED_TOLERANCE_RATIO))) {
+          observed = anchor;
+        }
+        // D-006: three samples spread across states do not establish a third,
+        // unobserved level. Apply the existing repetition floor to the witness.
+        if (values.filter(value => Math.abs(value - observed) <=
+          Math.max(2, expected * CHARM_EXPECTED_TOLERANCE_RATIO)).length < 3) continue;
+      }
       rows.push({ mob, element, ew, amp, stance, class: normalizeName(mods.bestiaryClass), observed, expected, ratio: observed / expected, n: values.length, levels, minLevel: levels.length ? levels[0] : null });
     }
     if (!rows.length) return { bonus: 0, multiplier: 1, class: null, source: 'no_mob_with_bestiary_class_and_hitpoints', rows };
@@ -2120,7 +2177,7 @@
       context.aaElement = aaElementDetection.element;
       // M-040: depois do eixo de AA (usa o gate aaElement === physical) e antes da
       // passada final, que e quem consome context.weaponPhysicalPierce na reversao.
-      weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(resolvedWithoutLeech, context);
+      weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(turns, facts, context);
       context.weaponPhysicalPierce = weaponPhysicalPierceDetection.pierce;
       SessionContext.invalidateReversalCache(context);
       // M-016e: sÃ³ depois do leech real (nÃ£o o bootstrap) Ã© que o cluster
@@ -2146,7 +2203,7 @@
       context.aaElement = aaElementDetection.element;
       // M-040: depois do eixo de AA (usa o gate aaElement === physical) e antes da
       // passada final, que e quem consome context.weaponPhysicalPierce na reversao.
-      weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(pass1, context);
+      weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(turns, facts, context);
       context.weaponPhysicalPierce = weaponPhysicalPierceDetection.pierce;
       SessionContext.invalidateReversalCache(context);
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
