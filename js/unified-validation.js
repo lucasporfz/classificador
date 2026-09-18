@@ -627,7 +627,11 @@
   //
   // `candidatesOf(hit, marked)` devolve o conjunto/intervalo de originais do hit sob a
   // hipotese; `reaches(candidates, o)` diz se aquele nivel e alcancavel.
-  function findOmegaAssignmentByLevel(hits, candidatesOf, reaches, levelsOf) {
+  //
+  // `hullOf(candidates)` (opcional) devolve `[lo, hi]` tal que `reaches(candidates, o)` e
+  // falso para todo `o` fora dele. So desempenho: um nivel fora do envelope de ALGUMA
+  // linha falha naquela linha de qualquer jeito, entao pular esse nivel nao muda `found`.
+  function findOmegaAssignmentByLevel(hits, candidatesOf, reaches, levelsOf, hullOf) {
     const rows = [];
     for (const h of hits) {
       const no = candidatesOf(h, false);
@@ -635,10 +639,26 @@
       rows.push({ hit: h, no, yes: candidatesOf(h, true) });
     }
     if (!rows.length) return null;
+    let minLevel = -Infinity;
+    let maxLevel = Infinity;
+    if (hullOf) {
+      for (const r of rows) {
+        const a = hullOf(r.no);
+        let lo = a[0], hi = a[1];
+        if (r.yes) {
+          const b = hullOf(r.yes);
+          if (b[0] < lo) lo = b[0];
+          if (b[1] > hi) hi = b[1];
+        }
+        if (lo > minLevel) minLevel = lo;
+        if (hi < maxLevel) maxLevel = hi;
+      }
+      if (minLevel > maxLevel) return null;
+    }
     const levels = new Set();
     for (const r of rows) {
-      for (const v of levelsOf(r.no)) levels.add(v);
-      if (r.yes) for (const v of levelsOf(r.yes)) levels.add(v);
+      for (const v of levelsOf(r.no)) if (v >= minLevel && v <= maxLevel) levels.add(v);
+      if (r.yes) for (const v of levelsOf(r.yes)) if (v >= minLevel && v <= maxLevel) levels.add(v);
     }
     const found = [];
     for (const o of [...levels].sort((a, b) => a - b)) {
@@ -683,10 +703,21 @@
     if (base.reason !== 'physical_intersection_empty') return base;
     const hits = block.hits.filter(h => !h.overkill && !h.zeroDamageDodge);
     if (hits.length < 2) return base;
+    // Os candidatos por hit so dependem do contexto, que e o mesmo nas duas tolerancias
+    // (o `retry` restaura o escopo ao sair): calculados uma vez.
+    const intervalsByHit = new Map();
     const intervalOf = (hit, marked) => {
+      let pair = intervalsByHit.get(hit);
+      if (pair === undefined) {
+        pair = [undefined, undefined];
+        intervalsByHit.set(hit, pair);
+      }
+      const slot = marked ? 1 : 0;
+      if (pair[slot] !== undefined) return pair[slot];
       const ev = withOmegaAssignment(context, new Set([hit]), marked ? new Set([hit]) : EMPTY_OMEGA_SET,
         () => physicalOriginalInterval(hit, context));
-      return ev && ev.known && ev.interval ? ev.interval : null;
+      pair[slot] = ev && ev.known && ev.interval ? ev.interval : null;
+      return pair[slot];
     };
     for (const tolerance of [0, PHYSICAL_INTERSECTION_TOLERANCE]) {
       const found = findOmegaAssignmentByLevel(
@@ -694,6 +725,7 @@
         intervalOf,
         (iv, o) => o >= iv[0] - tolerance && o <= iv[1] + tolerance,
         iv => [iv[0], iv[1]],
+        iv => [iv[0] - tolerance, iv[1] + tolerance],
       );
       if (!found) continue;
       if (found.tied) return base;
@@ -1391,6 +1423,8 @@
       originalsOf,
       (originals, o) => originals.some(v => Math.abs(v - o) <= tolerance),
       originals => originals,
+      // `originals` sai ordenado de elementalOriginalCandidates.
+      originals => [originals[0] - tolerance, originals[originals.length - 1] + tolerance],
     );
     if (!found) return base;
     // Mesma disciplina do eixo fisico: duas atribuicoes minimas DISTINTAS que fecham sao

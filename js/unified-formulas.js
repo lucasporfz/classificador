@@ -1096,8 +1096,9 @@
   // Mesmo efeito de grav san que `gravSanMultiplierAtTs(context, hit.ts, hit)` aplica.
   function gravSanActiveBitForHit(hit, context) {
     const setup = context.gravSanSetup;
-    if (!setup || !(setup.bonus > 0) || !Number.isFinite(+hit.ts)) return 0;
-    if (!gravSanHitInWindow(context, hit)) return 0;
+    const ts = +hit.ts;
+    if (!setup || !(setup.bonus > 0) || !Number.isFinite(ts)) return 0;
+    if (!gravSanWindowsContain(setup.windows, ts)) return 0;
     const overrides = context.gravSanHitOverride;
     const id = hit.id;
     if (overrides && id != null && Object.prototype.hasOwnProperty.call(overrides, id)) return overrides[id] ? 1 : 0;
@@ -1105,20 +1106,26 @@
   }
 
   function hitReversalKey(hit, kindId, context, terraBurstBonusMultiplier) {
-    const fp = root.UnifiedSessionContext.setupFingerprintId(context);
+    const fp = sessionContextApi().setupFingerprintId(context);
     if (fp == null) return null;
     // `criticalMultiplierForHit` so le a chave quando o hit e `realCrit`.
     const critKey = hit.realCrit ? ((context._activeCritKey) || hit._compKey || '') : '';
-    const ck = internReversalId(reversalCritKeyIds, critKey, REVERSAL_CRIT_KEY_LIMIT);
-    const tb = internReversalId(reversalTerraIds, terraBurstBonusMultiplier, REVERSAL_TERRA_LIMIT);
+    const ck = critKey === '' ? 0 : internReversalId(reversalCritKeyIds, critKey, REVERSAL_CRIT_KEY_LIMIT);
+    const tb = terraBurstBonusMultiplier === 1 ? 0 : internReversalId(reversalTerraIds, terraBurstBonusMultiplier, REVERSAL_TERRA_LIMIT);
     if (ck == null || tb == null) return null;
     const g = gravSanActiveBitForHit(hit, context);
     const o = omegaActiveForHit(hit, context) ? 1 : 0;
     return ((((fp * REVERSAL_TERRA_LIMIT + tb) * REVERSAL_CRIT_KEY_LIMIT + ck) * 2 + o) * 2 + g) * 8 + kindId;
   }
 
+  // Resolvido uma vez: unified-session-context.js carrega antes deste arquivo.
+  let sessionContextApiRef = null;
+  function sessionContextApi() {
+    return sessionContextApiRef || (sessionContextApiRef = root.UnifiedSessionContext || null);
+  }
+
   function hitReversalMemo(context) {
-    const SC = root.UnifiedSessionContext;
+    const SC = sessionContextApi();
     if (!context || !context.setup || !SC || !SC.hitReversalMemoFor) return null;
     const revCache = context._revCache || (context._revCache = new Map());
     return SC.hitReversalMemoFor(context, revCache);
@@ -1131,7 +1138,7 @@
     const terraBurstBonusMultiplier = options && options.terraBurstBonusMultiplier > 1 ? +options.terraBurstBonusMultiplier : 1;
     const key = hitReversalKey(hit, kindId, context, terraBurstBonusMultiplier);
     if (key == null) return elementalOriginalCandidatesCore(hit, element, context, options);
-    const SC = root.UnifiedSessionContext;
+    const SC = sessionContextApi();
     const cached = SC.hitReversalMemoGet(memo, hit, key);
     if (cached !== undefined) return cached;
     const result = elementalOriginalCandidatesCore(hit, element, context, options);
@@ -1146,7 +1153,7 @@
     if (!memo || !hit) return physicalOriginalIntervalCore(hit, context);
     const key = hitReversalKey(hit, REVERSAL_KIND_IDS.physical, context, 1);
     if (key == null) return physicalOriginalIntervalCore(hit, context);
-    const SC = root.UnifiedSessionContext;
+    const SC = sessionContextApi();
     const cached = SC.hitReversalMemoGet(memo, hit, key);
     if (cached !== undefined) return cached;
     const result = physicalOriginalIntervalCore(hit, context);
@@ -1350,15 +1357,28 @@
     const setup = context && context.gravSanSetup;
     const ts = typeof hitOrTs === 'object' && hitOrTs ? +hitOrTs.ts : +hitOrTs;
     if (!setup || !(setup.bonus > 0) || !Number.isFinite(ts)) return false;
-    const windows = setup.windows;
+    return gravSanWindowsContain(setup.windows, ts);
+  }
+
+  // C3: pertinencia memoizada por (array de janelas, ts) — o mesmo `.some()` de
+  // sempre, calculado uma vez por segundo. As janelas nunca sao mutadas; um
+  // gravSanSetup novo traz array novo, e com ele memo novo. O par (ultimo array,
+  // ultimo memo) poupa o WeakMap no caso comum.
+  const gravSanWindowMemo = new WeakMap();
+  let lastGravSanWindows = null;
+  let lastGravSanWindowMemo = null;
+  function gravSanWindowsContain(windows, ts) {
     if (!windows || !windows.length) return false;
-    // C3: pertinencia memoizada por (array de janelas, ts) — o mesmo `.some()` de
-    // sempre, calculado uma vez por segundo. As janelas nunca sao mutadas; um
-    // gravSanSetup novo traz array novo, e com ele memo novo.
-    let memo = gravSanWindowMemo.get(windows);
-    if (memo === undefined) {
-      memo = new Map();
-      gravSanWindowMemo.set(windows, memo);
+    let memo;
+    if (windows === lastGravSanWindows) memo = lastGravSanWindowMemo;
+    else {
+      memo = gravSanWindowMemo.get(windows);
+      if (memo === undefined) {
+        memo = new Map();
+        gravSanWindowMemo.set(windows, memo);
+      }
+      lastGravSanWindows = windows;
+      lastGravSanWindowMemo = memo;
     }
     let inWindow = memo.get(ts);
     if (inWindow === undefined) {
@@ -1367,7 +1387,6 @@
     }
     return inWindow;
   }
-  const gravSanWindowMemo = new WeakMap();
 
   // A troca de postura vale a partir do segundo SEGUINTE ao cast: dentro de um mesmo
   // segundo nao existe ordem observavel entre a fala do Local Chat e a linha do Server

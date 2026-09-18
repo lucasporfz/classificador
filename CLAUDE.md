@@ -120,6 +120,14 @@ corrigida, por decisão:** o setter troca o setup, a camada 1 erra e cai na cama
 Resultados da camada 2 saem `Object.freeze` (escrita esquecida lança em vez de dar drift).
 `gravSanHitInWindow` ganhou memo por `(janelas, ts)`.
 
+**Adendo de C3 (18/Set/2026, neutro, drift ZERO): `15 sept` 149,4 s → 111,7 s** (33,8 / 33,6 /
+26,2 / 18,1; pico de S0 2101 MB; 10,3× contra antes de C1). Três coisas: poda exata de níveis em
+`findOmegaAssignmentByLevel` (parâmetro `hullOf`: nível fora do envelope de alguma linha falha nela
+de qualquer jeito); candidatos por hit calculados uma vez só em `validatePhysicalBlock` (não uma vez
+por tolerância); e caches de uma entrada (identidade) no caminho da chave de C3. Checks
+byte-idênticos, dump vazio. O resto do perfil está espalhado (leech, GC, acessores); o ganho grande
+restante é C6, que não é neutro por construção.
+
 **Medição de C1 (17/Set/2026, `block-validation-identity`, otimização, drift ZERO, 4,79×).**
 C1 do survey `reports/architecture-deepening-candidates.md`, passo 2 da sequência (C2 → **C1** → C3).
 A validação de bloco virou um par pedido/resultado: `blockValidationKey` resume a entrada,

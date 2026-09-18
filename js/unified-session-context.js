@@ -345,14 +345,23 @@
   // A impressao digital internada como inteiro, para entrar numa chave numerica.
   const setupFingerprintIds = new Map();
 
+  // Cache de uma entrada (so desempenho): o record e congelado e substituido inteiro,
+  // entao record identico => mesmo id.
+  let lastFingerprintRecord = null;
+  let lastFingerprintId = null;
+
   function setupFingerprintId(context) {
+    const record = context && context.setup;
+    if (!record) return null;
+    if (record === lastFingerprintRecord) return lastFingerprintId;
     const fingerprint = setupFingerprint(context);
-    if (fingerprint === null) return null;
     let id = setupFingerprintIds.get(fingerprint);
     if (id === undefined) {
       id = setupFingerprintIds.size + 1;
       setupFingerprintIds.set(fingerprint, id);
     }
+    lastFingerprintRecord = record;
+    lastFingerprintId = id;
     return id;
   }
 
@@ -385,13 +394,21 @@
     hitReversalMemoStats.resets++;
   }
 
+  // Cache de uma entrada (so desempenho): o memo e um objeto estavel por instancia de
+  // `_revCache` (reset limpa por dentro, nao troca o objeto).
+  let lastMemoRevCache = null;
+  let lastMemo = null;
+
   function hitReversalMemoFor(context, revCache) {
     if (!context || !context.setup || !revCache) return null;
+    if (revCache === lastMemoRevCache) return lastMemo;
     let memo = hitReversalMemos.get(revCache);
     if (!memo) {
       memo = { byHit: new Map(), entries: 0 };
       hitReversalMemos.set(revCache, memo);
     }
+    lastMemoRevCache = revCache;
+    lastMemo = memo;
     return memo;
   }
 
