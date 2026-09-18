@@ -1036,9 +1036,127 @@
     return normalizeName(mods.bestiaryClass) === setup.class ? setup.multiplier : 1;
   }
 
+  // --- C3: a reversao por hit e um valor congelado, memoizado pelas entradas ----
+  //
+  // `physicalOriginalInterval` / `elementalOriginalCandidates` devolvem o "hit
+  // enriquecido": dono dos escalares (mod, mitigation, post, crit, postIntervals) e
+  // da reversao (originals / interval). O resultado guardado no `_revCache`
+  // (camada 2, chaveada pelo VALOR dos escalares) e congelado; a camada 1
+  // (UnifiedSessionContext.hitReversalMemoFor) e consultada ANTES do prologo que
+  // resolve esses escalares, chaveada pelas ENTRADAS dele:
+  //
+  //   objeto hit        dmg, mob, ts, id, EW, amplification, prey, bounty, realCrit,
+  //                     onslaught, perfectShot, _compKey, Transcendence (funcao de ts)
+  //                     — nenhum e escrito depois do parse; `hit.id` nao serve
+  //                     (hits clonados/virtuais);
+  //   kind              'physical' ou o elemento;
+  //   setup             impressao digital dos 11 campos do SessionSetup (nao o epoch);
+  //   grav san          o efeito RESOLVIDO neste hit (janela x override x padrao);
+  //   crit key          `_activeCritKey` e ENTRADA no nivel do hit (o validador de
+  //                     bloco arma e depois reverte); so importa em hit `realCrit`;
+  //   omega             o bit RESOLVIDO (`_omegaAssignment` x `hit.omegaActive`, que
+  //                     e mutavel entre passadas);
+  //   terra burst       o multiplicador de bonus pedido (so elemental).
+  //
+  // Fora da chave, por serem fixos por contexto desde o topo de `buildContext` (e a
+  // camada 1 vive por contexto): tabelas de mob, sessionDateKey,
+  // useFloat16Mitigation, armorPenetration, transcendenceWindows.
+  const REVERSAL_KIND_IDS = { physical: 0 };
+  ELEMENTS.forEach((el, i) => { if (el !== 'physical') REVERSAL_KIND_IDS[el] = i + 1; });
+  const REVERSAL_CRIT_KEY_LIMIT = 4096;
+  const REVERSAL_TERRA_LIMIT = 64;
+  const reversalCritKeyIds = new Map([['', 0]]);
+  const reversalTerraIds = new Map([[1, 0]]);
+
+  function internReversalId(map, value, limit) {
+    let id = map.get(value);
+    if (id === undefined) {
+      if (map.size >= limit) return null;
+      id = map.size;
+      map.set(value, id);
+    }
+    return id;
+  }
+
+  function freezeReversalArray(arr) {
+    if (!Array.isArray(arr)) return;
+    for (const x of arr) if (Array.isArray(x)) Object.freeze(x);
+    Object.freeze(arr);
+  }
+
+  // Todo resultado que entra na camada 2 sai congelado (raso nos campos, mais os
+  // arrays que ele possui). `critSetup` e referencia ao setup vivo e nao e tocado.
+  function rememberReversal(revCache, cacheKey, result) {
+    freezeReversalArray(result.originals);
+    freezeReversalArray(result.postIntervals);
+    freezeReversalArray(result.interval);
+    revCache.set(cacheKey, Object.freeze(result));
+  }
+
+  // Mesmo efeito de grav san que `gravSanMultiplierAtTs(context, hit.ts, hit)` aplica.
+  function gravSanActiveBitForHit(hit, context) {
+    const setup = context.gravSanSetup;
+    if (!setup || !(setup.bonus > 0) || !Number.isFinite(+hit.ts)) return 0;
+    if (!gravSanHitInWindow(context, hit)) return 0;
+    const overrides = context.gravSanHitOverride;
+    const id = hit.id;
+    if (overrides && id != null && Object.prototype.hasOwnProperty.call(overrides, id)) return overrides[id] ? 1 : 0;
+    return 1;
+  }
+
+  function hitReversalKey(hit, kindId, context, terraBurstBonusMultiplier) {
+    const fp = root.UnifiedSessionContext.setupFingerprintId(context);
+    if (fp == null) return null;
+    // `criticalMultiplierForHit` so le a chave quando o hit e `realCrit`.
+    const critKey = hit.realCrit ? ((context._activeCritKey) || hit._compKey || '') : '';
+    const ck = internReversalId(reversalCritKeyIds, critKey, REVERSAL_CRIT_KEY_LIMIT);
+    const tb = internReversalId(reversalTerraIds, terraBurstBonusMultiplier, REVERSAL_TERRA_LIMIT);
+    if (ck == null || tb == null) return null;
+    const g = gravSanActiveBitForHit(hit, context);
+    const o = omegaActiveForHit(hit, context) ? 1 : 0;
+    return ((((fp * REVERSAL_TERRA_LIMIT + tb) * REVERSAL_CRIT_KEY_LIMIT + ck) * 2 + o) * 2 + g) * 8 + kindId;
+  }
+
+  function hitReversalMemo(context) {
+    const SC = root.UnifiedSessionContext;
+    if (!context || !context.setup || !SC || !SC.hitReversalMemoFor) return null;
+    const revCache = context._revCache || (context._revCache = new Map());
+    return SC.hitReversalMemoFor(context, revCache);
+  }
+
+  function elementalOriginalCandidates(hit, element, context, options) {
+    const memo = hitReversalMemo(context);
+    const kindId = REVERSAL_KIND_IDS[element];
+    if (!memo || !hit || kindId === undefined) return elementalOriginalCandidatesCore(hit, element, context, options);
+    const terraBurstBonusMultiplier = options && options.terraBurstBonusMultiplier > 1 ? +options.terraBurstBonusMultiplier : 1;
+    const key = hitReversalKey(hit, kindId, context, terraBurstBonusMultiplier);
+    if (key == null) return elementalOriginalCandidatesCore(hit, element, context, options);
+    const SC = root.UnifiedSessionContext;
+    const cached = SC.hitReversalMemoGet(memo, hit, key);
+    if (cached !== undefined) return cached;
+    const result = elementalOriginalCandidatesCore(hit, element, context, options);
+    // So o que a camada 2 guardou (congelado) entra na camada 1; as saidas antecipadas
+    // (mob sem mods, elemento zero, bounty desconhecido) continuam objetos novos.
+    if (Object.isFrozen(result)) SC.hitReversalMemoSet(memo, hit, key, result);
+    return result;
+  }
+
+  function physicalOriginalInterval(hit, context) {
+    const memo = hitReversalMemo(context);
+    if (!memo || !hit) return physicalOriginalIntervalCore(hit, context);
+    const key = hitReversalKey(hit, REVERSAL_KIND_IDS.physical, context, 1);
+    if (key == null) return physicalOriginalIntervalCore(hit, context);
+    const SC = root.UnifiedSessionContext;
+    const cached = SC.hitReversalMemoGet(memo, hit, key);
+    if (cached !== undefined) return cached;
+    const result = physicalOriginalIntervalCore(hit, context);
+    if (Object.isFrozen(result)) SC.hitReversalMemoSet(memo, hit, key, result);
+    return result;
+  }
+
   const STATIC_ELEMENTAL_MECHANICS_CACHE_LIMIT = 128;
   const staticElementalMechanicsByMods = new WeakMap();
-  function elementalOriginalCandidates(hit, element, context, options) {
+  function elementalOriginalCandidatesCore(hit, element, context, options) {
     const mods = getMobMods(hit.mob, context);
     if (!mods) return { known: false, originals: [], reason: 'mob_mods_absent' };
     const key = ELEMENT_KEYS[element];
@@ -1092,7 +1210,7 @@
     const cacheKey = revCache && ('E|' + element + '|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + terraBurstBonusMultiplier + '|' + perfectShotBonus);
     if (revCache && revCache.has(cacheKey)) return revCache.get(cacheKey);
     const postIntervals = inversePostMultiplierIntervals(+hit.dmg, post);
-    if (!postIntervals.length) { const r = { known: true, originals: [], reason: 'invalid_post_multiplier' }; if (revCache) revCache.set(cacheKey, r); return r; }
+    if (!postIntervals.length) { const r = { known: true, originals: [], reason: 'invalid_post_multiplier' }; if (revCache) rememberReversal(revCache, cacheKey, r); return r; }
 
     const collectOriginals = (intermediateTolerance) => {
       const out = new Set();
@@ -1147,11 +1265,11 @@
     }
 
     const result = { known: true, originals: Array.from(originals).sort((a, b) => a - b), mod, mitigation: mit, post, postIntervals, postInverse: 'floor_or_ceil', terraBurstBonusMultiplier, terraBurstBonusActive: terraBurstBonusMultiplier > 1, crit, critSetup: context && context.critSetup, intermediateToleranceUsed };
-    if (revCache) revCache.set(cacheKey, result);
+    if (revCache) rememberReversal(revCache, cacheKey, result);
     return result;
   }
 
-  function physicalOriginalInterval(hit, context) {
+  function physicalOriginalIntervalCore(hit, context) {
     const mods = getMobMods(hit.mob, context);
     if (!mods) return { known: false, interval: null, reason: 'mob_mods_absent' };
     if (!(mods.physicalDmgMod > 0)) return { known: true, interval: null, reason: 'physical_mod_absent_or_zero' };
@@ -1170,7 +1288,7 @@
     const cacheKey = revCache && ('P|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + perfectShotBonus + '|' + armorLow + '|' + armorHigh);
     if (revCache && revCache.has(cacheKey)) return revCache.get(cacheKey);
     const postIntervals = inversePostMultiplierIntervals(+hit.dmg, post);
-    if (!postIntervals.length) { const r = { known: true, interval: null, reason: 'invalid_post_multiplier' }; if (revCache) revCache.set(cacheKey, r); return r; }
+    if (!postIntervals.length) { const r = { known: true, interval: null, reason: 'invalid_post_multiplier' }; if (revCache) rememberReversal(revCache, cacheKey, r); return r; }
     // Onslaught soma +0.6 a um crÃ­tico jÃ¡ INFERIDO (mean/mean, nÃ£o exato). Nesse
     // multiplicador combinado, um dano especÃ­fico pode cair num "buraco" do
     // reticulado discreto (FLOOR/CEIL vazios) mesmo sendo um hit real do mesmo
@@ -1203,7 +1321,7 @@
     };
     let physIv = collectPhysical(0);
     if (!physIv && ELEMENTAL_INTERMEDIATE_TOLERANCE > 0) physIv = collectPhysical(ELEMENTAL_INTERMEDIATE_TOLERANCE);
-    if (!physIv) { const r = { known: true, interval: null, reason: 'invalid_mitigation_or_crit_inverse' }; if (revCache) revCache.set(cacheKey, r); return r; }
+    if (!physIv) { const r = { known: true, interval: null, reason: 'invalid_mitigation_or_crit_inverse' }; if (revCache) rememberReversal(revCache, cacheKey, r); return r; }
     const [aMin, aMax] = physIv;
 
     // Para dano final positivo, A = max(E - armorRoll, 0) precisa estar no intervalo positivo.
@@ -1214,7 +1332,7 @@
     const oMax = Math.floor(eMax / mod);
     const interval = oMax >= oMin ? [oMin, oMax] : null;
     const result = { known: true, interval, mod, mitigation: mit, post, postIntervals, postInverse: 'floor_or_ceil', crit, critSetup: context && context.critSetup, perfectShotBonus, armorEff, armorLow, armorHigh };
-    if (revCache) revCache.set(cacheKey, result);
+    if (revCache) rememberReversal(revCache, cacheKey, result);
     return result;
   }
 
@@ -1232,8 +1350,24 @@
     const setup = context && context.gravSanSetup;
     const ts = typeof hitOrTs === 'object' && hitOrTs ? +hitOrTs.ts : +hitOrTs;
     if (!setup || !(setup.bonus > 0) || !Number.isFinite(ts)) return false;
-    return (setup.windows || []).some(w => ts >= w.start && ts <= w.end);
+    const windows = setup.windows;
+    if (!windows || !windows.length) return false;
+    // C3: pertinencia memoizada por (array de janelas, ts) — o mesmo `.some()` de
+    // sempre, calculado uma vez por segundo. As janelas nunca sao mutadas; um
+    // gravSanSetup novo traz array novo, e com ele memo novo.
+    let memo = gravSanWindowMemo.get(windows);
+    if (memo === undefined) {
+      memo = new Map();
+      gravSanWindowMemo.set(windows, memo);
+    }
+    let inWindow = memo.get(ts);
+    if (inWindow === undefined) {
+      inWindow = windows.some(w => ts >= w.start && ts <= w.end);
+      memo.set(ts, inWindow);
+    }
+    return inWindow;
   }
+  const gravSanWindowMemo = new WeakMap();
 
   // A troca de postura vale a partir do segundo SEGUINTE ao cast: dentro de um mesmo
   // segundo nao existe ordem observavel entre a fala do Local Chat e a linha do Server

@@ -96,6 +96,30 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
+**Medição de C3 (18/Set/2026, `hit-reversal-memo`, otimização, drift ZERO, 1,50×).**
+C3 do survey `reports/architecture-deepening-candidates.md`, passo 3 da sequência (C2 → C1 → **C3**).
+`physicalOriginalInterval`/`elementalOriginalCandidates` ganharam uma **camada 1** consultada ANTES do
+prólogo (mods, mod, mit, post, crit), chaveada pelas entradas dele; o `_revCache` segue **intocado**
+como camada 2. Baseline (`e871098`): 47/55 alvos, gabarito 237/238, invariantes 42/43, dump 21.101
+linhas, `15 sept` em 224,7 s, pico de S0 2726 MB. Depois: **48/56** (o alvo a mais é
+`tests/unified-hit-reversal-memo.test.mjs`, verde), **as mesmas 8 falhas**, gabarito 237/238,
+invariantes 42/43, **diff do dump VAZIO**, `15 sept` em **149,4 s (1,50×; 7,7× contra antes de C1)** e
+pico de S0 **2248 MB (−478 MB)**. Acerto da camada 1 em S0: 99,1%, conjunto de trabalho 32 mil
+entradas, teto 1 M. Wall do `run-unified-checks` com cache quente: 4 min 27 s (era 4 min 31 s; com
+cache frio, logo após editar `js/`, 10 min 54 s). Nenhuma regra mudou. Detalhes em
+`reports/c3-hit-reversal-memo.md`.
+
+**Por que é drift zero por construção:** a chave da camada 1 determina a chave de string da camada 2,
+que nunca sobrescreve entrada entre limpezas; a camada 1 mora num `WeakMap` pela instância do
+`_revCache` e morre em `invalidateReversalCache`. Acerto devolve `===` o objeto que a camada 2
+devolveria. **No nível do HIT, `_activeCritKey` e `_omegaAssignment` SÃO entrada** (o inverso do
+bloco, C1): a chave leva o crit key efetivo (só em hit `realCrit`) e o bit de omega **resolvido**
+(`hit.omegaActive` é mutável entre passadas), mais o grav san resolvido do hit e o
+`setupFingerprintId`. **A inconsistência dos probes de `bmPierce` continua inofensiva e não foi
+corrigida, por decisão:** o setter troca o setup, a camada 1 erra e cai na camada 2 como antes.
+Resultados da camada 2 saem `Object.freeze` (escrita esquecida lança em vez de dar drift).
+`gravSanHitInWindow` ganhou memo por `(janelas, ts)`.
+
 **Medição de C1 (17/Set/2026, `block-validation-identity`, otimização, drift ZERO, 4,79×).**
 C1 do survey `reports/architecture-deepening-candidates.md`, passo 2 da sequência (C2 → **C1** → C3).
 A validação de bloco virou um par pedido/resultado: `blockValidationKey` resume a entrada,

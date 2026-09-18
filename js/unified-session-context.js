@@ -42,6 +42,10 @@
  * contrario dos outros tres probes de setup, que limpam. Chavear por `epoch`
  * consertaria essa inconsistencia e portanto MUDARIA resultado — decisao para
  * C1/C3 tomarem de proposito, com medicao, nao de carona num refactor neutro.
+ * C3 manteve o `_revCache` intacto como camada 2 e pos na frente dele um memo
+ * por hit chaveado pela impressao digital do setup: o probe de `bmPierce` troca
+ * o setup, erra a camada 1 e cai na camada 2 exatamente como antes — a
+ * inconsistencia continua inofensiva e nenhum resultado muda.
  *
  * Exporta globalThis.UnifiedSessionContext. Carregado ANTES de
  * unified-formulas.js (ver index.html e tools/unified-corpus.mjs).
@@ -201,6 +205,8 @@
   // Ponto unico de invalidacao do cache de reversao. Mesma semantica de sempre
   // (`Map.clear()`), nos mesmos pontos de sempre — ver o cabecalho.
   function invalidateReversalCache(context) {
+    // C3: o memo por hit aponta para objetos DESTE `_revCache`; morre junto com ele.
+    if (context && context._revCache) resetHitReversalMemo(hitReversalMemos.get(context._revCache));
     if (context && context._revCache) context._revCache.clear();
     // C1: o cache de validacao de bloco tem o MESMO lifetime do cache de reversao —
     // ele memoiza exatamente o que a reversao alimenta, e por isso morre nos mesmos
@@ -336,6 +342,82 @@
     return fingerprint;
   }
 
+  // A impressao digital internada como inteiro, para entrar numa chave numerica.
+  const setupFingerprintIds = new Map();
+
+  function setupFingerprintId(context) {
+    const fingerprint = setupFingerprint(context);
+    if (fingerprint === null) return null;
+    let id = setupFingerprintIds.get(fingerprint);
+    if (id === undefined) {
+      id = setupFingerprintIds.size + 1;
+      setupFingerprintIds.set(fingerprint, id);
+    }
+    return id;
+  }
+
+  // --- C3: memo da reversao por hit (camada 1 na frente do `_revCache`) -------
+  //
+  // O `_revCache` (camada 2) e chaveado pelo VALOR dos escalares ja resolvidos
+  // (mod, mit, post, crit...), entao o prologo que os resolve rodava ate no acerto.
+  // A camada 1 e chaveada pelas ENTRADAS desse prologo (objeto hit + setup + escopo
+  // do hit) e guarda o objeto que a camada 2 devolveu. A camada 2 nunca sobrescreve
+  // entrada entre duas limpezas, entao um acerto aqui devolve `===` o que a camada 2
+  // devolveria: drift zero por construcao.
+  //
+  // Um memo POR INSTANCIA de `_revCache` (WeakMap): `weaponPierceEvaluateTier` troca
+  // o `_revCache` temporariamente por um Map novo e depois restaura, e cada Map fica
+  // com o seu memo. Limpo em `invalidateReversalCache`, junto com a camada 2.
+  //
+  // DESLIGADO sem `context.setup`: teste, ferramenta de diagnostico e o contexto
+  // derivado de `deriveWithFreshReversalCache` montam `context` sem os records.
+  //
+  // Teto: acima dele o memo inteiro e descartado (a camada 2 continua la, entao isso
+  // so custa tempo). Tem de ficar ACIMA do conjunto de trabalho de uma varredura.
+  const HIT_REVERSAL_MEMO_LIMIT = 1000000;
+  const hitReversalMemos = new WeakMap();
+  const hitReversalMemoStats = { hits: 0, misses: 0, resets: 0, overflows: 0, maxEntries: 0 };
+
+  function resetHitReversalMemo(memo) {
+    if (!memo || !memo.entries) return;
+    memo.byHit.clear();
+    memo.entries = 0;
+    hitReversalMemoStats.resets++;
+  }
+
+  function hitReversalMemoFor(context, revCache) {
+    if (!context || !context.setup || !revCache) return null;
+    let memo = hitReversalMemos.get(revCache);
+    if (!memo) {
+      memo = { byHit: new Map(), entries: 0 };
+      hitReversalMemos.set(revCache, memo);
+    }
+    return memo;
+  }
+
+  function hitReversalMemoGet(memo, hit, key) {
+    const byHit = memo.byHit.get(hit);
+    const value = byHit === undefined ? undefined : byHit.get(key);
+    if (value === undefined) hitReversalMemoStats.misses++;
+    else hitReversalMemoStats.hits++;
+    return value;
+  }
+
+  function hitReversalMemoSet(memo, hit, key, value) {
+    if (memo.entries >= HIT_REVERSAL_MEMO_LIMIT) {
+      hitReversalMemoStats.overflows++;
+      resetHitReversalMemo(memo);
+    }
+    let byHit = memo.byHit.get(hit);
+    if (byHit === undefined) {
+      byHit = new Map();
+      memo.byHit.set(hit, byHit);
+    }
+    if (!byHit.has(key)) memo.entries++;
+    byHit.set(key, value);
+    if (memo.entries > hitReversalMemoStats.maxEntries) hitReversalMemoStats.maxEntries = memo.entries;
+  }
+
   // O cache de bloco mora no ResolutionState, ao lado do `_revCache`.
   function blockCacheFor(context) {
     if (!context) return null;
@@ -368,7 +450,13 @@
     gravSanOverrideOf,
     identityId,
     setupFingerprint,
+    setupFingerprintId,
     blockCacheFor,
+    HIT_REVERSAL_MEMO_LIMIT,
+    hitReversalMemoFor,
+    hitReversalMemoGet,
+    hitReversalMemoSet,
+    hitReversalMemoStats,
   };
 
   root.UnifiedSessionContext = API;
