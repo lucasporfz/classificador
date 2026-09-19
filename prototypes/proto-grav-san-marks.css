@@ -1,0 +1,63 @@
+/* PROTÓTIPO — só estilos das marcas de grav san + barra de variantes. */
+/* Grav san = fúcsia #E879F9: fora de CLS_COMP_PALETTE (js/app.js) e distinto do rosa
+   #F472B6 e do roxo #C084FC dela pela saturação; onde pode encostar num componente, vai
+   junto com hachura ou contorno, não só cor. */
+:root { --gs: #E879F9; --gs-soft: rgba(232,121,249,.16); --gs-line: rgba(232,121,249,.55); }
+
+.proto-flag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.1em;
+  background:#F59E0B; color:#2a1a00; padding:3px 8px; border-radius:4px; margin:0 0 10px; }
+
+/* barra de variantes: não é design avaliado */
+.proto-switcher { position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:9999;
+  display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:999px;
+  background:#F8FAFC; color:#0F172A; box-shadow:0 6px 24px rgba(0,0,0,.45);
+  font:600 12.5px Inter, sans-serif; }
+.proto-switcher button { width:30px; height:30px; border-radius:999px; border:0; cursor:pointer;
+  background:#0F172A; color:#F8FAFC; font-size:15px; }
+.proto-switcher button:hover { background:#334155; }
+#protoLabel { min-width:260px; text-align:center; }
+
+/* legenda comum acima dos gráficos */
+.gs-legend { display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin:6px 0 10px;
+  font-size:12px; color:var(--text-muted); }
+.gs-legend b { color:var(--text); font-weight:600; }
+.gs-sw { display:inline-block; width:14px; height:10px; border-radius:2px; vertical-align:-1px; margin-right:5px; }
+.gs-sw.fill { background:var(--gs-soft); border:1px solid var(--gs-line); }
+.gs-sw.hatch { background:repeating-linear-gradient(135deg, rgba(232,121,249,.35) 0 2px, transparent 2px 5px); border:1px dashed var(--gs-line); }
+.gs-sw.dia { width:10px; height:10px; background:var(--gs); transform:rotate(45deg); border-radius:1px; }
+.gs-sw.line { height:3px; background:var(--gs); border-radius:2px; }
+.gs-sw.glow { height:6px; background:var(--gs); opacity:.45; border-radius:3px; }
+
+/* ---- detalhe do turno ---- */
+.gs-pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:600;
+  white-space:nowrap; font-variant-numeric:tabular-nums; }
+.gs-pill.on { background:var(--gs); color:#2B0730; }
+.gs-pill.off { border:1px dashed var(--gs-line); color:var(--gs); }
+.gs-pill.none { color:var(--text-dim); font-weight:400; }
+
+/* A: faixa na borda esquerda da linha */
+.cls-turn-detail-table tr.gsA-on td:first-child { box-shadow:inset 3px 0 0 var(--gs); }
+.cls-turn-detail-table tr.gsA-off td:first-child { box-shadow:inset 3px 0 0 rgba(232,121,249,.3); }
+
+/* B: cabeçalho de grupo por componente */
+.cls-turn-detail-table tr.gsB-group td { background:var(--bg-raised); font-size:12px; padding-top:7px; padding-bottom:7px; }
+.cls-turn-detail-table tr.gsB-group.on td { background:linear-gradient(90deg, rgba(232,121,249,.22), rgba(232,121,249,.04) 70%); }
+.cls-turn-detail-table tr.gsB-group.off td { background:repeating-linear-gradient(135deg, rgba(232,121,249,.08) 0 3px, transparent 3px 8px), var(--bg-raised); }
+.gsB-gname { font-weight:600; color:var(--text); }
+.gsB-gmeta { color:var(--text-muted); margin-left:10px; font-variant-numeric:tabular-nums; }
+.gsB-gright { float:right; display:flex; gap:10px; align-items:center; }
+.gsB-nobonus { color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.cls-turn-detail-table tr.gsB-hit td:first-child { padding-left:18px; }
+
+/* C: cartão-resumo + linha tingida + dano sem bônus */
+.gsC-card { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 10px; padding:9px 11px;
+  border:1px solid var(--border); border-radius:var(--r); background:var(--bg-raised); font-size:12px; }
+.gsC-card .t { color:var(--text-muted); margin-right:4px; }
+.gsC-chip { display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:6px;
+  border:1px solid var(--border); color:var(--text-muted); }
+.gsC-chip.on { border-color:var(--gs); color:var(--text); background:var(--gs-soft); }
+.gsC-chip.off { border-style:dashed; border-color:var(--gs-line); }
+.gsC-chip .d { width:8px; height:8px; border-radius:50%; }
+.gsC-chip b { color:var(--gs); font-variant-numeric:tabular-nums; }
+.cls-turn-detail-table tr.gsC-on td { background:rgba(232,121,249,.09); }
+.gsC-sub { display:block; white-space:nowrap; font-size:10.5px; color:var(--gs); opacity:.85; font-variant-numeric:tabular-nums; }
