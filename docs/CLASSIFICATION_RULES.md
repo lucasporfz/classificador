@@ -988,7 +988,15 @@ L=26 -> 12,75%
   já esteja congelado por evidência independente do candidato. Componente do
   fallback só vota quando seus hits **sem marca** já compartilham original sem
   nenhum candidato aplicado; o original desconhecido dos hits marcados não o
-  desqualifica. Aplicar um nível
+  desqualifica. Como a partição foi congelada com o nível desconhecido — quando o
+  original dos marcados era evidência ausente —, um hit marcado pode ter caído no
+  bloco errado. Por isso, dentro do componente, vota só o **valor modal repetido**
+  (≥2 procs idênticos) de cada `(mob, estado)` marcado, e esse critério não depende
+  do nível: minoritário **abaixo** do modal é capped-low ou hit de outro componente e
+  não vota; minoritário **acima** do modal ou empate no topo deixa o componente sem
+  voto; marcado sem repetição não vota. A comparação marcado × controle é entre mobs
+  distintos e aceita o resíduo de arredondamento por hit de S-004a
+  (`ELEMENTAL_INTERMEDIATE_TOLERANCE`, 1 ponto de original). Aplicar um nível
   não pode mover fronteira, alterar cardinalidade ou promover a própria
   observação a “ouro” para depois votar nesse mesmo nível. Capped-low e
   overkill não fixam nível. A grade não recebe teto arbitrário: somente níveis
@@ -1030,6 +1038,18 @@ L=26 -> 12,75%
   classe 0, nível 25 (`1681,69 × 1,125 = 1891,9 → 1891`;
   `1737,75 × 1,125 = 1954,97 → 1954`; nível 24 prevê 1887/1950, nível 26
   1896/1959). As duas leituras concordam.
+
+  Caso-prova do fallback por componentes congelados (`18/Sep/2026`): `drone ingol`
+  S0, salva em `18/Sep/2026`, Bounty só em `boar man`, cujo único charm é
+  `overpower` (escala com o jogador, não testemunha). BM `+4%` e a tabela do
+  `boar man` são confirmados sem Bounty pelo cast `18:34:58` (Caldera em janela de
+  grav san, `boar man 885` sem marca, `liodile 927`, `carnivostrich 969`,
+  `harpy 810` ⇒ original comum 744). Sob a comparação exata antiga, o nível 25 tinha
+  18 encaixes e 24 contradições: as contradições eram hits variáveis de AA colados à
+  Caldera pela partição congelada (`18:28:23`: `708` ao lado de `831 ×3`) e o
+  resíduo de 1 ponto entre mobs. Com o valor modal repetido e a folga de S-004a, o
+  nível 25 (`+12,5%`) fecha **30 componentes com 0 contradições**; 24 tem 5
+  contradições e 26 tem 16. Com o dano conhecido, a Life de D-022b cai no nível 5.
 - **D-011 — Overkill:** não participa de interseções, médias, magnitude ou comparação de leech. A proibição de leech aqui se refere à *razão* leech/dano; o leech **absoluto** permanece válido em overkill conforme D-019.
 - **D-011a — Atribuição de XP exige continuidade causal:** uma linha de XP só
   prova overkill do hit anterior quando a relação permanece contínua na ordem

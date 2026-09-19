@@ -1669,11 +1669,11 @@
     }
     if (!rows.length) return { bonus: 0, multiplier: 1, class: null, source: 'no_mob_with_bestiary_class_and_hitpoints', rows };
 
-    const byClass = new Map();
+    const allByClass = new Map();
     for (const r of rows) {
-      const arr = byClass.get(r.class) || [];
+      const arr = allByClass.get(r.class) || [];
       arr.push(r);
-      byClass.set(r.class, arr);
+      allByClass.set(r.class, arr);
     }
 
     // M-042 — REGRA DO TETO. Sob escada de Combat Mastery, a mediana da linha cai num
@@ -1685,7 +1685,7 @@
     // linhas — vazio prova ausencia de bonus, um crava, mais de um abstem (D-006).
     if (ladder && ladder.active) {
       const perClass = [];
-      for (const [cls, clsRows] of byClass) {
+      for (const [cls, clsRows] of allByClass) {
         const voting = clsRows.filter(r => r.minLevel != null);
         if (!voting.length) { perClass.push({ class: cls, verdict: 'no_voting_row', surviving: [] }); continue; }
         let surviving = BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES.slice();
@@ -1699,12 +1699,42 @@
           ceilings: voting.map(r => r.minLevel / r.expected),
         });
       }
-      const unique = perClass.filter(p => p.verdict === 'unique');
+      // M-036 / C-012a: a escada ainda pode usar linhas sensíveis a BM para
+      // tetos conservadores e diagnóstico de ausência, mas não para provar
+      // sozinha um perk positivo. A confirmação positiva exige testemunha imune.
+      const unique = perClass.filter(p => {
+        if (p.verdict !== 'unique') return false;
+        return (allByClass.get(p.class) || []).some(
+          r => r.element !== 'holy' && r.element !== 'physical',
+        );
+      });
       if (unique.length === 1) {
         const p = unique[0];
         return { bonus: p.surviving[0], multiplier: 1 + p.surviving[0], class: p.class, source: 'confirmed_by_charm_ceiling_under_ladder', rows, perClass };
       }
       return { bonus: 0, multiplier: 1, class: null, source: 'charm_ceiling_under_ladder', rows, perClass };
+    }
+
+    // M-036/C-012a: fora da regra de teto de Combat Mastery, holy/physical medem o
+    // produto `classe x BM`. Mesmo dezenas de procs da mesma linha só tornam esse
+    // produto preciso; não identificam qual perk o produziu. O bônus de classe é
+    // medido exclusivamente pelos canais que BM não altera. As linhas sensíveis
+    // continuam em `rows` para diagnóstico/BM, mas não votam aqui.
+    const classWitnessRows = rows.filter(r => r.element !== 'holy' && r.element !== 'physical');
+    if (!classWitnessRows.length) {
+      return {
+        bonus: 0,
+        multiplier: 1,
+        class: null,
+        source: 'no_bm_immune_bestiary_class_witness',
+        rows,
+      };
+    }
+    const byClass = new Map();
+    for (const r of classWitnessRows) {
+      const arr = byClass.get(r.class) || [];
+      arr.push(r);
+      byClass.set(r.class, arr);
     }
 
     let best = null;

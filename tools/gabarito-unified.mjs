@@ -1559,6 +1559,21 @@ export const CASES = [
       const comp = turn.components.find(x => x.comp === 'spell');
       return comp && String(comp.actionLabel || '').includes(label) ? null : `esperado ${label}; got ${comp && comp.actionLabel || '-'}`;
     })),
+  // M-036/C-012a + D-010g: `drone ingol` S0 (18/Sep/2026). O bloco anterior ao cast
+  // de Caldera contém 7 hits físicos dispersos; o bloco posterior contém 7 hits holy
+  // determinísticos. A única linha de charm da classe humanoid é holy e não pode virar
+  // `+2%` de classe enquanto BM é uma causa concorrente. Bounty Damage nível 25 vem do
+  // fallback de componentes congelados (valor modal repetido, resíduo cross-mob de S-004a).
+  C('drone ingol/18:28:15-class-bounty', 'drone ingol Server Log.txt', 'drone ingol Local Chat.txt', '18:28:15', turn => {
+    const c = counts(turn);
+    if (!(c.arrow === 7 && c.spell === 7 && c.rune === 0 && c.grenade === 0)) {
+      return `esperado A7 S7; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }
+    const spell = turn.components.find(comp => comp.comp === 'spell');
+    return spell && String(spell.actionLabel || '').includes('Divine Caldera')
+      ? null
+      : `esperado Divine Caldera; got ${spell && spell.actionLabel || '-'}`;
+  }),
   // M-040 — perk de pierce fisico da arma, fixture `moonsilver` (RP, pack de 5 mobs,
   // 26/Ago/2026). Sem o perk a sessao fica com 78 de 192 turnos sem classificacao; em 77
   // deles o motor JA enumera o corte certo e o descarta so porque a intersecao fisica do

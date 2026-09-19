@@ -47,6 +47,8 @@
     elementalOriginalCandidates,
     isTerraBurstAction,
     isChainedPenanceAction,
+    elementalStateKey,
+    ELEMENTAL_INTERMEDIATE_TOLERANCE,
   } = root.UnifiedFormulas;
 
   // C2: os tres records com lifetime declarado (SessionSetup/ResolutionState/HitScope).
@@ -846,6 +848,33 @@
     return clean.length === 1 ? clean[0] : null;
   }
 
+  // D-010g: a particao do fallback foi congelada com o Bounty desconhecido, quando o
+  // original dos hits marcados era evidencia ausente — um marcado pode ter caido no bloco
+  // errado. So o valor modal REPETIDO (>=2 procs identicos) de cada (mob, estado) prova,
+  // sem nenhum nivel aplicado, que os marcados sao o mesmo componente deterministico.
+  // Minoritario abaixo do modal e capped-low/outro componente e nao vota; minoritario
+  // acima do modal ou empate no topo deixa o componente sem voto (null).
+  function bountyFallbackVotingMarked(marked) {
+    const groups = new Map();
+    for (const hit of marked) {
+      const key = elementalStateKey(hit);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(hit);
+    }
+    const voting = [];
+    for (const hits of groups.values()) {
+      const counts = new Map();
+      for (const hit of hits) counts.set(hit.dmg, (counts.get(hit.dmg) || 0) + 1);
+      const ranked = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+      if (ranked.length > 1 && ranked[0][1] === ranked[1][1]) return null;
+      const [modalDmg, modalCount] = ranked[0];
+      if (ranked.some(([dmg]) => dmg > modalDmg)) return null;
+      if (modalCount < 2) continue;
+      voting.push(...hits.filter(hit => hit.dmg === modalDmg));
+    }
+    return voting;
+  }
+
   // D-010g/C-006: fallback estritamente posterior ao witness de charm. As
   // fronteiras, a ação e N já vêm congelados de uma passada que não usa este
   // candidato; cada nível apenas reverte o dano dos mesmos hits.
@@ -869,10 +898,17 @@
         // inferência e não desqualifica o componente. O que o qualifica é os hits SEM marca
         // já compartilharem original sem nenhum candidato aplicado.
         if (!deterministic.ok) continue;
-        const marked = main.filter(hit => hit.bountyTalisman);
         const control = main.filter(hit => !hit.bountyTalisman);
-        if (!marked.length || !control.length) continue;
-        const controlOriginals = control.map(hit => elementalOriginalCandidates(hit, element, context));
+        const marked = bountyFallbackVotingMarked(main.filter(hit => hit.bountyTalisman));
+        if (!marked || !marked.length || !control.length) continue;
+        const reverseControls = () => control.map(hit =>
+          elementalOriginalCandidates(hit, element, context)
+        );
+        const controlOriginals = (comp.gravSanActive === true || comp.gravSanActive === false)
+          ? root.UnifiedValidation.withGravSanBlockMode(
+            context, comp, comp.gravSanActive, reverseControls,
+          )
+          : reverseControls();
         if (controlOriginals.some(result => !result || !result.known || !result.originals || !result.originals.length)) continue;
         let controlCommon = new Set(controlOriginals[0].originals);
         for (const result of controlOriginals.slice(1)) {
@@ -889,7 +925,9 @@
         components.push({
           turn: turn.clock || turn.ts,
           comp,
-          main,
+          marked,
+          control,
+          controlCommon: Array.from(controlCommon),
           element,
           action: profile.label || action.text || action.name || comp.comp,
         });
@@ -927,25 +965,42 @@
           examples: [],
         };
         for (const evidence of components) {
-          const candidates = evidence.main.map(hit =>
+          // D-010g: a ancora foi congelada exclusivamente pelos controles antes de
+          // aplicar qualquer candidato. O candidato só reverte os hits marcados e os
+          // compara com essa ancora; marcado desconhecido abstém, não apaga a prova.
+          const reverseMarked = () => evidence.marked.map(hit =>
             elementalOriginalCandidates(hit, evidence.element, context)
           );
-          if (candidates.some(result =>
-            !result || !result.known || !result.originals || !result.originals.length
-          )) continue;
-          let common = new Set(candidates[0].originals);
-          for (const result of candidates.slice(1)) {
-            common = new Set(result.originals.filter(original => common.has(original)));
-          }
-          if (common.size) row.fits++;
-          else row.contradictions++;
+          const markedCandidates = (
+            evidence.comp.gravSanActive === true || evidence.comp.gravSanActive === false
+          )
+            ? root.UnifiedValidation.withGravSanBlockMode(
+              context, evidence.comp, evidence.comp.gravSanActive, reverseMarked,
+            )
+            : reverseMarked();
+          const usableMarked = markedCandidates.filter(result =>
+            result && result.known && result.originals && result.originals.length
+          );
+          if (!usableMarked.length) continue;
+          // S-004a: marcado x controle e comparacao entre mobs distintos, entao aceita o
+          // mesmo residuo de arredondamento por hit da reversao (ELEMENTAL_INTERMEDIATE_TOLERANCE).
+          const controlCommon = evidence.controlCommon;
+          const incompatible = usableMarked.some(result =>
+            !result.originals.some(original => controlCommon.some(anchor =>
+              Math.abs(anchor - original) <= ELEMENTAL_INTERMEDIATE_TOLERANCE
+            ))
+          );
+          if (incompatible) row.contradictions++;
+          else row.fits++;
           if (row.examples.length < 8) {
             row.examples.push({
               turn: evidence.turn,
               action: evidence.action,
-              markedDamage: evidence.main.filter(hit => hit.bountyTalisman).map(hit => hit.dmg),
-              controlDamage: evidence.main.filter(hit => !hit.bountyTalisman).map(hit => hit.dmg),
-              commonOriginals: Array.from(common).slice(0, 12),
+              markedDamage: evidence.marked.map(hit => hit.dmg),
+              controlDamage: evidence.control.map(hit => hit.dmg),
+              commonOriginals: evidence.controlCommon.slice(0, 12),
+              usableMarked: usableMarked.length,
+              incompatible,
             });
           }
         }
