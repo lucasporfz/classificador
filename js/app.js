@@ -264,6 +264,22 @@ function clsDetailHitStateLabel(hit) {
   return parts.length ? parts.join(' + ') : '-';
 }
 
+// Grav san do turno por COMPONENTE (o motor infere o bônus por bloco): quantos
+// componentes existem, quantos caíram numa janela de utevo grav san (`gravSanTested`) e
+// quantos foram inferidos com o bônus (`gravSanActive === true`).
+function clsTurnGravSan(turn) {
+  const comps = new Map();
+  for (const l of (turn && turn.lines) || []) {
+    if (l.component === 'unresolved') continue;
+    const c = comps.get(l.componentIdx) || { tested: false, active: false };
+    if (l.gravSanTested) c.tested = true;
+    if (l.gravSanActive === true) c.active = true;
+    comps.set(l.componentIdx, c);
+  }
+  const list = [...comps.values()];
+  return { total: list.length, tested: list.filter(c => c.tested).length, active: list.filter(c => c.active).length };
+}
+
 function clsRowLabel(row) {
   return row && row.kind === 'arrow' ? t('cls_comp_arrow') : (row && row.label) || '';
 }
@@ -315,6 +331,10 @@ function renderTurnDetail(turns, res, selectedIndex) {
     const turn = activeTurn;
     const counts = turn.counts || {};
     const hits = turn.lines || [];
+    const gravSan = clsTurnGravSan(turn);
+    const gravSanChip = gravSan.tested === 0 ? '' : ' &nbsp;·&nbsp; ' + (gravSan.active > 0
+      ? '<span class="cls-gs-pill is-on">' + t('cls_gravsan_turn_on').replace('{n}', gravSan.active).replace('{total}', gravSan.total) + '</span>'
+      : '<span class="cls-gs-pill is-off">' + t('cls_gravsan_turn_off') + '</span>');
     panel.innerHTML =
       headerHtml +
       '<div class="cls-turn-detail-block">' +
@@ -322,12 +342,13 @@ function renderTurnDetail(turns, res, selectedIndex) {
           ' &nbsp;·&nbsp; <strong>Componentes:</strong> ' +
           'AA ' + (counts.arrow || 0) + ', spell ' + (counts.spell || 0) +
           ', rune ' + (counts.rune || 0) + ', grenade ' + (counts.grenade || 0) +
+          gravSanChip +
         '</p>' +
         '<table class="cls-table cls-turn-detail-table"><thead><tr>' +
           '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>Estado do hit</th><th>Overkill</th><th>Mob alvo</th>' +
         '</tr></thead><tbody>' +
           hits.map(h =>
-            '<tr>' +
+            '<tr' + (h.gravSanActive === true ? ' class="cls-gs-on"' : h.gravSanTested ? ' class="cls-gs-off"' : '') + '>' +
               '<td>' + clsEscapeHtml(clsFmtTurnTs(h.ts)) + '</td>' +
               '<td style="text-align:right">' + clsEscapeHtml(h.dmg) + '</td>' +
               '<td>' + clsEscapeHtml(clsDetailComponentLabel(h, turn)) + '</td>' +
@@ -908,6 +929,7 @@ function renderClassifier(res) {
       '</div>' : '') +
     metricHtml +
     clsBrushHtml(res) +
+    clsGravSanLegendHtml(res) +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineComponents"></canvas></div>' +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineHits"></canvas></div>' +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineDamage"></canvas></div>' +
@@ -1081,6 +1103,25 @@ const CLS_BRUSH_HANDLE_PX = 6;
 function clsUnresolvedFlags(res) {
   const tr = (res && res.turnTrace) || [];
   return tr.map(t => !!(t && t.counts && t.counts.unresolved > 0));
+}
+
+// Faixa de grav san nos gráficos de turno: 'on' = algum componente do turno inferido com
+// o bônus; 'off' = caiu em janela de grav san mas nenhum ficou com o bônus.
+function clsGravSanFlags(res) {
+  const tr = (res && res.turnTrace) || [];
+  return tr.map(turn => {
+    const g = clsTurnGravSan(turn);
+    return g.active > 0 ? 'on' : g.tested > 0 ? 'off' : null;
+  });
+}
+
+function clsGravSanLegendHtml(res) {
+  if (!clsGravSanFlags(res).some(Boolean)) return '';
+  const pct = ((+res.gravSanBonus || 0) * 100).toLocaleString(LANG === 'pt' ? 'pt-BR' : 'en-US', { maximumFractionDigits: 1 }) + '%';
+  return '<div class="cls-gs-legend"><b class="cls-gs-title">grav san</b>' +
+    '<span><span class="cls-gs-sw is-on"></span>' + t('cls_gravsan_band_on').replace('{pct}', pct) + '</span>' +
+    '<span><span class="cls-gs-sw is-off"></span>' + t('cls_gravsan_band_off') + '</span>' +
+  '</div>';
 }
 
 function clsBrushHtml(res) {
@@ -1402,6 +1443,40 @@ if (typeof Chart !== 'undefined' && !Chart.registry.plugins.get('clsUnresolvedTi
   Chart.register(clsUnresolvedTicksPlugin);
 }
 
+// Faixa de fundo dos turnos com grav san, atrás das séries dos gráficos de turno.
+let clsGravSanHatch = null;
+const clsGravSanBandsPlugin = {
+  id: 'clsGravSanBands',
+  beforeDatasetsDraw(chart) {
+    const flags = chart.$clsGravSan;
+    if (!flags || !flags.length) return;
+    const area = chart.chartArea, ctx = chart.ctx, xs = chart.scales.x;
+    const from = clsTurnView ? clsTurnView.start : 0;
+    const to = clsTurnView ? clsTurnView.end : flags.length - 1;
+    const w = Math.max(1, Math.abs(xs.getPixelForValue(1) - xs.getPixelForValue(0)));
+    if (!clsGravSanHatch) {
+      const c = document.createElement('canvas'); c.width = c.height = 6;
+      const g = c.getContext('2d');
+      g.strokeStyle = 'rgba(232,121,249,.30)'; g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(0, 6); g.lineTo(6, 0); g.stroke();
+      clsGravSanHatch = ctx.createPattern(c, 'repeat');
+    }
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top);
+    ctx.clip();
+    for (let i = from; i <= to; i++) {
+      if (!flags[i]) continue;
+      ctx.fillStyle = flags[i] === 'on' ? 'rgba(232,121,249,.16)' : clsGravSanHatch;
+      ctx.fillRect(xs.getPixelForValue(i) - w / 2, area.top, w, area.bottom - area.top);
+    }
+    ctx.restore();
+  }
+};
+if (typeof Chart !== 'undefined' && !Chart.registry.plugins.get('clsGravSanBands')) {
+  Chart.register(clsGravSanBandsPlugin);
+}
+
 // Gráficos do classificador (só log observado, sem linha de simulação): componentes por
 // turno, hits/turno, dano/turno, Impact Analyser e histograma por componente.
 function renderClassifierCharts(res, compDefs) {
@@ -1510,9 +1585,11 @@ function renderClassifierCharts(res, compDefs) {
   // sem classificação. O scroll sobre qualquer um deles dá zoom ancorado no turno que
   // está debaixo do cursor.
   const unresolvedFlags = clsUnresolvedFlags(res);
+  const gravSanFlags = clsGravSanFlags(res);
   clsBrushCharts = [clsTimelineComponentsChart, clsTimelineHitsChart, clsTimelineDamageChart, clsImpactChart].filter(Boolean);
   for (const chart of clsBrushCharts) {
     chart.$clsUnresolved = unresolvedFlags;
+    chart.$clsGravSan = gravSanFlags;
     chart.canvas.addEventListener('wheel', ev => {
       if (!clsBrushSetView || labels.length < 2) return;
       const area = chart.chartArea;

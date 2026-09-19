@@ -527,3 +527,18 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
 @media (max-width: 760px) {
   .cls-summary-spells { margin-left: 0; max-width: 100%; text-align: left; }
 }
+
+/* grav san: fúcsia, fora de CLS_COMP_PALETTE (js/app.js) */
+.cls-gs-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 6px 0 10px;
+  font-size: 12px; color: var(--text-muted); }
+.cls-gs-legend b { color: var(--text); font-weight: 600; }
+.cls-gs-legend .cls-gs-title { color: #E879F9; }
+.cls-gs-sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 5px; }
+.cls-gs-sw.is-on { background: rgba(232,121,249,.16); border: 1px solid rgba(232,121,249,.55); }
+.cls-gs-sw.is-off { background: repeating-linear-gradient(135deg, rgba(232,121,249,.35) 0 2px, transparent 2px 5px);
+  border: 1px dashed rgba(232,121,249,.55); }
+.cls-gs-pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.cls-gs-pill.is-on { background: #E879F9; color: #2B0730; }
+.cls-gs-pill.is-off { border: 1px dashed rgba(232,121,249,.55); color: #E879F9; }
+.cls-turn-detail-table tr.cls-gs-on td:first-child { box-shadow: inset 3px 0 0 #E879F9; }
+.cls-turn-detail-table tr.cls-gs-off td:first-child { box-shadow: inset 3px 0 0 rgba(232,121,249,.3); }
