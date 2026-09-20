@@ -26,6 +26,17 @@
 //   node tools/audit-physical-intersection.mjs --pair "<nome exato do server log>"
 //   node tools/audit-physical-intersection.mjs --all-pairs      # um processo por par
 //   node tools/audit-physical-intersection.mjs --self-test      # so a aritmetica do acumulador
+//   ... --no-bloodjaw                                            # pula pares cujo server log cita bloodjaw
+//   ... --signatures [--gap-max N]                               # 1 linha por turno (status + forma + hits)
+//
+// CONTRAFACTUAL (`--gap-max N`): o motor continua rodando a cadeia original; quando ela
+// aprova, a aprovacao so vale se o gap GLOBAL do bloco for <= N. Assim o conjunto de blocos
+// aceitos so ENCOLHE, e todo bloco que continua aceito devolve a MESMA `intersection` de
+// hoje — o experimento isola a decisao de aceitacao, sem mexer no valor devolvido (que
+// `js/unified-setup-inference.js:1748` usa como largura na pontuacao de setup).
+//   --gap-max 4  = leitura estrita de S-007a   (folga TOTAL de 4)
+//   --gap-max 8  = leitura permissiva          (+-4 por intervalo)
+// Comparar `--signatures` do baseline contra `--signatures --gap-max N` da o drift real.
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -48,16 +59,20 @@ const silent = { log() {}, warn() {}, error() {}, info() {}, debug() {} };
 // Ancora: a linha de sucesso de `validatePhysicalBlockUnderAssignment`
 // (`js/unified-validation.js`). Unica no arquivo.
 const AUDIT_ANCHOR = '      return { ok: true, known, unknown, intersection: inter, physicalToleranceUsed: toleranceUsed };';
-const AUDIT_HOOK = `      let auditMaxLo = -Infinity, auditMinHi = Infinity;
+const auditHook = gapMax => `      let auditMaxLo = -Infinity, auditMinHi = Infinity;
       for (const iv of intervals) { if (iv[0] > auditMaxLo) auditMaxLo = iv[0]; if (iv[1] < auditMinHi) auditMinHi = iv[1]; }
       if (intervals.length > 1) {
+        const auditGap = auditMaxLo - auditMinHi;
+        ${gapMax == null ? '' : `if (inter && toleranceUsed > 0 && auditGap > ${gapMax}) {
+          return { ok: false, rule: 'S-004/S-005/S-007', reason: 'physical_intersection_empty', known, unknown };
+        }`}
         return { ok: true, known, unknown, intersection: inter, physicalToleranceUsed: toleranceUsed,
-          auditGap: auditMaxLo - auditMinHi, auditMaxLo, auditMinHi,
+          auditGap, auditMaxLo, auditMinHi,
           auditIntervals: intervals.map(iv => [iv[0], iv[1]]) };
       }
 `;
 
-function engineSource(file) {
+function engineSource(file, gapMax) {
   const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
   if (file !== 'js/unified-validation.js') return source;
   const occurrences = source.split(AUDIT_ANCHOR).length - 1;
@@ -65,10 +80,10 @@ function engineSource(file) {
     throw new Error(`ancora de instrumentacao casou ${occurrences}x em ${file} (esperado 1). `
       + 'O motor mudou: reveja tools/audit-physical-intersection.mjs antes de confiar no resultado.');
   }
-  return source.replace(AUDIT_ANCHOR, AUDIT_HOOK + AUDIT_ANCHOR);
+  return source.replace(AUDIT_ANCHOR, auditHook(gapMax) + AUDIT_ANCHOR);
 }
 
-function createInstrumentedContext() {
+function createInstrumentedContext(gapMax) {
   const context = {
     console: silent,
     Math, JSON, Array, Object, Number, String, Map, Set,
@@ -78,7 +93,7 @@ function createInstrumentedContext() {
   context.window = context;
   vm.createContext(context);
   for (const file of ENGINE_FILES) {
-    vm.runInContext(engineSource(file), context, { filename: file });
+    vm.runInContext(engineSource(file, gapMax), context, { filename: file });
   }
   return context;
 }
@@ -149,14 +164,37 @@ function selfTest() {
   }
 }
 
-function auditPair(fixture, corpus, write) {
+// Assinatura de um turno: tudo que uma reclassificacao mudaria. Usada para o diff
+// baseline x contrafactual.
+function turnSignature(fixture, session, turn) {
+  const shape = (turn.components || [])
+    .map(c => `${c.comp}:${(c.hits || []).filter(h => h && !h.virtual).length}:${(c.actionLabel || '-').replace(/\s+/g, '_')}`)
+    .join('+') || '-';
+  // M-039 expoe `omegaActive` por hit no diagnostico e na UI. Uma reclassificacao pode
+  // preservar a particao e ainda assim mudar esse rotulo (o caminho de omega no eixo fisico
+  // so e procurado QUANDO a intersecao falha), entao ele entra na assinatura.
+  const omega = (turn.hits || []).filter(h => h && h.omegaActive).map(h => h.seq).sort((a, b) => a - b);
+  const tol = (turn.components || [])
+    .map(c => (c.deterministic && c.deterministic.physicalToleranceUsed) || 0).join(',');
+  return [
+    `${fixture.label} S${session.index}`,
+    clockForTs(turn.ts),
+    turn.status,
+    turn.reason || '-',
+    shape,
+    `omega=[${omega.join(',')}]`,
+    `tol=[${tol}]`,
+  ].join(' ');
+}
+
+function auditPair(fixture, corpus, write, { gapMax = null, signatures = false } = {}) {
   const sessions = corpus.sessionsFor(fixture.server, fixture.local);
   if (!sessions) return { turns: 0, flagged: 0 };
   let turnsSeen = 0;
   let flagged = 0;
   for (const session of sessions) {
     if (exclusionFor(fixture.server, session)) continue;
-    const context = createInstrumentedContext();
+    const context = createInstrumentedContext(gapMax);
     let result = null;
     try {
       result = context.UnifiedClassificationEngine.classifyUnified(session.sv.text, session.lc.text, {
@@ -173,6 +211,7 @@ function auditPair(fixture, corpus, write) {
     if (!result || !result.turns) continue;
     const aaElement = result.aaElement || (result.setup && result.setup.aaElement) || 'physical';
     for (const turn of result.turns) {
+      if (signatures) { turnsSeen++; write(turnSignature(fixture, session, turn)); continue; }
       if (turn.status !== 'resolved') continue;
       turnsSeen++;
       for (const component of turn.components || []) {
@@ -209,16 +248,34 @@ function main() {
   const argv = process.argv.slice(2);
   if (argv.includes('--self-test')) { selfTest(); return; }
 
+  const gapIndex = argv.indexOf('--gap-max');
+  const gapMax = gapIndex >= 0 ? Number(argv[gapIndex + 1]) : null;
+  if (gapIndex >= 0 && !Number.isFinite(gapMax)) {
+    console.error('--gap-max precisa de um numero');
+    process.exit(1);
+  }
+  const signatures = argv.includes('--signatures');
+  const noBloodjaw = argv.includes('--no-bloodjaw');
+
   const corpus = new UnifiedCorpus({ cacheEnabled: false, warn: () => {} });
-  const all = corpus.discoverPairs().filter(f => !exclusionFor(f.server, {}));
+  let all = corpus.discoverPairs().filter(f => !exclusionFor(f.server, {}));
+  if (noBloodjaw) {
+    // A entrada `bloodjaw` da tabela pos-cutoff e manual (fora do bestiary) e o armor dela
+    // esta sob suspeita de calibracao (CLAUDE.md). Um armor errado desloca o intervalo de `O`
+    // e produziria gap que nao e do defeito de tolerancia — esses pares saem da medicao.
+    all = all.filter(f => !/bloodjaw/i.test(fs.readFileSync(path.join(ROOT, 'logs', f.server), 'utf8')));
+  }
 
   if (argv.includes('--all-pairs')) {
     let total = 0;
     let turns = 0;
     for (const fixture of all) {
-      const text = execFileSync(process.execPath, [
-        '--max-old-space-size=6144', 'tools/audit-physical-intersection.mjs', '--pair', fixture.server,
-      ], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+      const childArgs = ['--max-old-space-size=6144', 'tools/audit-physical-intersection.mjs',
+        '--pair', fixture.server];
+      if (gapMax != null) childArgs.push('--gap-max', String(gapMax));
+      if (signatures) childArgs.push('--signatures');
+      const text = execFileSync(process.execPath, childArgs,
+        { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
       for (const line of text.split('\n')) {
         if (!line) continue;
         if (line.startsWith('TOTAL ')) {
@@ -245,7 +302,7 @@ function main() {
   let turns = 0;
   let flagged = 0;
   for (const fixture of fixtures) {
-    const stats = auditPair(fixture, corpus, line => console.log(line));
+    const stats = auditPair(fixture, corpus, line => console.log(line), { gapMax, signatures });
     turns += stats.turns;
     flagged += stats.flagged;
   }
