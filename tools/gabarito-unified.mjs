@@ -1528,14 +1528,16 @@ export const CASES = [
         ? null
         : `esperado Executioner's Throw; got ${spell && spell.actionLabel || '-'}`;
     }),
-  // D-011a/S-014e: XP do overpower em skirmisher não mata o chastener anterior.
+  // S-014e: A1 S4 com o virtual legítimo do skirmisher. A flag overkill=false do
+  // chastener 1260 (D-011a) é assertada em tests/unified-overkill-xp-continuity.test.mjs
+  // e pertence à change fix-xp-attribution-across-mobs (separada em 21/Set/2026).
   C('tom 2/13:04:16-overkill-other-mob', 'tom 2 server log.txt', 'tom 2 local chat.txt', '13:04:16',
     turn => {
       const c = counts(turn);
       if (!(c.arrow === 1 && c.spell === 4 && c.rune === 0 && c.grenade === 0)) return 'esperado A1 S4';
       const spell = turn.components.find(comp => comp.comp === 'spell');
       const hit = spell.hits.find(h => h.seq === 6103);
-      if (!hit || hit.dmg !== 1260 || hit.overkill !== false) return 'chastener 1260 não herda XP do skirmisher';
+      if (!hit || hit.dmg !== 1260) return 'chastener 1260 na spell';
       const virtual = spell.hits.filter(h => h.virtual && h.mob === 'raubritter skirmisher' && h.dmg === 0);
       return virtual.length === 1 ? null : 'preservar um virtual legítimo do skirmisher na spell';
     }),

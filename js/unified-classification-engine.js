@@ -2107,6 +2107,10 @@
     for (const comp of execComps) {
       let anyResolved = false;
       for (const h of comp.hits || []) {
+        // M-034 (precedencia do overkill): hit observado que matou termina amped, mesmo com o
+        // leech capado pela vida faltante. Roda depois dos passes 1.5 e 2, entao nao alimenta a
+        // calibracao de mana nem a escolha de A. Virtual (overkill estrutural) fica de fora.
+        if (h.overkill && !h.virtual) h.executionerBonusActive = true;
         h.executionerBonusMultiplier = h.executionerBonusActive === true ? (A || null)
           : (h.executionerBonusActive === false ? 1 : null);
         if (h.executionerBonusActive != null) anyResolved = true;
