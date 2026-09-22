@@ -1003,6 +1003,38 @@
     return set.size;
   }
 
+  // Regimes de tabela posteriores ao cutoff de 2026-06-16 (ver
+  // js/mob-element-mods-post-2026-08-25.js). Cada regime e um OVERLAY com apenas os
+  // mobs que aquele patch mudou; o resto continua vindo de context.mobModsPost. A
+  // lista vem ordenada do mais novo para o mais antigo, entao o primeiro `from` que
+  // couber na data da sessao vence. Sem data (sessionDateKey null) nenhum overlay
+  // aplica: e o mesmo criterio conservador que ja governa a escolha pre/pos-cutoff.
+  function mobModsRegimeList(context) {
+    if (context && context.mobModsRegimes) return context.mobModsRegimes;
+    return root.MOB_ELEMENT_MODS_REGIMES || null;
+  }
+
+  function mobModsOverlayFor(context) {
+    const dateKey = context && context.sessionDateKey;
+    if (!(dateKey > 0)) return null;
+    const regimes = mobModsRegimeList(context);
+    if (!regimes) return null;
+    for (const regime of regimes) {
+      if (regime && regime.table && dateKey >= regime.from) return regime.table;
+    }
+    return null;
+  }
+
+  function mobModsRegimeKey(context) {
+    const dateKey = context && context.sessionDateKey;
+    if (!(dateKey >= CUTOFF_KEY)) return 'pre-2026-06-16';
+    const regimes = mobModsRegimeList(context) || [];
+    for (const regime of regimes) {
+      if (regime && regime.table && dateKey >= regime.from) return regime.key;
+    }
+    return 'post-2026-06-16';
+  }
+
   function getMobMods(mob, context) {
     const name = normalizeName(mob);
     if (!name) return null;
@@ -1011,7 +1043,8 @@
     // nesse caso sessionDateKey fica null, mas nÃ£o devemos cair para tabela antiga
     // ou ausÃªncia de tabela. getMobMods custom sÃ³ Ã© fallback.
     if (context && context.mobModsPost && (context.sessionDateKey == null || context.sessionDateKey >= CUTOFF_KEY)) {
-      return context.mobModsPost[name] || null;
+      const overlay = mobModsOverlayFor(context);
+      return (overlay && overlay[name]) || context.mobModsPost[name] || null;
     }
     if (context && typeof context.getMobMods === 'function') return context.getMobMods(name, context) || null;
     if (context && context.mobModsPre) return context.mobModsPre[name] || null;
@@ -1542,6 +1575,7 @@
     combatMasteryCeiling,
     VERSION,
     CUTOFF_KEY,
+    mobModsRegimeKey,
     PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS,
     ELEMENT_KEYS,
     ELEMENTS,

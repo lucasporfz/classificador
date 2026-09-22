@@ -1039,6 +1039,68 @@
     };
   }
 
+  // D-010g, ramo de Mana Leech do fallback (fix-tom3-bounty-mana-and-aa-evidence, D2). Roda com
+  // a taxa de mana ja medida pelos hits SEM marca e o Bounty Damage ainda desconhecido. Usa so
+  // os hits marcados cujo N=1 e provado pelo teto de mana (D1: com o menor Bounty a mana refuta
+  // N>=2), o que nao depende do nivel nem de particao. Por hit, o maior nivel com
+  // CEIL(base/(1+bonus(L)) x taxa) >= mana e um limite SUPERIOR do nivel real: alpha e mana
+  // capada so baixam a mana frente ao dano, logo so empurram o nivel implicado para cima.
+  //   teto  = menor desses limites entre os hits;
+  //   nivel = o L <= teto com mais encaixes exatos (empate -> L mais alto), com >= 3 encaixes.
+  const BOUNTY_MANA_FALLBACK_MIN_FITS = 3; // piso de solidez de H-003
+  function inferBountyDamageFromManaCeiling(hits, manaVote, context) {
+    const manaBase = manaVote && manaVote.baseKnown !== false ? +manaVote.base || 0 : 0;
+    if (!(manaBase > 0)) return unknownBountyTalismanAxis('mana_ceiling_without_mana_rate');
+    const setup = { manaBase, voidsMob: manaVote.candidateMob, voidsBonus: manaVote.candidateBonus };
+    const V = root.UnifiedValidation;
+    const rows = [];
+    for (const hit of hits || []) {
+      if (!hit || !hit.bountyTalisman || !isMainHit(hit) || hit.virtual || hit.overkill || hit.isPrey) continue;
+      const observed = +hit.manaLeech || 0;
+      if (!(observed > 0)) continue;
+      const declared = V.leechDeclaredN(hit, setup, null, context);
+      if (!declared || !declared.ceiling || declared.n !== 1) continue;
+      const basis = leechDamageBasis(hit, context, true);
+      const rates = V.leechEffectiveRateCandidates(setup, 'mana', null, hit, context);
+      if (!(basis > 0) || rates.length !== 1) continue;
+      const rate = rates[0].rate;
+      let maxLevel = null;
+      const fits = [];
+      for (let level = 0; ; level++) {
+        const bonus = bountyTalismanBonusForLevel(level);
+        const expected = Math.ceil(basis / (1 + bonus) * rate);
+        if (expected < observed) break;
+        maxLevel = level;
+        if (expected === observed) fits.push(level);
+      }
+      if (maxLevel == null) continue;
+      rows.push({ ts: hit.ts, mob: hit.mob, dmg: hit.dmg, observed, maxLevel, fits });
+    }
+    if (!rows.length) return unknownBountyTalismanAxis('mana_ceiling_without_n1_marked_hit');
+    const ceilingLevel = Math.min(...rows.map(r => r.maxLevel));
+    const fitsByLevel = {};
+    for (let level = 0; level <= ceilingLevel; level++) {
+      fitsByLevel[level] = rows.filter(r => r.fits.includes(level)).length;
+    }
+    let best = null;
+    for (let level = 0; level <= ceilingLevel; level++) {
+      if (best == null || fitsByLevel[level] >= fitsByLevel[best]) best = level;
+    }
+    const evidence = { evidenceCount: rows.length, ceilingLevel, fitsByLevel };
+    if (best == null || fitsByLevel[best] < BOUNTY_MANA_FALLBACK_MIN_FITS) {
+      return Object.assign(unknownBountyTalismanAxis('mana_ceiling_insufficient_fits'), evidence);
+    }
+    const bonus = bountyTalismanBonusForLevel(best);
+    return Object.assign({
+      level: best,
+      bonus,
+      multiplier: 1 + bonus,
+      confidence: 'weak',
+      source: 'frozen_mana_leech_ceiling',
+      contradictions: 0,
+    }, evidence);
+  }
+
   function inferBountyLifeAxis(levels, observations, cfg, charmCandidates, context) {
     const ranked = levels.map(level => {
       const bonus = bountyTalismanBonusForLevel(level);
@@ -1138,9 +1200,26 @@
     const minorResult = {};
     const lifeCfg = { channel: 'life', bases: LIFE_BASE_CANDIDATES, bonuses: VAMPIRIC_BONUSES, mobKey: 'vampiricMob', bonusKey: 'vampiricBonus', votesKey: 'vampiricVotes' };
     const manaCfg = { channel: 'mana', bases: MANA_BASE_CANDIDATES, bonuses: VOIDS_BONUSES, mobKey: 'voidsMob', bonusKey: 'voidsBonus', votesKey: 'voidsVotes' };
-    const damageAxis = context && context.bountyTalismanSetup
+    let damageAxis = context && context.bountyTalismanSetup
       && context.bountyTalismanSetup.damage
       || unknownBountyTalismanAxis('bounty_damage_axis_not_inferred_before_leech');
+    // D-010g, ramo de Mana Leech: charm e componente deterministico nao cravaram o nivel. A
+    // taxa de mana sai so dos hits sem marca, e o teto de mana dos marcados vota o nivel.
+    if (damageAxis.confidence === 'unknown' && context) {
+      const unmarkedMana = rankGoldChannelCandidates(
+        observations.filter(o => !o.bountyTalisman), manaCfg, charmCandidates, { context },
+      );
+      const fromMana = inferBountyDamageFromManaCeiling(
+        context.serverFacts && context.serverFacts.hits, unmarkedMana, context,
+      );
+      if (fromMana.confidence !== 'unknown') {
+        damageAxis = fromMana;
+        context.bountyTalismanSetup = Object.assign({}, context.bountyTalismanSetup, { damage: fromMana });
+        SessionContext.invalidateReversalCache(context);
+      } else {
+        damageAxis = Object.assign({}, damageAxis, { manaCeilingFallback: fromMana });
+      }
+    }
     const damageKnown = damageAxis.confidence !== 'unknown';
     const mana = rankGoldChannelCandidates(
       damageKnown ? observations : observations.filter(o => !o.bountyTalisman),

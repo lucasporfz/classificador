@@ -262,22 +262,6 @@
       for (const h of remaining) hits.push(h);
     }
 
-    // D-011/D-011a: o próximo evento relevante em até 1s só prova overkill se
-    // nenhuma ação explícita incompatível tiver sido omitida de `events`.
-    for (const h of hits) {
-      let next = null;
-      for (const ev of events) {
-        if ((ev.seq || 0) <= h.seq) continue;
-        if (ev.ts - h.ts > 1) break;
-        if (ev.kind === 'charm' || ev.kind === 'reflect' || ev.kind === 'field' || ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
-        next = ev; break;
-      }
-      const hOrder = rawOrderByEvent.get(h);
-      const nextOrder = rawOrderByEvent.get(next);
-      const causallyContinuous = !!(hOrder && nextOrder && hOrder.barrierEpoch === nextOrder.barrierEpoch);
-      h.overkill = !!(next && next.kind === 'xp' && next.ts - h.ts <= 1 && causallyContinuous);
-    }
-
     // Charm-kill (S-014e/D-011a): um charm cujo próximo evento relevante (fora leech)
     // é XP e cuja ordem bruta permanece contínua
     // MATOU o alvo — o hit principal daquele componente nesse mob fica invisível
@@ -297,6 +281,26 @@
       const nextOrder = rawOrderByEvent.get(next);
       const causallyContinuous = !!(charmOrder && nextOrder && charmOrder.barrierEpoch === nextOrder.barrierEpoch);
       cev.killedTarget = !!(next && next.kind === 'xp' && next.ts - cev.ts <= 1 && causallyContinuous);
+    }
+
+    // D-011/D-011a: o próximo evento relevante em até 1s só prova overkill se
+    // nenhuma ação explícita incompatível tiver sido omitida de `events`.
+    for (const h of hits) {
+      let next = null;
+      for (const ev of events) {
+        if ((ev.seq || 0) <= h.seq) continue;
+        if (ev.ts - h.ts > 1) break;
+        // D-011a (emenda, fix-tom3-bounty-mana-and-aa-evidence): o charm entra antes do hit do
+        // ataque que o disparou; charm seguido de XP (killedTarget) matou e fica com a XP, com
+        // qualquer nome de mob. Charm que não mata continua transparente.
+        if (ev.kind === 'charm' && ev.killedTarget) { next = ev; break; }
+        if (ev.kind === 'charm' || ev.kind === 'reflect' || ev.kind === 'field' || ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
+        next = ev; break;
+      }
+      const hOrder = rawOrderByEvent.get(h);
+      const nextOrder = rawOrderByEvent.get(next);
+      const causallyContinuous = !!(hOrder && nextOrder && hOrder.barrierEpoch === nextOrder.barrierEpoch);
+      h.overkill = !!(next && next.kind === 'xp' && next.ts - h.ts <= 1 && causallyContinuous);
     }
 
     return { events, hits, runeUses, xpLines, leechLines, selfHealLines, externalHealLines, transcendenceTriggers, sessionDateKey: sessionDateKey(serverText), distinctMobs: distinctMainMobCount(hits) };

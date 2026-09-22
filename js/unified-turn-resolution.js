@@ -26,6 +26,13 @@
     BONUS_TIER_ACTIONS,
     OMEGA_CROSS_STATE_TOLERANCE,
     leechValueToleranceForN,
+    isExecutionerThrowAction,
+    getMobMods,
+    mitigationMultiplier,
+    effectiveMod,
+    pierceForElement,
+    EXECUTIONER_BONUS_LEVELS,
+    EXECUTIONER_MAX_TARGETS,
   } = root.UnifiedFormulas;
 
   const {
@@ -75,6 +82,7 @@
 
   const {
     expectedLeech,
+    areaFactor,
   } = root.UnifiedSetupInference;
 
   // C2: os tres records com lifetime declarado (SessionSetup/ResolutionState/HitScope).
@@ -121,6 +129,65 @@
     }
     hit.evidence = { physical, elemental };
     return hit;
+  }
+
+  // M-034/M-034a (fix-tom3-bounty-mana-and-aa-evidence, D5). Tier `A` da sessao vem de
+  // `context.executionerTierA` (passada extra antes da final, ver motor).
+  function executionerMaxTargets(A) {
+    const i = EXECUTIONER_BONUS_LEVELS.indexOf(A);
+    return i >= 0 ? EXECUTIONER_MAX_TARGETS[i] : null;
+  }
+
+  // Dano real x F de um hit pelo leech absoluto (D-025). Exato so quando vida e mana concordam:
+  // os caps de vida e de mana sao independentes, e dois canais capados caindo no mesmo dano e o
+  // caso a ignorar. Canal zero, ausente ou disjunto => null (o hit so daria piso).
+  function exactLeechDamageTimesF(hit, context) {
+    const setup = context && context.leechSetup;
+    const life = +hit.lifeLeech || 0;
+    const mana = +hit.manaLeech || 0;
+    if (!setup || !(life > 0) || !(mana > 0)) return null;
+    const lifeRate = effectiveLifeLeech(hit, setup);
+    const manaRate = effectiveManaLeech(hit, setup);
+    if (!(lifeRate > 0) || !(manaRate > 0)) return null;
+    const lo = Math.max((life - 1) / lifeRate, (mana - 1) / manaRate);
+    const hi = Math.min(life / lifeRate, mana / manaRate);
+    return hi > lo ? [lo, hi] : null;
+  }
+
+  // Largura de armor do mob em dano exibido (D-010b): a rolagem de armor vai de armor/2 a armor-1.
+  function physicalArmorWidth(hit, context) {
+    const mods = getMobMods(hit.mob, context);
+    if (!mods || !(mods.armor > 0) || !(mods.physicalDmgMod > 0)) return null;
+    const mod = effectiveMod(+mods.physicalDmgMod, pierceForElement('physical', hit, context));
+    return (mods.armor - 1 - Math.floor(mods.armor / 2)) * mod * mitigationMultiplier(mods, context);
+  }
+
+  // M-034 (D5.3): num cast de Executioner's Throw, hits do MESMO mob e estado com dano real exato
+  // tem base compativel (mesma rolagem; so a armor varia). Devolve os pares incompativeis do bloco
+  // sob N = hits.length. Razao que bate com 1/A (dentro da largura de armor) e diferenca de tier,
+  // nao incompatibilidade: nao refuta.
+  function executionerSameMobIncompatiblePairs(hits, context, A) {
+    const F = areaFactor(hits.length);
+    const exact = hits.map(h => ({ h, iv: exactLeechDamageTimesF(h, context) })).filter(x => x.iv);
+    const key = h => [normalizeName(h.mob), h.realCrit || h.type === 'crit' ? 1 : 0,
+      /expose weakness/i.test(h.rawLine || '') ? 1 : 0, h.bountyTalisman ? 1 : 0, h.isPrey ? 1 : 0].join('|');
+    const out = [];
+    for (let i = 0; i < exact.length; i++) {
+      for (let j = i + 1; j < exact.length; j++) {
+        const a = exact[i], b = exact[j];
+        if (key(a.h) !== key(b.h)) continue;
+        const width = physicalArmorWidth(a.h, context);
+        if (width == null) continue;
+        const w = width * F;
+        const [low, high] = a.iv[0] <= b.iv[0] ? [a, b] : [b, a];
+        const gap = high.iv[0] - low.iv[1];
+        if (!(gap > w)) continue;
+        const ratio = low.iv[1] / high.iv[0];
+        if (A > 0 && Math.abs(ratio - 1 / A) <= w / high.iv[0]) continue;
+        out.push([a.h, b.h]);
+      }
+    }
+    return out;
   }
 
   function deathEchoExplainsFirstHit(hits, action) {
@@ -326,9 +393,33 @@
       ? 'single_target_aa_physical_order_tiebreak_after_clean_leech_tie'
       : 'single_target_aa_all_action_without_positive_aa_evidence';
 
+    // M-034a (D5.2): o tier do Executioner's Throw alcanca no maximo `maxTargets` alvos. Um bloco
+    // fundido maior que isso e mecanicamente impossivel, e o corte AA + (k-1) cabe.
+    const execA = isExecutionerThrowAction(action) && context ? context.executionerTierA : null;
+    const execMaxTargets = execA ? executionerMaxTargets(execA) : null;
+    const execTargetCeilingSplit = execMaxTargets != null
+      && hits.length > execMaxTargets
+      && hits.length - 1 <= execMaxTargets;
+    // M-034 (D5.3): turno de amp kor todo overkill. Pares do mesmo mob/estado com dano real
+    // exato incompativel refutam a fusao; o corte vale se todo par incompativel envolve o
+    // primeiro hit e o sufixo fica sem par incompativel.
+    let execOverkillSameMobSplit = false;
+    if (execA && !execTargetCeilingSplit && hits.length >= 3 && hits.every(h => h.overkill && !h.virtual)) {
+      const merged = executionerSameMobIncompatiblePairs(hits, context, execA);
+      execOverkillSameMobSplit = merged.length > 0
+        && merged.every(pair => pair.includes(hits[0]))
+        && executionerSameMobIncompatiblePairs(hits.slice(1), context, execA).length === 0;
+    }
+
     if (runeUsingBoundaryConfirmed) {
       chosen = runeUsingBoundaryCandidate;
       reason = 'single_target_aa_rune_using_boundary';
+    } else if (execTargetCeilingSplit) {
+      chosen = split;
+      reason = 'ek_executioner_tier_target_ceiling_splits_aa';
+    } else if (execOverkillSameMobSplit) {
+      chosen = split;
+      reason = 'ek_executioner_overkill_same_mob_real_damage_splits_aa';
     } else if (timestampBoundaryConfirmed) {
       chosen = split;
       reason = 'ek_timestamp_boundary_aa_then_spell';
@@ -1518,6 +1609,7 @@
     }));
   }
   const API = {
+    exactLeechDamageTimesF,
     enrichHitEvidence,
     firstHitLowBlowSameMobBoundary,
     H005_MERGED_VETO_JURISDICTION,

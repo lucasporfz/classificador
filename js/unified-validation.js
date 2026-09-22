@@ -86,6 +86,26 @@
     return !(damage && damage.confidence !== 'unknown' && damage.multiplier > 1);
   }
 
+  // D-010g emendado (teto de mana): com Bounty Damage desconhecido, o Bounty (>= +2,5% no
+  // nivel 0) so DIVIDE a base de leech, e o Bounty Life nao mexe na mana. A mana de um hit
+  // marcado tem entao um TETO por N, com o menor multiplicador admissivel. Mana acima do teto
+  // (fora da tolerancia de D-023) refuta N; abaixo dele o canal fica neutro — o teto so
+  // refuta, nunca aprova. So para hit com dano exibido inteiro (overkill continua abstendo).
+  const BOUNTY_DAMAGE_MIN_MULTIPLIER = 1 + root.UnifiedFormulas.bountyTalismanBonusForLevel(0);
+  function bountyUnknownManaCeilingRefutesN(hit, setup, n, block, context) {
+    if (!bountyDamageBasisUnknown(hit, context) || hit.overkill || !(n >= 1)) return false;
+    const observed = +hit.manaLeech || 0;
+    if (!(observed > 0)) return false;
+    const ceilingBasis = leechDamageBasis(hit, context, true) / BOUNTY_DAMAGE_MIN_MULTIPLIER;
+    if (!(ceilingBasis > 0)) return false;
+    const rates = leechEffectiveRateCandidates(setup, 'mana', block, hit, context);
+    if (!rates.length) return false;
+    return rates.every(cand => {
+      const ceiling = expectedLeech(ceilingBasis, cand.rate, n);
+      return ceiling != null && observed > ceiling + leechValueToleranceForN(n, ceiling);
+    });
+  }
+
   // D-022b: com o nivel de Bounty Life desconhecido, o canal de VIDA de um hit marcado carrega
   // um multiplicador desconhecido e se abstem; o canal de mana continua valendo.
   function bountyLifeLevelUnknown(hit, setup) {
@@ -100,7 +120,11 @@
     const life = +hit.lifeLeech || 0;
     const mana = +hit.manaLeech || 0;
     if (!(life > 0) && !(mana > 0)) return { usable: false, ok: true, reason: 'no_positive_leech_or_cap' };
-    if (bountyDamageBasisUnknown(hit, context)) return { usable: false, ok: true, reason: 'bounty_damage_basis_unknown' };
+    if (bountyDamageBasisUnknown(hit, context)) {
+      return bountyUnknownManaCeilingRefutesN(hit, setup, n, block, context)
+        ? { usable: true, ok: false, n, reason: 'bounty_unknown_mana_ceiling_refutes_n' }
+        : { usable: false, ok: true, reason: 'bounty_damage_basis_unknown' };
+    }
     if (!setup || (!(setup.lifeBase > 0) && !(setup.manaBase > 0))) return { usable: false, ok: true, reason: 'leech_setup_unknown' };
 
     const officialFit = hitAcceptsLeechNAnyOfficialRate(hit, setup, n, block, context);
@@ -2956,12 +2980,22 @@
   function leechDeclaredN(hit, setup, block, context) {
     if (!hit || !isMainHit(hit)) return null;
     if (hit.overkill) return null;
+    // D-010g emendado: com Bounty Damage desconhecido so o teto de mana fala. Ele refuta N=2
+    // (e todo N>=2, porque o teto decresce com N) => N=1, desde que N=1 nao seja refutado tambem.
+    if (bountyDamageBasisUnknown(hit, context)) {
+      if (!bountyUnknownManaCeilingRefutesN(hit, setup, 2, block, context)) return null;
+      if (bountyUnknownManaCeilingRefutesN(hit, setup, 1, block, context)) return null;
+      const only = { channel: 'mana', n: 1, raw: 1, ceiling: true };
+      return { n: 1, raw: 1, channel: 'mana', channels: [only], ceiling: true };
+    }
     const basis = leechDamageBasis(hit, context);
     if (!(basis > 0)) return null;
     const perChannel = [];
     for (const channel of ['life', 'mana']) {
       const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
       if (!(observed > 0)) continue;
+      // D-022b: com o nivel de Bounty Life desconhecido, a vida de um hit marcado se abstem.
+      if (channel === 'life' && bountyLifeLevelUnknown(hit, setup)) continue;
       const rates = leechEffectiveRateCandidates(setup, channel, block, hit, context);
       if (!rates.length) continue;
       let rounded = null;
@@ -2969,7 +3003,9 @@
       let ambiguous = false;
       for (const cand of rates) {
         const ratio = observed / (basis * cand.rate);
-        if (!(ratio > LEECH_AREA_FLOOR)) return null;
+        // Canal abaixo do piso de area (capado: vida/mana quase cheia) nao declara nada, mas
+        // tambem nao anula o outro canal. H-005e: um canal capado so pode inflar a estimativa.
+        if (!(ratio > LEECH_AREA_FLOOR)) { ambiguous = true; break; }
         const n = LEECH_AREA_NUMERATOR / (ratio - LEECH_AREA_FLOOR);
         if (!(n >= 1)) return null; // D2: leech acima do esperado é contradição, não declaração
         const r = Math.round(n);
@@ -2994,7 +3030,11 @@
     if (!hit || !isMainHit(hit) || !(n >= 1)) return { usable: false, ok: true, reason: 'not_main_or_invalid_n' };
     const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
     if (!(observed > 0)) return { usable: false, ok: true, reason: 'no_' + channel + '_leech' };
-    if (bountyDamageBasisUnknown(hit, context)) return { usable: false, ok: true, reason: 'bounty_damage_basis_unknown' };
+    if (bountyDamageBasisUnknown(hit, context)) {
+      return channel === 'mana' && bountyUnknownManaCeilingRefutesN(hit, setup, n, block, context)
+        ? { usable: true, ok: false, tooHigh: true, channel, observed, n, reason: 'mana_bounty_unknown_ceiling_refutes_n' }
+        : { usable: false, ok: true, reason: 'bounty_damage_basis_unknown' };
+    }
     if (channel === 'life' && bountyLifeLevelUnknown(hit, setup)) return { usable: false, ok: true, reason: 'bounty_life_level_unknown' };
     const rates = leechEffectiveRateCandidates(setup, channel, block, hit, context);
     if (!rates.length) return { usable: false, ok: true, reason: channel + '_setup_unknown' };

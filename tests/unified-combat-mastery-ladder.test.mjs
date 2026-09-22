@@ -135,18 +135,15 @@ for (const label of ['tom', 'tom 2']) {
   check(`${label}: omega continua inativo`, !(omega && omega.active));
   check(`${label}: nenhum bonus de classe inferido`, s.context.bestiaryClassBonus.bonus === 0);
 
-  // O NUMERO final nao muda (era 0 antes), mas o MOTIVO passa a ser correto: a classe
-  // `human` nao fica "inconclusiva", ela ABSTEM porque o teto da unica linha
-  // (`overpower charm`, que nunca fecha a formula) e largo demais e deixa toda a grade
-  // sobreviver. Sem este assert, o alvo 6 nao testa nada que esta change fez.
+  // A unica linha da classe `human` era o `overpower charm`, que nunca fecha a formula de
+  // M-036. Desde C-008-nota (fix-tom3-bounty-mana-and-aa-evidence, D6, decisao do usuario de
+  // 21/Set/2026) o overpower nao testemunha bonus de classe: M-036 fica sem linha nenhuma, e o
+  // bonus continua 0. (Antes a `human` abstinha pelo teto largo demais sob escada.)
   const b = s.context.bestiaryClassBonus;
-  check(`${label}: o veredito vem da regra do teto sob escada`, b.source === 'charm_ceiling_under_ladder');
-  const human = (b.perClass || []).find(p => p.class === 'human');
-  check(`${label}: a classe human ABSTEM (nao "sem bonus provado")`, !!human && human.verdict === 'ambiguous');
-  check(`${label}: toda a grade sobrevive ao teto de human`,
-    !!human && human.surviving.length === F.BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES.length);
-  check(`${label}: o teto de human esta acima de 1,4 (a linha nunca fecha a formula)`,
-    !!human && human.ceilings.every(c => c > 1.4));
+  check(`${label}: M-036 sem testemunha (overpower fora do bonus de classe)`,
+    !(b.rows || []).length && b.source === 'no_elemental_charm_evidence_outside_grav_san');
+  check(`${label}: a classe human nao tem veredito (nenhuma linha)`,
+    !(b.perClass || []).some(p => p.class === 'human'));
 }
 
 // ------------------------------------------------ casos sinteticos (via do teto superior)

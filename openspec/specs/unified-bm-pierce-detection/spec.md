@@ -152,10 +152,20 @@ Nenhum outro charm SHALL ser usado como testemunha do BM. Em particular, `overpo
 charm` MUST NOT ser tratado como testemunha física, ainda que `CHARM_ELEMENT_MAP` o
 mapeie hoje como `physical`.
 
-Uma linha de testemunha é `(mob, elemento, estado de Expose Weakness)` com pelo menos 3
+Uma linha de testemunha é `(mob, elemento, estado de pierce observado)` com pelo menos 3
 procs, fora de qualquer janela de `utevo grav san` (mesmas exclusões de M-036), num mob
 presente na tabela de mods do regime da sessão e com `hitpoints` conhecido. Linhas de
 elementos que o BM não afeta MUST NOT ser usadas para decidir o perk.
+
+O **estado de pierce observado** SHALL incluir todas as fontes de pierce presentes na
+linha — `Expose Weakness` e `active elemental amplification` (D-010c) — e não apenas
+`Expose Weakness`. O motor MUST NOT montar o esperado a partir de um hit sintético que
+omita fontes de pierce da linha real, porque a fonte omitida vira resíduo sistemático em
+`observado/esperado` e desloca a comparação entre as hipóteses `com BM` e `sem BM`.
+
+O pierce da linha SHALL ser decomposto em "pierce observado sem BM" mais a hipótese de BM
+sob teste, de modo que as duas hipóteses continuem distinguíveis; o motor MUST NOT
+achatar as fontes num único número antes de comparar.
 
 #### Scenario: duas testemunhas independentes decidem o perk sem classificação
 
@@ -170,11 +180,25 @@ elementos que o BM não afeta MUST NOT ser usadas para decidir o perk.
   executar nenhuma classificação de turno**, e o valor MUST coincidir com o que o método
   cross-mob infere para a mesma sessão
 
+#### Scenario: linha de testemunha com amplification não é comparada ao esperado sem amplification
+
+- **GIVEN** uma linha de `wound charm` ou `divine wrath charm` que traz
+  `active elemental amplification` no Server Log
+- **WHEN** o motor monta o esperado dessa testemunha
+- **THEN** o pierce da amplification SHALL entrar no `effectiveMod` do esperado
+- **THEN** essa linha MUST NOT compartilhar mediana com linhas do mesmo mob e elemento
+  que não trazem amplification
+
 #### Scenario: sessão pré-cutoff não tem testemunha e usa o método atual
 
 - **WHEN** a sessão é pré-cutoff (D-016), cujo regime de mods não fornece `hitpoints`
 - **THEN** nenhuma linha de testemunha de charm é formada e o motor SHALL usar o método
   de coerência cross-mob (holy + físico) já especificado, sem alteração de resultado
+
+#### Scenario: vereditos de BM já corretos permanecem
+
+- **WHEN** o motor infere BM nas sessões com perk confirmado (`highwin 2`, `vemiath`)
+- **THEN** o veredito SHALL permanecer idêntico ao anterior a esta mudança
 
 ### Requirement: A testemunha de charm exige unanimidade, senão cai no método cross-mob
 

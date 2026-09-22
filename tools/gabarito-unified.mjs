@@ -1541,6 +1541,103 @@ export const CASES = [
       const virtual = spell.hits.filter(h => h.virtual && h.mob === 'raubritter skirmisher' && h.dmg === 0);
       return virtual.length === 1 ? null : 'preservar um virtual legítimo do skirmisher na spell';
     }),
+  // Controles de fix-tom3-bounty-mana-and-aa-evidence: `tom 3` S0 (09/Sep/2026). Turnos sem AA
+  // por evidencia (reports/tom3-diagnostico.md): o 1o hit declara N=k junto com o sufixo
+  // uniforme (H-005e nao corta), ou o turno tem um hit so (H-005). Nenhum pode ganhar AA.
+  ...[
+    '09:48:06', '09:49:06', '09:49:26', '09:50:23', '09:50:48', '09:51:26', '09:53:37',
+    '09:55:16', '09:55:55', '09:59:14', '10:00:48', '10:03:53',
+    '09:49:16', '09:49:37', '09:52:52', '09:53:22', '09:56:45', '10:02:43', '10:03:26',
+  ].map(ts =>
+    C(`tom 3/${ts}-controle-a0`, 'tom 3 server log.txt', 'tom 3 local chat.txt', ts, turn => {
+      const c = counts(turn);
+      return c.arrow === 0 && c.spell >= 1 && c.rune === 0 && c.grenade === 0
+        ? null
+        : `esperado A0 so spell; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    })),
+  // H-005e, canal capado (fix-tom3-bounty-mana-and-aa-evidence, D4): `tom 3` S0 09:56:43.
+  // O skirmisher 797 (L22 M119) tem a vida abaixo do piso de area (quase cheia) e a mana
+  // declara N=1,08 -> 1; o sufixo (3 overkill) e o Executioner's Throw.
+  C('tom 3/09:56:43-canal-capado', 'tom 3 server log.txt', 'tom 3 local chat.txt', '09:56:43', turn => {
+    const c = counts(turn);
+    if (!(c.arrow === 1 && c.spell === 4 && c.rune === 0 && c.grenade === 0)) {
+      return `esperado A1 S4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }
+    const arrow = turn.components.find(comp => comp.comp === 'arrow');
+    if (!(arrow.hits[0] && +arrow.hits[0].dmg === 797)) return 'esperado AA de 797';
+    const spell = turn.components.find(comp => comp.comp === 'spell');
+    return String(spell.actionLabel || '').includes("Executioner's Throw") ? null : 'esperado Executioner\'s Throw';
+  }),
+  // H-005e-nota (fix-tom3-bounty-mana-and-aa-evidence, D4, colateral aprovado): `tom 2`
+  // 13:07:14. Clavius 348 (L159 M51) declara N=1 nos dois canais; o chastener 2135 tem a vida
+  // capada (L15) e a mana declara N=2, junto com Clavius 2120 => AA + Fierce Berserk 2.
+  C('tom 2/13:07:14-canal-capado', 'tom 2 server log.txt', 'tom 2 local chat.txt', '13:07:14', turn => {
+    const c = counts(turn);
+    if (!(c.arrow === 1 && c.spell === 2 && c.rune === 0 && c.grenade === 0)) {
+      return `esperado A1 S2; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }
+    const arrow = turn.components.find(comp => comp.comp === 'arrow');
+    return arrow.hits[0] && +arrow.hits[0].dmg === 348 ? null : 'esperado AA de 348 (Clavius)';
+  }),
+  // D-011a emendado (fix-tom3-bounty-mana-and-aa-evidence, D3): `tom 3` S0 10:00:15.
+  // skirmisher 837 (M120) -> skirmisher 4 (overpower charm) -> XP: a XP e do charm, que matou o
+  // 4o alvo do Executioner's Throw; o 837 nao e overkill e declara N=1 => AA. A spell fica com
+  // 1298, 1479 e o virtual 0 do alvo morto pelo charm (S-014e).
+  C('tom 3/10:00:15-xp-do-charm', 'tom 3 server log.txt', 'tom 3 local chat.txt', '10:00:15', turn => {
+    const c = counts(turn);
+    if (!(c.arrow === 1 && c.spell === 3 && c.rune === 0 && c.grenade === 0)) {
+      return `esperado A1 S3; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    }
+    const arrow = turn.components.find(comp => comp.comp === 'arrow');
+    if (!(arrow.hits[0] && +arrow.hits[0].dmg === 837)) return 'esperado AA de 837';
+    const spell = turn.components.find(comp => comp.comp === 'spell');
+    if (!String(spell.actionLabel || '').includes("Executioner's Throw")) return "esperado Executioner's Throw";
+    const virtual = spell.hits.filter(h => h.virtual && +h.dmg === 0);
+    return virtual.length === 1 ? null : `esperado 1 virtual 0 na spell; got ${virtual.length}`;
+  }),
+  // D-010g, ramo de Mana Leech (fix-tom3-bounty-mana-and-aa-evidence, D1+D2): `tom 3` S0
+  // (09/Sep/2026). O 1o hit cai no chastener marcado, cuja mana refuta N>=2 mesmo com o menor
+  // Bounty (teto de mana), e o sufixo fecha N=k-1 (H-005e) com o Bounty Damage L18 da sessao.
+  // Evidencia turno a turno em reports/tom3-diagnostico.md; os S vem da contagem de hits do log.
+  // 09:48:13 (skirmisher 827, N=1 pela mana) e 09:58:01 (chastener 653, N=1 pela vida) destravam
+  // com o nivel conhecido junto com o canal capado (D4).
+  ...[
+    ['09:48:18', 3], ['09:48:42', 5], ['09:48:58', 1], ['09:49:04', 5], ['09:50:14', 4],
+    ['09:50:39', 5], ['09:50:41', 8], ['09:50:58', 3], ['09:51:00', 4], ['09:51:49', 4],
+    ['09:52:13', 3], ['09:53:05', 8], ['09:53:07', 5], ['09:53:11', 7], ['09:53:26', 2],
+    ['09:54:13', 8], ['09:54:15', 7], ['09:55:38', 8], ['09:55:40', 8], ['09:55:42', 5],
+    ['09:55:44', 7], ['09:56:27', 2], ['09:56:32', 7], ['09:56:59', 8], ['09:57:01', 5],
+    ['09:57:03', 6], ['09:57:05', 5], ['09:57:24', 8], ['09:58:27', 6], ['09:58:47', 7],
+    ['09:59:16', 6], ['09:59:37', 3], ['10:00:25', 7], ['10:00:32', 8], ['10:00:34', 7],
+    ['10:00:40', 3], ['10:01:20', 8], ['10:01:32', 8], ['10:01:34', 8], ['10:01:38', 8],
+    ['10:02:16', 8], ['10:02:39', 4], ['10:02:50', 5], ['10:02:59', 5], ['10:03:40', 5],
+    ['10:03:42', 5], ['10:03:49', 3], ['10:03:51', 2], ['10:04:47', 5],
+    ['09:48:13', 4], ['09:58:01', 1],
+  ].map(([ts, spell]) =>
+    C(`tom 3/${ts}-bounty-mana`, 'tom 3 server log.txt', 'tom 3 local chat.txt', ts, turn => {
+      const c = counts(turn);
+      return c.arrow === 1 && c.spell === spell && c.rune === 0 && c.grenade === 0
+        ? null
+        : `esperado A1 S${spell}; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+    })),
+  // M-034 (fix-tom3-bounty-mana-and-aa-evidence, D5): Executioner's Throw em `tom 3` S0. O tier da
+  // sessao e 2,25 pela razao de leech base/amped do mesmo mob no mesmo cast (09:54:22: 383/881 =
+  // 0,435), e ele alcanca no maximo 4 alvos (M-034a): os dois unicos blocos de 5 hits do corpus
+  // (09:51:11, 09:52:49) sao AA + 4. Em 10:01:24 (todo overkill), os skirmishers 594 e 69 tem dano
+  // real exato 641 e 1268 (x F): razao 0,505, nem mesmo tier nem 1/A => o 594 e o AA.
+  ...[
+    ['09:51:11', 4, 286], ['09:52:49', 4, 204], ['10:01:24', 2, 594],
+  ].map(([ts, spell, aaDmg]) =>
+    C(`tom 3/${ts}-executioner-tier`, 'tom 3 server log.txt', 'tom 3 local chat.txt', ts, turn => {
+      const c = counts(turn);
+      if (!(c.arrow === 1 && c.spell === spell && c.rune === 0 && c.grenade === 0)) {
+        return `esperado A1 S${spell}; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      const arrow = turn.components.find(comp => comp.comp === 'arrow');
+      if (!(arrow.hits[0] && +arrow.hits[0].dmg === aaDmg)) return `esperado AA de ${aaDmg}`;
+      const sp = turn.components.find(comp => comp.comp === 'spell');
+      return String(sp.actionLabel || '').includes("Executioner's Throw") ? null : "esperado Executioner's Throw";
+    })),
   // D-010g/D-022b (change infer-drone-bounty-talisman): `drone bounty` S0 (14/Sep/2026,
   // cabeçalho `Sept`). Bounty Damage 25 pela testemunha de charm e Bounty Life indeterminado
   // com o canal de vida dos hits marcados em abstenção. Só entram turnos confirmados por

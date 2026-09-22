@@ -107,7 +107,7 @@
 
   Caso-prova: `logs/bastion server log ek.txt` / `logs/bastion local chat ek.txt` (`Sat Jun 13 2026`, personagem com bônus `+125%` ⇒ `A = 2.25`), turno `15:21:16` — componente `Executioner's Throw` de 4 hits raubritter: `1115` (life `184`, mana `65`) = base; `2243` (life `420`, mana `146`), `668 OK` (life `423`, mana `147`) e `340 OK` (life `431`, mana `128`, leech > dano exibido) = amped ⇒ **3 amped + 1 base**. Fixtures sem `exori amp kor` permanecem idênticos (o pós-passe encontra o conjunto vazio e retorna sem mutar nada).
 
-  **Precedência do overkill (emenda de 21/Set/2026, decisão do usuário).** Depois dos passes de leech e da escolha de `A`, todo hit observado (não virtual) do componente `Executioner's Throw` com `overkill = true` termina `amped`, com multiplicador `A`, ou `null` quando `A` for indeterminado, mesmo que o leech aponte `base` ou esteja ausente. O bônus é de execução, e o leech de um hit fatal fica capado pela vida que falta ao jogador, então ele subestima. A promoção não alimenta a calibração de leech nem a escolha de `A`, e não move hit entre componentes. Risco aceito: um hit que matou sem o bônus sai `amped`. **Limitação declarada:** a promoção confia no marcador de overkill de D-011a, que hoje pode herdar a XP de um proc em outro mob. Medido em 21/Set/2026: 4 de 95 promoções (`tom` `12:26:25` e `12:30:16`, `tom 2` `13:04:16`, `bastion` `15:23:18`), a corrigir em change própria (`fix-xp-attribution-across-mobs`).
+  **Precedência do overkill (emenda de 21/Set/2026, decisão do usuário).** Depois dos passes de leech e da escolha de `A`, todo hit observado (não virtual) do componente `Executioner's Throw` com `overkill = true` termina `amped`, com multiplicador `A`, ou `null` quando `A` for indeterminado, mesmo que o leech aponte `base` ou esteja ausente. O bônus é de execução, e o leech de um hit fatal fica capado pela vida que falta ao jogador, então ele subestima. A promoção não alimenta a calibração de leech nem a escolha de `A`, e não move hit entre componentes. Risco aceito: um hit que matou sem o bônus sai `amped`. **Limitação declarada:** a promoção confia no marcador de overkill de D-011a, que hoje pode herdar a XP de um proc em outro mob. Medido em 21/Set/2026: 4 de 95 promoções (`tom` `12:26:25` e `12:30:16`, `tom 2` `13:04:16`, `bastion` `15:23:18`), a corrigir em change própria (`fix-xp-attribution-across-mobs`). Atualização de 21/Set/2026 (D-011b): `tom 2` `13:04:16` e `bastion` `15:23:18` deixaram de herdar a XP (charm que mata fica com ela); `tom` `12:26:25` e `12:30:16` continuam, para `fix-xp-attribution-across-mobs`.
 
 - **M-034a — O tier de mastery do Executioner's Throw é cravado pelo TETO DE ALVOS do cast:** `ESTADO: decidida e IMPLEMENTADA em 27/Ago/2026 (change `fix-amp-kor-tier-inference-and-h005g-cut-gate`). Emenda a M-034, cuja formulação original ("o `A` vem da razão de dano dos hits limpos") produzia o tier errado.`
 
@@ -128,6 +128,26 @@
   Quando nenhum tier sobrevive ao piso (bloco maior que todo teto conhecido), o motor não descarta a evidência de dano: volta a considerar os três níveis, para que um teto errado na tabela não trave a inferência.
 
   **Dependência declarada — o piso NÃO é independente da classificação de turno.** A contagem vem do **bloco já classificado**, não dos alvos do cast: o motor não observa "alvos", observa hits atribuídos a um componente. Um auto-ataque fundido por engano dentro do bloco de amp kor infla a contagem e empurra o tier **para cima**. Isso é o inverso do viés do dano (que empurra para baixo), então os dois erros **não se cancelam** — um turno mal cortado troca um erro sistemático por outro. Não é hipótese: o próprio `tom 2` `12:58:06` tinha 5 hits no bloco antes da correção da guarda de `H-005g` (na mesma change), e com aquela classificação o piso cravaria `×2.50`. Consequência aceita: o piso é tão confiável quanto a fronteira de componente da sessão, e uma sessão com fusão de AA não detectada produz tier alto sem sintoma visível.
+
+- **M-034b — Tier pelo leech, teto de alvos como veto e o turno todo overkill (21/Set/2026, decisão do usuário):**
+  1. **Tier pelo leech.** Num mesmo cast, um hit `base` (não overkill, porque overkill ⇒ `amped`) e um
+     `amped` do mesmo mob e estado, ambos com dano real **exato** pelo leech (vida e mana concordam;
+     canais capados são independentes, e dois caindo no mesmo dano é o caso a ignorar), têm razão
+     `1/A`. O leech não sofre o truncamento do overkill nem o alpha, então esse `A` vence a razão de
+     dano e o piso de M-034a. Sem par desses na sessão, vale M-034a. Medido: `tom` `12:35:15` e
+     `tom 3` `09:54:22` → 0,435 → `A = 2,25`.
+  2. **Teto de alvos como veto.** Bloco de Executioner's Throw com mais hits que o teto do tier é
+     mecanicamente impossível, e o corte AA + (k−1) fica. É o inverso da dependência declarada em
+     M-034a (um AA fundido inflava o bloco e empurrava o tier para cima). O `A` vem de uma passada de
+     resolução extra antes da final, só nas sessões com `exori amp kor`.
+  3. **Turno todo overkill.** Hits do mesmo mob e estado com dano real exato cuja diferença passa da
+     largura de armor × `F` refutam a fusão, **a menos** que a razão bata com `1/A` dentro dessa
+     largura (diferença de tier, não de componente). O corte vale se todo par incompatível envolve o
+     primeiro hit.
+  Casos-prova (`tom 3` S0): `09:51:11` e `09:52:49`, os dois únicos blocos de 5 hits do corpus →
+  A1 + Executioner's Throw 4; `10:01:24` (594 e 69 com dano real × F 641 e 1268, razão 0,505) → A1 + 2.
+  Premissa medida em `reports/fix-tom3-d5-premise-prototype.md`: 18 grupos compatíveis; as 2 exceções
+  são hits sem overkill com o tier rotulado errado, fora do domínio do item 3.
 
 - **M-035 — Sub-linhas central/side de beams de sorcerer:** os beams `Energy Beam (exevo vis lux)`, `Great Energy Beam (exevo gran vis lux)` e `Great Death Beam (exevo max mort)` viram reta de 3 com a mastery de beam (1 central + 2 laterais), e os laterais causam uma **fração** do dano do beam central. A Beam Mastery tem **três stages**, e cada um fixa **ao mesmo tempo** essa fração e o bônus de dano por alvo atingido — os dois são o mesmo eixo, não constantes independentes:
 
@@ -1052,6 +1072,36 @@ L=26 -> 12,75%
   resíduo de 1 ponto entre mobs. Com o valor modal repetido e a folga de S-004a, o
   nível 25 (`+12,5%`) fecha **30 componentes com 0 contradições**; 24 tem 5
   contradições e 26 tem 16. Com o dano conhecido, a Life de D-022b cai no nível 5.
+- **D-010g-1 — Teto de mana e ramo de Mana Leech do fallback (emenda de 21/Set/2026, change `fix-tom3-bounty-mana-and-aa-evidence`):**
+  com o nível de Bounty Damage desconhecido, o canal de **mana** de um hit marcado não é evidência
+  ausente por inteiro: o Bounty (>= +2,5% no nível 0) só **divide** a base de leech, e o Bounty Life
+  não mexe na mana. Então a mana tem um **teto** por `N`, calculado com o menor multiplicador
+  admissível: `CEIL(dano / 1,025 × taxaMana × areaFactor(N))`. Mana acima do teto (fora da
+  tolerância de D-023) **refuta** `N`; abaixo dele o canal é neutro. O teto **só refuta, nunca
+  aprova**: ele não conta como encaixe de `N`. Como o teto decresce com `N`, refutar `N = 2`
+  refuta todo `N >= 2`, e H-005e declara `N = 1` (desde que `N = 1` não seja refutado também).
+  Overkill continua abstendo, e a vida continua abstendo (D-022b).
+
+  **Ramo de Mana Leech do fallback** (já previsto acima, agora com critério): sem charm testemunha e
+  sem componente determinístico, o nível sai da mana dos hits marcados cujo `N = 1` foi provado
+  pelo teto, o que não depende do nível nem de partição. A taxa de mana é a dos hits **sem** marca.
+  Por hit, o maior nível `L` com `CEIL(base / (1 + bonus(L)) × taxa) >= mana` (CEIL exato, sem
+  tolerância) é um limite **superior** do nível real, porque alpha e mana capada só baixam a mana
+  frente ao dano. **Teto** = o menor desses limites; **nível** = o `L <= teto` com mais encaixes
+  exatos (empate → o `L` mais alto), com piso de 3 encaixes (H-003); senão `unknown`. Com o nível
+  cravado por este ramo, a passada sem leech é refeita e o leech reinferido, para o Bounty Life ser
+  medido com o Damage conhecido. Caso-prova `tom 3` S0 (09/Sep/2026): teto 18, encaixes
+  L16/L17/L18 = 10/14/17 (L19 = 12 fica acima do teto) → **L18**; Bounty Life sai L13 (+9%), com 72
+  evidências e 0 contradições.
+
+- **D-010h — Crítico de AA single-target é rolagem alta, não multiplicador (21/Set/2026, fato de domínio do usuário):**
+  no AA single-target de knight, monk e Royal Paladin, o crítico é o dano de uma rolagem forçada nos
+  66% superiores do range não crítico, não `dano × multiplicador`. Estimar um `critMultiplier`
+  "physical" para o AA não tem sentido. **Pendência declarada:** a reversão física atual do AA-crit
+  (D-010b aplicando `critMultiplier`, e o requisito "o crítico correto por-componente destrava a
+  reversão física do AA-crit") contradiz esta regra e não foi alterada; a implementação fica em
+  issue própria.
+
 - **D-011 — Overkill:** não participa de interseções, médias, magnitude ou comparação de leech. A proibição de leech aqui se refere à *razão* leech/dano; o leech **absoluto** permanece válido em overkill conforme D-019.
 - **D-011a — Atribuição de XP exige continuidade causal:** uma linha de XP só
   prova overkill do hit anterior quando a relação permanece contínua na ordem
@@ -1075,6 +1125,15 @@ L=26 -> 12,75%
   notificação `One or more primal pods have spawned.` e então por XP no mesmo
   segundo; a notificação não é nova ação do jogador, o charm mantém
   `killedTarget=true` e Energy Wave continua com 5 hits.
+- **D-011b — Charm que mata fica com a XP (emenda de D-011a, 21/Set/2026, decisão do usuário):**
+  o charm entra no log **antes** do hit do ataque que o disparou. Logo `hit → charm → XP` quer dizer
+  que o charm matou o próprio alvo (`killedTarget`), e a XP é dele, com **qualquer** nome de mob; o
+  hit anterior **não** é overkill. Charm que não mata continua transparente para `hit → XP`.
+  Reflection e field seguem D-011a. Prova independente pela XP fixa por mob, no corpus inteiro: dos
+  casos em que a XP separa os dois mobs, 343 batem com o mob do charm e 0 com o do hit. Caso-prova
+  `tom 3` `10:00:15` (skirmisher 837 → overpower 4 em outro skirmisher → XP): o 837 não é overkill,
+  declara N=1 e é o AA.
+
 - **D-012 — Herança de overkill:** recebe o componente do bloco contíguo definido pelos outros hits; nunca cria fronteira.
   - **D-012a — Turno 100% overkill não admite fronteira sem evidência independente:** quando
     **todos** os hits principais elegíveis de um turno são overkill, não existe "outro hit"
@@ -1936,6 +1995,13 @@ Caso-prova obrigatório — gloompillar 08:36:51 (sessão 14/Jul/2026, Ethereal 
     alvo. Sem sufixo contra o qual contrastar, esta alínea é necessária e não suficiente:
     ela nunca promove um hit a AA sozinha.
   ```
+- **H-005e-nota — Canal que não fala não anula o hit (21/Set/2026):** um canal cuja razão fica
+  abaixo do piso de área (vida ou mana quase cheia, capado) é descartado **sozinho**, como o canal
+  ambíguo; o outro canal continua declarando `N`. Idem para a vida de hit marcado com Bounty Life
+  desconhecido (D-022b), que se abstém em vez de ler "leech acima do esperado". Só `N < 1` num canal
+  que fala anula o hit. Casos-prova: `tom 3` `09:56:43` (skirmisher 797, vida 22 capada, mana declara
+  N=1) e `tom 2` `13:07:14` (chastener 2135, vida 15 capada, mana declara N=2 = k−1).
+
 - **H-005f — O veto de cardinalidade fundida tem jurisdição: ele não reverte decisão de degrau
   acima do dele:**
   `ESTADO: decidida (26/Ago/2026, mapa #12 / ticket #21) e IMPLEMENTADA no motor em
@@ -2117,6 +2183,8 @@ Caso-prova obrigatório — gloompillar 08:36:51 (sessão 14/Jul/2026, Ethereal 
 
 ### Fase 2 — Nomear
 
+
+  **Pendência (21/Set/2026, M-034b):** o único caso real em que H-005g decidia, `tom 2` `12:58:06`, passou a ser decidido antes pelo teto de alvos do Executioner's Throw (tier 2,25, bloco de 5 impossível), com o mesmo corte. H-005g continua implementado e com a assinatura presente nesse turno, mas sem caso real em que decida sozinho.
 - **N-001 — Segmentação imutável:** nomear não pode remover ou mover fronteiras.
 - **N-002 — AA:** verificar coerência física, posição e cooldown.
 - **N-003 — Spell:** verificar spell ofensiva concreta compatível.
@@ -2710,6 +2778,12 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   medido desta change.
 
 - **C-007 — Ausência de evidência não é contradição:** `no_leech_evidence`, mob sem mod conhecido, sessão pós-corte sem tabela preenchida ou falta de canal de vida/mana geram evidência ausente. Evidência ausente não autoriza fusão de componentes nem reuso de ação.
+- **C-008-nota — Overpower como testemunha (21/Set/2026, decisão do usuário):** o dano do `overpower
+  charm` escala com a vida do personagem e não fecha a fórmula absoluta de M-036, então ele **não**
+  testemunha bônus de classe de bestiário. Ele continua testemunha de **razão** entre níveis (omega
+  M-039 e escada de Combat Mastery M-042: valor modal e o degrau), e continua evento de kill
+  (D-011b).
+
 - **C-008 — Procs não são hits principais:** `damage reflection`, `wound charm`, `overpower charm`, **dano de field/DoT (M-038)** e procs anexos podem ser diagnósticos, mas não incrementam `N_leech`, não consomem cast, não viram componente e não criam AA virtual sem regra de borda/parcial aplicável.
 - **C-009 — Runa confirmada preserva fronteira, não turno novo:** `Using` pode confirmar execução e precedência de bloco compatível, mas não separa turno. Turno permanece bloco mecânico de ciclo conforme T-002 e combinações de T-005/T-006.
 - **C-010 — Cluster genérico é fallback:** cluster elemental/físico só pode ser usado depois de aplicar ação concreta, cast, `Using`, topologia, cardinalidade, cooldown, leech e originais. Cluster não pode roubar hits de ação concreta compatível.

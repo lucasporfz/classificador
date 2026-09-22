@@ -68,6 +68,21 @@ a testemunha inteira daquela sessão carrega um passo desconhecido — logo deix
 provar qualquer outro perk.
 _Avoid_: níveis do charm, degraus (que é a unidade, não a forma).
 
+**Teto de mana**:
+O maior leech de mana que um hit marcado pelo Bounty Talisman pode ter para um dado número
+de alvos, calculado com o menor Bounty possível (+2,5%). O Bounty só divide a base de leech,
+então mana acima do teto prova que o hit não bateu naquele número de alvos. O teto só
+refuta, nunca aprova: abaixo dele o hit não diz nada. É o que permite ler um AA marcado
+antes de o nível do Bounty ser conhecido, e é também quem vota esse nível (D-010g-1).
+_Avoid_: limite de mana, mana máxima.
+
+**Dano real exato**:
+O dano que um hit de fato causou, reconstruído pelo leech absoluto quando vida e mana
+apontam para o mesmo valor. Os caps de vida e de mana são independentes, então dois canais
+concordando quer dizer que nenhum foi cortado. Um canal só dá **piso**: o dano real foi pelo
+menos aquilo. É a única medida de dano que atravessa o overkill e o alpha (M-034b).
+_Avoid_: dano pelo leech (que pode ser só piso), dano reconstruído.
+
 **Estado do hit**:
 O conjunto de fatos que valem para um hit individual (e não para o componente inteiro
 nem para a sessão) e que mudam o dano dele: Expose Weakness, prey, amplification,

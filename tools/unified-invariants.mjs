@@ -391,18 +391,27 @@ function setupViolations(result) {
 }
 
 // D-016 vale nos DOIS sentidos: sessao datada antes de 16/Jun/2026 usa a tabela pre-corte,
-// sessao datada de 16/Jun/2026 em diante usa exclusivamente a pos-corte. Sessao sem data nao
-// pode escolher regime por suposicao, entao nao e auditada aqui (D-006/D-016).
+// sessao datada de 16/Jun/2026 em diante usa exclusivamente uma tabela pos-corte. Sessao sem
+// data nao pode escolher regime por suposicao, entao nao e auditada aqui (D-006/D-016).
+//
+// O lado pos-corte NAO e um rotulo unico: cada patch do jogo que muda dado de mob abre um
+// regime novo (ex.: `post-2026-08-25`, patch Darklight Core), sempre como overlay sobre a
+// tabela de 16/Jun. O que D-016 exige e que a sessao nao caia na tabela PRE-corte — nao que
+// o rotulo seja literalmente `post-2026-06-16`. Travar o rotulo faria todo patch futuro
+// aparecer como violacao de invariante.
+const POST_CUTOFF_REGIME_RE = /^post-\d{4}-\d{2}-\d{2}$/;
+
 function regimeViolations(result) {
   if (!(result?.sessionDateKey > 0)) return [];
-  const expected = result.sessionDateKey < 20260616 ? 'pre-2026-06-16' : 'post-2026-06-16';
+  const preCutoff = result.sessionDateKey < 20260616;
   const regime = result.mobModsRegime?.id || result.mobModsRegime;
-  return regime === expected
+  const ok = preCutoff ? regime === 'pre-2026-06-16' : POST_CUTOFF_REGIME_RE.test(String(regime || ''));
+  return ok
     ? []
     : [{
         ts: result.turns?.[0]?.ts ?? 0,
         rule: 'D-016',
-        msg: `sessao ${expected === 'pre-2026-06-16' ? 'pre' : 'pos'}-cutoff usa regime ${regime || 'ausente'}`,
+        msg: `sessao ${preCutoff ? 'pre' : 'pos'}-cutoff usa regime ${regime || 'ausente'}`,
       }];
 }
 

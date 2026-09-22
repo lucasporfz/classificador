@@ -28,6 +28,7 @@
   const {
     VERSION,
     CUTOFF_KEY,
+    mobModsRegimeKey,
     ELEMENT_KEYS,
     ELEMENTS,
     SINGLE_TARGET_RUNES,
@@ -289,6 +290,7 @@
     isPartialEdgeMissingEvidence,
     partialEdgeMissingEvidenceTurn,
     aggregateRows,
+    exactLeechDamageTimesF,
   } = root.UnifiedTurnResolution;
 
 
@@ -1610,6 +1612,9 @@
       .filter(ev => ev && ev.kind === 'charm' && ev.dmg > 0 && !ev.isPrey && !ev.bountyTalisman)
       .filter(ev => !isWithinAnyWindow(ev.ts, windows))
       .filter(ev => isKnightStanceKnownAt(context, ev.ts))
+      // C-008/M-036: `overpower charm` escala com a vida do personagem e nao fecha a formula
+      // absoluta; testemunha omega e escada (razao entre niveis), nunca bonus de classe.
+      .filter(ev => charmSignature(ev) !== 'overpower')
       .map(ev => ({ ev, element: CHARM_ELEMENT_MAP[charmSignature(ev)], ew: /expose weakness/i.test(ev.rawLine || '') }))
       .filter(x => !!x.element);
     if (!charmEvents.length) return { bonus: 0, multiplier: 1, class: null, source: 'no_elemental_charm_evidence_outside_grav_san' };
@@ -2011,7 +2016,41 @@
     return high;
   }
 
-  function detectExecutionerTiers(turns) {
+  // M-034 (fix-tom3-bounty-mana-and-aa-evidence, D5.1): tier `A` do Executioner's Throw pelo
+  // LEECH. Num mesmo cast, um hit `base` (nao overkill: overkill => amped, M-034) e um `amped` do
+  // mesmo mob e estado, ambos com dano real exato (vida e mana concordantes), tem razao 1/A.
+  // Diferente da razao de dano exibido, o leech nao sofre truncamento de overkill nem o alpha.
+  // Medido: `tom` 12:35:15 e `tom 3` 09:54:22 => 0,435 => A = 2,25. Sem par, devolve null.
+  function executionerTierFromLeech(turns, context) {
+    const inverseRatios = [];
+    for (const turn of turns || []) {
+      for (const comp of turn.components || []) {
+        if (!isExecutionerThrowAction(comp.action)) continue;
+        const hits = (comp.hits || []).filter(h => !h.virtual && h.dmg > 0);
+        const exact = hits.map(h => ({ h, iv: exactLeechDamageTimesF(h, context) })).filter(x => x.iv);
+        const key = h => [normalizeName(h.mob), h.realCrit || h.type === 'crit' ? 1 : 0,
+          /expose weakness/i.test(h.rawLine || '') ? 1 : 0, h.bountyTalisman ? 1 : 0, h.isPrey ? 1 : 0].join('|');
+        for (const base of exact) {
+          if (base.h.overkill) continue;
+          // O `base` precisa ser alvo do PROPRIO cast: pelo leech (H-005e) ele declara o N do bloco.
+          // Um AA fundido no bloco declara N=1 e faria um par falso (`tom 2` 12:59:09, osverger
+          // 342 com mana 50 num bloco de 4 => 1/r = 2,92).
+          const declared = root.UnifiedValidation.leechDeclaredN(base.h, context.leechSetup, comp, context);
+          if (!declared || declared.n !== (comp.hits || []).length) continue;
+          for (const amped of exact) {
+            if (amped === base || key(amped.h) !== key(base.h)) continue;
+            const r = ((amped.iv[0] + amped.iv[1]) / 2) / ((base.iv[0] + base.iv[1]) / 2);
+            if (r >= EXEC_LEECH_GAP) inverseRatios.push(r);
+          }
+        }
+      }
+    }
+    if (!inverseRatios.length) return null;
+    const raw = median(inverseRatios);
+    return EXECUTIONER_BONUS_LEVELS.reduce((best, lv) => Math.abs(lv - raw) < Math.abs(best - raw) ? lv : best, EXECUTIONER_BONUS_LEVELS[0]);
+  }
+
+  function detectExecutionerTiers(turns, leechTierA) {
     const execComps = [];
     for (const turn of turns || []) {
       for (const comp of (turn.components || [])) {
@@ -2099,9 +2138,12 @@
     // Nenhum tier sobrevive => o teto da tabela estÃ¡ desatualizado ou hÃ¡ bloco corrompido.
     // Nesse caso o piso se cala em vez de mentir, e a razÃ£o de dano volta a decidir sozinha.
     const levels = allowed.length ? allowed : EXECUTIONER_BONUS_LEVELS;
-    const A = rawA != null
+    // D5.1: o tier pelo leech, quando existe, vence a razao de dano + piso de cardinalidade (o piso
+    // conta hits de bloco ja classificado, e um AA fundido o empurra para cima — dependencia
+    // declarada de M-034a).
+    const A = leechTierA != null ? leechTierA : (rawA != null
       ? levels.reduce((best, lv) => Math.abs(lv - rawA) < Math.abs(best - rawA) ? lv : best, levels[0])
-      : null;
+      : null);
 
     // Pass 3: multiplicador por hit + nÃ­vel no componente.
     for (const comp of execComps) {
@@ -2131,6 +2173,19 @@
     let resolvedWithoutLeech = null;
     let goldLeechObservations = [];
     let aaElementDetection = null;
+    // M-034/M-034a (D5): com Executioner's Throw na sessao, o tier pelo leech sai da passada final
+    // e alimenta uma passada EXTRA (decisao do usuario), em que o teto de alvos do tier e a
+    // refutacao same-mob do turno todo overkill podem cortar o AA. Sem par base/amped, nada muda.
+    const resolveWithExecutionerTier = resolved => {
+      const leechTierA = executionerTierFromLeech(resolved, context);
+      if (leechTierA != null) {
+        context.executionerTierA = leechTierA;
+        SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
+        resolved = turns.map(t => resolveTurn(t, facts, context));
+      }
+      detectExecutionerTiers(resolved, leechTierA);
+      return resolved;
+    };
     let weaponPhysicalPierceDetection = null;
     // M-024/M-025: a consolidaÃ§Ã£o de granada cross-turno Ã© por-passe e dependente de
     // ordem temporal; o conjunto de casts jÃ¡ explodidos Ã© reiniciado a cada varredura.
@@ -2192,6 +2247,26 @@
       context.bountyTalismanSetup = context.leechSetup.bountyTalismanSetup
         || unknownBountyTalismanSetup('gold_observations_without_bounty_setup');
       SessionContext.invalidateReversalCache(context);
+      // D-010g/D-022b: o Bounty Damage do teto de mana so nasce DENTRO da inferencia de leech,
+      // depois que as observacoes-ouro ja foram coletadas com o nivel desconhecido (hits
+      // marcados sem base). Como no fallback de componentes, re-resolve a passada com o nivel
+      // e reinfere o leech, para o Bounty Life ser medido com o Damage conhecido.
+      if (context.bountyTalismanSetup.damage
+        && context.bountyTalismanSetup.damage.source === 'frozen_mana_leech_ceiling') {
+        SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
+        resolvedWithoutLeech = turns.map(t => resolveTurn(t, facts, context));
+        refineCritByComponent(resolvedWithoutLeech);
+        goldLeechObservations = collectGoldLeechObservations(resolvedWithoutLeech, context);
+        context.leechSetup = inferLeechSetupFromGoldObservations(
+          goldLeechObservations,
+          context,
+          detectCharmCandidateMobsFromColocatedTurns(resolvedWithoutLeech, context),
+          resolvedWithoutLeech,
+        );
+        context.bountyTalismanSetup = context.leechSetup.bountyTalismanSetup
+          || unknownBountyTalismanSetup('gold_observations_without_bounty_setup');
+        SessionContext.invalidateReversalCache(context);
+      }
       context.gravSanSetup = inferGravSanSetup(server, local, options || {}, {
         context,
         resolvedTurns: resolvedWithoutLeech,
@@ -2219,8 +2294,7 @@
       // 1Âª passada (sem leech) nÃ£o conseguiu provar por reversÃ£o elemental.
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
-      resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
-      detectExecutionerTiers(resolvedTurns);
+      resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
     } else {
       SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
       const pass1 = turns.map(t => resolveTurn(t, facts, context));
@@ -2242,8 +2316,7 @@
       SessionContext.invalidateReversalCache(context);
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
-      resolvedTurns = turns.map(t => resolveTurn(t, facts, context));
-      detectExecutionerTiers(resolvedTurns);
+      resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
     }
     const result = {
       version: VERSION,
@@ -2253,7 +2326,7 @@
       selectedSpeakerMethod: local.selectedSpeakerMethod,
       selectedSpeakerScores: local.selectedSpeakerScores,
       vocation: context.vocation,
-      mobModsRegime: context.mobModsRegime || (context.sessionDateKey >= CUTOFF_KEY ? 'post-2026-06-16' : 'pre-2026-06-16'),
+      mobModsRegime: context.mobModsRegime || mobModsRegimeKey(context),
       mobModsStats: context.mobModsStats || null,
       bmPierce: context.bmPierce || 0,
       bmPierceDetection: bmDetection || { pierce: context.bmPierce || 0, active: !!(context.bmPierce > 0), source: explicitBmPierceOption(options) == null ? 'not_run' : 'option_bmPierce' },

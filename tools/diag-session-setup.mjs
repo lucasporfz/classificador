@@ -11,7 +11,7 @@ const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
 const ctx = { console: silent, Math, JSON, Array, Object, Number, String, Map, Set, isFinite, isNaN, parseInt, parseFloat, Date, Float32Array, Int32Array };
 ctx.globalThis = ctx; ctx.window = ctx;
 vm.createContext(ctx);
-for (const f of ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'])
+for (const f of ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/mob-element-mods-post-2026-08-25.js', 'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'])
   vm.runInContext(read(path.join(ROOT, f)), ctx, { filename: f });
 
 const HEADER_RE = /^Channel .+ saved \w+ (\w+) +(\d+) (\d+:\d+:\d+) (\d{4})/;
@@ -77,7 +77,7 @@ console.log(`\n--- crit / charms / perks ---`);
 console.log(`critSetup=${j(c.critSetup)}`);
 console.log(`bmSetup=${j(c.bmSetup)}`);
 console.log(`bestiaryClassBonus=${j(c.bestiaryClassBonus)}`);
-console.log(`weaponPhysicalPierceSetup=${j(c.weaponPhysicalPierceSetup)}`);
+console.log(`weaponPhysicalPierceSetup=${j(c.weaponPhysicalPierce)}`);
 console.log(`gravSanSetup(janelas)=${((c.gravSanSetup||{}).windows||[]).length}`);
 
 console.log(`\n--- OMEGA (M-039) ---`);

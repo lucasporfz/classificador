@@ -7,6 +7,7 @@
 // (classificador legado + só tabela pré-cutoff) para explicar o que a UI mostra.
 //
 // Uso: node tools/diag-unified-turn.mjs "logs/sv.txt" "logs/lc.txt" HH:MM:SS[,HH:MM:SS...] [DD/Mon/YYYY]
+//      [--session N] [--mob-armor "bloodjaw=122"]
 //   - Sem data: usa a sessão única (ou o 1º par sv↔lc por horário de save).
 //   - Com data: restringe às sessões daquele dia (par sv↔lc de save mais próximo).
 // Saída por turno alvo: status final, componentes/hits (com crit/overkill/EW/prey),
@@ -18,7 +19,7 @@ const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
 const ctx = { console: silent, Math, JSON, Array, Object, Number, String, Map, Set, isFinite, isNaN, parseInt, parseFloat, Date, Float32Array, Int32Array };
 ctx.globalThis = ctx; ctx.window = ctx;
 vm.createContext(ctx);
-for (const f of ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'])
+for (const f of ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/mob-element-mods-post-2026-08-25.js', 'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'])
   vm.runInContext(read(path.join(ROOT, f)), ctx, { filename: f });
 
 const HEADER_RE = /^Channel .+ saved \w+ (\w+) +(\d+) (\d+:\d+:\d+) (\d{4})/;
@@ -50,7 +51,8 @@ function splitSessions(text) {
 const argv = process.argv.slice(2);
 const sessionArgIndex = argv.indexOf('--session');
 const sessionIdx = sessionArgIndex >= 0 ? +argv[sessionArgIndex + 1] : null;
-const positional = argv.filter((a, i) => a !== '--session' && argv[i - 1] !== '--session');
+const FLAGS_WITH_VALUE = new Set(['--session', '--mob-armor']);
+const positional = argv.filter((a, i) => !FLAGS_WITH_VALUE.has(a) && !FLAGS_WITH_VALUE.has(argv[i - 1]));
 const [svP, lcP, tsArg, dateArg] = positional;
 if (!svP || !lcP || !tsArg) {
   console.error('Uso: node tools/diag-unified-turn.mjs "logs/sv.txt" "logs/lc.txt" HH:MM:SS[,...] [DD/Mon/YYYY] [--session N]');
@@ -117,9 +119,46 @@ if (sessionIdx != null) {
 }
 console.log(`sessão: sv save=${fmt(pair.sv.saveSec)}  lc save=${fmt(pair.lc.saveSec)}${pair.sv.header ? '  (' + pair.sv.header + ')' : ''}`);
 
+// --mob-armor "bloodjaw=122[,outro=...]": roda o turno com o armor de um ou mais mobs
+// trocado, sem editar a tabela. Existe para calibracao: e assim que se ve QUAL violacao
+// aparece nas paredes de um plateau de armor (ex.: bloodjaw resolve so em [124,131] no
+// turno 04:53:31 de `15 sept`). So o mob citado ganha objeto novo — o resto da tabela
+// mantem a identidade dos objetos congelados que o cache de reversao por hit espera.
+function tablesWithArmorOverride(pre, post) {
+  const i = process.argv.indexOf('--mob-armor');
+  if (i < 0) return [pre, post];
+  const overrides = String(process.argv[i + 1] || '').split(',').map(entry => {
+    const [name, armor] = entry.split('=');
+    return [String(name || '').toLowerCase().trim(), Number(armor)];
+  }).filter(([name, armor]) => name && Number.isFinite(armor));
+  if (!overrides.length) return [pre, post];
+  // Um mob pode existir so numa das tabelas (o bloodjaw, por exemplo, nao esta na
+  // pre-cutoff), entao ausencia em UMA tabela e normal; so avisa se nao estiver em
+  // nenhuma, que ai o override foi um typo e passaria despercebido.
+  const seen = new Set();
+  const patch = table => {
+    if (!table) return table;
+    const out = Object.assign(Object.create(null), table);
+    for (const [name, armor] of overrides) {
+      if (!out[name]) continue;
+      seen.add(name);
+      out[name] = Object.freeze(Object.assign({}, out[name], { armor }));
+    }
+    return Object.freeze(out);
+  };
+  const patched = [patch(pre), patch(post)];
+  for (const [name] of overrides) {
+    if (!seen.has(name)) { console.error(`[--mob-armor] mob ausente das duas tabelas: ${name}`); process.exit(1); }
+  }
+  console.log(`--mob-armor: ${overrides.map(([n, a]) => `${n}=${a}`).join(', ')}`);
+  return patched;
+}
+
+const [MODS_PRE, MODS_POST] = tablesWithArmorOverride(ctx.MOB_ELEMENT_MODS || null, ctx.MOB_ELEMENT_MODS_POST_2026_06_16 || null);
+
 const u = ctx.UnifiedClassificationEngine.classifyUnified(pair.sv.text, pair.lc.text, {
-  mobModsPre: ctx.MOB_ELEMENT_MODS || null,
-  mobModsPost: ctx.MOB_ELEMENT_MODS_POST_2026_06_16 || null,
+  mobModsPre: MODS_PRE,
+  mobModsPost: MODS_POST,
   strictLeech: true, maxOriginal: 6000, useFloat16Mitigation: true,
 });
 if (u.error) { console.error('ERRO do motor:', u.error); process.exit(1); }

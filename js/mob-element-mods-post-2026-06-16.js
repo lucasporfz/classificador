@@ -11,6 +11,19 @@
 // (com 100, o intervalo de original físico do bloodjaw ficava disjunto dos blockmates
 // por ~7–12 de O e vetava a partição crit-consistente — ex.: 23:48:31/23:49:35/23:50:01
 // da sessão 30/Jun). Mitigation 5.60 confirmada ótima na mesma varredura (4.5–6.5).
+//
+// Armor 128 RE-CONFIRMADO em 2026-09-20 (`node tools/sweep-bloodjaw-armor.mjs`), depois
+// que kik-tibia/tibiatools apareceu com 100 para o mesmo mob — mas lá a entrada também é
+// manual (bestiaryClass/occurrence vazios, charmPoints 0), ou seja, palpite, não medida.
+// Varredura sobre as 34 sessões do corpus que têm hit em bloodjaw (15 fixtures, 7533
+// turnos): armor 100 dá 236 turnos sem classificação, 112 dá 54, 128 dá 23 e 145 dá 48 —
+// 128 é MÍNIMO ESTRITO, não plateau. A fixture que discrimina é `15 sept` (paladino de AA
+// físico, o armor entra direto): plateau [124,130] com parede dos dois lados (122 → 16,
+// 132 → 6, 136 → 23). `mazzerinbarrage` sozinho não crava — lá o plateau é [112,145].
+// Nota: o sorteio de armor é [floor(a/2), floor(a/2)*2-1], então 2k e 2k+1 são
+// indistinguíveis; a medida fixa floor(armor/2) = 64, não o 128 exato.
+// O pierce físico de arma (M-040) e o omega entraram DEPOIS da calibração de julho e não
+// moveram a resposta, então o valor não era compensação de modelo faltando.
 (function(root) {
   'use strict';
   const POST = Object.freeze({

@@ -132,7 +132,10 @@ const procs = (dmg, count, marked, gravSanMultiplier = 1) =>
   const hit = { type: 'normal', dmg: 1067, mob: 'converter', ts: 60, bountyTalisman: true, exposeWeakness: true, lifeLeech: 0, manaLeech: 36 };
   const setup = { lifeBase: 0.5, manaBase: 0.1625, confidence: 'strong' };
   const unknownContext = { bountyTalismanSetup: setupInference.unknownBountyTalismanSetup('test') };
-  for (const n of [1, 4, 7, 11]) {
+  // D-010g-1 (fix-tom3-bounty-mana-and-aa-evidence, D1): a mana tem TETO com o menor Bounty
+  // (1,025). Abaixo do teto o canal abstem; acima, refuta N. 1067/1,025 x 0,1625 x areaFactor:
+  // N=1 -> 170, N=4 -> 55, N=7 -> 39 (36 fica abaixo: abstem); N=11 -> 31 (36 acima: refuta).
+  for (const n of [1, 4, 7]) {
     const fit = validation.observedLeechAcceptsN(hit, setup, n, 'mana', null, unknownContext);
     assert.equal(fit.usable, false, 'N=' + n + ': ' + JSON.stringify(fit));
     assert.equal(fit.ok, true);
@@ -140,6 +143,13 @@ const procs = (dmg, count, marked, gravSanMultiplier = 1) =>
     const hitFit = validation.hitLeechFit(hit, setup, n, null, unknownContext);
     assert.equal(hitFit.usable, false, 'hitLeechFit N=' + n + ': ' + JSON.stringify(hitFit));
     assert.equal(hitFit.reason, 'bounty_damage_basis_unknown');
+  }
+  {
+    const fit = validation.observedLeechAcceptsN(hit, setup, 11, 'mana', null, unknownContext);
+    assert.equal(fit.usable && !fit.ok, true, 'N=11 refutado pelo teto de mana: ' + JSON.stringify(fit));
+    assert.equal(fit.reason, 'mana_bounty_unknown_ceiling_refutes_n');
+    const hitFit = validation.hitLeechFit(hit, setup, 11, null, unknownContext);
+    assert.equal(hitFit.usable && !hitFit.ok, true, 'hitLeechFit N=11: ' + JSON.stringify(hitFit));
   }
   const knownContext = {
     bountyTalismanSetup: {
