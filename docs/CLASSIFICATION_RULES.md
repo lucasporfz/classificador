@@ -467,6 +467,20 @@
   sessão não discrimina, não que o perk existe; nenhum tier significa bloco contaminado. Nos
   dois casos o resultado é idêntico ao anterior a esta regra.
 
+  **Gate obrigatório de vocação: só Royal Paladin.** O perk é equipamento de RP, então o
+  detector não roda em sessão de outra vocação, e vocação indeterminada é abstenção (`D-006`),
+  não liberação; o motivo devolvido é `vocation_not_paladin`. O gate de `aaElement` abaixo
+  **não** protege as outras vocações: para quem não é paladino `inferAaElementForSession`
+  devolve `physical` por **default** (`source: 'not_paladin'`, `eligible: 0`), e o gate passa
+  sem ter medido nada. Caso-prova negativo: `alumnishocks 2` (sorcerer `Alumni Shocks`,
+  `21/Set/2026`), onde o detector selecionava `0,09` com 8 de 9 blocos — e os 9 blocos são o
+  **1º estágio do Death Echo** (`exevo mort ora`, multiestágio `M-016d-1`), não AA (sorcerer
+  não tem AA de área física, `V-016`). Aqueles hits são elementais (revertidos, fecham exato no
+  eixo energy, `≈773` nos três mobs); reverter no eixo físico só é consistente com `+0,09`,
+  porque esse é justamente o pierce que alinha o único mob com `physicalDmgMod < 1,0`
+  (`dragolisk`, `0,85`) aos mobs de `1,0`. Forçar o detector a `0` nessa sessão não muda
+  nenhum dos 246 turnos: o efeito era só no dano base exibido e no fato de setup.
+
   **Gate obrigatório `aaElement === 'physical'` (S-007b).** Em sessão de munição de área
   elemental a métrica é ruído: em `thunder arrow` (`aaElement = energy`, evidência physical 28
   contra energy 61) o detector sem gate acusa **145 de 148** blocos vazios em *todo* tier, com

@@ -1266,9 +1266,18 @@
 
   function inferWeaponPhysicalPierce(turns, facts, context) {
     const inactive = source => ({ pierce: 0, active: false, source, tiers: WEAPON_PHYSICAL_PIERCE_TIERS, corroboration: null });
+    // M-040: o perk e equipamento de ROYAL PALADIN, e so sessao de RP tem testemunha dele.
+    // O gate de `aaElement` abaixo nao protege as outras vocacoes: para quem nao e paladino,
+    // `inferAaElementForSession` devolve `physical` por DEFAULT (`source: 'not_paladin'`,
+    // `eligible: 0`), entao ele passa sem ter medido nada. Em sorcerer isso eleva a
+    // testemunha falsa: em `alumnishocks 2` os blocos elegiveis sao o 1o estagio do Death
+    // Echo (multiestagio, M-016d-1), cujo dano e elemental -- revertido no eixo fisico so
+    // fecha com `+0,09`, que e o pierce que alinha o unico mob com `physicalDmgMod < 1`
+    // (dragolisk, 0,85) aos mobs de 1,0. Vocacao indeterminada abstem-se (D-006).
+    if (!context || !context.isRp) return inactive('vocation_not_paladin');
     // S-007b: em sessao de municao de area elemental a metrica e ruido (`thunder arrow`
     // acusa 145 de 148 blocos vazios em TODO tier). O gate nao e otimizacao, e correcao.
-    if (!context || context.aaElement !== 'physical') return inactive('aa_element_not_physical');
+    if (context.aaElement !== 'physical') return inactive('aa_element_not_physical');
     const savedProbeState = SessionContext.enterProbeResolutionState(context);
     const previousPierce = context.weaponPhysicalPierce;
     const previousPreassigned = context.preassignedGrenadeCasts;
