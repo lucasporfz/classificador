@@ -272,6 +272,8 @@
     hitStateKey,
     firstHitSharesExactOriginalWithRest,
     actionLabel,
+    isBeamAction,
+    elementalBlockTolerance,
   } = root.UnifiedValidation;
 
   // C2: os tres records com lifetime declarado (SessionSetup/ResolutionState/HitScope).
@@ -699,6 +701,233 @@
       timeline.push({ ts: +c.ts, incantation: text, state });
     }
     return { hasStanceCasts: true, timeline, source: 'stance_casts_from_owner' };
+  }
+
+  // M-043 — estancia elemental de sorcerer e conversao do proximo cast.
+  //
+  // Com a estancia E, cada magia OFENSIVA de elemento E arma a carga; a proxima magia
+  // ofensiva de elemento diferente sai convertida para E e consome a carga; outra magia de E
+  // com a carga armada so a mantem armada (`rearm`, nada se perde). A conversao PERDIDA e a
+  // magia de outro elemento lancada sem carga, que sai nativa. Nem a estancia nem a carga expiram (decisao
+  // do usuario, 25/Set/2026); depois de uma troca de estancia o estado da carga recomeca
+  // desconhecido (o efeito da troca sobre a carga nao foi declarado). AA de varinha, runa e magia
+  // utilitaria nao entram (nao aparecem como cast ofensivo do dono no local chat).
+  //
+  // SOMENTE LEITURA: roda depois da resolucao e nada daqui realimenta reversao, particao ou
+  // validacao de bloco. O elemento que reverte dano continua sendo o do perfil da acao.
+  const SORCERER_STANCE_INCANTATIONS = Object.freeze({ 'uteta flam': 'fire', 'uteta mort': 'death', 'uteta vis': 'energy' });
+  const SORCERER_STANCE_CANDIDATES = Object.freeze(['fire', 'death', 'energy']);
+  const SORCERER_STANCE_INCANTATIONS_BY_ELEMENT = Object.freeze({ fire: 'uteta flam', death: 'uteta mort', energy: 'uteta vis' });
+
+  // Elemento OBSERVADO de um bloco de spell (M-043a): o elemento cuja reversao canonica
+  // (D-010a) faz MOBS DISTINTOS do mesmo segundo fecharem num original so, com a tolerancia
+  // do bloco. Hits do mesmo mob fecham em qualquer elemento e nao discriminam; beam tem dois
+  // niveis legitimos no mesmo segundo (M-035) e nao vota.
+  function observedSpellElements(hits, action, elements, context) {
+    if (!action || isBeamAction(action)) return null;
+    const usable = (hits || []).filter(h => h && !h.overkill && !h.virtual && !h.zeroDamageDodge && h.dmg > 0 && h.mob);
+    const bySecond = new Map();
+    for (const h of usable) {
+      if (!bySecond.has(h.ts)) bySecond.set(h.ts, new Map());
+      const byMob = bySecond.get(h.ts);
+      const mob = normalizeName(h.mob);
+      if (!byMob.has(mob)) byMob.set(mob, h);
+    }
+    const groups = [...bySecond.values()].filter(byMob => byMob.size >= 2).map(byMob => [...byMob.values()]);
+    if (!groups.length) return null;
+    const tolerance = elementalBlockTolerance({ comp: 'spell', action });
+    const fits = [];
+    for (const element of elements) {
+      let closes = true;
+      for (const group of groups) {
+        const sets = group.map(h => elementalOriginalCandidates(h, element, context));
+        if (sets.some(ev => !ev || !ev.known || !ev.originals || !ev.originals.length)) { closes = false; break; }
+        const [first, ...rest] = sets.map(ev => ev.originals);
+        if (!first.some(o => rest.every(originals => originals.some(v => Math.abs(v - o) <= tolerance)))) { closes = false; break; }
+      }
+      if (closes) fits.push(element);
+    }
+    // Nenhum ou todos fecham: o bloco nao discrimina.
+    if (!fits.length || fits.length === elements.length) return null;
+    return fits;
+  }
+
+  // Maquina de conversao sobre os casts ofensivos de UM trecho, com a estancia E. A carga
+  // comeca DESCONHECIDA (pode vir de antes do chat): o primeiro cast de E nao sabe se arma ou
+  // desperdica, e o primeiro cast de outro elemento e semeado pelo dano observado. Depois de
+  // qualquer cast de outro elemento a carga fica conhecida (zerada).
+  function runSorcererConversion(casts, stance) {
+    let armed = null;
+    let contradictions = 0, confirmations = 0;
+    const states = casts.map(c => {
+      const observed = c.observed;
+      if (c.nativeElement === stance) {
+        const state = armed === null ? 'unknown' : (armed ? 'rearm' : 'arm');
+        // Cast do proprio elemento da estancia sai SEMPRE em E: um Hell's Core observado em
+        // energy contradiz Master of Flames (`alumnishocks` 19:01:38).
+        if (observed) {
+          if (observed.includes(stance)) confirmations++;
+          else contradictions++;
+        }
+        armed = true;
+        return { state, effectiveElement: stance };
+      }
+      let state;
+      if (armed === null) {
+        if (observed && observed.includes(stance) && !observed.includes(c.nativeElement)) state = 'converted';
+        else if (observed && observed.includes(c.nativeElement) && !observed.includes(stance)) state = 'native';
+        else state = 'unknown';
+      } else {
+        state = armed ? 'converted' : 'native';
+        const predicted = state === 'converted' ? stance : c.nativeElement;
+        if (observed) {
+          if (observed.includes(predicted)) confirmations++;
+          else contradictions++;
+        }
+      }
+      armed = false;
+      return { state, effectiveElement: state === 'converted' ? stance : (state === 'native' ? c.nativeElement : null) };
+    });
+    return { states, contradictions, confirmations };
+  }
+
+  function inferSorcererStanceSetup(resolvedTurns, localFacts, context) {
+    const notApplicable = source => ({ stance: 'not_applicable', source, timeline: [], segments: [], candidates: [], casts: [], summary: null });
+    if (!context || context.vocation !== 'sorcerer') return notApplicable('vocation_not_sorcerer');
+    // As estancias entraram no update de 16/Jun/2026, a mesma data do cutoff de regime de
+    // D-016: sessao no regime anterior nao tem estancia. E fato do regime, nao abstencao.
+    const regime = String(context.mobModsRegime || mobModsRegimeKey(context) || '');
+    if (!regime.startsWith('post')) return notApplicable('before_stance_update');
+
+    const playerCasts = ((localFacts && localFacts.playerCasts) || []).slice().sort((a, b) => (+a.ts || 0) - (+b.ts || 0));
+    const timeline = playerCasts
+      .filter(c => SORCERER_STANCE_INCANTATIONS[String((c && c.text) || '').trim().toLowerCase()])
+      .map(c => {
+        const incantation = String(c.text).trim().toLowerCase();
+        return { ts: +c.ts, incantation, stance: SORCERER_STANCE_INCANTATIONS[incantation] };
+      });
+
+    const componentByAction = new Map();
+    for (const turn of resolvedTurns || []) {
+      for (const comp of turn.components || []) {
+        if (comp && comp.comp === 'spell' && comp.action && comp.action.id != null) componentByAction.set(comp.action.id, { turn, comp });
+      }
+    }
+    const offensive = playerCasts
+      .filter(c => {
+        const p = c && c.profile;
+        return p && p.type === 'attack' && p.element && p.element !== 'unknown' && p.element !== 'physical';
+      })
+      .map(c => {
+        const hit = componentByAction.get(c.id);
+        const nativeElement = c.profile.element;
+        const elements = Array.from(new Set(SORCERER_STANCE_CANDIDATES.concat(nativeElement)));
+        return {
+          id: c.id,
+          ts: +c.ts,
+          incantation: String(c.profile.incantation || c.text || '').trim().toLowerCase(),
+          label: c.profile.label || null,
+          nativeElement,
+          turn: hit ? hit.turn : null,
+          observed: hit ? observedSpellElements(hit.comp.hits, c, elements, context) : null,
+        };
+      });
+
+    // Trechos: antes do primeiro cast de estancia (inferido pelo dano) e um por cast.
+    const bounds = [{ from: -Infinity, stance: null, source: null }]
+      .concat(timeline.map(e => ({ from: e.ts, stance: e.stance, source: 'owner_cast_timeline' })));
+    const segments = bounds.map((b, i) => {
+      const to = i + 1 < bounds.length ? bounds[i + 1].from : Infinity;
+      return { from: b.from, to, stance: b.stance, source: b.source, casts: offensive.filter(c => c.ts >= b.from && c.ts < to) };
+    }).filter((s, i) => i > 0 || s.casts.length);
+
+    let candidates = [];
+    for (const seg of segments) {
+      if (seg.stance) continue;
+      const evaluated = SORCERER_STANCE_CANDIDATES.map(stance => {
+        const run = runSorcererConversion(seg.casts, stance);
+        return { stance, contradictions: run.contradictions, confirmations: run.confirmations };
+      });
+      const clean = evaluated.filter(e => e.contradictions === 0);
+      const adopted = clean.length === 1 && evaluated.every(e => e === clean[0] || e.contradictions > 0) ? clean[0] : null;
+      seg.stance = adopted ? adopted.stance : 'unknown';
+      seg.source = adopted ? 'inferred_from_damage' : 'no_discriminating_evidence';
+      seg.candidates = evaluated;
+      if (!candidates.length) candidates = evaluated;
+    }
+
+    const casts = [];
+    for (const seg of segments) {
+      const run = seg.stance === 'unknown' ? null : runSorcererConversion(seg.casts, seg.stance);
+      seg.casts.forEach((c, i) => {
+        const r = run ? run.states[i] : { state: 'unknown', effectiveElement: null };
+        casts.push({
+          id: c.id, ts: c.ts, incantation: c.incantation, label: c.label,
+          nativeElement: c.nativeElement, stance: seg.stance,
+          state: r.state, effectiveElement: r.effectiveElement,
+          observedElements: c.observed, turnTs: c.turn ? c.turn.ts : null,
+        });
+      });
+    }
+
+    // Resultado por cast (decisao do usuario, 25/Set/2026): a SEQUENCIA decide a marca e o dano
+    // so reforca ou veta.
+    //   'used' = magia de outro elemento lancada com a carga armada (`converted`);
+    //   'lost' = magia de outro elemento lancada sem carga (`native`).
+    // Cast do elemento da estancia (`arm`/`rearm`) nao perde nada e nao e marcado; estado
+    // `unknown` tambem nao. Com bloco mensuravel, o dano PROVA a marca (`proven`) quando fecha no
+    // elemento previsto, e a VETA quando nao fecha nele.
+    for (const c of casts) {
+      c.result = null;
+      c.proven = false;
+      c.vetoed = false;
+      if (c.state !== 'converted' && c.state !== 'native') continue;
+      const predicted = c.state === 'converted' ? c.stance : c.nativeElement;
+      const alternative = c.state === 'converted' ? c.nativeElement : c.stance;
+      const obs = c.observedElements;
+      if (obs && !obs.includes(predicted)) { c.vetoed = true; continue; }
+      c.result = c.state === 'converted' ? 'used' : 'lost';
+      c.proven = !!(obs && !obs.includes(alternative));
+    }
+
+    // Marca por turno e agregado, SO dentro do trecho coberto pelo server log. Cast sem bloco
+    // resolvido cai no turno cuja janela de 2 s o contem.
+    const turnsList = resolvedTurns || [];
+    const firstTs = turnsList.length ? turnsList[0].ts : null;
+    const lastTs = turnsList.length ? turnsList[turnsList.length - 1].ts : null;
+    const summary = { used: 0, lost: 0, usedProven: 0, lostProven: 0, vetoed: 0, opportunities: 0 };
+    for (const c of casts) {
+      if (firstTs == null || c.ts < firstTs - 1 || c.ts > lastTs + 2) continue;
+      if (!c.result) {
+        if (c.vetoed) summary.vetoed++;
+        continue;
+      }
+      summary[c.result]++;
+      if (c.proven) summary[c.result + 'Proven']++;
+      const turn = (c.turnTs != null && turnsList.find(t => t.ts === c.turnTs))
+        || turnsList.find(t => c.ts >= t.ts && c.ts <= t.ts + 1)
+        || null;
+      if (!turn) continue;
+      const mark = { result: c.result, proven: c.proven, state: c.state, stance: c.stance, incantation: c.incantation, label: c.label,
+        castTs: c.ts, nativeElement: c.nativeElement, effectiveElement: c.result === 'used' ? c.stance : c.nativeElement };
+      // Dois casts no mesmo turno: a perda prevalece, porque e ela que a UI precisa mostrar.
+      if (!turn.stanceConversion || (c.result === 'lost' && turn.stanceConversion.result !== 'lost')) turn.stanceConversion = mark;
+    }
+    summary.opportunities = summary.used + summary.lost;
+
+    // Estancia exibida: a do trecho com mais casts dentro do server log.
+    const inSpan = seg => seg.casts.filter(c => firstTs != null && c.ts >= firstTs - 1 && c.ts <= lastTs + 2).length;
+    const main = segments.slice().sort((a, b) => inSpan(b) - inSpan(a))[0] || { stance: 'unknown', source: 'no_offensive_cast' };
+    return {
+      stance: main.stance,
+      source: main.source,
+      timeline,
+      segments: segments.map(s => ({ from: Number.isFinite(s.from) ? s.from : null, to: Number.isFinite(s.to) ? s.to : null,
+        stance: s.stance, source: s.source, candidates: s.candidates || null })),
+      candidates,
+      casts,
+      summary,
+    };
   }
 
   function inferGravSanSetup(serverFacts, localFacts, options, fallbackState) {
@@ -2374,6 +2603,9 @@
         terraBurstBonus: 'exevo ulus tera tests one global bonus level from ' + TERRA_BURST_BONUS_LEVELS.join('/') + ' with active/inactive per hit; bonus is modeled as pre-mitigation damage and leech stays on shown damage',
       },
     };
+    // M-043: somente leitura e DEPOIS do resultado montado (linhas de rotacao incluidas),
+    // para que nada desta inferencia possa realimentar a classificacao.
+    result.sorcererStanceSetup = inferSorcererStanceSetup(resolvedTurns, local, context);
     Object.defineProperty(result, '_context', { value: context, enumerable: false, configurable: true });
     return result;
   }

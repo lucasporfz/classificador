@@ -3497,6 +3497,7 @@
     firstHitCritStateBoundary,
     isBeamAction,
     validateBeamSublineBlock,
+    elementalBlockTolerance,
   };
 
   root.UnifiedValidation = API;

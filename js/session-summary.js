@@ -309,6 +309,17 @@ function clsSessionSummaryHtml(res, model) {
   ].filter(p => p[1]);
   // O elemento do auto ataque só é inferido (e só faz diferença) no regime RP.
   if (model.vocation === 'paladin') perks.push([t('cls_summary_aa_element'), cap(unified.aaElement || '—')]);
+  // M-043: estância elemental do sorcerer. Desconhecida e "não se aplica" são exibidas como
+  // tais — nunca omitidas nem trocadas por uma estância assumida.
+  if (model.vocation === 'sorcerer') {
+    const stance = unified.sorcererStanceSetup || {};
+    const names = { fire: 'Master of Flames', death: 'Master of Decay', energy: 'Master of Thunder' };
+    const value = names[stance.stance]
+      ? names[stance.stance] + ' (' + stance.stance + ') · ' +
+        t(stance.source === 'owner_cast_timeline' ? 'cls_summary_stance_cast' : 'cls_summary_stance_inferred')
+      : t(stance.stance === 'not_applicable' ? 'cls_summary_stance_not_applicable' : 'cls_summary_stance_unknown');
+    perks.push([t('cls_summary_stance'), value]);
+  }
   const perksCard = !perks.length ? '' :
     '<div class="cls-summary-card cls-summary-perks"><div class="cls-summary-lab">' + t('cls_summary_perks') + '</div>' +
       perks.map(p => '<div class="cls-kv"><span>' + esc(p[0]) + '</span><b>' + esc(p[1]) + '</b></div>').join('') +

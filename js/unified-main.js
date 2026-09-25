@@ -534,6 +534,8 @@
         rune,
         gren,
         grenadeCastInTurn,
+        // M-043: estado de conversao do cast ofensivo do sorcerer neste turno (so leitura).
+        stanceConversion: turn.stanceConversion || null,
         unifiedStatus: turn.status,
         unifiedReason: turn.reason || null,
         experimentalEvidence: {
@@ -590,6 +592,7 @@
       gravSanComponentCount: gravSanComponentStats.inWindow,
       gravSanComponentsUsed: gravSanComponentStats.active,
       gravSanBonus: (gravSanSetup && +gravSanSetup.bonus) || 0,
+      sorcererStance: unified.sorcererStanceSetup || null,
       turnTrace,
       temporalSeries,
       aaUptime: mkMetric(aaExpected, aaHit),

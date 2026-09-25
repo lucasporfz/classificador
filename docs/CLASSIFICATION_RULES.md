@@ -779,6 +779,86 @@
   omega ativo por `cyclursus | zap charm` (`659 ×124` e `699 ×35`, razão `1,0607`, dois níveis).
   (D-006, M-036, M-037, M-039, M-041, S-004a, S-004c, C-012a, A-006, U-006)
 
+- **M-043 — Estância elemental de sorcerer e conversão do próximo cast:** o update de
+  **16/Jun/2026** (a mesma data do cutoff de regime de `D-016`) deu ao sorcerer três estâncias:
+
+  | estância | incantação | elemento |
+  |---|---|---|
+  | Master of Flames | `uteta flam` | `fire` |
+  | Master of Decay | `uteta mort` | `death` |
+  | Master of Thunder | `uteta vis` | `energy` |
+
+  Com a estância `E`, cada magia **ofensiva** de elemento `E` **arma** uma carga; a **próxima**
+  magia ofensiva de elemento diferente sai com o dano convertido para `E` e **consome** a carga.
+  Lançar outra magia de `E` com a carga armada **não perde nada** (`rearm`): a carga segue armada
+  para a próxima magia de outro elemento. A conversão **perdida** é a magia de outro elemento
+  lançada **sem** carga, que sai no próprio elemento. Auto ataque de varinha, runa e magia
+  utilitária não armam nem consomem. A conversão vale para o dano inteiro da magia convertida,
+  inclusive o estágio atrasado de uma spell multiestágio (`M-016d`).
+
+  **A sequência decide a marca; o dano só reforça ou veta** (decisão do usuário, 25/Set/2026).
+  Magia de outro elemento lançada com a carga armada é `aproveitada`; lançada sem carga é
+  `perdida`. Magia do elemento da estância e cast em estado desconhecido não são marcados. Quando
+  o bloco é mensurável (critério de `M-043a`), fechar no elemento previsto dá o selo **provada
+  pelo dano**, e não fechar nele **veta** a marca. Casos que motivaram a regra: `kim` `16:13:35`,
+  um Energy Wave com a carga armada, **não** é perda (a carga segue armada e o Death Echo de
+  `16:13:37` converte, fechando em energy entre mobs distintos); `kim` `16:22:20`, um Death Echo
+  logo após o Great Energy Beam de `16:22:18` que acertou **um mob só** — o dano não discrimina o
+  elemento, e a sequência basta para marcá-lo como aproveitado.
+
+  **Nem a estância nem a carga expiram** (decisão do usuário, 25/Set/2026): o jogador fica com a
+  estância até lançar outra, e a carga só é consumida por uma conversão. O que acontece com uma
+  carga armada quando a estância **troca** não foi declarado; o motor não supõe nada: depois de
+  uma troca o estado da carga recomeça **desconhecido**, como no início do chat. Medido: em 131
+  conversões confirmadas pelo dano, armar→converter vai de 2 s a 11 s.
+
+  A estância é **fato do personagem, lido por cast**, no molde de `M-041`: linha do tempo de casts
+  **exatos** do dono do log (`selectedSpeaker`); cast de outro jogador da party não troca nada.
+  Sessão datada **antes** de 16/Jun/2026 tem estância `not_applicable` — é fato do regime, não
+  abstenção. A máquina de conversão anda sobre **todos** os casts ofensivos do dono no local chat
+  da sessão, inclusive os anteriores ao início do server log e os de turnos sem classificação,
+  porque todos armam ou consomem a carga. Antes do primeiro cast de `E` observado o estado da carga
+  é desconhecido; o primeiro cast de outro elemento nesse trecho é semeado pelo elemento observado
+  do seu bloco (`M-043a`), e depois dele a carga fica conhecida.
+
+  **Somente leitura nesta versão.** A estância, os estados da máquina (`arm`, `rearm`,
+  `converted`, `native`, `unknown`) e a marca (`used`, `lost`, com o selo `proven`) são expostos para exibição e **não** entram em reversão,
+  partição ou validação de bloco: o elemento que reverte o dano continua sendo o do perfil da
+  ação (e, no beam, o do detector de elemento efetivo de `M-035`). Dump do corpus byte-idêntico.
+  **Pendência declarada:** o dano base de sessão de sorcerer continua enviesado — um Death Echo
+  convertido para energy é revertido como death (`alumnishocks 2` `18:25:47`: originais
+  `717`/`923`/`510` no mesmo bloco em death, `≈787` nos três mobs em energy) — e turnos como
+  `alumnishocks 2` `18:30:42` (Hell's Core convertido) ficam sem classificação porque o bloco
+  não fecha em fire. Usar o elemento convertido na reversão é mudança própria, com drift medido.
+
+  Casos-prova. `alumnishocks 2` S0 (`21/Set/2026`): Great Energy Beam `18:21:16` arma; Energy
+  Wave `18:21:19` só rearma; Hell's Core `18:21:21` — no chat, antes do server log começar
+  em `18:21:24` — converte; Death Echo `18:21:26` sai em **death**, nativo (**perdida**, provada).
+  Energy Wave `18:30:38` arma; Hell's Core `18:30:42` converte; Death Echo `18:30:46` sai em death
+  (**perdida**, provada). Agregado da sessão: 91 aproveitadas (86 provadas pelo dano) e 2 perdidas (2 provadas). `dlc ms`
+  S0/S1: o dono casta `uteta flam` em `21:20:23`, e a inferência por dano, cega ao cast, também
+  dá fire; as perdas provadas são todas Death Echo saindo em death.
+  (D-006, D-010a, D-016, M-016d, M-035, M-041)
+
+  - **M-043a — Estância inferida pelo dano, sem herança:** sem cast `uteta` do dono num trecho,
+    a estância é **constante** nele (uma troca exigiria um cast, que apareceria no chat) e é
+    inferida comparando, para cada candidata `E ∈ {fire, death, energy}`, a previsão da máquina
+    de conversão com o **elemento observado** de cada bloco de spell: o elemento cuja reversão
+    canônica (`D-010a`, tolerância de `elementalBlockTolerance`) faz **mobs distintos** do mesmo
+    segundo fecharem num original só. Bloco com um mob só, ou em que todas as candidatas fecham,
+    não vota; beam não vota (central e side são dois níveis legítimos, `M-035`). A estância é
+    adotada quando uma única candidata tem zero contradições e todas as outras têm pelo menos
+    uma; fora disso o trecho fica `unknown` (`D-006`). A estância **não** é herdada de outra
+    sessão, nem do mesmo personagem no mesmo arquivo (decisão do usuário).
+
+    Medido nas sessões pós-update do corpus: Thunder em `alumnishocks` S0, `alumnishocks 2` S0
+    (0 contradições contra 86–96), `kim` S0 (0 contra 24–33) e `aquatic` S1/S2; Decay em
+    `death echo` S0 (os Energy Wave saem em death; 0 contra 4–7). A tolerância importa: com 1,2%
+    em vez das 2 unidades do motor, `kim` ganhava 28 contradições falsas e `death echo`
+    empatava. E a tabela tem de ser a do regime da sessão: a tabela pós-cutoff aplicada a
+    `mrowdy 2` (11/Jun/2026) fabricava "Energy Wave em death" pela mitigation do
+    `roaming dread` (`2,75` → `4,39`).
+
 ### Runas
 
 - **M-017 — Sinal de execução:** `Using one of N … runes` é sinal **primário** de classificação, no mesmo nível da mudança de crit-state (D-007). Comprova a execução da runa; não inventa dano onde não existe bloco determinístico compatível.

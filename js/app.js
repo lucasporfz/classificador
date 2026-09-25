@@ -335,6 +335,17 @@ function renderTurnDetail(turns, res, selectedIndex) {
     const gravSanChip = gravSan.tested === 0 ? '' : ' &nbsp;·&nbsp; ' + (gravSan.active > 0
       ? '<span class="cls-gs-pill is-on">' + t('cls_gravsan_turn_on').replace('{n}', gravSan.active).replace('{total}', gravSan.total) + '</span>'
       : '<span class="cls-gs-pill is-off">' + t('cls_gravsan_turn_off') + '</span>');
+    // M-043: a sequência decide a marca; o dano, quando mensurável, só reforça (selo) ou veta.
+    const conv = turn.stanceConversion;
+    const conversionChip = !conv || !conv.result ? '' : ' &nbsp;·&nbsp; ' +
+      '<span class="cls-conv-pill is-' + conv.result + (conv.result === 'used' && !conv.proven ? ' is-weak' : '') + '">' +
+        t(conv.result === 'used' ? 'cls_conv_turn_used' : 'cls_conv_turn_lost')
+          .replace('{spell}', clsEscapeHtml(conv.label || conv.incantation || ''))
+          .replace('{el}', clsEscapeHtml(conv.effectiveElement || conv.stance || '')) +
+        t(conv.proven ? 'cls_conv_proven' : 'cls_conv_sequence_only') +
+      '</span>';
+    // Borda lateral nas linhas do cast convertido/perdido, como a do grav san.
+    const convRowClass = h => (conv && conv.result && h.component === 'spell') ? ' cls-conv-row-' + conv.result : '';
     panel.innerHTML =
       headerHtml +
       '<div class="cls-turn-detail-block">' +
@@ -343,12 +354,13 @@ function renderTurnDetail(turns, res, selectedIndex) {
           'AA ' + (counts.arrow || 0) + ', spell ' + (counts.spell || 0) +
           ', rune ' + (counts.rune || 0) + ', grenade ' + (counts.grenade || 0) +
           gravSanChip +
+          conversionChip +
         '</p>' +
         '<table class="cls-table cls-turn-detail-table"><thead><tr>' +
           '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>Estado do hit</th><th>Overkill</th><th>Mob alvo</th>' +
         '</tr></thead><tbody>' +
           hits.map(h =>
-            '<tr' + (h.gravSanActive === true ? ' class="cls-gs-on"' : h.gravSanTested ? ' class="cls-gs-off"' : '') + '>' +
+            '<tr class="' + (h.gravSanActive === true ? 'cls-gs-on' : h.gravSanTested ? 'cls-gs-off' : '') + convRowClass(h) + '">' +
               '<td>' + clsEscapeHtml(clsFmtTurnTs(h.ts)) + '</td>' +
               '<td style="text-align:right">' + clsEscapeHtml(h.dmg) + '</td>' +
               '<td>' + clsEscapeHtml(clsDetailComponentLabel(h, turn)) + '</td>' +
@@ -930,6 +942,7 @@ function renderClassifier(res) {
     metricHtml +
     clsBrushHtml(res) +
     clsGravSanLegendHtml(res) +
+    clsConversionLegendHtml(res) +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineComponents"></canvas></div>' +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineHits"></canvas></div>' +
     '<div style="position:relative;height:240px;margin-bottom:14px"><canvas id="clsTimelineDamage"></canvas></div>' +
@@ -961,6 +974,7 @@ function renderClassifier(res) {
     '<p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0">' +
       t('cls_unmatched').replace('{u}', res.excludedTurns).replace('{n}', res.totalTurns) + '</p>' +
     gravSanTableHtml +
+    clsConversionSummaryHtml(res) +
     chartsHtml;
   renderClassifierCharts(res, compDefs);
   clsWireBrush(res);
@@ -987,6 +1001,10 @@ function renderClassifier(res) {
       clsRotationDamageMetric = metric;
       renderClassifier(res);
     });
+  });
+  // M-043: chips dos turnos com conversão perdida abrem o detalhe do turno.
+  document.querySelectorAll('#clsResults [data-conv-turn]').forEach(btn => {
+    btn.addEventListener('click', () => renderTurnDetail(res.turnTrace, res, +btn.getAttribute('data-conv-turn')));
   });
   document.querySelectorAll('.cls-gravsan-damage-metric button').forEach(btn => {
     btn.addEventListener('click', function() {
@@ -1121,6 +1139,80 @@ function clsGravSanLegendHtml(res) {
   return '<div class="cls-gs-legend"><b class="cls-gs-title">grav san</b>' +
     '<span><span class="cls-gs-sw is-on"></span>' + t('cls_gravsan_band_on').replace('{pct}', pct) + '</span>' +
     '<span><span class="cls-gs-sw is-off"></span>' + t('cls_gravsan_band_off') + '</span>' +
+  '</div>';
+}
+
+// M-043: conversão elemental do sorcerer por turno. A SEQUÊNCIA decide: 'used' (magia de
+// outro elemento com a carga armada) e 'lost' (magia de outro elemento sem carga). O dano só
+// reforça ou veta — o veto já vem aplicado pelo motor.
+const CLS_STANCE_NAMES = { fire: 'Master of Flames', death: 'Master of Decay', energy: 'Master of Thunder' };
+
+// Estado da faixa por turno, no molde do grav san: 'used' (aproveitada e provada pelo dano),
+// 'used-weak' (aproveitada só pela sequência) e 'lost' (perdida).
+function clsConversionFlags(res) {
+  const tr = (res && res.turnTrace) || [];
+  return tr.map(turn => {
+    const c = turn && turn.stanceConversion;
+    if (!c || (c.result !== 'used' && c.result !== 'lost')) return null;
+    return c.result === 'used' && !c.proven ? 'used-weak' : c.result;
+  });
+}
+
+function clsConversionLegendHtml(res) {
+  if (!clsConversionFlags(res).some(Boolean)) return '';
+  const stance = res.sorcererStance || {};
+  const s = stance.summary || {};
+  return '<div class="cls-gs-legend cls-conv-legend"><b class="cls-conv-title">' +
+      clsEscapeHtml(CLS_STANCE_NAMES[stance.stance] || t('cls_conv_title')) + '</b>' +
+    '<span><span class="cls-conv-sw is-used"></span>' + t('cls_conv_band_used').replace('{n}', s.used || 0) + '</span>' +
+    '<span><span class="cls-conv-sw is-used-weak"></span>' + t('cls_conv_band_used_weak') + '</span>' +
+    '<span><span class="cls-conv-sw is-lost"></span>' + t('cls_conv_band_lost').replace('{n}', s.lost || 0) + '</span>' +
+  '</div>';
+}
+
+// Seção de conversão elemental, no molde da tabela do grav san: indicadores da sessão, uma
+// linha por magia de outro elemento e os turnos perdidos como chips que abrem o detalhe.
+function clsConversionSummaryHtml(res) {
+  const stance = res && res.sorcererStance;
+  const s = stance && stance.summary;
+  if (!s || !s.opportunities) return '';
+  const esc = clsEscapeHtml;
+  const trace = res.turnTrace || [];
+  const casts = (stance.casts || []).filter(c => c.result).map(c => Object.assign({}, c, {
+    index: trace.findIndex(tr => tr.stanceConversion && tr.stanceConversion.castTs === c.ts),
+  })).filter(c => c.index >= 0);
+  const bySpell = new Map();
+  for (const c of casts) {
+    const r = bySpell.get(c.label) || { label: c.label, native: c.nativeElement, used: 0, usedProven: 0, lost: 0, lostProven: 0 };
+    r[c.result]++;
+    if (c.proven) r[c.result + 'Proven']++;
+    bySpell.set(c.label, r);
+  }
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0) + '%';
+  const rows = [...bySpell.values()].map(r =>
+    '<tr><td>' + esc(clsSpellNameSafe(r.label)) + ' <span class="cls-conv-muted">(' + esc(r.native) + ')</span></td>' +
+      '<td style="text-align:right">' + (r.used + r.lost) + '</td>' +
+      '<td style="text-align:right" class="cls-conv-used">' + r.used + ' <span class="cls-conv-muted">(' + r.usedProven + ')</span></td>' +
+      '<td style="text-align:right" class="cls-conv-lost">' + r.lost + ' <span class="cls-conv-muted">(' + r.lostProven + ')</span></td>' +
+      '<td style="text-align:right">' + pct(r.used, r.used + r.lost) + '</td></tr>'
+  ).join('');
+  const lostChips = casts.filter(c => c.result === 'lost').map(c =>
+    '<button type="button" data-conv-turn="' + c.index + '">' + esc(clsFmtTurnTs(c.ts)) + ' · ' + esc(clsSpellNameSafe(c.label)) + '</button>'
+  ).join('');
+  return '<div class="cls-conv-section">' +
+    '<h4>' + t('cls_conv_section_title') + ' — ' + esc(CLS_STANCE_NAMES[stance.stance] || '') + ' (' + esc(stance.stance) + ')</h4>' +
+    '<div class="cls-conv-kpis">' +
+      '<span><b>' + pct(s.used, s.opportunities) + '</b>' + t('cls_conv_kpi_rate') + '</span>' +
+      '<span><b class="cls-conv-used">' + s.used + '</b>' + t('cls_conv_kpi_used').replace('{n}', s.usedProven || 0) + '</span>' +
+      '<span><b class="cls-conv-lost">' + s.lost + '</b>' + t('cls_conv_kpi_lost').replace('{n}', s.lostProven || 0) + '</span>' +
+    '</div>' +
+    '<div class="cls-table-scroll"><table class="cls-table"><thead><tr>' +
+      '<th>' + t('cls_conv_th_spell') + '</th><th style="text-align:right">' + t('cls_conv_th_casts') + '</th>' +
+      '<th style="text-align:right">' + t('cls_conv_th_used') + '</th><th style="text-align:right">' + t('cls_conv_th_lost') + '</th>' +
+      '<th style="text-align:right">' + t('cls_conv_th_rate') + '</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    (lostChips ? '<div class="cls-conv-muted" style="font-size:12px;margin-top:10px">' + t('cls_conv_lost_turns') + '</div>' +
+      '<div class="cls-conv-chips">' + lostChips + '</div>' : '') +
   '</div>';
 }
 
@@ -1477,6 +1569,44 @@ if (typeof Chart !== 'undefined' && !Chart.registry.plugins.get('clsGravSanBands
   Chart.register(clsGravSanBandsPlugin);
 }
 
+// M-043: faixa de fundo da conversão do sorcerer, no molde da do grav san: lisa verde =
+// aproveitada (mais clara quando só a sequência a sustenta), hachurada vermelha = perdida.
+// Não disputa com o grav san porque ele é magia de paladino.
+let clsConversionHatch = null;
+const clsConversionBandsPlugin = {
+  id: 'clsConversionBands',
+  beforeDatasetsDraw(chart) {
+    const flags = chart.$clsConversion;
+    if (!flags || !flags.length) return;
+    const area = chart.chartArea, ctx = chart.ctx, xs = chart.scales.x;
+    const from = clsTurnView ? clsTurnView.start : 0;
+    const to = clsTurnView ? clsTurnView.end : flags.length - 1;
+    const w = Math.max(1, Math.abs(xs.getPixelForValue(1) - xs.getPixelForValue(0)));
+    if (!clsConversionHatch) {
+      const c = document.createElement('canvas'); c.width = c.height = 6;
+      const g = c.getContext('2d');
+      g.strokeStyle = 'rgba(248,113,113,.45)'; g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(0, 6); g.lineTo(6, 0); g.stroke();
+      clsConversionHatch = ctx.createPattern(c, 'repeat');
+    }
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top);
+    ctx.clip();
+    for (let i = from; i <= to; i++) {
+      if (!flags[i]) continue;
+      ctx.fillStyle = flags[i] === 'used' ? 'rgba(52,211,153,.16)'
+        : flags[i] === 'used-weak' ? 'rgba(52,211,153,.06)'
+        : clsConversionHatch;
+      ctx.fillRect(xs.getPixelForValue(i) - w / 2, area.top, w, area.bottom - area.top);
+    }
+    ctx.restore();
+  }
+};
+if (typeof Chart !== 'undefined' && !Chart.registry.plugins.get('clsConversionBands')) {
+  Chart.register(clsConversionBandsPlugin);
+}
+
 // Gráficos do classificador (só log observado, sem linha de simulação): componentes por
 // turno, hits/turno, dano/turno, Impact Analyser e histograma por componente.
 function renderClassifierCharts(res, compDefs) {
@@ -1586,10 +1716,15 @@ function renderClassifierCharts(res, compDefs) {
   // está debaixo do cursor.
   const unresolvedFlags = clsUnresolvedFlags(res);
   const gravSanFlags = clsGravSanFlags(res);
+  const conversionFlags = clsConversionFlags(res);
   clsBrushCharts = [clsTimelineComponentsChart, clsTimelineHitsChart, clsTimelineDamageChart, clsImpactChart].filter(Boolean);
   for (const chart of clsBrushCharts) {
     chart.$clsUnresolved = unresolvedFlags;
     chart.$clsGravSan = gravSanFlags;
+    chart.$clsConversion = conversionFlags;
+    // Os gráficos de turno nascem com `animation: false` e já desenharam no construtor, ANTES
+    // destas marcas existirem: sem redesenhar, as faixas só apareciam no primeiro hover.
+    chart.draw();
     chart.canvas.addEventListener('wheel', ev => {
       if (!clsBrushSetView || labels.length < 2) return;
       const area = chart.chartArea;
