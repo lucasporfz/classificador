@@ -49,6 +49,7 @@
     isChainedPenanceAction,
     elementalStateKey,
     ELEMENTAL_INTERMEDIATE_TOLERANCE,
+    sorcererSpellElement,
   } = root.UnifiedFormulas;
 
   // C2: os tres records com lifetime declarado (SessionSetup/ResolutionState/HitScope).
@@ -886,7 +887,8 @@
       for (const comp of turn.components || []) {
         const action = comp && comp.action;
         const profile = action && action.profile || {};
-        const element = profile.element;
+        // M-043: o bloco de spell de sorcerer reverte no elemento em que o dano saiu.
+        const element = comp && comp.comp === 'spell' && action ? sorcererSpellElement(action, comp.hits, context) : profile.element;
         const deterministic = comp && comp.deterministic || {};
         const main = (comp && comp.hits || []).filter(hit =>
           isMainHit(hit) && !hit.virtual && !hit.overkill

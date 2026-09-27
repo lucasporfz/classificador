@@ -44,6 +44,7 @@
     ELEMENTS,
     CUTOFF_KEY,
     PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS,
+    sorcererSpellElement,
   } = root.UnifiedFormulas;
 
   const {
@@ -1370,7 +1371,8 @@
   }
 
   function firstHitSeparationFixesSameMobExactness(hits, action, context) {
-    const element = action && action.profile && action.profile.element;
+    // M-043: o elemento efetivo e decidido pelo sufixo (o candidato a bloco da spell).
+    const element = action && action.profile && sorcererSpellElement(action, (hits || []).slice(1), context);
     if (!element || element === 'unknown') return false;
     if (!hits || hits.length < 2) return false;
     // M-035/M-037: níveis distintos no mesmo mob são parte declarada da
@@ -2123,7 +2125,9 @@
       if (!crit.ok) violations.push(Object.assign({ block }, crit));
       const action = block.action;
       let element = 'unknown';
-      if (block.comp === 'spell' || block.comp === 'grenade') element = action && action.profile ? action.profile.element : 'unknown';
+      if (block.comp === 'grenade') element = action && action.profile ? action.profile.element : 'unknown';
+      // M-043: spell de sorcerer reverte no elemento em que o dano saiu (estancia); fora disso, o perfil.
+      if (block.comp === 'spell') element = action && action.profile ? sorcererSpellElement(action, block.hits, context) : 'unknown';
       if (block.comp === 'rune') element = action && action.profile ? action.profile.element : 'unknown';
 
       const modeResult = validateBlockDeterministicAndLeechWithGravModes(block, element, context, turn);
@@ -2249,7 +2253,9 @@
     const next = comps[1];
     if (!arrow || !next || arrow.comp !== 'arrow') return false;
     if (!(next.comp === 'spell' || next.comp === 'rune' || next.comp === 'grenade')) return false;
-    const element = next.action && next.action.profile ? next.action.profile.element : 'unknown';
+    // M-043: o bloco de spell de sorcerer reverte no elemento em que o dano saiu.
+    const element = !(next.action && next.action.profile) ? 'unknown'
+      : (next.comp === 'spell' ? sorcererSpellElement(next.action, next.hits, context) : next.action.profile.element);
     if (!element || element === 'unknown' || element === 'physical') return false;
 
     const arrowMain = (arrow.hits || []).filter(h => !h.overkill);

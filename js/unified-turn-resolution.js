@@ -33,6 +33,7 @@
     pierceForElement,
     EXECUTIONER_BONUS_LEVELS,
     EXECUTIONER_MAX_TARGETS,
+    sorcererSpellElement,
   } = root.UnifiedFormulas;
 
   const {
@@ -769,7 +770,9 @@
               // veto de crit-homogeneidade rodam pra esses blocos.
               deterministic = { ok: true, reason: 'ek_physical_spell_not_hard_gated_by_intersection' };
             } else {
-              deterministic = validateElementalBlock(block, el || 'unknown', context);
+              // M-043: spell de sorcerer reverte no elemento em que o dano saiu (estancia).
+              const effective = block.comp === 'spell' ? sorcererSpellElement(block.action, block.hits, context) : el;
+              deterministic = validateElementalBlock(block, effective || 'unknown', context);
               critHomogeneity = validateCritHomogeneity(block);
             }
           }

@@ -91,32 +91,80 @@ de uma spell multiestágio (M-016d).
 
 Quando um trecho não tem cast `uteta` do dono, o motor SHALL inferir a estância comparando, para
 cada candidata `E ∈ {fire, death, energy}`, a previsão da máquina de conversão com o **elemento
-observado** de cada bloco de spell: o elemento cuja reversão canônica (`D-010a`, mesma tolerância
-de `elementalBlockTolerance`) faz **mobs distintos** do mesmo segundo fecharem num nível só. Bloco
-com um mob só, ou em que todas as candidatas fecham, não vota; beam não vota (central e side são
-dois níveis legítimos, M-035).
+observado** de cada cast ofensivo de magia: o elemento cuja reversão canônica (`D-010a`, mesma
+tolerância de `elementalBlockTolerance`) faz **mobs distintos** do mesmo segundo fecharem num nível
+só. Cast cujo dano não discrimina (um mob só por segundo, ou todas as candidatas fecham) não vota;
+beam não vota (central e side são dois níveis legítimos, M-035).
+
+A inferência SHALL rodar **antes** da resolução de turno, sobre os hits principais **brutos** do
+segundo do cast e do seguinte (`[cast, cast+1]`), sem depender de partição nem de turno resolvido.
+Quando essa janela inteira não discrimina, o motor SHALL repetir a observação sem o **primeiro**
+hit da janela (em ordem de `seq`), porque só ele pode ser o auto ataque do ciclo (V-011, M-032);
+nenhum outro hit é descartado.
 
 A estância SHALL ser adotada quando uma única candidata não tiver nenhuma contradição e as demais
 tiverem pelo menos uma. Fora disso o trecho SHALL ficar `unknown` (D-006), sem herdar de outra
 sessão.
 
-A inferência MUST NOT alterar classificação: ela roda sobre turnos já resolvidos e nenhum de seus
-resultados realimenta reversão, partição ou validação de bloco.
+A estância e o estado de cada cast SHALL ser inferidos **uma vez** por sessão. Depois da
+resolução, o motor SHALL apenas selar a marca de cada cast (`provada` / `vetada`) com o elemento
+observado do bloco resolvido, sem reinferir a estância nem os estados.
 
 #### Scenario: sessões com evidência discriminante
 
 - **WHEN** as sessões pós-update de sorcerer do corpus são classificadas
 - **THEN** a estância SHALL ser `energy` em `alumnishocks` S0, `alumnishocks 2` S0, `kim` S0 e
-  `aquatic` S2, e `death` em `death echo` S0, todas com fonte `inferred_from_damage`
+  `aquatic` S0, S1 e S2, e `death` em `death echo` S0, todas com fonte `inferred_from_damage`
 
-#### Scenario: sessão sem blocos que discriminem
+#### Scenario: a inferência bruta reproduz a inferência pós-resolução anterior
 
-- **WHEN** `aquatic` S1 é classificada e nenhum bloco de spell é mensurável
-- **THEN** a estância SHALL ser `unknown`, mesmo que `aquatic` S2, do mesmo personagem, seja
-  `energy`
+- **WHEN** as 9 sessões de sorcerer pós-update (`alumnishocks` S0, `alumnishocks 2` S0, `kim` S0,
+  `aquatic` S0–S2, `death echo` S0, `dlc ms` S0/S1) são classificadas
+- **THEN** a estância e o estado de **cada** cast SHALL ser iguais aos que a inferência
+  pós-resolução dava antes desta mudança
 
-#### Scenario: a inferência não muda turno nenhum
+#### Scenario: o auto ataque não tira o voto do cast
 
-- **WHEN** o corpus inteiro é classificado com esta regra implementada
-- **THEN** o dump SHALL ser byte-idêntico ao dump anterior à regra, em todos os pares
+- **WHEN** em `alumnishocks` S0 o Hell's Core de `19:01:38` tem como primeiro hit do segundo o AA
+  `mega dragon 102`, e o resto do segundo fecha em energy entre mobs distintos
+- **THEN** a observação SHALL ser repetida sem o primeiro hit, o cast SHALL votar `energy`, e a
+  estância da sessão SHALL ser `energy`, não `unknown`
 
+### Requirement: O elemento efetivo reverte o dano das spells de sorcerer que não são beam
+
+Para cada cast ofensivo de magia do dono com estância conhecida, o motor SHALL reverter o dano
+do bloco da spell (D-010a) no **elemento efetivo** previsto pela máquina de conversão, e não no
+elemento do perfil:
+
+- `converted` → primeiro a estância, depois o nativo;
+- `arm` / `rearm` → só a estância (que é o próprio elemento da magia);
+- `native` ou carga desconhecida (`unknown`) → primeiro o nativo, depois a estância.
+
+O segundo elemento SHALL ser usado **só** quando o primeiro não fecha entre mobs distintos do
+mesmo segundo e o segundo fecha (o mesmo critério de M-043a). Quando o dano não separa os dois, ou
+nenhum fecha, vale o primeiro. Um terceiro elemento MUST NOT ser usado.
+
+Com estância `unknown`, `not_applicable` (sessão anterior a 16/Jun/2026), ou vocação diferente de
+sorcerer, o elemento SHALL ser o do perfil, como antes desta mudança.
+
+Beams (`exevo vis lux`, `exevo gran vis lux`, `exevo max mort`) MUST NOT passar por este leitor
+nesta versão: o elemento do beam continua sendo escolhido por `validateBeamSublineBlock`.
+
+#### Scenario: Death Echo convertido reverte em energy
+
+- **WHEN** `alumnishocks 2` S0 (`21/Sep/2026`, estância `energy`) é classificada e o Death Echo de
+  `18:25:47` está `converted`
+- **THEN** o bloco SHALL ser revertido em `energy` (blast `786/788`, eco `393/394`) e o turno SHALL
+  continuar `A0 + Death Echo 15`
+
+#### Scenario: fora de sorcerer pós-update nada muda
+
+- **WHEN** `Mrowdy`, `Mrowdy 2` e `ms boss` (sorcerer, pré-update), `uhax 3` e `ingol ed` (druid)
+  e `barrage` (paladin) são classificados
+- **THEN** todos os turnos SHALL sair idênticos aos de antes desta mudança
+
+#### Scenario: beam não muda nesta versão
+
+- **WHEN** o corpus é classificado com esta mudança
+- **THEN** nenhum beam SHALL mudar de elemento, de validação ou de rótulo `central`/`side` por
+  causa deste leitor

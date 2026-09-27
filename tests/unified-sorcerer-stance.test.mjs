@@ -20,8 +20,11 @@
 //     onde fire e sempre nativo -> Thunder.
 //   - mrowdy 2 S0 (11/Jun/2026): antes do update de 16/Jun/2026 que criou as estancias.
 //
-// A inferencia NAO pode mudar classificacao: o dump do corpus inteiro tem de sair
-// byte-identico (gate de dump, fora deste teste).
+// Desde 26/Set/2026 (change infer-sorcerer-stance-before-resolution) a inferencia roda ANTES da
+// resolucao, pelos segundos brutos de cada cast, e o elemento efetivo alimenta a reversao das
+// spells que nao sao beam (M-043/M-043a emendadas): ela MUDA classificacao nas sessoes de
+// sorcerer pos-update. Os estados por cast abaixo continuam os mesmos; o elemento e a prova de
+// estagio sao cobertos por tests/unified-sorcerer-stance-conversion.test.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';

@@ -1554,7 +1554,80 @@
     return ((+hit.lifeLeech || 0) + (+hit.manaLeech || 0)) > (+hit.dmg || 0);
   }
 
+  // M-043a: um bloco de spell "fecha" num elemento quando, em cada segundo com >=2 mobs
+  // distintos, os mobs distintos (o 1o hit de cada um) revertem (D-010a) para um original comum,
+  // dentro da tolerancia do bloco. Hits do mesmo mob fecham em qualquer elemento e nao
+  // discriminam. `null` = nenhum segundo com >=2 mobs (o bloco nao discrimina).
+  function spellHitsCloseAcrossMobs(hits, element, context, tolerance) {
+    const usable = (hits || []).filter(h => h && !h.overkill && !h.virtual && !h.zeroDamageDodge && h.dmg > 0 && h.mob);
+    const bySecond = new Map();
+    for (const h of usable) {
+      if (!bySecond.has(h.ts)) bySecond.set(h.ts, new Map());
+      const byMob = bySecond.get(h.ts);
+      const mob = normalizeName(h.mob);
+      if (!byMob.has(mob)) byMob.set(mob, h);
+    }
+    const groups = [...bySecond.values()].filter(byMob => byMob.size >= 2).map(byMob => [...byMob.values()]);
+    if (!groups.length) return null;
+    for (const group of groups) {
+      const sets = group.map(h => elementalOriginalCandidates(h, element, context));
+      if (sets.some(ev => !ev || !ev.known || !ev.originals || !ev.originals.length)) return false;
+      const [first, ...rest] = sets.map(ev => ev.originals);
+      if (!first.some(o => rest.every(originals => originals.some(v => Math.abs(v - o) <= tolerance)))) return false;
+    }
+    return true;
+  }
+
+  // M-043 (infer-sorcerer-stance-before-resolution): o elemento em que o dano de uma spell de
+  // sorcerer realmente saiu. A estancia e o estado de cada cast vem do SessionSetup
+  // (`sorcererStanceSetup`, inferido ANTES da resolucao). Ordem de M-043:
+  //   converted -> [estancia, nativo]; arm/rearm -> [estancia]; native/unknown -> [nativo, estancia].
+  // Sem estancia conhecida (sessao pre-16/Jun/2026, trecho `unknown`, vocacao != sorcerer, cast
+  // sem registro) devolve `null`: vale o elemento do perfil, como antes.
+  const castStanceIndexes = new WeakMap();
+  function sorcererCastStance(action, context) {
+    const setup = context && context.sorcererStanceSetup;
+    if (!setup || !action || action.id == null || setup.stance === 'not_applicable') return null;
+    let index = castStanceIndexes.get(setup);
+    if (!index) {
+      index = new Map((setup.casts || []).map(c => [c.id, c]));
+      castStanceIndexes.set(setup, index);
+    }
+    const cast = index.get(action.id) || null;
+    return cast && ELEMENTS.includes(cast.stance) ? cast : null;
+  }
+
+  function sorcererSpellElementCandidates(action, context) {
+    const native = action && action.profile && action.profile.element;
+    if (!native || native === 'unknown' || native === 'physical') return null;
+    const cast = sorcererCastStance(action, context);
+    if (!cast) return null;
+    if (cast.state === 'converted') return [cast.stance, native];
+    if (cast.state === 'arm' || cast.state === 'rearm') return [cast.stance];
+    return Array.from(new Set([native, cast.stance]));
+  }
+
+  // O segundo candidato e ultimo recurso: so quando o primeiro NAO fecha entre mobs distintos e
+  // ele fecha (criterio de M-043a). Dano que nao separa, ou nenhum que fecha: vale o primeiro.
+  // Beam fica fora nesta versao (o elemento dele e escolhido por validateBeamSublineBlock).
+  function sorcererSpellElement(action, hits, context) {
+    const native = action && action.profile ? action.profile.element : 'unknown';
+    // unified-validation carrega depois deste arquivo; sem ele (contexto montado a mao) vale o perfil.
+    const validation = root.UnifiedValidation;
+    if (!validation || validation.isBeamAction(action)) return native;
+    const candidates = sorcererSpellElementCandidates(action, context);
+    if (!candidates) return native;
+    if (candidates.length === 1) return candidates[0];
+    const tolerance = validation.elementalBlockTolerance({ comp: 'spell', action });
+    if (spellHitsCloseAcrossMobs(hits, candidates[0], context, tolerance) !== false) return candidates[0];
+    return spellHitsCloseAcrossMobs(hits, candidates[1], context, tolerance) === true ? candidates[1] : candidates[0];
+  }
+
   const API = {
+    spellHitsCloseAcrossMobs,
+    sorcererCastStance,
+    sorcererSpellElementCandidates,
+    sorcererSpellElement,
     fieldDamageLevels,
     isFieldDamageHit,
     FIELD_SERIES_MIN_HITS,

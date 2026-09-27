@@ -28,6 +28,8 @@
     SPELL_PROFILES,
     SUPPORT_OR_HEAL_RE,
     MAGIC_PREFIX_RE,
+    sorcererCastStance,
+    sorcererSpellElementCandidates,
   } = root.UnifiedFormulas;
   function normalizeRuneName(name) {
     return normalizeName(String(name || '').replace(/\s+rune$/, ''));
@@ -524,8 +526,81 @@
       // Esta prova é pré-formação e não deve povoar o cache global de reversão
       // usado por todas as partições da sessão (logs longos têm muitos casts).
       const stageContext = root.UnifiedSessionContext.deriveWithFreshReversalCache(context);
-      const primaryEvidence = new Map(primaryWindow.map(h => [h.id, elementalOriginalCandidates(h, profile.element, stageContext)]));
-      const echoEvidence = new Map(echoCandidates.map(h => [h.id, elementalOriginalCandidates(h, profile.element, stageContext)]));
+      // M-043/M-016d-1a: com estancia de sorcerer conhecida, a prova roda no elemento efetivo
+      // previsto pela maquina de conversao, e o 1o hit da janela do blast deixa de ser
+      // comparavel quando os DEMAIS hits tem um original comum a >=2 mobs distintos (nivel do
+      // blast) e ele nao esta nesse nivel: so ele pode ser o auto ataque do ciclo (V-011,
+      // M-032), e um auto ataque nao e hit do blast. Caso-prova: `alumnishocks 2` 18:24:39,
+      // AA `wardragon 70` contra o eco `wardragon 414`. Sem estancia conhecida, nada muda.
+      const castStance = sorcererCastStance(cast, context);
+      const stageElements = sorcererSpellElementCandidates(cast, context) || [profile.element];
+      const evidenceIn = element => ({
+        primary: new Map(primaryWindow.map(h => [h.id, elementalOriginalCandidates(h, element, stageContext)])),
+        echo: new Map(echoCandidates.map(h => [h.id, elementalOriginalCandidates(h, element, stageContext)])),
+      });
+      const knownOriginals = ev => (ev && ev.known && ev.originals && ev.originals.length) ? ev.originals : null;
+      // Um par blast/eco casa sob a fracao quando algum original do eco fica a
+      // ELEMENTAL_INTERMEDIATE_TOLERANCE de FLOOR/CEIL(original do blast x fracao). Reusa a
+      // tolerancia intermediaria ja normativa do pipeline D-010a; nao introduz epsilon proprio
+      // da spell. Ex.: 820 -> 409 reverte para O 772 -> 385, vizinho discreto do O esperado 386.
+      const pairClosesUnderTier = (primaryOriginals, echoOriginals, tier) => !!(primaryOriginals && echoOriginals)
+        && primaryOriginals.some(po => echoOriginals.some(eo => {
+          const lo = Math.floor(po * tier.numerator / tier.denominator);
+          const hi = Math.ceil(po * tier.numerator / tier.denominator);
+          return Math.abs(eo - lo) <= ELEMENTAL_INTERMEDIATE_TOLERANCE || Math.abs(eo - hi) <= ELEMENTAL_INTERMEDIATE_TOLERANCE;
+        }));
+      // Quem e comparavel (e quem fica sem contraparte) e decidido no elemento PREVISTO; o
+      // alternativo so troca os originais usados para fechar os pares.
+      const comparableEvidence = evidenceIn(stageElements[0]);
+      let excludedFirst = null;
+      if (castStance) {
+        // O 1o hit da janela, em ordem de `seq`, contando overkill: se ele e overkill, nao e
+        // comparavel de qualquer jeito e nada e excluido.
+        const first = [cast.ts - 1, cast.ts].flatMap(ts => hitsByTs.get(ts) || [])
+          .filter(h => !delayedByHit.has(h.id))
+          .sort((a, b) => (a.seq || 0) - (b.seq || 0))[0];
+        if (first && primaryWindow.includes(first)) {
+          const tolerance = root.UnifiedValidation.elementalBlockTolerance({ comp: 'spell', action: cast });
+          const rest = primaryWindow.filter(h => h !== first);
+          const blastLevel = [];
+          for (const h of rest) {
+            for (const v of knownOriginals(comparableEvidence.primary.get(h.id)) || []) {
+              const mobs = new Set(rest
+                .filter(q => (knownOriginals(comparableEvidence.primary.get(q.id)) || []).some(x => Math.abs(x - v) <= tolerance))
+                .map(q => normalizeName(q.mob)));
+              if (mobs.size >= 2) blastLevel.push(v);
+            }
+          }
+          const firstOriginals = knownOriginals(comparableEvidence.primary.get(first.id)) || [];
+          if (blastLevel.length && !firstOriginals.some(x => blastLevel.some(v => Math.abs(x - v) <= tolerance))) excludedFirst = first;
+        }
+      }
+      const comparableTo = echoHit => primaryWindow.filter(p => p !== excludedFirst
+        && elementalStateKey(p) === elementalStateKey(echoHit) && knownOriginals(comparableEvidence.primary.get(p.id)));
+      // O 2o elemento e ultimo recurso tambem aqui: so quando, no previsto, algum par comparavel
+      // nao fecha sob nenhuma fracao (inclusive um par que seria desculpado por outro cast) e, no
+      // alternativo, todos fecham. O eco sai ~1 ponto de dano acima da metade exata, e a folga de
+      // 1 ponto de original absorve isso num modificador e nao noutro (`dlc ms` S0 21:37:23,
+      // `darklight source` 1184 -> 593: 1200/601 em death, 1048/526 em fire).
+      const allComparablePairsClose = evidence => tiers.some(tier => {
+        let matched = 0;
+        for (const echoHit of echoCandidates) {
+          if (!knownOriginals(comparableEvidence.echo.get(echoHit.id))) continue;
+          const comparable = comparableTo(echoHit);
+          if (!comparable.length) continue;
+          const eo = knownOriginals(evidence.echo.get(echoHit.id));
+          if (!comparable.some(p => pairClosesUnderTier(knownOriginals(evidence.primary.get(p.id)), eo, tier))) return false;
+          matched++;
+        }
+        return matched > 0;
+      });
+      let stageEvidence = comparableEvidence;
+      if (stageElements.length > 1 && !allComparablePairsClose(stageEvidence)) {
+        const alternative = evidenceIn(stageElements[1]);
+        if (allComparablePairsClose(alternative)) stageEvidence = alternative;
+      }
+      const primaryEvidence = stageEvidence.primary;
+      const echoEvidence = stageEvidence.echo;
       // M-016d-1/D-006: por fração candidata, cada hit não-overkill do segundo do
       // eco cai em UMA de três categorias:
       //   CASADO          -- existe hit comparável no blast (mesmo mob/estado, com
@@ -552,26 +627,12 @@
         const other = new Set();
         let contradicted = false;
         for (const echoHit of echoCandidates) {
-          const e = echoEvidence.get(echoHit.id);
-          if (!e || !e.known || !e.originals.length) continue; // sem contraparte (D-006)
-          const comparable = primaryWindow.filter(p => {
-            if (elementalStateKey(p) !== elementalStateKey(echoHit)) return false;
-            const pe = primaryEvidence.get(p.id);
-            return !!(pe && pe.known && pe.originals.length);
-          });
+          if (!knownOriginals(comparableEvidence.echo.get(echoHit.id))) continue; // sem contraparte (D-006)
+          const comparable = comparableTo(echoHit);
           if (!comparable.length) continue; // sem contraparte (D-006)
-          const primaryHit = comparable.find(p => {
-            const pe = primaryEvidence.get(p.id);
-            return pe.originals.some(po => e.originals.some(eo => {
-              const lo = Math.floor(po * tier.numerator / tier.denominator);
-              const hi = Math.ceil(po * tier.numerator / tier.denominator);
-              // Reusa a tolerância intermediária já normativa do pipeline D-010a;
-              // não introduz epsilon próprio da spell. Ex.: 820 -> 409 reverte
-              // para O 772 -> 385, um vizinho discreto do O esperado 386.
-              return Math.abs(eo - lo) <= ELEMENTAL_INTERMEDIATE_TOLERANCE ||
-                Math.abs(eo - hi) <= ELEMENTAL_INTERMEDIATE_TOLERANCE;
-            }));
-          });
+          const e = echoEvidence.get(echoHit.id);
+          const primaryHit = comparable.find(p =>
+            pairClosesUnderTier(knownOriginals(primaryEvidence.get(p.id)), knownOriginals(e), tier));
           if (!primaryHit) {
             if (!echoSecondSharedWithOtherCast) { contradicted = true; break; } // contradição real
             other.add(echoHit); // explicável pelo outro cast concreto do segundo (T-002)
@@ -604,7 +665,19 @@
       const consolidatedEcho = (otherCastHits && otherCastHits.size)
         ? echoBlock.filter(h => !otherCastHits.has(h))
         : echoBlock;
-      for (const h of matchedPrimary) {
+      // M-016d-1a: com estancia conhecida, a primeira explosao cobre tambem todo hit nao-overkill
+      // da janela IDENTICO a um casado (mesmo mob, estado e dano). Overkill nao: ele herda o bloco
+      // contiguo (D-012) e poderia puxar um AA em overkill para a spell (`kim` 16:25:13).
+      const primaryHits = new Set(matchedPrimary);
+      if (castStance && echoProvenByPower) {
+        for (const h of primaryWindow) {
+          if (h === excludedFirst || primaryHits.has(h)) continue;
+          for (const m of matchedPrimary) {
+            if (elementalStateKey(m) === elementalStateKey(h) && m.dmg === h.dmg) { primaryHits.add(h); break; }
+          }
+        }
+      }
+      for (const h of primaryHits) {
         h.multiStageStage = stages.primary.id;
         h.multiStageCastTs = cast.ts;
       }

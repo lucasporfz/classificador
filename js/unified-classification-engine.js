@@ -138,6 +138,7 @@
     COMBAT_MASTERY_MIN_LEVELS,
     COMBAT_MASTERY_LEVEL_TOLERANCE,
     combatMasteryCeiling,
+    spellHitsCloseAcrossMobs,
   } = root.UnifiedFormulas;
 
   const {
@@ -725,26 +726,11 @@
   // niveis legitimos no mesmo segundo (M-035) e nao vota.
   function observedSpellElements(hits, action, elements, context) {
     if (!action || isBeamAction(action)) return null;
-    const usable = (hits || []).filter(h => h && !h.overkill && !h.virtual && !h.zeroDamageDodge && h.dmg > 0 && h.mob);
-    const bySecond = new Map();
-    for (const h of usable) {
-      if (!bySecond.has(h.ts)) bySecond.set(h.ts, new Map());
-      const byMob = bySecond.get(h.ts);
-      const mob = normalizeName(h.mob);
-      if (!byMob.has(mob)) byMob.set(mob, h);
-    }
-    const groups = [...bySecond.values()].filter(byMob => byMob.size >= 2).map(byMob => [...byMob.values()]);
-    if (!groups.length) return null;
     const tolerance = elementalBlockTolerance({ comp: 'spell', action });
     const fits = [];
     for (const element of elements) {
-      let closes = true;
-      for (const group of groups) {
-        const sets = group.map(h => elementalOriginalCandidates(h, element, context));
-        if (sets.some(ev => !ev || !ev.known || !ev.originals || !ev.originals.length)) { closes = false; break; }
-        const [first, ...rest] = sets.map(ev => ev.originals);
-        if (!first.some(o => rest.every(originals => originals.some(v => Math.abs(v - o) <= tolerance)))) { closes = false; break; }
-      }
+      const closes = spellHitsCloseAcrossMobs(hits, element, context, tolerance);
+      if (closes === null) return null; // nenhum segundo com >=2 mobs distintos
       if (closes) fits.push(element);
     }
     // Nenhum ou todos fecham: o bloco nao discrimina.
@@ -791,7 +777,23 @@
     return { states, contradictions, confirmations };
   }
 
-  function inferSorcererStanceSetup(resolvedTurns, localFacts, context) {
+  // M-043a: elemento observado de um cast pelos hits BRUTOS do seu segundo e do seguinte, antes
+  // de qualquer particao. So o 1o hit da janela pode ser o auto ataque do ciclo (V-011/M-032):
+  // quando a janela inteira nao discrimina, repete sem ele. Caso-prova: `alumnishocks` S0, Hell's
+  // Core 19:01:38, cujo 1o hit do segundo e o AA `mega dragon 102`.
+  function observedCastElementsFromRawHits(mainHits, cast, elements, context) {
+    const win = mainHits.filter(h => h.ts >= cast.ts && h.ts <= cast.ts + 1)
+      .sort((a, b) => (a.seq || 0) - (b.seq || 0));
+    if (!win.length) return null;
+    return observedSpellElements(win, cast, elements, context)
+      || observedSpellElements(win.slice(1), cast, elements, context);
+  }
+
+  // M-043/M-043a: inferida UMA vez por sessao, ANTES da resolucao (os segundos brutos de cada
+  // cast), porque o elemento efetivo de cada cast alimenta a reversao das spells que nao sao
+  // beam e a prova de estagio do Death Echo. Depois da resolucao, `sealSorcererStanceConversions`
+  // so sela a marca de cada cast com o bloco resolvido — nao reinfere estancia nem estado.
+  function inferSorcererStanceSetup(serverFacts, localFacts, context) {
     const notApplicable = source => ({ stance: 'not_applicable', source, timeline: [], segments: [], candidates: [], casts: [], summary: null });
     if (!context || context.vocation !== 'sorcerer') return notApplicable('vocation_not_sorcerer');
     // As estancias entraram no update de 16/Jun/2026, a mesma data do cutoff de regime de
@@ -807,19 +809,13 @@
         return { ts: +c.ts, incantation, stance: SORCERER_STANCE_INCANTATIONS[incantation] };
       });
 
-    const componentByAction = new Map();
-    for (const turn of resolvedTurns || []) {
-      for (const comp of turn.components || []) {
-        if (comp && comp.comp === 'spell' && comp.action && comp.action.id != null) componentByAction.set(comp.action.id, { turn, comp });
-      }
-    }
+    const mainHits = ((serverFacts && serverFacts.hits) || []).filter(isMainHit);
     const offensive = playerCasts
       .filter(c => {
         const p = c && c.profile;
         return p && p.type === 'attack' && p.element && p.element !== 'unknown' && p.element !== 'physical';
       })
       .map(c => {
-        const hit = componentByAction.get(c.id);
         const nativeElement = c.profile.element;
         const elements = Array.from(new Set(SORCERER_STANCE_CANDIDATES.concat(nativeElement)));
         return {
@@ -828,8 +824,7 @@
           incantation: String(c.profile.incantation || c.text || '').trim().toLowerCase(),
           label: c.profile.label || null,
           nativeElement,
-          turn: hit ? hit.turn : null,
-          observed: hit ? observedSpellElements(hit.comp.hits, c, elements, context) : null,
+          observed: observedCastElementsFromRawHits(mainHits, c, elements, context),
         };
       });
 
@@ -865,30 +860,61 @@
           id: c.id, ts: c.ts, incantation: c.incantation, label: c.label,
           nativeElement: c.nativeElement, stance: seg.stance,
           state: r.state, effectiveElement: r.effectiveElement,
-          observedElements: c.observed, turnTs: c.turn ? c.turn.ts : null,
+          observedElements: c.observed,
         });
       });
     }
 
-    // Resultado por cast (decisao do usuario, 25/Set/2026): a SEQUENCIA decide a marca e o dano
-    // so reforca ou veta.
-    //   'used' = magia de outro elemento lancada com a carga armada (`converted`);
-    //   'lost' = magia de outro elemento lancada sem carga (`native`).
-    // Cast do elemento da estancia (`arm`/`rearm`) nao perde nada e nao e marcado; estado
-    // `unknown` tambem nao. Com bloco mensuravel, o dano PROVA a marca (`proven`) quando fecha no
-    // elemento previsto, e a VETA quando nao fecha nele.
-    for (const c of casts) {
+    const publicSegments = segments.map(s => ({ from: Number.isFinite(s.from) ? s.from : null, to: Number.isFinite(s.to) ? s.to : null,
+      stance: s.stance, source: s.source, candidates: s.candidates || null }));
+    const main = displayedStanceSegment(publicSegments, casts,
+      mainHits.length ? mainHits[0].ts : null, mainHits.length ? mainHits[mainHits.length - 1].ts : null);
+    return { stance: main.stance, source: main.source, timeline, segments: publicSegments, candidates, casts, summary: null };
+  }
+
+  // Estancia exibida: a do trecho com mais casts dentro do server log. O cast pertence ao trecho
+  // cuja faixa [from, to) contem o seu instante (a mesma divisao que monta os trechos).
+  function displayedStanceSegment(segments, casts, firstTs, lastTs) {
+    const inSpan = seg => (casts || []).filter(c => (seg.from == null || c.ts >= seg.from) && (seg.to == null || c.ts < seg.to)
+      && firstTs != null && c.ts >= firstTs - 1 && c.ts <= lastTs + 2).length;
+    return segments.slice().sort((a, b) => inSpan(b) - inSpan(a))[0] || { stance: 'unknown', source: 'no_offensive_cast' };
+  }
+
+  // M-043 (selo pos-resolucao): com estancia e estado de cada cast JA FIXOS antes da resolucao,
+  // sela a marca de cada cast com o elemento observado do bloco resolvido e marca o turno.
+  // Resultado por cast (decisao do usuario, 25/Set/2026): a SEQUENCIA decide a marca e o dano
+  // so reforca ou veta.
+  //   'used' = magia de outro elemento lancada com a carga armada (`converted`);
+  //   'lost' = magia de outro elemento lancada sem carga (`native`).
+  // Cast do elemento da estancia (`arm`/`rearm`) nao perde nada e nao e marcado; estado
+  // `unknown` tambem nao. Com bloco mensuravel, o dano PROVA a marca (`proven`) quando fecha no
+  // elemento previsto, e a VETA quando nao fecha nele.
+  function sealSorcererStanceConversions(setup, resolvedTurns, context) {
+    if (!setup || setup.stance === 'not_applicable') return setup;
+    const componentByAction = new Map();
+    for (const turn of resolvedTurns || []) {
+      for (const comp of turn.components || []) {
+        if (comp && comp.comp === 'spell' && comp.action && comp.action.id != null) componentByAction.set(comp.action.id, { turn, comp });
+      }
+    }
+    const casts = (setup.casts || []).map(cast => {
+      const c = Object.assign({}, cast);
+      const resolved = componentByAction.get(c.id);
+      const elements = Array.from(new Set(SORCERER_STANCE_CANDIDATES.concat(c.nativeElement)));
+      c.resolvedObservedElements = resolved ? observedSpellElements(resolved.comp.hits, resolved.comp.action, elements, context) : null;
+      c.turnTs = resolved ? resolved.turn.ts : null;
       c.result = null;
       c.proven = false;
       c.vetoed = false;
-      if (c.state !== 'converted' && c.state !== 'native') continue;
+      if (c.state !== 'converted' && c.state !== 'native') return c;
       const predicted = c.state === 'converted' ? c.stance : c.nativeElement;
       const alternative = c.state === 'converted' ? c.nativeElement : c.stance;
-      const obs = c.observedElements;
-      if (obs && !obs.includes(predicted)) { c.vetoed = true; continue; }
+      const obs = c.resolvedObservedElements;
+      if (obs && !obs.includes(predicted)) { c.vetoed = true; return c; }
       c.result = c.state === 'converted' ? 'used' : 'lost';
       c.proven = !!(obs && !obs.includes(alternative));
-    }
+      return c;
+    });
 
     // Marca por turno e agregado, SO dentro do trecho coberto pelo server log. Cast sem bloco
     // resolvido cai no turno cuja janela de 2 s o contem.
@@ -915,19 +941,13 @@
     }
     summary.opportunities = summary.used + summary.lost;
 
-    // Estancia exibida: a do trecho com mais casts dentro do server log.
-    const inSpan = seg => seg.casts.filter(c => firstTs != null && c.ts >= firstTs - 1 && c.ts <= lastTs + 2).length;
-    const main = segments.slice().sort((a, b) => inSpan(b) - inSpan(a))[0] || { stance: 'unknown', source: 'no_offensive_cast' };
-    return {
+    const main = displayedStanceSegment(setup.segments || [], casts, firstTs, lastTs);
+    return Object.assign({}, setup, {
       stance: main.stance,
       source: main.source,
-      timeline,
-      segments: segments.map(s => ({ from: Number.isFinite(s.from) ? s.from : null, to: Number.isFinite(s.to) ? s.to : null,
-        stance: s.stance, source: s.source, candidates: s.candidates || null })),
-      candidates,
       casts,
       summary,
-    };
+    });
   }
 
   function inferGravSanSetup(serverFacts, localFacts, options, fallbackState) {
@@ -2405,6 +2425,9 @@
   function classifyUnifiedParsed(server, local, options, bmDetection) {
     const shouldGoldInferLeech = !(options && options.leechSetup) && !(options && options.disableGoldLeechPipeline);
     const context = buildContext(server, local, Object.assign({}, options || {}, shouldGoldInferLeech ? { deferLeechSetupInference: true } : {}));
+    // M-043/M-043a: a estancia e o estado de conversao de cada cast precisam existir ANTES de
+    // `buildTurns` (a prova de estagio do Death Echo ja usa o elemento efetivo).
+    context.sorcererStanceSetup = inferSorcererStanceSetup(server, local, context);
     const turns = buildTurns(server.hits, local.spellCasts, context);
     const facts = { server, local };
     let resolvedTurns;
@@ -2603,9 +2626,9 @@
         terraBurstBonus: 'exevo ulus tera tests one global bonus level from ' + TERRA_BURST_BONUS_LEVELS.join('/') + ' with active/inactive per hit; bonus is modeled as pre-mitigation damage and leech stays on shown damage',
       },
     };
-    // M-043: somente leitura e DEPOIS do resultado montado (linhas de rotacao incluidas),
-    // para que nada desta inferencia possa realimentar a classificacao.
-    result.sorcererStanceSetup = inferSorcererStanceSetup(resolvedTurns, local, context);
+    // M-043: a estancia ja foi inferida antes da resolucao; aqui so o selo das marcas por cast
+    // e por turno, com os blocos resolvidos.
+    result.sorcererStanceSetup = sealSorcererStanceConversions(context.sorcererStanceSetup, resolvedTurns, context);
     Object.defineProperty(result, '_context', { value: context, enumerable: false, configurable: true });
     return result;
   }

@@ -63,6 +63,9 @@
     'gravSanSetup',
     'bountyTalismanSetup',
     'stanceSetup',
+    // M-043/M-043a: estancia de sorcerer e estado de conversao de cada cast, inferidos
+    // ANTES da resolucao; o leitor do elemento efetivo (unified-formulas) le daqui.
+    'sorcererStanceSetup',
     'omegaSetup',
     'combatMasteryLadder',
     'bestiaryClassBonus',
@@ -119,7 +122,7 @@
 
   // Substitui o SessionSetup INTEIRO por um novo record congelado com `patch`
   // aplicado, incrementando `epoch`. E o unico caminho pelo qual o setup muda:
-  // os setters dos 11 campos chamam isto.
+  // os setters dos campos de SETUP_FIELDS chamam isto.
   function replaceSetup(context, patch) {
     if (!context) return null;
     const previous = context.setup || emptySetup(null);

@@ -1769,6 +1769,26 @@ export const CASES = [
         ? null
         : `esperado nenhum componente classificado; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
     }),
+  // M-043/M-043a/M-016d-1a (infer-sorcerer-stance-before-resolution): Death Echo CONVERTIDO
+  // para energy (estancia Master of Thunder). O 1o hit do turno e o AA de varinha (tem a 2a linha
+  // de mana de AA); o blast fecha num original so entre mobs distintos em energy e o eco do
+  // segundo seguinte e a metade. O AA na janela do blast nao pode derrubar a prova do eco.
+  C('sorcerer-converted-death-echo/alumnishocks 2 18:24:39', 'alumnishocks 2 server log.txt', 'alumnishocks 2 localchat.txt', '18:24:39',
+    spellWithAaCheck(1, 10, 'Death Echo'), '21/Sep/2026'),
+  C('sorcerer-converted-death-echo/alumnishocks 2 18:25:47', 'alumnishocks 2 server log.txt', 'alumnishocks 2 localchat.txt', '18:25:47',
+    spellWithAaCheck(0, 15, 'Death Echo'), '21/Sep/2026'),
+  // Colaterais aprovados (26/Set/2026): com os Death Echo convertidos fechando em energy, aquatic S0
+  // ganha observacoes-ouro e crava o setup de leech (vida 0,27, igual a S1). 10:45:07: o
+  // `plunderer 119` e o AA de varinha (tem a 2a linha de mana de AA), antes do Great Energy Beam;
+  // 10:44:36: o Energy Wave aceita N=7 com o charm-kill do plunderer (S-014e).
+  C('sorcerer-converted-death-echo/aquatic S0 10:45:07', 'aquatic Server Log.txt', 'aquatic Local Chat.txt', '10:45:07',
+    spellWithAaCheck(1, 9, 'Great Energy Beam'), '31/Aug/2026'),
+  C('sorcerer-converted-death-echo/aquatic S0 10:44:36', 'aquatic Server Log.txt', 'aquatic Local Chat.txt', '10:44:36',
+    spellWithAaCheck(0, 7, 'Energy Wave'), '31/Aug/2026'),
+  C('sorcerer-converted-death-echo/alumnishocks 19:01:52', 'alumnishocks server log.txt', 'alumnishocks localchat.txt', '19:01:52',
+    spellWithAaCheck(1, 16, 'Death Echo'), '19/Sep/2026'),
+  C('sorcerer-converted-death-echo/alumnishocks 19:02:06', 'alumnishocks server log.txt', 'alumnishocks localchat.txt', '19:02:06',
+    spellWithAaCheck(1, 14, 'Death Echo'), '19/Sep/2026'),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

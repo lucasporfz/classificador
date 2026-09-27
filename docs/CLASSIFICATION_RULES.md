@@ -68,6 +68,36 @@
 
     - **M-016d-1a — Contradição × evidência ausente na confirmação do estágio:** ao testar uma fração candidata, cada hit não-overkill do segundo do eco cai em **uma** de três categorias: **casado** (existe hit comparável no blast — mesmo mob e mesmo estado de modificadores, com original elemental calculável dos dois lados — e a transformação discreta fecha); **contraditório** (existe hit comparável e ele **não** fecha); **sem contraparte** (não existe hit comparável, ou o original não é calculável de algum dos lados). A fração é rejeitada **somente** por hit contraditório. Hit **sem contraparte** é evidência ausente (D-006) e **não** rejeita a fração — a ausência de um hit comparável no blast não prova que a relação de potência falhou. A fração vence quando há **ao menos um** par casado e **nenhum** contraditório; um bloco composto só de hits sem contraparte não confirma estágio algum. Exigir que *todos* os candidatos casem trata as duas categorias como iguais e derruba a confirmação inteira por um único mob que o blast não acertou — sem a marcação de estágio, blast e eco ficam fundidos no mesmo bloco elemental e o turno morre no veto same-mob de S-004a, com o mesmo mob em dois níveis (integral e `1/2`). Casos-prova: `kim 16:22:16` — blast `undertaker 1070` em `:16` e eco `undertaker 535` em `:17` (`1/2` exato) casam, mas o `stalking stalk 449` do mesmo segundo não tem contraparte (o único outro mob do blast entrou como dodge de dano zero); `dlc ms 21:42:51` — `walking pillar 1450→725`, `darklight matter 1557→778` e `bloodjaw 1001→500` confirmam `1/2`, e o `darklight striker 781` acompanha sem contraparte. **Segundo compartilhado com outro cast concreto:** T-002 já declara que o segundo do estágio atrasado pode conter, legitimamente, hits de um cast concreto diferente. Quando existe outro cast ofensivo concreto do dono cuja janela normativa (M-012/M-013) cobre esse segundo, um hit comparável que **não** fecha sob a fração é evidência **daquele** cast e **não** rejeita a fração: a alternativa existe e está declarada. Sem outro cast assim, nada além do estágio atrasado poderia ter produzido o hit, e a contradição continua real. Nesse segundo compartilhado, a consolidação exclui do estágio atrasado **somente** os hits com evidência contrária (os comparáveis que não fecham); hits sem contraparte e overkills continuam acompanhando a explosão, como no segundo exclusivo — retirá-los também deixa pedaços do eco soltos, que viram âncora de turno órfão (medido: 3 turnos novos sem classificação). ~~Contraexemplo preservado: `dlc ms 21:35:29`, cujos dois níveis têm razão ≈`0,377` (não `1/2`), permanece não resolvido — não é par blast/eco.~~ **Corrigido:** aquela razão `0,377` não compara dois níveis da mesma explosão — compara o **eco** com o bloco de **outra spell** que caiu no mesmo segundo. O par blast/eco existe e é exato entre `:27` e `:29`: `exevo mort ora` em `21:35:27` (`source 1167`, `matter 1578`, `pillar 1468`) reverte para `O` `1079`/`1169`/`1077`, cujo `1/2` reproduz `583`/`788`/`733` nos três mobs; os `1546`/`2092`/`1947` do mesmo segundo são o `exevo gran flam hur` castado em `21:35:29`. O turno resolve como `Great Fire Wave` e o eco completo fica com o cast de origem.
 
+      **Emenda de 26/Set/2026 — sorcerer com estância conhecida (`M-043`, change
+      `infer-sorcerer-stance-before-resolution`).** Três ajustes, todos só quando a estância do
+      cast é conhecida; fora disso a prova é a de sempre.
+      1. **Elemento da prova.** Os originais saem do elemento efetivo previsto pela máquina de
+         conversão (um Death Echo convertido reverte em energy, não em death). Se nele algum par
+         comparável não fecha — inclusive um par que o outro cast do segundo desculparia — e no
+         elemento alternativo (nativo ou estância, nunca um terceiro) **todos** fecham, a prova usa
+         o alternativo, com o mesmo conjunto de comparáveis. Motivo medido: o eco sai cerca de 1
+         ponto de dano acima da metade exata, e a folga de 1 ponto de original absorve isso num
+         modificador e não noutro. Em `dlc ms` S0 `21:37:23`, `darklight source` `1184 → 593` dá
+         originais `1200 → 601` em death e `1048 → 526` em fire. Sem o alternativo, `21:37:23` e
+         `21:43:07` ficavam sem classificação, e o eco `593` de `dlc ms` S1 `21:55:58` virava um AA
+         falso.
+      2. **O primeiro hit da janela não é comparável quando está fora do nível do blast.** "Nível do
+         blast" é um original comum a pelo menos dois mobs distintos entre os **demais** hits da
+         janela, no elemento previsto, com a tolerância de `elementalBlockTolerance`. Só o primeiro
+         hit pode ser o auto ataque do ciclo (`V-011`, `M-032`), e um auto ataque não é hit do blast.
+         Nenhum outro hit é excluído, porque o mesmo mob pode aparecer no blast em dois níveis
+         observados sem causa conhecida (`alumnishocks` S0 `19:01:11`, `wardragon` `757 × 739` em
+         energy; `19:02:06`, `dragolisk` `770 × 752`; razão `1,024` nos dois, não modelada), e cada
+         um casa com a sua metade. Caso-prova: `alumnishocks 2` `18:24:39` → `A1` (`wardragon 70`)
+         `+ Death Echo 10`. O AA derrubava a prova em qualquer elemento, e o turno morria em S-004a.
+         Mesma forma: `alumnishocks` S0 `19:01:52` → `A1 + Death Echo 16` e `19:02:06` →
+         `A1 + Death Echo 14`.
+      3. **Primeira explosão completa.** O rótulo de primeira explosão cobre, além dos hits casados,
+         todo hit não-overkill da janela **idêntico** a um casado (mesmo mob, estado e dano). Overkill
+         não recebe o rótulo por aqui (`D-012`): em `kim` `16:25:13` o primeiro hit
+         `nighthunter 61 OK` é o AA (o leech declara `N = 1`) e não pode ser puxado para a spell.
+         Caso-prova: `alumnishocks 2` `18:25:47`, os 5 hits do blast (antes só 2).
+
     - **M-016d-1b — A via elemental pertence a quem declara confirmação elemental:** a confirmação por transformação elemental discreta SÓ se aplica a perfis cuja mecânica declarada é `confirmation: 'elemental'` (hoje, Death Echo). Spells multiestágio cuja confirmação declarada é por cluster de leech (M-016e, Spiritual Outburst) **não** podem ser confirmadas por esta via — elas permanecem para o passe de correção posterior, com o leech real já inferido. Sem essa reserva explícita, a separação depende do acaso de a reversão elemental nunca fechar (o que M-016e afirma, mas não garante hit a hit): sob o critério de M-016d-1a, um único par coincidente bastaria para a via elemental preemptar a via de leech. **A recíproca vale igual:** a via de **cluster de leech** também pertence só a quem a declara (`confirmation: 'leech_cluster'`). Um perfil de confirmação elemental cuja via falhe **não** pode ser consolidado por magnitude de cluster: o cluster de leech agrupa por razão vida/mana-por-dano, que separa mobs com e sem prey, então ele consolida **parte** do estágio atrasado e deixa o resto no turno seguinte — mesmo mob em dois níveis, morte por veto same-mob de S-004a. Caso-prova: `dlc ms 21:35:29`, em que só os dois `darklight source 583` viraram eco e os `788`/`788`/`733` ficaram para trás.
 
 - **M-016e — Spiritual Outburst multiestágio:** `Spiritual Outburst (exori gran mas nia)` de monk é a segunda spell multiestágio conhecida. Delay candidato: `1` OU `2` segundos após o término do blast inicial — os delays candidatos são tentados em ordem, e o motor avalia somente o primeiro segundo com pelo menos um hit não-overkill do jogador (gate guloso: não cai para o próximo delay só porque a prova falhar nesse segundo). Potência candidata: uma dentre três tiers — Stage 1 `3/8`, Stage 2 `1/2`, Stage 3 `5/8` — inferida somente pela transformação discreta de dano observada, sem sinal externo (não há combo counter nem outro sinal de log disponível); todo o bloco do estágio atrasado precisa fechar sob a MESMA fração, sem mistura de tiers no mesmo estágio.
@@ -821,15 +851,30 @@
   é desconhecido; o primeiro cast de outro elemento nesse trecho é semeado pelo elemento observado
   do seu bloco (`M-043a`), e depois dele a carga fica conhecida.
 
-  **Somente leitura nesta versão.** A estância, os estados da máquina (`arm`, `rearm`,
-  `converted`, `native`, `unknown`) e a marca (`used`, `lost`, com o selo `proven`) são expostos para exibição e **não** entram em reversão,
-  partição ou validação de bloco: o elemento que reverte o dano continua sendo o do perfil da
-  ação (e, no beam, o do detector de elemento efetivo de `M-035`). Dump do corpus byte-idêntico.
-  **Pendência declarada:** o dano base de sessão de sorcerer continua enviesado — um Death Echo
-  convertido para energy é revertido como death (`alumnishocks 2` `18:25:47`: originais
-  `717`/`923`/`510` no mesmo bloco em death, `≈787` nos três mobs em energy) — e turnos como
-  `alumnishocks 2` `18:30:42` (Hell's Core convertido) ficam sem classificação porque o bloco
-  não fecha em fire. Usar o elemento convertido na reversão é mudança própria, com drift medido.
+  **O elemento efetivo reverte o dano das spells que não são beam** (emenda de 26/Set/2026,
+  change `infer-sorcerer-stance-before-resolution`, decisão do usuário; substitui o "somente
+  leitura" da primeira versão). A estância e o estado de cada cast são inferidos **antes** da
+  resolução (`M-043a`), e o bloco de uma spell de sorcerer é revertido (`D-010a`) no elemento em
+  que o dano saiu, na ordem da máquina:
+  - `converted`: primeiro a estância, depois o nativo;
+  - `arm`/`rearm`: só a estância, que é o próprio elemento da magia;
+  - `native` ou carga desconhecida: primeiro o nativo, depois a estância.
+
+  O segundo elemento é **último recurso**: só entra quando o primeiro não fecha entre mobs
+  distintos do mesmo segundo (critério de `M-043a`) e o segundo fecha. Dano que não separa os dois,
+  ou nenhum que feche, fica com o primeiro. Um terceiro elemento nunca é usado. Com estância
+  `unknown`, sessão `not_applicable` ou vocação diferente de sorcerer, vale o elemento do perfil,
+  como antes. **O beam fica fora nesta versão:** o elemento dele continua sendo escolhido pelo
+  detector de `M-035`, e a estância no beam depende de `M-035b`, porque sem ela os beams cujo
+  central só aparece em overkill perdem a validação (`alumnishocks 2` `18:31:29` viraria `A0 S7`).
+
+  Caso-prova: `alumnishocks 2` `18:25:47`, Death Echo `converted` — em death os originais saem
+  `717`/`923` no blast e `359`/`462`/`510` no eco, sem fechar entre mobs; em energy, `786`/`788` e
+  `393`/`394`. Consequência medida, aceita pelo usuário: em `aquatic` S0/S1 os Death Echo
+  convertidos passam a fechar e viram observação-ouro de leech (`C-006`), e o setup das duas
+  sessões do mesmo personagem passa a concordar (ver `C-006b`). **Pendência declarada:**
+  `alumnishocks 2` `18:30:42` (Hell's Core convertido que atravessa o bloco provisório de 2 s)
+  continua sem classificação; é outra mecânica (`M-005`, `M-031`, `T-002`).
 
   Casos-prova. `alumnishocks 2` S0 (`21/Set/2026`): Great Energy Beam `18:21:16` arma; Energy
   Wave `18:21:19` só rearma; Hell's Core `18:21:21` — no chat, antes do server log começar
@@ -858,6 +903,25 @@
     empatava. E a tabela tem de ser a do regime da sessão: a tabela pós-cutoff aplicada a
     `mrowdy 2` (11/Jun/2026) fabricava "Energy Wave em death" pela mitigation do
     `roaming dread` (`2,75` → `4,39`).
+
+    **Inferida pelos segundos brutos, antes da resolução** (emenda de 26/Set/2026, change
+    `infer-sorcerer-stance-before-resolution`). O elemento observado de cada cast vem dos hits
+    principais **brutos** do segundo do cast e do seguinte (`[cast, cast+1]`), sem partição nem
+    turno resolvido. Isso é necessário porque o elemento efetivo já entra na reversão e na prova de
+    estágio do Death Echo (`M-016d-1a`). Quando essa janela inteira não discrimina, a observação é
+    repetida **sem o primeiro hit** em ordem de `seq`: só ele pode ser o auto ataque do ciclo
+    (`V-011`, `M-032`), e nenhum outro hit é descartado. Caso-prova: `alumnishocks` S0, Hell's
+    Core `19:01:38`. É o único cast discriminante da sessão, e o 1º hit do segundo é o AA
+    `mega dragon 102`; sem a repetição a sessão caía para `unknown`. A estância e os estados são
+    inferidos **uma vez**. Depois da resolução, o motor só sela a marca de cada cast (`proven` /
+    vetada) com o elemento observado do bloco resolvido, sem reinferir nada. Medido: estância e
+    estado de **cada** cast iguais aos da inferência pós-resolução anterior em 9 de 9 sessões
+    (`alumnishocks` S0, `alumnishocks 2` S0, `kim` S0, `aquatic` S0–S2, `death echo` S0,
+    `dlc ms` S0/S1; fotografia em `tests/fixtures/sorcerer-stance-states-2026-09-26.json`).
+    **Observado e não modelado:** o mesmo mob pode aparecer num blast de Death Echo em dois níveis
+    de original com razão `1,024` (`alumnishocks` S0 `19:01:11`, `wardragon` `757 × 739` em
+    energy; `19:02:06`, `dragolisk` `770 × 752`), sem estado observado que os distinga. Por isso a
+    prova de estágio de `M-016d-1a` só tira da comparação o **primeiro** hit da janela.
 
 ### Runas
 
@@ -2862,6 +2926,17 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   `lifeBaseKnown: false`, motivo `insufficient_gold_observations`. O canal de mana, com 9
   observações dos MESMOS hits, fecha normalmente em `0,175`. As outras duas sessões do mesmo
   arquivo (`0,27` e `0,2725`) **não** podem ser usadas para preencher S0.
+
+  **Caso-prova histórico desde 26/Set/2026** (change `infer-sorcerer-stance-before-resolution`,
+  aceito pelo usuário). O parágrafo acima descreve `aquatic` S0 **antes** de o elemento convertido
+  de `M-043` entrar na reversão. Com a conversão, os Death Echo da sessão, convertidos para
+  energy, passam a fechar entre mobs e viram observação-ouro (de 11 para 24). A vida fecha em
+  `0,27` **pela própria sessão**, sem herança, e S0 e S1 passam a concordar: vida `0,27`, mana
+  `0,175`, Vampiric `1,6%` em `quara looter`, Void's `1,2%` em `quara raider`. A regra continua
+  de pé. **Pendência declarada:** o corpus fica sem sessão real que abstenha um canal. A cobertura do
+  mecanismo passa a usar as 11 observações-ouro reais de S0 de antes da conversão, congeladas em
+  `tests/fixtures/aquatic-s0-gold-observations-before-stance-conversion.json` e reprocessadas pela
+  inferência atual (`tests/unified-leech-channel-abstention.test.mjs`).
 
   **Limite declarado (não corrigido aqui):** o caminho confiável por runa
   (`applyExclusiveTrustedMinorLeechCharms`) pode fixar um minor charm num canal cuja base não
