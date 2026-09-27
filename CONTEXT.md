@@ -79,9 +79,38 @@ _Avoid_: limite de mana, mana máxima.
 **Dano real exato**:
 O dano que um hit de fato causou, reconstruído pelo leech absoluto quando vida e mana
 apontam para o mesmo valor. Os caps de vida e de mana são independentes, então dois canais
-concordando quer dizer que nenhum foi cortado. Um canal só dá **piso**: o dano real foi pelo
-menos aquilo. É a única medida de dano que atravessa o overkill e o alpha (M-034b).
+concordando quer dizer que nenhum foi cortado. Um canal sozinho só dá **piso**, com uma
+exceção: ele também é exato quando a reserva daquele recurso provadamente não encheu, ou seja,
+todo hit seguinte do mesmo golpe ainda ganhou aquele recurso e nenhuma perda dele (dano
+recebido, magic shield) apareceu no meio. É a única medida de dano que atravessa o overkill e
+o alpha (M-034b, M-035b).
 _Avoid_: dano pelo leech (que pode ser só piso), dano reconstruído.
+
+**Piso**:
+O menor dano real que um hit em overkill pode ter causado. Duas fontes dão piso, porque as
+duas só podem subestimar: o dano exibido, truncado pela vida que restava ao alvo, e o dano que
+o leech observado implica, que só fica abaixo do real quando a reserva estava cheia. O piso
+serve para **excluir**: um hit cujo piso já passa de um nível de dano não pertence a ele. Ele
+nunca confirma nível nenhum.
+_Avoid_: mínimo, dano mínimo.
+
+**Estância**:
+O elemento em que o sorcerer está (fire, death ou energy). É fato do personagem, lido por cast
+no local chat. Com ela, a próxima magia de outro elemento sai convertida para o elemento da
+estância (M-043).
+_Avoid_: postura (que é do knight), stance.
+
+**Sub-linha**:
+Cada um dos dois níveis de dano de um mesmo beam de sorcerer: o **central**, o raio do meio, e
+o **lateral**, os dois do lado, que batem uma fração do central. Um cast, dois níveis
+legítimos, inclusive no mesmo mob. O central pode aparecer só em overkill; nesse caso o nível
+dele só é conhecido pelo dano real exato do overkill (M-035b).
+_Avoid_: tier, side (em texto para o usuário), raio.
+
+**Stage da Beam Mastery**:
+O nível da mastery de beam do personagem. Ele fixa ao mesmo tempo a fração do lateral e o
+bônus por alvo. É setup, um só na sessão inteira: não muda de cast para cast.
+_Avoid_: tier da mastery, nível do beam.
 
 **Estado do hit**:
 O conjunto de fatos que valem para um hit individual (e não para o componente inteiro

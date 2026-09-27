@@ -191,15 +191,121 @@
 
   **Ambiguidade declarada — como o bônus é contado.** A tooltip da mastery diz "for each target hit by **the central beam**", o que faria o bônus incidir igual nas duas sub-linhas e **cancelar** na razão, que seria sempre a própria fração do stage. O corpus tem testemunha limpa dos dois lados: `kim` `16:12:55` — dois hits no mesmo mob e mesmo estado (`2011` e `1580`, razão `0,7857`), sem liberdade de partição, contra `0,7860` previsto por `0,70 × 1,28/1,14` **com cada sub-linha contando os próprios alvos** — e `dlc ms`, com dezenas de casts em `0,700` exato e contagens diferentes nas duas sub-linhas. Enquanto não houver evidência que separe as duas leituras, **ambas ficam admissíveis por stage**, e a ambiguidade fica registrada aqui em vez de decidida em silêncio. O teste que a resolveria: um cast com todos os hits âncora, sem overkill e sem hit sobrando, em que as duas leituras prevejam valores separados por mais que a tolerância.
 
-  **Pendência declarada — o stage não é cravado por sessão.** O stage é propriedade do personagem, como o tier do Executioner em `M-034a`, então deveria ser único dentro de uma sessão; o motor ainda escolhe stage por cast e admitiria uma sessão de stages mistos. Nenhum log do corpus exercita stage 1 ou 2 — todos são stage 3 —, então as duas famílias novas entram sem testemunha real, cobertas só por teste sintético (mesmo padrão de `M-042b`).
+  **O stage é um só na sessão** (emenda de 27/Set/2026, change `model-sorcerer-beam-sublines`, decisão do usuário; substitui a pendência "o stage não é cravado por sessão"). O stage é propriedade do personagem, como o tier do Executioner em `M-034a`, logo é **setup da sessão**. Ele é inferido **antes da passada final**, a partir dos beams cujo bloco final valida na passada sem leech (ou na primeira passada, quando o setup de leech vem dado nas opções e essa passada não existe): contam só os **discriminantes**, os que um único stage explica. Se todos concordam, esse é o stage da sessão, e daí em diante o validador de sub-linhas só admite os pares dele. Sem beam discriminante, ou com discordância, o stage fica **desconhecido** (`D-006`) e os três continuam admitidos — **nunca** por maioria. O stage **não** é herdado de outra sessão. Medido: `alumnishocks` S0 e `alumnishocks 2` S0 (personagem `Alumni Shocks`) são **stage 1**, com 5 e 44 beams discriminantes, todos em stage 1; `kim`, `dlc ms` S0/S1, `aquatic` S0–S2 e `death echo` são stage 3; os sorcerers pré-cutoff não têm beam validado e ficam com o stage desconhecido. Com o elemento pela estância (abaixo), cada beam do corpus já só fecha num stage, então cravar o stage não muda turno nenhum hoje: ele existe porque é fato do personagem e barra, em logs futuros, um beam que só fecharia num stage por coincidência. Stage 2 continua sem testemunha real, coberto só por teste sintético (mesmo padrão de `M-042b`).
 
-  O leech também é cardinal por sub-linha: um segmento central de 1 hit pode fechar `N_leech=1` sem ser AA. Esta regra rotula por tier (`central`/`side`) os hits de um componente de beam; para classificação de turno, um beam validado por esses subníveis continua sendo **uma única spell concreta**, e a cardinalidade de leech de uma sub-linha não é evidência positiva de AA por si só. Cada hit ganha `beamSide` e a linha de rotação ganha sub-linhas `central`/`side` (mesmo encanamento do Terra Burst).
+  O leech também é cardinal por sub-linha: um segmento central de 1 hit pode fechar `N_leech=1` sem ser AA. A sub-linha é bloco de spell concreta determinística, então vale para ela a mesma regra de leech esparso da spell concreta: é aceita com **ao menos uma confirmação e nenhuma contradição** (a regra que o motor chama de V27). Antes, com `k ≥ 4`, uma sub-linha com 1 confirmação era reprovada e uma com 0 confirmação passava como neutra. Caso-prova: `dlc ms` S0 `21:44:27` — o lateral de 5 hits tem uma confirmação e zero contradição, e o beam valida em fire, stage 3, fração `≈ 0,8721`, com `2420` central e `2111 ×2`, `2856`, `2865 ×2` laterais. Esta regra rotula por tier (`central`/`side`) os hits de um componente de beam; para classificação de turno, um beam validado por esses subníveis continua sendo **uma única spell concreta**, e a cardinalidade de leech de uma sub-linha não é evidência positiva de AA por si só. Cada hit ganha `beamSide` e a linha de rotação ganha sub-linhas `central`/`side` (mesmo encanamento do Terra Burst).
 
-- **M-035a — A isenção de beam vale só dentro da fração declarada:** por M-035, dois níveis no mesmo mob e mesmo estado são mecânica declarada, e por isso não disparam o veto de exatidão same-mob (S-004a) nem podem virar evidência positiva de AA (H-005c). Essa isenção termina onde a mecânica termina: a fração observada vive na família de pares de `M-035` (fração do stage, com ou sem o bônus por sub-linha), cujo extremo inferior é o lateral sem bônus contra o central saturado em 3 alvos, **minimizado sobre os três stages** — `0,25 / (1 + 0,10 × 3) ≈ 0,192`. O valor anterior (`0,70 / (1 + 0,14 × 3) ≈ 0,493`) era o mínimo do stage 3 tratado como se fosse o mínimo da mecânica inteira; com a tabela de stages ele deixa de ser o piso, e razões entre `0,192` e `0,493` passam a caber na mecânica declarada (território de stage 1/2, sem testemunha no corpus atual). Uma razão same-mob **abaixo** desse mínimo não é sub-linha nenhuma: nenhum tier de mastery a produz, e tratá-la como mecânica declarada apaga evidência real de fronteira. O limite é **derivado** das constantes já declaradas nesta regra, não um limiar novo. Caso-prova: `Mrowdy 2`/`ms boss` `17:16:37` — `roaming dread` com `112` e `2448` no mesmo estado (razão `0,046`, enquanto a sub-linha exigiria ≈`1714`); o `112` é o AA de varinha, confirmado pela distribuição de AA da própria sessão nesse mob (mediana `124` em `1020` hits), e o turno é `A1 + Great Energy Beam`. Contra-exemplo que permanece isento: `kim` `16:13:26`, `stalking stalk` `1155/1650 = 0,700` exato.
+- **M-035a — A isenção de beam vale só dentro da fração declarada:** por M-035, dois níveis no mesmo mob e mesmo estado são mecânica declarada, e por isso não disparam o veto de exatidão same-mob (S-004a) nem podem virar evidência positiva de AA (H-005c). Essa isenção termina onde a mecânica termina: a fração observada vive na família de pares de `M-035` (fração do stage, com ou sem o bônus por sub-linha), cujo extremo inferior é o lateral sem bônus contra o central saturado em 3 alvos, **minimizado sobre os três stages** — `0,25 / (1 + 0,10 × 3) ≈ 0,192`. O valor anterior (`0,70 / (1 + 0,14 × 3) ≈ 0,493`) era o mínimo do stage 3 tratado como se fosse o mínimo da mecânica inteira; com a tabela de stages ele deixa de ser o piso, e razões entre `0,192` e `0,493` passam a caber na mecânica declarada (território de stage 1/2; stage 1 tem testemunha em `Alumni Shocks`, `M-035`). Uma razão same-mob **abaixo** desse mínimo não é sub-linha nenhuma: nenhum tier de mastery a produz, e tratá-la como mecânica declarada apaga evidência real de fronteira. O limite é **derivado** das constantes já declaradas nesta regra, não um limiar novo. Caso-prova: `Mrowdy 2`/`ms boss` `17:16:37` — `roaming dread` com `112` e `2448` no mesmo estado (razão `0,046`, enquanto a sub-linha exigiria ≈`1714`); o `112` é o AA de varinha, confirmado pela distribuição de AA da própria sessão nesse mob (mediana `124` em `1020` hits), e o turno é `A1 + Great Energy Beam`. Contra-exemplo que permanece isento: `kim` `16:13:26`, `stalking stalk` `1155/1650 = 0,700` exato.
 
-  Beam é 100% elemental determinístico, mas o **elemento efetivo depende da postura/stance** do sorcerer (energy pode virar death/fire), então o elemento não é assumido do perfil: o motor reverte cada hit por-mob testando `{death, energy, fire}` (D-010a) e escolhe o elemento de menor spread intra-nível somado sobre os casts (perfil como desempate quando houver empate real). A reversão por-mob normaliza mitigação/modificador, então o split funciona com mobs de espécies diferentes no mesmo cast e cada cast é auto-suficiente. No espaço revertido, o nível alto = central e o baixo = side; cada cast é validado contra os pares finitos `0,70 × bonus_side / bonus_central`, onde `bonus_*` vem da contagem de hits daquela sub-linha sob um dos tiers oficiais da mastery. Um hit que não bate em nenhum dos dois (contaminação por outra spell no mesmo canal elemental — ex.: `exevo mort ora`/Death Echo no canal death — ou dano de overkill truncado) fica sem tier (`null`, agrupado em `central` na exibição, conservador), nunca forçado num tier com `F` errado. Death Echo (`exevo mort ora`) e Energy Wave (`exevo vis hur`) NÃO são reclassificados como beam.
+  Beam é 100% elemental determinístico, mas o **elemento efetivo depende da estância** do sorcerer (`M-043`), então o elemento não é assumido do perfil. **O elemento segue a ordem da máquina de conversão de `M-043`** (emenda de 27/Set/2026, change `model-sorcerer-beam-sublines`, decisão do usuário; substitui a escolha pelo menor desvio da fração, que punha oito beams do corpus no elemento errado): `converted` → [estância, nativo]; `arm`/`rearm` → [estância]; `native`/carga desconhecida → [nativo, estância]. O segundo elemento só entra como **último recurso**, quando nenhuma distribuição de central e lateral fecha no primeiro; um terceiro nunca é usado. Sessão anterior a 16/Jun/2026 (`not_applicable`) usa só o nativo. Com a **estância desconhecida**, o motor testa `{death, energy, fire}` (D-010a) e escolhe o elemento de **menor spread** dentro dos níveis, com o perfil só no empate, e **só as distribuições desse elemento** decidem o rótulo `central`/`side`. Um contexto montado à mão, sem setup de estância (teste, ferramenta), mantém a busca antiga (menor desvio da fração primeiro). Quando o validador de sub-linhas não fecha, o bloco genérico do beam é revertido no **primeiro** elemento da máquina. A reversão por-mob normaliza mitigação/modificador, então o split funciona com mobs de espécies diferentes no mesmo cast e cada cast é auto-suficiente. No espaço revertido, o nível alto = central e o baixo = side; cada cast é validado contra os pares finitos da tabela de stages, onde `bonus_*` vem da contagem de hits daquela sub-linha. Um hit que não bate em nenhum dos dois (contaminação por outra spell no mesmo canal elemental — ex.: `exevo mort ora`/Death Echo no canal death — ou dano de overkill truncado que nem a prova nem o piso de `M-035b` põem numa sub-linha só) fica sem tier (`null`, agrupado em `central` na exibição, conservador), nunca forçado num tier com `F` errado. Death Echo (`exevo mort ora`) e Energy Wave (`exevo vis hur`) NÃO são reclassificados como beam.
 
-  Casos-prova: `logs/death echo server log.txt` / `logs/death echo local chat.txt` (`Fri Jul 10 2026`, sorcerer solo `Very Pog`, pós-cutoff), turno `11:06:22` — componente `Great Death Beam` (elemento resolvido `death`, `F = 0.70`): revertidos `cyclursus 1700`/`roaming dread 1805` → central (nível ~1600); `cyclursus 1189`/`roaming dread 1263 ×4` → side (nível ~1120 = `1600 × 0.70`); `504 OK` (overkill) → `null`. `logs/dlc ms Server Log.txt` / `logs/dlc ms Local Chat.txt` (`Fri Jul 17 2026`, pós-cutoff), Great Death Beam com elemento efetivo `fire`: `21:36:49` fecha `side/central ≈ 0,7769`, explicado por `0,70 × 1,42 / 1,28` (side com ≥3 alvos, central com 2); `21:44:27` fecha `≈ 0,8721`, explicado por `0,70 × 1,42 / 1,14` (side com ≥3, central com 1); `21:41:16` fecha `≈ 0,5620`, explicado por `0,70 × 1,14 / 1,42` (side com 1, central com ≥3). Esses hits são spell de beam, não AA. `Energy Beam`/`Great Energy Beam` (energy) ficam validados só transitivamente por falta de fixture solo pós-cutoff limpa de energy beam (risco documentado, precedente do risco Stage 1/2 de M-016e). Fixtures sem ação de beam permanecem idênticos (o detector encontra o conjunto vazio e retorna sem mutar nada).
+  Casos-prova: `logs/death echo server log.txt` / `logs/death echo local chat.txt` (`Fri Jul 10 2026`, sorcerer solo `Very Pog`, pós-cutoff), turno `11:06:22` — componente `Great Death Beam` (cast `rearm` na estância death, elemento `death`, `F = 0.70`): revertidos `cyclursus 1700`/`roaming dread 1805` → central (nível ~1600); `cyclursus 1189`/`roaming dread 1263 ×4` → side (nível ~1120 = `1600 × 0.70`); `504 OK` (overkill) → **central**, pelo dano real que o leech dele prova (vida `170` e mana `109`, iguais às do central `cyclursus 1700`; `M-035b`). O texto anterior deste caso-prova dizia `504 OK → null`; corrigido em 27/Set/2026 por decisão do usuário. Mais casos do elemento pela estância: `alumnishocks 2` `18:30:18` (Great Energy Beam `arm` → energy, stage 1, `1320` central e `389 ×2`, `121 OK` laterais; antes saía em fire), `aquatic` S2 `13:05:51` (`arm` → energy; antes death) e `dlc ms` S1 `21:52:46` (`converted` → fire primeiro; o dano fecha igual em death e em fire). `logs/dlc ms Server Log.txt` / `logs/dlc ms Local Chat.txt` (`Fri Jul 17 2026`, pós-cutoff), Great Death Beam com elemento efetivo `fire`: `21:36:49` fecha `side/central ≈ 0,7769`, explicado por `0,70 × 1,42 / 1,28` (side com ≥3 alvos, central com 2); `21:44:27` fecha `≈ 0,8721`, explicado por `0,70 × 1,42 / 1,14` (side com ≥3, central com 1); `21:41:16` fecha `≈ 0,5620`, explicado por `0,70 × 1,14 / 1,42` (side com 1, central com ≥3). Esses hits são spell de beam, não AA. `Great Energy Beam` em energy é exercitado por `alumnishocks`, `aquatic` e `kim`; `Energy Beam` (`exevo vis lux`) continua sem caso-prova. Fixtures sem ação de beam permanecem idênticos (o detector encontra o conjunto vazio e retorna sem mutar nada).
+
+- **M-035b — O dano real de overkill provado pelo leech põe o overkill no nível da sua sub-linha:**
+  `ESTADO: decidida e IMPLEMENTADA em 27/Set/2026 (change `model-sorcerer-beam-sublines`; os 70 turnos alterados foram aprovados pelo usuário no gate da Fase 4).`
+
+  Quando o raio do meio de um beam mata o alvo, o log mostra só a vida que sobrava (`D-011`), e
+  o nível do central fica invisível no dano exibido. O leech absoluto continua valendo
+  (`D-019`/`D-025`) e reconstrói o dano real. Esta regra diz quando esse dano real é **prova**
+  de nível e o que ele decide.
+
+  1. **Prova do dano real.** O dano real de um overkill só fixa nível quando é **provado**, por
+     uma de duas vias:
+     - **vida e mana concordam**: os dois canais reconstroem um mesmo dano real, com a tolerância
+       de leech de `D-024`. Os caps de vida e de mana são independentes, então dois canais
+       concordando provam que nenhum foi cortado;
+     - **a reserva não encheu**: num canal sozinho, **todo** hit principal seguinte do mesmo
+       golpe (ao menos um; sem hit virtual nem dodge) ainda ganhou aquele recurso, e **nenhuma**
+       perda desse recurso aparece no server log entre o overkill e esses hits — dano recebido na
+       vida (`You lose N hitpoints`) ou mana perdida pelo magic shield (`You lose N mana`). Se a
+       reserva tivesse enchido com o overkill, o hit seguinte não ganharia nada; uma perda no meio
+       pode ter esvaziado a reserva, e desfaz a prova. O parser registra em cada evento quantas
+       perdas de vida e de mana vieram antes dele (fato observado, no molde da época de barreira
+       de `D-011a`).
+
+     Fora disso o leech do overkill **não** fixa nível: dá só piso (item 4). Caso que a segunda
+     via decide sozinha: `alumnishocks 2` `18:31:42`, `mega dragon 1334 OK` com vida `200` (igual
+     ao dano que o personagem acabou de receber, portanto capada) e mana `297`; os três hits
+     seguintes ganham mana `36`, `35`, `35`. Caso que ela recusa: `kim` `16:15:56`,
+     `nighthunter 323 OK` com mana `261` — o hit seguinte ganha `176` e os demais não ganham
+     mana, então a reserva encheu e o `323 OK` não tem dano real provado; o turno continua
+     `A0 + Great Energy Beam 7`, sem sub-linha.
+
+  2. **Forma A — central só em overkill.** Quando as âncoras (os hits não-overkill) formam **um
+     nível só** no elemento do beam, todas são **laterais**. O nível do central sai do dano real
+     provado dos overkills postos no central, revertido (`D-010a`) no elemento do beam; conta só
+     overkill do **mesmo estado** de crítico, Low Blow, Savage Blow e Onslaught de alguma âncora.
+     **Todo** overkill com leech desse estado posto no central tem de ter o dano real provado —
+     um sem prova não pode ser central nessa distribuição (decisão do usuário, 27/Set/2026; o
+     único turno do corpus em que isso decide é `dlc ms` S0 `21:42:47`, que fica sem sub-linha) —,
+     e pelo menos um tem de estar lá: o motor nunca supõe um central sem prova. O central é a
+     interseção dos intervalos de original desses overkills, com a tolerância de cluster
+     elemental, e a fração do stage é testada contra o intervalo inteiro. Como qualquer
+     sub-linha, a forma A exige ao menos 3 hits principais no bloco. Até esta regra, esses beams só fechavam num
+     terceiro elemento, por coincidência, e com central e lateral invertidos. Casos-prova
+     (`alumnishocks 2` S0, energy, stage 1): `18:26:16` — `175 OK` central (vida `699` e mana
+     `422` reconstroem `≈ 2312` com `N = 1`), `91 OK`, `653 ×2`, `684 ×2` laterais, fração
+     `≈ 0,2955`; `18:31:29` — `1560 OK` e `1622 OK` centrais (`N = 2`), `466`, `445`, `466`,
+     `445` laterais, e o turno continua `A1 + Great Energy Beam 6`; mesma forma em `18:22:39`,
+     `18:25:35`, `18:27:45`, `18:28:09`, `18:30:11`, `18:31:14` e `18:31:42`. Contraprova
+     (forma E): `18:31:58` tem os quatro hits no mesmo nível e o `361 OK` com o leech dos `537`,
+     logo não há central provado e o beam fica **sem** sub-linha.
+
+  3. **Nível.** Toda distribuição candidata de central e lateral — a normal, de dois níveis de
+     âncoras, e a da forma A — rejeita um overkill provado cujo intervalo de original não cruza o
+     cluster da sub-linha em que foi posto (com a tolerância de cluster elemental). A comparação
+     só vale quando a sub-linha tem âncora do **mesmo estado** de crítico, Low Blow, Savage Blow
+     e Onslaught do overkill, e é feita contra o cluster dela (em espaço revertido). Sem âncora do
+     mesmo estado, o overkill não vota: entre estados a reversão depende do multiplicador de
+     crítico inferido, e Savage Blow nem tem normalização (`D-008a`). Casos-prova: `aquatic` S2 `13:05:51` —
+     `quara raider 763 OK` (vida `476`, mana `330`) tem o leech dos `4394` centrais, logo vai ao
+     central (`N = 3`), e a cardinalidade que sobra põe `2376 OK`, `2509`, `2606 ×2`, `3077 ×2` no
+     lateral; `alumnishocks 2` `18:25:16` — `20 OK` e `1156 OK` centrais, `145 OK`, `94 OK` e
+     `235 OK` laterais; `aquatic` S0 `10:44:32` — a mana do `588 OK` é a do central `raider 3004`.
+     Contraprova do estado: `aquatic` S0 `10:44:52`, âncoras não-críticas e overkills críticos com
+     Low Blow; sem a restrição de estado, esse beam e o de `10:45:14` perdiam a validação.
+
+  4. **Piso.** O dano exibido de um overkill (truncado) e o dano que o leech observado implica
+     só podem **subestimar** o dano real (`D-011`/`D-025`; capped-low, `V-014`). O maior dos
+     dois — o do leech calculado com a **maior** taxa admissível, isto é, o menor dano real
+     possível —, revertido no elemento do beam, não pode passar do nível de uma sub-linha mais a
+     tolerância: se passa, o overkill não está nela. O piso não exige prova e **nunca** confirma
+     nível; ele só exclui. Vale a mesma restrição de estado do item 3. Casos-prova: `kim`
+     `16:15:34` — `sulphider 1856 OK` reverte o dano exibido para `1537` em energy, acima do
+     lateral `≈ 1500`, logo é central; `dlc ms` S1 `21:53:29` — `darklight striker 1971 OK` tem
+     vida e mana que não concordam, mas a mana `420`, com o `N` do lateral, já implica dano real
+     muito acima do lateral. Sem o piso, o leech esparso de `M-035` apagava 15 rótulos em 7
+     beams, ao menos três certos (`kim` `16:15:34`, `dlc ms` S1 `21:52:37` e `21:58:41`).
+
+  5. **O `N` da sub-linha conta o hit virtual.** Ao reconstruir o dano real de um overkill, o
+     `N` de uma sub-linha vai da contagem dos hits dela até essa contagem mais os hits virtuais
+     de charm-kill do bloco (`S-014e`): o hit virtual entra na cardinalidade do componente sem
+     estar na lista de hits que o validador enxerga. Caso-prova: `dlc ms` S0 `21:37:37` — o
+     lateral tem 8 hits visíveis e um `darklight striker` morto por charm; o
+     `walking pillar 488 OK` tem mana `140`, igual à do `walking pillar 5060` lateral, e o nível só
+     fecha com `N = 9`. Sem o virtual, esse beam e o de `dlc ms` S1 `21:54:37` perdiam a validação.
+
+  Rótulo final: como em `M-035`, cada hit recebe o tier unânime entre todas as distribuições
+  válidas (do elemento escolhido), e o empate deixa o hit sem tier. Ambiguidade real aceita pelo
+  usuário: `dlc ms` S0 `21:35:10` — central 4 e lateral 9 fecham com `2990 OK`, `6432 OK` ou o
+  virtual no central, e os dois overkills ficam sem rótulo (antes tinham, pelo consenso que
+  reprovava 1 confirmação).
+
+  **Limites declarados.** (a) O teste de beam no turno inteiro, que decide `A0` na escada de
+  `V-011`–`V-015` (`unified-turn-resolution.js`), não enxerga o hit virtual, que só entra no
+  componente; medido, 3 turnos perdem o motivo "beam no turno inteiro" e continuam `A0` pelo
+  default, com a mesma contagem (`dlc ms` S0 `21:37:37`, S1 `21:54:37`, `kim` `16:25:08`).
+  (b) Carimbo de `beamSide` em AA continua quando o turno inteiro fecha com o AA dentro de uma
+  lateral (`alumnishocks` `19:01:14`, `alumnishocks 2` `18:27:38` e `18:31:50`); a decisão A1
+  vem da fronteira de tempo, acima na escada, e o rótulo em AA é indiferente por decisão do
+  usuário. (c) Carimbos órfãos de dodge de dano zero na janela do beam (`kim` `16:14:08`,
+  `16:18:55`, `16:23:43`, `16:25:31`; `alumnishocks 2` `18:24:35`) ficam para a change do AA de
+  mage (`V-018a`). (d) Continua a ambiguidade de `M-035` sobre como o bônus por alvo é contado.
+
+  Medido no corpus (protótipo da Fase 3 e implementação): 0 contagens A/S mudadas nos 1.395
+  turnos de sorcerer pós-cutoff; 69 turnos com mudança só de rótulo, elemento ou stage e 1 só de
+  resolver; sorcerers pré-cutoff, druid e paladin sem mudança nenhuma.
+  (M-035, M-035a, M-043, D-008a, D-011, D-019, D-024, D-025, S-014e, V-014)
 
 - **M-036 — Bônus de dano do player contra classe de bestiário:** um reward de bestiário
   (ex. "Improved" de Charm Points) dá ao personagem `+N%` de dano contra TODOS os mobs de
@@ -864,9 +970,14 @@
   distintos do mesmo segundo (critério de `M-043a`) e o segundo fecha. Dano que não separa os dois,
   ou nenhum que feche, fica com o primeiro. Um terceiro elemento nunca é usado. Com estância
   `unknown`, sessão `not_applicable` ou vocação diferente de sorcerer, vale o elemento do perfil,
-  como antes. **O beam fica fora nesta versão:** o elemento dele continua sendo escolhido pelo
-  detector de `M-035`, e a estância no beam depende de `M-035b`, porque sem ela os beams cujo
-  central só aparece em overkill perdem a validação (`alumnishocks 2` `18:31:29` viraria `A0 S7`).
+  como antes. **O beam segue a mesma ordem** (emenda de 27/Set/2026, change
+  `model-sorcerer-beam-sublines`; a primeira versão deixava o beam de fora): o validador de
+  sub-linhas de `M-035` testa o elemento do beam na ordem da máquina, com o segundo elemento só
+  quando nenhuma distribuição de central e lateral fecha no primeiro — "fecha" ali é o critério
+  de sub-linha, não o de mobs distintos de `M-043a`, porque central e lateral são dois níveis
+  legítimos. O bloco genérico de um beam que não fecha é revertido no primeiro elemento. Restringir
+  o elemento só não tira validação junto com `M-035b`: sem ela, os beams cujo central só aparece
+  em overkill perdiam a validação (`alumnishocks 2` `18:31:29` virava `A0 S7`).
 
   Caso-prova: `alumnishocks 2` `18:25:47`, Death Echo `converted` — em death os originais saem
   `717`/`923` no blast e `359`/`462`/`510` no eco, sem fechar entre mobs; em energy, `786`/`788` e

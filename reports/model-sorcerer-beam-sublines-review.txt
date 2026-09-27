@@ -1,0 +1,1147 @@
+CHANGE B (model-sorcerer-beam-sublines) — REVISÃO TURNO A TURNO (Fase 4, passo 7)
+Data: 27/Set/2026. Motor: working tree sobre 15d0db7, código final (depois da revisão de código).
+
+RESUMO
+- Corpus inteiro: 21.981 turnos, 73 sem classificação. O diff do dump contra o latest é VAZIO:
+  nenhuma contagem A/S/R/G e nenhum status mudou.
+- O dump só mostra contagens. As mudanças desta change são de rótulo de sub-linha, elemento e
+  stage, e saem do diff hit a hit base (15d0db7) -> repo nos 12 pares com beam ou de controle
+  (6.840 turnos): 70 turnos alterados, 69 só de rótulo/elemento/stage e 1 só de resolver.
+- O repo é igual, hit a hit, ao protótipo aprovado na Fase 3, e as categorias abaixo são
+  idênticas às de reports/beam-subline-b-fase3/diff-v5-categorias.txt.
+- Controles (Mrowdy, Mrowdy 2, ms boss, uhax 3, ingol ed, barrage): zero mudança.
+- Stage por sessão: alumnishocks S0 = 1 (5 beams discriminantes), alumnishocks 2 S0 = 1 (44);
+  kim, dlc ms S0/S1, aquatic S0–S2 e death echo = 3; pré-cutoff desconhecido.
+
+Notação: "hit:componente:rótulo antes -> rótulo depois"; "-" = sem rótulo; OK = overkill.
+
+======================================================================================
+GRUPO 1 — ALVOS (17): antes -> depois -> esperado (turn stories do design). Todos batem.
+======================================================================================
+ 1. alumnishocks 2 18:30:18  fire st1 -> energy st1; rótulos iguais (1320 central; 389×2, 121 OK side)      esperado: energy st1 ✓
+ 2. aquatic S2 13:05:51      death st3 -> energy st3; 763 OK -> central; 2376 OK, 2509, 2606×2 -> side      esperado ✓
+ 3. death echo 11:06:22      energy st3 -> death st3; rótulos iguais (504 OK, 1700, 1805 central)           esperado ✓
+ 4. dlc ms S1 21:52:46       death st3 -> fire st3; rótulos iguais                                          esperado ✓
+ 5. alumnishocks 2 18:26:16  death st3 -> energy st1; 175 OK side -> central; 684×2 central -> side          esperado ✓
+ 6. alumnishocks 2 18:31:29  death st3 -> energy st1; 1560 OK, 1622 OK side -> central; 466×2 central -> side; A1 S6 igual  ✓
+ 7. alumnishocks 2 18:31:42  death st3 -> energy st1; 1334 OK - -> central; 480 central -> side              esperado ✓
+ 8. alumnishocks 2 18:31:58  death st3 -> sem sub-linha (537×2, 489 perdem rótulo)                            esperado ✓ (forma E)
+ 9. alumnishocks 2 18:22:39  carimbo órfão -> energy st1; 803×2, 739 OK central -> side; AA 79 side -> -    esperado ✓
+10. alumnishocks 2 18:25:16  energy st1; 20 OK, 1156 OK -> central; 145 OK, 94 OK, 235 OK -> side           esperado ✓
+11. alumnishocks 2 18:25:35  não fechava -> energy st1; 1520 OK central; 506×2, 531, 484 side                 esperado ✓
+12. alumnishocks 2 18:27:45  não fechava -> energy st1; 20 OK, 1185 OK central; 474, 452×3 side              esperado ✓
+13. alumnishocks 2 18:28:09  não fechava -> energy st1; 1591 OK central; 557×2, 507, 530×2 side              esperado ✓
+14. alumnishocks 2 18:30:11  não fechava -> energy st1; 1252 OK central; 488×2 side                           esperado ✓
+15. alumnishocks 2 18:31:14  carimbo órfão -> energy st1; 1067 OK side -> central; 452×2 central -> side      esperado ✓
+16. dlc ms S0 21:44:27       carimbo órfão -> fire st3 0,8721; rótulos iguais (2420 central)                  esperado ✓
+17. aquatic S0 10:44:32      energy st3; 588 OK - -> central                                                  esperado ✓
+Guardas: kim 16:15:56 (A0 S7, sem sub-linha), Mrowdy 2 S0 e ms boss S14 17:16:37 (A1 S5, sem
+sub-linha) — não aparecem no diff: iguais a hoje.
+
+======================================================================================
+GRUPO 2 — COLATERAIS PELO MESMO MECANISMO (antes -> depois -> regra)
+======================================================================================
+2a. Overkill ganha rótulo num beam que já validava (30) — M-035b itens 3 e 4 (nível do dano real
+    provado e piso). Lista completa em "DIFF HIT A HIT" abaixo:
+    alumnishocks 2 18:23:07, 18:28:55, 18:29:06, 18:29:44; aquatic S0 10:44:25, 10:45:14;
+    aquatic S1 12:20:34; aquatic S2 13:05:45; kim 16:21:00, 16:28:42, 16:28:49, 16:30:08;
+    dlc ms S0 21:35:59, 21:38:52, 21:39:39, 21:41:41, 21:44:36, 21:45:14;
+    dlc ms S1 21:52:37, 21:52:55, 21:53:14, 21:53:42, 21:54:22, 21:54:37, 21:55:03, 21:57:54,
+    22:00:44. Três deles são carimbo em AA (ver grupo 3, item 3c).
+2b. Beam passa a validar (18) — M-035b (forma A) + leech esparso da sub-linha (M-035):
+    - 8 carimbos órfãos da Fase 2 agora provados, com os mesmos rótulos de antes: kim 16:19:24,
+      16:21:24; dlc ms S0 21:42:38, 21:43:03, 21:43:41, 21:44:49, 21:45:37; S1 22:00:15
+      (21:43:03 e 21:43:41 ganham 1 rótulo de overkill a mais);
+    - 10 beams de forma A que não fechavam: alumnishocks 19:02:16; aquatic S1 12:20:53; kim
+      16:13:18, 16:20:13, 16:22:32, 16:24:47, 16:29:18, 16:30:33; dlc ms S0 21:36:36;
+      S1 22:02:24.
+2c. Rótulo troca (3) — o overkill vai ao nível do dano real dele (M-035b 3/4):
+    kim 16:25:08 (1923 OK side -> central; 0 e 1961 OK ganham side);
+    dlc ms S0 21:36:07 (4400 OK side -> central);
+    dlc ms S1 21:58:41 (3599 OK side -> central pelo piso de 3666 contra o lateral 2709;
+    2660 OK central -> side).
+2d. Só resolver (1) — dlc ms S0 21:37:37: continua A0 S11 (beam em fire st3, N = 9 com o hit
+    virtual); o motivo do A0 passa do "beam no turno inteiro" para o default, porque o teste
+    do turno inteiro não enxerga o hit virtual (limite declarado (a) de M-035b).
+
+======================================================================================
+GRUPO 3 — PARA ATENÇÃO (decididos ou declarados, mas vale olhar)
+======================================================================================
+3a. dlc ms S0 21:35:10 — perde 2 rótulos (2990 OK side -> -, 6432 OK side -> -). Decisão 3 do
+    usuário: ambiguidade real (central 4 e lateral 9 fecham com 2990 OK, 6432 OK ou o virtual
+    no central). O rótulo antigo vinha do consenso que reprovava 1 confirmação.
+3b. Dodge de dano 0 ganha rótulo pela cardinalidade: kim 16:20:13 (três "0" -> side), 16:21:00
+    ("0" -> central), 16:28:42 ("0" -> side), 16:28:49 ("0" -> central), 16:30:33 ("0" -> side).
+    O dodge de Hazard conta como hit principal de dano 0 no N_leech (glossário de leech), então
+    ele entra numa sub-linha só pela cardinalidade. Nos órfãos da Fase 2 o dodge era
+    provavelmente o AA que errou (pendência da change C, V-018a); aqui ele é posto no beam.
+3c. Carimbo de beamSide em AA (arrow -> side): alumnishocks 19:01:14 (91), alumnishocks 2
+    18:27:38 (128), 18:31:50 (79). Limite declarado (b) de M-035b; indiferente por decisão do
+    usuário (o A1 vem da fronteira de tempo, e a contagem não muda).
+3d. Overkill com leech sem prova, rotulado lateral: kim 16:20:13 nighthunter 737 OK e dlc ms S0
+    21:36:36 darklight striker 3761 OK. Outras restrições os forçam ao lateral: não mudam nem
+    na leitura alternativa medida para a decisão 6.
+
+Detalhe por turno: "DIFF HIT A HIT" (rótulo antes -> depois de cada hit) e "DIAGNÓSTICO"
+(dano, original físico e holy, leech observado e setup da sessão, pelo diag-changed-turns).
+
+======================================================================================
+CATEGORIAS
+======================================================================================
+
+## ganha rotulo (30)
+  alumnishocks|19:01:14  beam energy/1 -> energy/1  +1 -0 troca 0  91:arrow:- -> side
+  alumnishocks 2|18:23:07  beam energy/1 -> energy/1  +2 -0 troca 0  769OK:spell:- -> central 40OK:spell:- -> side
+  alumnishocks 2|18:27:38  beam energy/1 -> energy/1  +1 -0 troca 0  128:arrow:- -> side
+  alumnishocks 2|18:28:55  beam energy/1 -> energy/1  +2 -0 troca 0  823OK:spell:- -> central 235OK:spell:- -> side
+  alumnishocks 2|18:29:06  beam energy/1 -> energy/1  +3 -0 troca 0  644OK:spell:- -> central 831OK:spell:- -> central 48OK:spell:- -> side
+  alumnishocks 2|18:29:44  beam energy/1 -> energy/1  +2 -0 troca 0  246OK:spell:- -> central 364OK:spell:- -> side
+  alumnishocks 2|18:31:50  beam energy/1 -> energy/1  +1 -0 troca 0  79:arrow:- -> side
+  aquatic S0|10:44:25  beam energy/3 -> energy/3  +2 -0 troca 0  1702OK:spell:- -> central 1438OK:spell:- -> side
+  aquatic S0|10:45:14  beam energy/3 -> energy/3  +1 -0 troca 0  606OK:spell:- -> central
+  aquatic S1|12:20:34  beam energy/3 -> energy/3  +2 -0 troca 0  720OK:spell:- -> central 1141OK:spell:- -> central
+  aquatic S2|13:05:45  beam energy/3 -> energy/3  +2 -0 troca 0  464OK:spell:- -> central 577OK:spell:- -> side
+  kim|16:21:00  beam energy/3 -> energy/3  +2 -0 troca 0  0:spell:- -> central 354OK:spell:- -> side
+  kim|16:28:42  beam energy/3 -> energy/3  +5 -0 troca 0  1850OK:spell:- -> central 1834OK:spell:- -> central 0:spell:- -> side 1486OK:spell:- -> side 1035OK:spell:- -> side
+  kim|16:28:49  beam energy/3 -> energy/3  +3 -0 troca 0  0:spell:- -> central 836OK:spell:- -> central 1577OK:spell:- -> side
+  kim|16:30:08  beam energy/3 -> energy/3  +3 -0 troca 0  1065OK:spell:- -> central 838OK:spell:- -> side 426OK:spell:- -> side
+  dlc ms S0|21:35:59  beam fire/3 -> fire/3  +1 -0 troca 0  4769OK:spell:- -> central
+  dlc ms S0|21:38:52  beam fire/3 -> fire/3  +2 -0 troca 0  6811OK:spell:- -> central 939OK:spell:- -> side
+  dlc ms S0|21:39:39  beam fire/3 -> fire/3  +2 -0 troca 0  239OK:spell:- -> central 3016OK:spell:- -> side
+  dlc ms S0|21:41:41  beam fire/3 -> fire/3  +4 -0 troca 0  5256OK:spell:- -> central 6252OK:spell:- -> side 2307OK:spell:- -> side 7052OK:spell:- -> side
+  dlc ms S0|21:44:36  beam fire/3 -> fire/3  +4 -0 troca 0  3569OK:spell:- -> central 90OK:spell:- -> side 82OK:spell:- -> side 2470OK:spell:- -> side
+  dlc ms S0|21:45:14  beam fire/3 -> fire/3  +2 -0 troca 0  2636OK:spell:- -> central 2687OK:spell:- -> side
+  dlc ms S1|21:52:37  beam fire/3 -> fire/3  +1 -0 troca 0  6144OK:spell:- -> central
+  dlc ms S1|21:52:55  beam fire/3 -> fire/3  +4 -0 troca 0  4831OK:spell:- -> central 1137OK:spell:- -> central 172OK:spell:- -> side 3905OK:spell:- -> side
+  dlc ms S1|21:53:14  beam fire/3 -> fire/3  +3 -0 troca 0  1167OK:spell:- -> central 1098OK:spell:- -> side 1473OK:spell:- -> side
+  dlc ms S1|21:53:42  beam fire/3 -> fire/3  +2 -0 troca 0  2694OK:spell:- -> central 2110OK:spell:- -> central
+  dlc ms S1|21:54:22  beam fire/3 -> fire/3  +4 -0 troca 0  2713OK:spell:- -> central 1434OK:spell:- -> side 2633OK:spell:- -> side 3061OK:spell:- -> side
+  dlc ms S1|21:54:37  beam fire/3 -> fire/3  +3 -0 troca 0  4125OK:spell:- -> central 4495OK:spell:- -> central 3587OK:spell:- -> side
+  dlc ms S1|21:55:03  beam fire/3 -> fire/3  +4 -0 troca 0  2805OK:spell:- -> central 1667OK:spell:- -> central 1852OK:spell:- -> side 3276OK:spell:- -> side
+  dlc ms S1|21:57:54  beam fire/3 -> fire/3  +5 -0 troca 0  1042OK:spell:- -> central 373OK:spell:- -> central 1289OK:spell:- -> central 582OK:spell:- -> side 2134OK:spell:- -> side
+  dlc ms S1|22:00:44  beam fire/3 -> fire/3  +4 -0 troca 0  5656OK:spell:- -> central 795OK:spell:- -> side 4138OK:spell:- -> side 3122OK:spell:- -> side
+
+## beam passa a validar (18)
+  alumnishocks|19:02:16  beam - -> energy/1  +3 -0 troca 0  817OK:spell:- -> central 111OK:spell:- -> side 688:spell:- -> side
+  aquatic S1|12:20:53  beam - -> energy/3  +4 -0 troca 0  411OK:spell:- -> central 888OK:spell:- -> side 31OK:spell:- -> side 1505:spell:- -> side
+  kim|16:13:18  beam - -> energy/3  +3 -0 troca 0  837OK:spell:- -> central 1335:spell:- -> side 1335:spell:- -> side
+  kim|16:19:24  beam - -> energy/3  +0 -0 troca 0  
+  kim|16:20:13  beam - -> energy/3  +7 -0 troca 0  1037OK:spell:- -> central 0:spell:- -> side 1431:spell:- -> side 0:spell:- -> side 140OK:spell:- -> side 0:spell:- -> side 737OK:spell:- -> side
+  kim|16:21:24  beam - -> energy/3  +0 -0 troca 0  
+  kim|16:22:32  beam - -> energy/3  +5 -0 troca 0  733OK:spell:- -> central 1265:spell:- -> side 1265:spell:- -> side 396OK:spell:- -> side 1265:spell:- -> side
+  kim|16:24:47  beam - -> energy/3  +5 -0 troca 0  147OK:spell:- -> central 1354:spell:- -> side 1616:spell:- -> side 1541:spell:- -> side 1472:spell:- -> side
+  kim|16:29:18  beam - -> energy/3  +5 -0 troca 0  1482OK:spell:- -> central 1716:spell:- -> side 1508:spell:- -> side 1638:spell:- -> side 1800:spell:- -> side
+  kim|16:30:33  beam - -> energy/3  +6 -0 troca 0  1479OK:spell:- -> central 0:spell:- -> side 1728:spell:- -> side 1051OK:spell:- -> side 1728:spell:- -> side 1728:spell:- -> side
+  dlc ms S0|21:36:36  beam - -> fire/3  +10 -0 troca 0  371OK:spell:- -> central 4593OK:spell:- -> central 3490:spell:- -> side 3490:spell:- -> side 3750:spell:- -> side 2409:spell:- -> side 3761:spell:- -> side 3264OK:spell:- -> side 3761:spell:- -> side 3761OK:spell:- -> side
+  dlc ms S0|21:42:38  beam - -> fire/3  +0 -0 troca 0  
+  dlc ms S0|21:43:03  beam - -> fire/3  +1 -0 troca 0  3769OK:spell:- -> side
+  dlc ms S0|21:43:41  beam - -> fire/3  +1 -0 troca 0  2330OK:spell:- -> side
+  dlc ms S0|21:44:49  beam - -> fire/3  +0 -0 troca 0  
+  dlc ms S0|21:45:37  beam - -> fire/3  +0 -0 troca 0  
+  dlc ms S1|22:00:15  beam - -> fire/3  +0 -0 troca 0  
+  dlc ms S1|22:02:24  beam - -> fire/3  +7 -0 troca 0  3068OK:spell:- -> central 2714OK:spell:- -> central 2804:spell:- -> side 3532:spell:- -> side 3532:spell:- -> side 2438:spell:- -> side 3532:spell:- -> side
+
+## alvo (17)
+  alumnishocks 2|18:22:39  beam - -> energy/1  +0 -1 troca 3  79:arrow:side -> - 803:spell:central -> side 739OK:spell:central -> side 803:spell:central -> side
+  alumnishocks 2|18:25:16  beam energy/1 -> energy/1  +5 -0 troca 0  20OK:spell:- -> central 1156OK:spell:- -> central 145OK:spell:- -> side 94OK:spell:- -> side 235OK:spell:- -> side
+  alumnishocks 2|18:25:35  beam - -> energy/1  +5 -0 troca 0  1520OK:spell:- -> central 506:spell:- -> side 506:spell:- -> side 531:spell:- -> side 484:spell:- -> side
+  alumnishocks 2|18:26:16  beam death/3 -> energy/1  +0 -0 troca 3  175OK:spell:side -> central 684:spell:central -> side 684:spell:central -> side
+  alumnishocks 2|18:27:45  beam - -> energy/1  +6 -0 troca 0  20OK:spell:- -> central 1185OK:spell:- -> central 474:spell:- -> side 452:spell:- -> side 452:spell:- -> side 452:spell:- -> side
+  alumnishocks 2|18:28:09  beam - -> energy/1  +6 -0 troca 0  1591OK:spell:- -> central 557:spell:- -> side 507:spell:- -> side 557:spell:- -> side 530:spell:- -> side 530:spell:- -> side
+  alumnishocks 2|18:30:11  beam - -> energy/1  +3 -0 troca 0  1252OK:spell:- -> central 488:spell:- -> side 488:spell:- -> side
+  alumnishocks 2|18:30:18  beam fire/1 -> energy/1  +0 -0 troca 0  
+  alumnishocks 2|18:31:14  beam - -> energy/1  +0 -0 troca 3  1067OK:spell:side -> central 452:spell:central -> side 452:spell:central -> side
+  alumnishocks 2|18:31:29  beam death/3 -> energy/1  +0 -0 troca 4  1560OK:spell:side -> central 1622OK:spell:side -> central 466:spell:central -> side 466:spell:central -> side
+  alumnishocks 2|18:31:42  beam death/3 -> energy/1  +1 -0 troca 1  1334OK:spell:- -> central 480:spell:central -> side
+  alumnishocks 2|18:31:58  beam death/3 -> -  +0 -3 troca 0  537:spell:central -> - 537:spell:central -> - 489:spell:side -> -
+  aquatic S0|10:44:32  beam energy/3 -> energy/3  +1 -0 troca 0  588OK:spell:- -> central
+  aquatic S2|13:05:51  beam death/3 -> energy/3  +5 -0 troca 0  763OK:spell:- -> central 2376OK:spell:- -> side 2509:spell:- -> side 2606:spell:- -> side 2606:spell:- -> side
+  death echo|11:06:22  beam energy/3 -> death/3  +0 -0 troca 0  
+  dlc ms S0|21:44:27  beam - -> fire/3  +0 -0 troca 0  
+  dlc ms S1|21:52:46  beam death/3 -> fire/3  +0 -0 troca 0  
+
+## rotulo troca (3)
+  kim|16:25:08  beam energy/3 -> energy/3  +2 -0 troca 1  1923OK:spell:side -> central 0:spell:- -> side 1961OK:spell:- -> side
+  dlc ms S0|21:36:07  beam fire/3 -> fire/3  +0 -0 troca 1  4400OK:spell:side -> central
+  dlc ms S1|21:58:41  beam fire/3 -> fire/3  +0 -0 troca 2  3599OK:spell:side -> central 2660OK:spell:central -> side
+
+## perde rotulo (1)
+  dlc ms S0|21:35:10  beam fire/3 -> fire/3  +0 -2 troca 0  2990OK:spell:side -> - 6432OK:spell:side -> -
+
+## so resolver (1)
+  dlc ms S0|21:37:37  beam - -> -  +0 -0 troca 0  
+
+======================================================================================
+DIFF HIT A HIT (base 15d0db7 -> repo)
+======================================================================================
+alumnishocks server log.txt S0 [Sat Sept 19 19:02:32 2026] turnos=29 contagem=0 rotulo=2 resolver=0 stage=1 {"discriminating":5,"stages":[1]} unresolved 6->6
+  19:01:14 [rotulo] resolved A1 S5 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  91:arrow:- -> side
+  19:02:16 [rotulo] resolved A1 S3 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux) -> resolved A1 S3 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  817OK:spell:- -> central  111OK:spell:- -> side  688:spell:- -> side
+alumnishocks 2 server log.txt S0 [Mon Sept 21 18:32:15 2026] turnos=246 contagem=0 rotulo=18 resolver=0 stage=1 {"discriminating":44,"stages":[1]} unresolved 1->1
+  18:22:39 [rotulo] resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux) -> resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  79:arrow:side -> -  803:spell:central -> side  739OK:spell:central -> side  803:spell:central -> side
+  18:23:07 [rotulo] resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  769OK:spell:- -> central  40OK:spell:- -> side
+  18:25:16 [rotulo] resolved A1 S10 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  20OK:spell:- -> central  1156OK:spell:- -> central  145OK:spell:- -> side  94OK:spell:- -> side  235OK:spell:- -> side
+  18:25:35 [rotulo] resolved A1 S5 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux) -> resolved A1 S5 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  1520OK:spell:- -> central  506:spell:- -> side  506:spell:- -> side  531:spell:- -> side  484:spell:- -> side
+  18:26:16 [rotulo] resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@death/st3 -> resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  175OK:spell:side -> central  684:spell:central -> side  684:spell:central -> side
+  18:27:38 [rotulo] resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  128:arrow:- -> side
+  18:27:45 [rotulo] resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux) -> resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  20OK:spell:- -> central  1185OK:spell:- -> central  474:spell:- -> side  452:spell:- -> side  452:spell:- -> side  452:spell:- -> side
+  18:28:09 [rotulo] resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux) -> resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  1591OK:spell:- -> central  557:spell:- -> side  507:spell:- -> side  557:spell:- -> side  530:spell:- -> side  530:spell:- -> side
+  18:28:55 [rotulo] resolved A1 S10 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  823OK:spell:- -> central  235OK:spell:- -> side
+  18:29:06 [rotulo] resolved A1 S10 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  644OK:spell:- -> central  831OK:spell:- -> central  48OK:spell:- -> side
+  18:29:44 [rotulo] resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  246OK:spell:- -> central  364OK:spell:- -> side
+  18:30:11 [rotulo] resolved A1 S3 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux) -> resolved A1 S3 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  1252OK:spell:- -> central  488:spell:- -> side  488:spell:- -> side
+  18:30:18 [rotulo] resolved A1 S4 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@fire/st1 -> resolved A1 S4 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  
+  18:31:14 [rotulo] resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux) -> resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  1067OK:spell:side -> central  452:spell:central -> side  452:spell:central -> side
+  18:31:29 [rotulo] resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@death/st3 -> resolved A1 S6 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  1560OK:spell:side -> central  1622OK:spell:side -> central  466:spell:central -> side  466:spell:central -> side
+  18:31:42 [rotulo] resolved A1 S4 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@death/st3 -> resolved A1 S4 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  1334OK:spell:- -> central  480:spell:central -> side
+  18:31:50 [rotulo] resolved A1 S5 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@energy/st1  79:arrow:- -> side
+  18:31:58 [rotulo] resolved A1 S4 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)@death/st3 -> resolved A1 S4 R0 G0 arrow:Auto ataque|spell:Great Energy Beam (exevo gran vis lux)  537:spell:central -> -  537:spell:central -> -  489:spell:side -> -
+aquatic Server Log.txt S0 [Mon Aug 31 10:45:40 2026] turnos=30 contagem=0 rotulo=3 resolver=0 stage=3 {"discriminating":7,"stages":[3]} unresolved 0->0
+  10:44:25 [rotulo] resolved A0 S9 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  1702OK:spell:- -> central  1438OK:spell:- -> side
+  10:44:32 [rotulo] resolved A0 S7 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  588OK:spell:- -> central
+  10:45:14 [rotulo] resolved A0 S8 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  606OK:spell:- -> central
+aquatic Server Log.txt S1 [Mon Aug 31 12:21:06 2026] turnos=27 contagem=0 rotulo=2 resolver=0 stage=3 {"discriminating":7,"stages":[3]} unresolved 0->0
+  12:20:34 [rotulo] resolved A0 S10 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  720OK:spell:- -> central  1141OK:spell:- -> central
+  12:20:53 [rotulo] resolved A0 S4 R0 G0 spell:Great Energy Beam (exevo gran vis lux) -> resolved A0 S4 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  411OK:spell:- -> central  888OK:spell:- -> side  31OK:spell:- -> side  1505:spell:- -> side
+aquatic Server Log.txt S2 [Mon Aug 31 13:06:43 2026] turnos=29 contagem=0 rotulo=2 resolver=0 stage=3 {"discriminating":5,"stages":[3]} unresolved 0->0
+  13:05:45 [rotulo] resolved A0 S7 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  464OK:spell:- -> central  577OK:spell:- -> side
+  13:05:51 [rotulo] resolved A0 S9 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@death/st3 -> resolved A0 S9 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  763OK:spell:- -> central  2376OK:spell:- -> side  2509:spell:- -> side  2606:spell:- -> side  2606:spell:- -> side
+kim server log.txt S0 [Tue Jul 14 16:43:45 2026] turnos=443 contagem=0 rotulo=13 resolver=0 stage=3 {"discriminating":79,"stages":[3]} unresolved 0->0
+  16:13:18 [rotulo] resolved A0 S3 R0 G0 spell:Great Energy Beam (exevo gran vis lux) -> resolved A0 S3 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  837OK:spell:- -> central  1335:spell:- -> side  1335:spell:- -> side
+  16:19:24 [rotulo] resolved A0 S8 R0 G0 spell:Great Energy Beam (exevo gran vis lux) -> resolved A0 S8 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  
+  16:20:13 [rotulo] resolved A0 S7 R0 G0 spell:Great Energy Beam (exevo gran vis lux) -> resolved A0 S7 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  1037OK:spell:- -> central  0:spell:- -> side  1431:spell:- -> side  0:spell:- -> side  140OK:spell:- -> side  0:spell:- -> side  737OK:spell:- -> side
+  16:21:00 [rotulo] resolved A0 S9 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  0:spell:- -> central  354OK:spell:- -> side
+  16:21:24 [rotulo] resolved A0 S8 R0 G0 spell:Great Energy Beam (exevo gran vis lux) -> resolved A0 S8 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  
+  16:22:32 [rotulo] resolved A0 S5 R0 G0 spell:Great Energy Beam (exevo gran vis lux) -> resolved A0 S5 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  733OK:spell:- -> central  1265:spell:- -> side  1265:spell:- -> side  396OK:spell:- -> side  1265:spell:- -> side
+  16:24:47 [rotulo] resolved A0 S5 R0 G0 spell:Great Energy Beam (exevo gran vis lux) -> resolved A0 S5 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  147OK:spell:- -> central  1354:spell:- -> side  1616:spell:- -> side  1541:spell:- -> side  1472:spell:- -> side
+  16:25:08 [rotulo] resolved A0 S10 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  1923OK:spell:side -> central  0:spell:- -> side  1961OK:spell:- -> side
+  16:28:42 [rotulo] resolved A0 S11 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  1850OK:spell:- -> central  1834OK:spell:- -> central  0:spell:- -> side  1486OK:spell:- -> side  1035OK:spell:- -> side
+  16:28:49 [rotulo] resolved A0 S6 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  0:spell:- -> central  836OK:spell:- -> central  1577OK:spell:- -> side
+  16:29:18 [rotulo] resolved A0 S5 R0 G0 spell:Great Energy Beam (exevo gran vis lux) -> resolved A0 S5 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  1482OK:spell:- -> central  1716:spell:- -> side  1508:spell:- -> side  1638:spell:- -> side  1800:spell:- -> side
+  16:30:08 [rotulo] resolved A0 S8 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  1065OK:spell:- -> central  838OK:spell:- -> side  426OK:spell:- -> side
+  16:30:33 [rotulo] resolved A0 S6 R0 G0 spell:Great Energy Beam (exevo gran vis lux) -> resolved A0 S6 R0 G0 spell:Great Energy Beam (exevo gran vis lux)@energy/st3  1479OK:spell:- -> central  0:spell:- -> side  1728:spell:- -> side  1051OK:spell:- -> side  1728:spell:- -> side  1728:spell:- -> side
+death echo server log.txt S0 [Fri Jul 10 11:06:45 2026] turnos=17 contagem=0 rotulo=1 resolver=0 stage=3 {"discriminating":2,"stages":[3]} unresolved 1->1
+  11:06:22 [rotulo] resolved A1 S8 R0 G0 arrow:Auto ataque|spell:Great Death Beam (exevo max mort)@energy/st3 -> resolved A1 S8 R0 G0 arrow:Auto ataque|spell:Great Death Beam (exevo max mort)@death/st3  
+dlc ms Server Log.txt S0 [Fri Jul 17 21:45:48 2026] turnos=288 contagem=0 rotulo=15 resolver=1 stage=3 {"discriminating":56,"stages":[3]} unresolved 0->0
+  21:35:10 [rotulo] resolved A0 S13 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  2990OK:spell:side -> -  6432OK:spell:side -> -
+  21:35:59 [rotulo] resolved A0 S7 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  4769OK:spell:- -> central
+  21:36:07 [rotulo] resolved A0 S11 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  4400OK:spell:side -> central
+  21:36:36 [rotulo] resolved A0 S10 R0 G0 spell:Great Death Beam (exevo max mort) -> resolved A0 S10 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  371OK:spell:- -> central  4593OK:spell:- -> central  3490:spell:- -> side  3490:spell:- -> side  3750:spell:- -> side  2409:spell:- -> side  3761:spell:- -> side  3264OK:spell:- -> side  3761:spell:- -> side  3761OK:spell:- -> side
+  21:37:37 [so resolver] ms_beam_subline_validated_no_a1 -> single_target_aa_all_action_without_positive_aa_evidence
+  21:38:52 [rotulo] resolved A0 S8 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  6811OK:spell:- -> central  939OK:spell:- -> side
+  21:39:39 [rotulo] resolved A0 S13 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  239OK:spell:- -> central  3016OK:spell:- -> side
+  21:41:41 [rotulo] resolved A0 S13 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  5256OK:spell:- -> central  6252OK:spell:- -> side  2307OK:spell:- -> side  7052OK:spell:- -> side
+  21:42:38 [rotulo] resolved A0 S7 R0 G0 spell:Great Death Beam (exevo max mort) -> resolved A0 S7 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  
+  21:43:03 [rotulo] resolved A0 S8 R0 G0 spell:Great Death Beam (exevo max mort) -> resolved A0 S8 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  3769OK:spell:- -> side
+  21:43:41 [rotulo] resolved A0 S7 R0 G0 spell:Great Death Beam (exevo max mort) -> resolved A0 S7 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  2330OK:spell:- -> side
+  21:44:27 [rotulo] resolved A0 S6 R0 G0 spell:Great Death Beam (exevo max mort) -> resolved A0 S6 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  
+  21:44:36 [rotulo] resolved A0 S11 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  3569OK:spell:- -> central  90OK:spell:- -> side  82OK:spell:- -> side  2470OK:spell:- -> side
+  21:44:49 [rotulo] resolved A0 S8 R0 G0 spell:Great Death Beam (exevo max mort) -> resolved A0 S8 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  
+  21:45:14 [rotulo] resolved A0 S10 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  2636OK:spell:- -> central  2687OK:spell:- -> side
+  21:45:37 [rotulo] resolved A0 S10 R0 G0 spell:Great Death Beam (exevo max mort) -> resolved A0 S10 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  
+dlc ms Server Log.txt S1 [Fri Jul 17 22:03:23 2026] turnos=286 contagem=0 rotulo=13 resolver=0 stage=3 {"discriminating":57,"stages":[3]} unresolved 0->0
+  21:52:37 [rotulo] resolved A0 S8 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  6144OK:spell:- -> central
+  21:52:46 [rotulo] resolved A0 S5 R0 G0 spell:Great Death Beam (exevo max mort)@death/st3 -> resolved A0 S5 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  
+  21:52:55 [rotulo] resolved A0 S11 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  4831OK:spell:- -> central  1137OK:spell:- -> central  172OK:spell:- -> side  3905OK:spell:- -> side
+  21:53:14 [rotulo] resolved A0 S7 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  1167OK:spell:- -> central  1098OK:spell:- -> side  1473OK:spell:- -> side
+  21:53:42 [rotulo] resolved A0 S13 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  2694OK:spell:- -> central  2110OK:spell:- -> central
+  21:54:22 [rotulo] resolved A0 S11 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  2713OK:spell:- -> central  1434OK:spell:- -> side  2633OK:spell:- -> side  3061OK:spell:- -> side
+  21:54:37 [rotulo] resolved A0 S13 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  4125OK:spell:- -> central  4495OK:spell:- -> central  3587OK:spell:- -> side
+  21:55:03 [rotulo] resolved A0 S8 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  2805OK:spell:- -> central  1667OK:spell:- -> central  1852OK:spell:- -> side  3276OK:spell:- -> side
+  21:57:54 [rotulo] resolved A0 S12 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  1042OK:spell:- -> central  373OK:spell:- -> central  1289OK:spell:- -> central  582OK:spell:- -> side  2134OK:spell:- -> side
+  21:58:41 [rotulo] resolved A0 S8 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  3599OK:spell:side -> central  2660OK:spell:central -> side
+  22:00:15 [rotulo] resolved A0 S9 R0 G0 spell:Great Death Beam (exevo max mort) -> resolved A0 S9 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  
+  22:00:44 [rotulo] resolved A0 S8 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  5656OK:spell:- -> central  795OK:spell:- -> side  4138OK:spell:- -> side  3122OK:spell:- -> side
+  22:02:24 [rotulo] resolved A0 S7 R0 G0 spell:Great Death Beam (exevo max mort) -> resolved A0 S7 R0 G0 spell:Great Death Beam (exevo max mort)@fire/st3  3068OK:spell:- -> central  2714OK:spell:- -> central  2804:spell:- -> side  3532:spell:- -> side  3532:spell:- -> side  2438:spell:- -> side  3532:spell:- -> side
+
+TOTAL turnos=6840 contagem/status mudou=0 so rotulo/elemento/beamSide=69 so resolver=1
+diff exit=0
+
+======================================================================================
+DIAGNÓSTICO (tools/diag-changed-turns.mjs, motor final)
+======================================================================================
+
+################ alumnishocks server log.txt S0 ################
+sessão: sv=Channel Server Log saved Sat Sept 19 19:02:32 2026
+--- setup da sessão ---
+leech: life=27.00% mana=17.50% confianca=weak evidencias=18 contradicoes=0
+  vampiric embrace: wardragon +3.20%
+  void's call: dragolisk +1.20%
+BM (Battle Momentum): OFF pierce=0.00% fonte=confirmed_by_charm_damage
+utevo grav san: bonus=0.00% (multiplicador 1) fonte=no_utevo_grav_san_cast
+crit multiplier por componente: {} (fallback 1.900)
+
+=== turno 19:01:14 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_positional_aa_confirmed_by_crit_state_boundary
+    19:01:14 seq=   51 mega dragon        dmg=   91 EW            O_fis=[126,162]      O_holy=[82]      life=  25(N1 esp.-) mana=  16(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=5 N_leech_aceito=5 leech.ok=false reason=ek_positional_aa_confirmed_by_crit_state_boundary
+    19:01:14 seq=   55 dragolisk          dmg= 2284 CRIT OK EW    O_fis=[1383,1429]    O_holy=[1045]    life= 348(N5 esp.-) mana= 243(N5 esp.-)
+    19:01:14 seq=   59 wardragon          dmg= 2445 CRIT EW       O_fis=[1321,1358]    O_holy=[1223]    life=  98(N5 esp.-) mana= 233(N5 esp.-)
+    19:01:14 seq=   62 wardragon          dmg=  662 CRIT EW       O_fis=[386,424]      O_holy=[332]     life=   0(N5 esp.-) mana=  46(N5 esp.-)
+    19:01:14 seq=   64 wardragon          dmg=  677 CRIT EW       O_fis=[393,430]      O_holy=[338]     life=   0(N5 esp.-) mana=  47(N5 esp.-)
+    19:01:14 seq=   66 mega dragon        dmg=  710 CRIT EW       O_fis=[407,443]      O_holy=[338]     life=   0(N5 esp.-) mana=  50(N5 esp.-)
+
+=== turno 19:02:16 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    19:02:16 seq=  726 dragolisk          dmg=   70 EW            O_fis=[124,169]      O_holy=[61]      life=  19(N1 esp.-) mana=  14(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=3 N_leech_aceito=3 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    19:02:17 seq=  730 wardragon          dmg=  817 CRIT OK EW    O_fis=[467,504]      O_holy=[409]     life= 741(N3 esp.-) mana= 246(N3 esp.-)
+    19:02:17 seq=  734 dragolisk          dmg=  111 CRIT OK EW    O_fis=[111,156]      O_holy=[51]      life=  96(N3 esp.-) mana=   0(N3 esp.-)
+    19:02:17 seq=  737 mega dragon        dmg=  688 CRIT EW       O_fis=[396,431]      O_holy=[328]     life= 103(N3 esp.-) mana=   0(N3 esp.-)
+
+################ alumnishocks 2 server log.txt S0 ################
+sessão: sv=Channel Server Log saved Mon Sept 21 18:32:15 2026
+--- setup da sessão ---
+leech: life=27.00% mana=18.25% confianca=strong evidencias=381 contradicoes=0
+  vampiric embrace: wardragon +3.20%
+  void's call: dragolisk +1.60%
+BM (Battle Momentum): OFF pierce=0.00% fonte=confirmed_by_charm_damage
+utevo grav san: bonus=0.00% (multiplicador 1) fonte=no_utevo_grav_san_cast
+crit multiplier por componente: {"physical":1.8,"spell:exevo mort ora":2,"spell:exevo vis hur":1.82,"spell:exevo gran vis lux":2.4} (fallback 1.717)
+
+=== turno 18:22:39 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_positional_aa_confirmed_by_crit_state_boundary
+    18:22:39 seq=  832 wardragon          dmg=   79 EW            O_fis=[117,154]      O_holy=[75]      life=  24(N1 esp.-) mana=  15(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ek_positional_aa_confirmed_by_crit_state_boundary
+    18:22:39 seq=  836 mega dragon        dmg= 2015 CRIT OK EW    O_fis=[1201,1237]    O_holy=[1063]    life= 381(N6 esp.-) mana= 258(N6 esp.-)
+    18:22:39 seq=  840 mega dragon        dmg=  311 CRIT OK EW    O_fis=[216,252]      O_holy=[164]     life= 381(N6 esp.-) mana= 258(N6 esp.-)
+    18:22:39 seq=  844 wardragon          dmg= 2745 CRIT OK EW    O_fis=[1631,1669]    O_holy=[1520]    life= 406(N6 esp.-) mana= 246(N6 esp.-)
+    18:22:39 seq=  849 dragolisk          dmg=  803 CRIT EW       O_fis=[566,611]      O_holy=[406]     life=  87(N6 esp.-) mana=  64(N6 esp.-)
+    18:22:39 seq=  852 dragolisk          dmg=  739 CRIT OK EW    O_fis=[524,570]      O_holy=[374]     life=  87(N6 esp.-) mana=  64(N6 esp.-)
+    18:22:39 seq=  856 dragolisk          dmg=  803 CRIT EW       O_fis=[566,611]      O_holy=[406]     life=  87(N6 esp.-) mana=  64(N6 esp.-)
+
+=== turno 18:23:07 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_positional_aa_confirmed_by_same_mob_exactness_boundary
+    18:23:07 seq= 1141 wardragon          dmg=   67 EW            O_fis=[105,143]      O_holy=[64]      life=   0(N1 esp.-) mana=  13(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ek_positional_aa_confirmed_by_same_mob_exactness_boundary
+    18:23:07 seq= 1144 dragolisk          dmg=  769 OK EW         O_fis=[902,947]      O_holy=[667,668,669,670] life= 209(N6 esp.-) mana= 154(N6 esp.-)
+    18:23:07 seq= 1148 dragolisk          dmg= 1401 EW            O_fis=[1605,1650]    O_holy=[1218]    life= 209(N6 esp.-) mana= 154(N6 esp.-)
+    18:23:07 seq= 1152 wardragon          dmg=  397 EW            O_fis=[434,472]      O_holy=[376,377,378,379] life=  39(N6 esp.-) mana=  24(N6 esp.-)
+    18:23:07 seq= 1155 wardragon          dmg=  397 EW            O_fis=[434,472]      O_holy=[376,377,378,379] life=  39(N6 esp.-) mana=  24(N6 esp.-)
+    18:23:07 seq= 1158 dragolisk          dmg=   40 OK EW         O_fis=[91,136]       O_holy=[35]      life=  34(N6 esp.-) mana=  25(N6 esp.-)
+    18:23:07 seq= 1162 wardragon          dmg=  397 EW            O_fis=[434,472]      O_holy=[376,377,378,379] life=  39(N6 esp.-) mana=  24(N6 esp.-)
+
+=== turno 18:25:16 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:25:16 seq= 2860 dragolisk          dmg=   69 EW            O_fis=[123,168]      O_holy=[60]      life=  19(N1 esp.-) mana=  14(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=10 N_leech_aceito=10 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    18:25:17 seq= 2864 wardragon          dmg= 1656 EW            O_fis=[1689,1726]    O_holy=[1575]    life= 201(N10 esp.-) mana= 122(N10 esp.-)
+    18:25:17 seq= 2867 dragolisk          dmg=   20 OK EW         O_fis=[68,113]       O_holy=[17]      life= 172(N10 esp.-) mana= 126(N10 esp.-)
+    18:25:17 seq= 2871 dragolisk          dmg= 1156 OK EW         O_fis=[1333,1378]    O_holy=[1004,1005,1006,1007] life=  66(N10 esp.-) mana= 126(N10 esp.-)
+    18:25:17 seq= 2875 mega dragon        dmg=  434 EW            O_fis=[468,503]      O_holy=[393]     life=   0(N10 esp.-) mana=  19(N10 esp.-)
+    18:25:17 seq= 2878 dragolisk          dmg=  396 EW            O_fis=[487,532]      O_holy=[344]     life=   0(N10 esp.-) mana=  19(N10 esp.-)
+    18:25:17 seq= 2880 dragolisk          dmg=  396 EW            O_fis=[487,532]      O_holy=[344]     life=   0(N10 esp.-) mana=  19(N10 esp.-)
+    18:25:17 seq= 2882 wardragon          dmg=  145 OK EW         O_fis=[183,221]      O_holy=[138]     life=   0(N10 esp.-) mana=  18(N10 esp.-)
+    18:25:17 seq= 2885 wardragon          dmg=   94 OK EW         O_fis=[132,170]      O_holy=[89]      life=   0(N10 esp.-) mana=  18(N10 esp.-)
+    18:25:17 seq= 2888 dragolisk          dmg=  235 OK EW         O_fis=[308,353]      O_holy=[205]     life=   0(N10 esp.-) mana=  19(N10 esp.-)
+    18:25:17 seq= 2891 dragolisk          dmg=  396 EW            O_fis=[487,532]      O_holy=[344]     life=   0(N10 esp.-) mana=  19(N10 esp.-)
+
+=== turno 18:25:35 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:25:35 seq= 3050 wardragon          dmg=   81 EW            O_fis=[119,156]      O_holy=[77]      life=   0(N1 esp.-) mana=  15(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=5 N_leech_aceito=5 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    18:25:36 seq= 3053 dragolisk          dmg= 1520 OK EW         O_fis=[1737,1782]    O_holy=[1320,1321,1322,1323] life= 443(N5 esp.-) mana= 326(N5 esp.-)
+    18:25:36 seq= 3057 wardragon          dmg=  506 EW            O_fis=[543,580]      O_holy=[481]     life=  50(N5 esp.-) mana=  31(N5 esp.-)
+    18:25:36 seq= 3060 wardragon          dmg=  506 EW            O_fis=[543,580]      O_holy=[481]     life=  50(N5 esp.-) mana=  31(N5 esp.-)
+    18:25:36 seq= 3063 mega dragon        dmg=  531 EW            O_fis=[564,600]      O_holy=[481]     life=  47(N5 esp.-) mana=  32(N5 esp.-)
+    18:25:36 seq= 3066 dragolisk          dmg=  484 EW            O_fis=[584,630]      O_holy=[421]     life=  43(N5 esp.-) mana=  32(N5 esp.-)
+
+=== turno 18:26:16 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:26:16 seq= 3573 dragolisk          dmg=   72 EW            O_fis=[126,172]      O_holy=[63]      life=  20(N1 esp.-) mana=  15(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    18:26:17 seq= 3577 wardragon          dmg=  175 CRIT OK EW    O_fis=[140,177]      O_holy=[97]      life= 699(N6 esp.-) mana= 422(N6 esp.-)
+    18:26:17 seq= 3581 dragolisk          dmg=   91 CRIT OK EW    O_fis=[105,150]      O_holy=[46]      life=  50(N6 esp.-) mana=  37(N6 esp.-)
+    18:26:17 seq= 3585 dragolisk          dmg=  653 CRIT EW       O_fis=[469,515]      O_holy=[331]     life=  50(N6 esp.-) mana=  37(N6 esp.-)
+    18:26:17 seq= 3589 dragolisk          dmg=  653 CRIT EW       O_fis=[469,515]      O_holy=[331]     life=  15(N6 esp.-) mana=  37(N6 esp.-)
+    18:26:17 seq= 3592 wardragon          dmg=  684 CRIT EW       O_fis=[435,473]      O_holy=[378]     life=   0(N6 esp.-) mana=  35(N6 esp.-)
+    18:26:17 seq= 3594 wardragon          dmg=  684 CRIT EW       O_fis=[435,473]      O_holy=[378]     life=   0(N6 esp.-) mana=  35(N6 esp.-)
+
+=== turno 18:27:38 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:27:38 seq= 4533 dragolisk          dmg=  128 CRIT EW       O_fis=[128,175]      O_holy=[64,65]   life=   0(N1 esp.-) mana=  26(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    18:27:39 seq= 4536 mega dragon        dmg= 1789 EW            O_fis=[1812,1848]    O_holy=[1620]    life=   0(N6 esp.-) mana= 180(N6 esp.-)
+    18:27:39 seq= 4538 wardragon          dmg=  717 OK EW         O_fis=[753,791]      O_holy=[682]     life=   0(N6 esp.-) mana= 172(N6 esp.-)
+    18:27:39 seq= 4541 wardragon          dmg=  462 EW            O_fis=[499,536]      O_holy=[439]     life=   0(N6 esp.-) mana=  28(N6 esp.-)
+    18:27:39 seq= 4543 dragolisk          dmg=  441 EW            O_fis=[537,582]      O_holy=[384]     life=   0(N6 esp.-) mana=  29(N6 esp.-)
+    18:27:39 seq= 4546 mega dragon        dmg=  484 EW            O_fis=[517,552]      O_holy=[438]     life=   0(N6 esp.-) mana=  29(N6 esp.-)
+    18:27:39 seq= 4548 wardragon          dmg=  462 EW            O_fis=[499,536]      O_holy=[439]     life=   0(N6 esp.-) mana=  28(N6 esp.-)
+
+=== turno 18:27:45 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:27:45 seq= 4622 wardragon          dmg=  119 CRIT EW       O_fis=[107,145]      O_holy=[66]      life=  36(N1 esp.-) mana=  22(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    18:27:46 seq= 4627 dragolisk          dmg=   20 OK EW         O_fis=[68,113]       O_holy=[17]      life= 238(N6 esp.-) mana= 175(N6 esp.-)
+    18:27:46 seq= 4632 dragolisk          dmg= 1185 OK EW         O_fis=[1365,1410]    O_holy=[1031]    life= 141(N6 esp.-) mana= 175(N6 esp.-)
+    18:27:46 seq= 4636 mega dragon        dmg=  474 EW            O_fis=[507,543]      O_holy=[429]     life=   0(N6 esp.-) mana=  29(N6 esp.-)
+    18:27:46 seq= 4638 wardragon          dmg=  452 EW            O_fis=[489,526]      O_holy=[430]     life=   0(N6 esp.-) mana=  27(N6 esp.-)
+    18:27:46 seq= 4640 wardragon          dmg=  452 EW            O_fis=[489,526]      O_holy=[430]     life=   0(N6 esp.-) mana=  27(N6 esp.-)
+    18:27:46 seq= 4642 wardragon          dmg=  452 EW            O_fis=[489,526]      O_holy=[430]     life=   0(N6 esp.-) mana=  27(N6 esp.-)
+
+=== turno 18:28:09 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:28:09 seq= 4876 wardragon          dmg=   81 EW            O_fis=[119,156]      O_holy=[77]      life=   0(N1 esp.-) mana=  15(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    18:28:10 seq= 4879 dragolisk          dmg= 1591 OK EW         O_fis=[1817,1862]    O_holy=[1384]    life= 403(N6 esp.-) mana= 341(N6 esp.-)
+    18:28:10 seq= 4883 mega dragon        dmg=  557 EW            O_fis=[590,625]      O_holy=[505]     life=   0(N6 esp.-) mana=  29(N6 esp.-)
+    18:28:10 seq= 4885 dragolisk          dmg=  507 EW            O_fis=[610,655]      O_holy=[441]     life=   0(N6 esp.-) mana=  29(N6 esp.-)
+    18:28:10 seq= 4888 mega dragon        dmg=  557 EW            O_fis=[590,625]      O_holy=[505]     life=   0(N6 esp.-) mana=  29(N6 esp.-)
+    18:28:10 seq= 4890 wardragon          dmg=  530 EW            O_fis=[567,604]      O_holy=[504]     life=   0(N6 esp.-) mana=  28(N6 esp.-)
+    18:28:10 seq= 4892 wardragon          dmg=  530 EW            O_fis=[567,604]      O_holy=[504]     life=   0(N6 esp.-) mana=  28(N6 esp.-)
+
+=== turno 18:28:55 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    18:28:55 seq= 5421 dragolisk          dmg=   81 EW            O_fis=[136,181]      O_holy=[70]      life=  22(N1 esp.-) mana=  17(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=10 N_leech_aceito=10 leech.ok=false reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    18:28:55 seq= 5425 mega dragon        dmg= 2088 EW            O_fis=[2109,2145]    O_holy=[1891]    life= 226(N10 esp.-) mana= 153(N10 esp.-)
+    18:28:55 seq= 5428 dragolisk          dmg=  823 OK EW         O_fis=[962,1007]     O_holy=[714,715,716,717] life= 206(N10 esp.-) mana= 152(N10 esp.-)
+    18:28:55 seq= 5432 dragolisk          dmg= 1900 EW            O_fis=[2161,2206]    O_holy=[1651,1652,1653,1654] life= 206(N10 esp.-) mana= 152(N10 esp.-)
+    18:28:55 seq= 5435 dragolisk          dmg=  235 OK EW         O_fis=[308,353]      O_holy=[205]     life=  30(N10 esp.-) mana=  22(N10 esp.-)
+    18:28:55 seq= 5439 wardragon          dmg=  497 EW            O_fis=[534,572]      O_holy=[473]     life=  35(N10 esp.-) mana=  21(N10 esp.-)
+    18:28:55 seq= 5442 mega dragon        dmg=  522 EW            O_fis=[554,590]      O_holy=[472]     life=  33(N10 esp.-) mana=  22(N10 esp.-)
+    18:28:55 seq= 5445 wardragon          dmg=  497 EW            O_fis=[534,572]      O_holy=[473]     life=  35(N10 esp.-) mana=  21(N10 esp.-)
+    18:28:55 seq= 5448 wardragon          dmg=  497 EW            O_fis=[534,572]      O_holy=[473]     life=  35(N10 esp.-) mana=  21(N10 esp.-)
+    18:28:55 seq= 5451 wardragon          dmg=  497 EW            O_fis=[534,572]      O_holy=[473]     life=  35(N10 esp.-) mana=  21(N10 esp.-)
+    18:28:55 seq= 5454 dragolisk          dmg=  475 EW            O_fis=[575,620]      O_holy=[413]     life=  30(N10 esp.-) mana=  22(N10 esp.-)
+
+=== turno 18:29:06 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    18:29:06 seq= 5593 dragolisk          dmg=   67 EW            O_fis=[121,166]      O_holy=[58]      life=   0(N1 esp.-) mana=  14(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=10 N_leech_aceito=10 leech.ok=false reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    18:29:06 seq= 5596 wardragon          dmg= 1683 EW            O_fis=[1716,1753]    O_holy=[1600]    life= 143(N10 esp.-) mana=  87(N10 esp.-)
+    18:29:06 seq= 5599 dragolisk          dmg=  644 OK EW         O_fis=[763,808]      O_holy=[560]     life= 122(N10 esp.-) mana=  90(N10 esp.-)
+    18:29:06 seq= 5603 wardragon          dmg=  831 OK EW         O_fis=[867,904]      O_holy=[790]     life=  17(N10 esp.-) mana=  87(N10 esp.-)
+    18:29:06 seq= 5608 wardragon          dmg= 1683 EW            O_fis=[1716,1753]    O_holy=[1600]    life=   0(N10 esp.-) mana=  87(N10 esp.-)
+    18:29:06 seq= 5610 dragolisk          dmg= 1609 EW            O_fis=[1836,1881]    O_holy=[1399]    life=   0(N10 esp.-) mana=  90(N10 esp.-)
+    18:29:06 seq= 5612 dragolisk          dmg=  402 EW            O_fis=[493,539]      O_holy=[349,350] life=   0(N10 esp.-) mana=  23(N10 esp.-)
+    18:29:06 seq= 5614 mega dragon        dmg=  441 EW            O_fis=[475,510]      O_holy=[398,399,400,401] life=   0(N10 esp.-) mana=  23(N10 esp.-)
+    18:29:06 seq= 5616 dragolisk          dmg=   48 OK EW         O_fis=[99,145]       O_holy=[42]      life=   0(N10 esp.-) mana=  23(N10 esp.-)
+    18:29:06 seq= 5619 dragolisk          dmg=  402 EW            O_fis=[493,539]      O_holy=[349,350] life=   0(N10 esp.-) mana=  23(N10 esp.-)
+    18:29:06 seq= 5621 wardragon          dmg=  420 EW            O_fis=[457,495]      O_holy=[398,399,400,401] life=   0(N10 esp.-) mana=  22(N10 esp.-)
+
+=== turno 18:29:44 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    18:29:44 seq= 5936 dragolisk          dmg=   70 EW            O_fis=[124,169]      O_holy=[61]      life=   0(N1 esp.-) mana=  14(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    18:29:44 seq= 5939 dragolisk          dmg=  246 OK EW         O_fis=[320,365]      O_holy=[214]     life=   0(N6 esp.-) mana= 172(N6 esp.-)
+    18:29:44 seq= 5942 dragolisk          dmg= 1569 EW            O_fis=[1792,1837]    O_holy=[1364]    life=   0(N6 esp.-) mana= 172(N6 esp.-)
+    18:29:44 seq= 5944 dragolisk          dmg=  425 EW            O_fis=[519,564]      O_holy=[369]     life=   0(N6 esp.-) mana=  28(N6 esp.-)
+    18:29:44 seq= 5946 dragolisk          dmg=  364 OK EW         O_fis=[451,496]      O_holy=[316]     life=   0(N6 esp.-) mana=  28(N6 esp.-)
+    18:29:44 seq= 5950 wardragon          dmg=  444 EW            O_fis=[481,519]      O_holy=[421,422,423,424] life=   0(N6 esp.-) mana=  27(N6 esp.-)
+    18:29:44 seq= 5952 wardragon          dmg=  444 EW            O_fis=[481,519]      O_holy=[421,422,423,424] life=   0(N6 esp.-) mana=  27(N6 esp.-)
+
+=== turno 18:30:11 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_positional_aa_confirmed_by_same_mob_exactness_boundary
+    18:30:11 seq= 6246 wardragon          dmg=   82 EW            O_fis=[120,158]      O_holy=[78]      life=  25(N1 esp.-) mana=  15(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=3 N_leech_aceito=3 leech.ok=false reason=ek_positional_aa_confirmed_by_same_mob_exactness_boundary
+    18:30:11 seq= 6250 dragolisk          dmg= 1252 OK EW         O_fis=[1439,1484]    O_holy=[1089]    life= 462(N3 esp.-) mana= 340(N3 esp.-)
+    18:30:11 seq= 6254 wardragon          dmg=  488 EW            O_fis=[525,562]      O_holy=[464]     life=  82(N3 esp.-) mana=  50(N3 esp.-)
+    18:30:11 seq= 6257 wardragon          dmg=  488 EW            O_fis=[525,562]      O_holy=[464]     life=  82(N3 esp.-) mana=  50(N3 esp.-)
+
+=== turno 18:30:18 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:30:18 seq= 6292 wardragon          dmg=  139 CRIT EW       O_fis=[119,157]      O_holy=[77]      life=   0(N1 esp.-) mana=  26(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=4 N_leech_aceito=4 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    18:30:19 seq= 6295 wardragon          dmg= 1320 EW            O_fis=[1353,1391]    O_holy=[1255]    life=   0(N4 esp.-) mana= 241(N4 esp.-)
+    18:30:19 seq= 6297 wardragon          dmg=  389 EW            O_fis=[426,464]      O_holy=[370]     life=   0(N4 esp.-) mana=  29(N4 esp.-)
+    18:30:19 seq= 6299 wardragon          dmg=  389 EW            O_fis=[426,464]      O_holy=[370]     life=   0(N4 esp.-) mana=  29(N4 esp.-)
+    18:30:19 seq= 6301 dragolisk          dmg=  121 OK EW         O_fis=[181,226]      O_holy=[104,105,106,107] life=   0(N4 esp.-) mana=  30(N4 esp.-)
+
+=== turno 18:31:14 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:31:14 seq= 6993 wardragon          dmg=   78 EW            O_fis=[116,153]      O_holy=[74]      life=  24(N1 esp.-) mana=  15(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    18:31:15 seq= 6997 dragolisk          dmg= 1067 OK EW         O_fis=[1234,1279]    O_holy=[928]     life= 395(N6 esp.-) mana= 291(N6 esp.-)
+    18:31:15 seq= 7001 wardragon          dmg=  452 EW            O_fis=[489,526]      O_holy=[430]     life=  39(N6 esp.-) mana=  24(N6 esp.-)
+    18:31:15 seq= 7004 dragolisk          dmg=  431 EW            O_fis=[525,572]      O_holy=[374,375] life=  33(N6 esp.-) mana=  25(N6 esp.-)
+    18:31:15 seq= 7007 dragolisk          dmg=  431 EW            O_fis=[525,572]      O_holy=[374,375] life=  33(N6 esp.-) mana=  25(N6 esp.-)
+    18:31:15 seq= 7010 dragolisk          dmg=  431 EW            O_fis=[525,572]      O_holy=[374,375] life=  33(N6 esp.-) mana=  25(N6 esp.-)
+    18:31:15 seq= 7013 wardragon          dmg=  452 EW            O_fis=[489,526]      O_holy=[430]     life=  39(N6 esp.-) mana=  24(N6 esp.-)
+
+=== turno 18:31:29 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    18:31:29 seq= 7199 mega dragon        dmg=   88 EW            O_fis=[124,159]      O_holy=[79]      life=  24(N1 esp.-) mana=  17(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    18:31:29 seq= 7203 wardragon          dmg= 1560 OK EW         O_fis=[1593,1630]    O_holy=[1483]    life= 286(N6 esp.-) mana= 173(N6 esp.-)
+    18:31:29 seq= 7207 dragolisk          dmg= 1622 OK EW         O_fis=[1851,1896]    O_holy=[1409,1410,1411,1412] life= 245(N6 esp.-) mana= 180(N6 esp.-)
+    18:31:29 seq= 7211 wardragon          dmg=  466 EW            O_fis=[502,540]      O_holy=[443]     life=  46(N6 esp.-) mana=  28(N6 esp.-)
+    18:31:29 seq= 7215 dragolisk          dmg=  445 EW            O_fis=[541,587]      O_holy=[387]     life=  40(N6 esp.-) mana=  29(N6 esp.-)
+    18:31:29 seq= 7218 wardragon          dmg=  466 EW            O_fis=[502,540]      O_holy=[443]     life=  46(N6 esp.-) mana=  28(N6 esp.-)
+    18:31:29 seq= 7221 dragolisk          dmg=  445 EW            O_fis=[541,587]      O_holy=[387]     life=  40(N6 esp.-) mana=  29(N6 esp.-)
+
+=== turno 18:31:42 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:31:42 seq= 7336 dragolisk          dmg=   79 EW            O_fis=[134,179]      O_holy=[67,68,69,70] life=   0(N1 esp.-) mana=  16(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=4 N_leech_aceito=4 leech.ok=false reason=ek_timestamp_boundary_aa_then_spell
+    18:31:43 seq= 7339 mega dragon        dmg= 1334 OK EW         O_fis=[1361,1397]    O_holy=[1208]    life= 200(N4 esp.-) mana= 297(N4 esp.-)
+    18:31:43 seq= 7343 mega dragon        dmg=  480 EW            O_fis=[513,549]      O_holy=[435]     life=   0(N4 esp.-) mana=  36(N4 esp.-)
+    18:31:43 seq= 7346 dragolisk          dmg=  436 EW            O_fis=[532,577]      O_holy=[379]     life=   0(N4 esp.-) mana=  35(N4 esp.-)
+    18:31:43 seq= 7348 dragolisk          dmg=  436 EW            O_fis=[532,577]      O_holy=[379]     life=   0(N4 esp.-) mana=  35(N4 esp.-)
+
+=== turno 18:31:50 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_positional_aa_confirmed_by_crit_state_boundary
+    18:31:50 seq= 7414 wardragon          dmg=   79 EW            O_fis=[117,154]      O_holy=[75]      life=   0(N1 esp.-) mana=  15(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=5 N_leech_aceito=5 leech.ok=false reason=ek_positional_aa_confirmed_by_crit_state_boundary
+    18:31:50 seq= 7417 wardragon          dmg= 2719 CRIT EW       O_fis=[1616,1653]    O_holy=[1505]    life= 293(N5 esp.-) mana= 274(N5 esp.-)
+    18:31:50 seq= 7420 dragolisk          dmg= 2450 CRIT OK EW    O_fis=[1634,1679]    O_holy=[1241]    life=   0(N5 esp.-) mana= 284(N5 esp.-)
+    18:31:50 seq= 7423 mega dragon        dmg=  774 CRIT EW       O_fis=[484,520]      O_holy=[408]     life=   0(N5 esp.-) mana=  57(N5 esp.-)
+    18:31:50 seq= 7425 wardragon          dmg=  737 CRIT EW       O_fis=[466,503]      O_holy=[408]     life=   0(N5 esp.-) mana=  54(N5 esp.-)
+    18:31:50 seq= 7427 dragolisk          dmg=  703 CRIT EW       O_fis=[502,547]      O_holy=[356]     life=   0(N5 esp.-) mana=  56(N5 esp.-)
+
+=== turno 18:31:58 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:31:58 seq= 7480 wardragon          dmg=   67 EW            O_fis=[105,143]      O_holy=[64]      life=  21(N1 esp.-) mana=  13(N1 esp.-)
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=4 N_leech_aceito=4 leech.ok=true reason=ek_timestamp_boundary_aa_then_spell
+    18:31:59 seq= 7484 mega dragon        dmg=  537 EW            O_fis=[570,605]      O_holy=[486]     life=  48(N4 esp.-) mana=  33(N4 esp.-)
+    18:31:59 seq= 7487 mega dragon        dmg=  537 EW            O_fis=[570,605]      O_holy=[486]     life=  48(N4 esp.-) mana=  33(N4 esp.-)
+    18:31:59 seq= 7490 dragolisk          dmg=  489 EW            O_fis=[591,636]      O_holy=[426]     life=  44(N4 esp.-) mana=  32(N4 esp.-)
+    18:31:59 seq= 7493 mega dragon        dmg=  361 OK EW         O_fis=[395,430]      O_holy=[327]     life=  48(N4 esp.-) mana=  33(N4 esp.-)
+
+################ aquatic Server Log.txt S0 ################
+sessão: sv=Channel Server Log saved Mon Aug 31 10:45:40 2026
+--- setup da sessão ---
+leech: life=27.00% mana=17.50% confianca=weak evidencias=24 contradicoes=0
+  vampiric embrace: quara looter +1.60%
+  void's call: quara raider +1.20%
+BM (Battle Momentum): OFF pierce=0.00% fonte=not_paladin
+utevo grav san: bonus=0.00% (multiplicador 1) fonte=no_utevo_grav_san_cast
+crit multiplier por componente: {"spell:exevo mort ora":1.92} (fallback 1.124)
+
+=== turno 10:44:25 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=9 N_leech_aceito=9 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    10:44:25 seq=    1 quara raider       dmg= 1702 OK EW         O_fis=[1792,1837]    O_holy=[1817]    life= 290(N9 esp.-) mana= 201(N9 esp.-)
+    10:44:25 seq=    5 quara raider       dmg= 1939 EW            O_fis=[2035,2080]    O_holy=[2070]    life= 290(N9 esp.-) mana= 201(N9 esp.-)
+    10:44:25 seq=    8 quara raider       dmg= 1505 EW            O_fis=[1590,1635]    O_holy=[1607]    life=  94(N9 esp.-) mana=  65(N9 esp.-)
+    10:44:25 seq=   11 quara looter       dmg= 1571 EW            O_fis=[1625,1668]    O_holy=[1677]    life= 103(N9 esp.-) mana=  64(N9 esp.-)
+    10:44:25 seq=   14 quara plunderer    dmg= 1891 prey EW       O_fis=[1486,1526]    O_holy=[1693]    life=  94(N9 esp.-) mana=  61(N9 esp.-)
+    10:44:25 seq=   17 quara raider       dmg= 1438 OK EW         O_fis=[1521,1566]    O_holy=[1535]    life=  94(N9 esp.-) mana=  65(N9 esp.-)
+    10:44:25 seq=   21 quara plunderer    dmg= 1891 prey EW       O_fis=[1486,1526]    O_holy=[1693]    life=  94(N9 esp.-) mana=  61(N9 esp.-)
+    10:44:25 seq=   24 quara looter       dmg= 1571 EW            O_fis=[1625,1668]    O_holy=[1677]    life= 103(N9 esp.-) mana=  64(N9 esp.-)
+    10:44:25 seq=   27 quara raider       dmg= 1505 EW            O_fis=[1590,1635]    O_holy=[1607]    life=  94(N9 esp.-) mana=  65(N9 esp.-)
+
+=== turno 10:44:32 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=7 N_leech_aceito=6 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    10:44:32 seq=  101 quara raider       dmg=  588 ONS OK EW     O_fis=[423,468]      O_holy=[392]     life=   0(N6 esp.-) mana= 226(N6 esp.-)
+    10:44:32 seq=  104 quara raider       dmg= 3004 ONS EW        O_fis=[1971,2016]    O_holy=[2004]    life=   0(N6 esp.-) mana= 226(N6 esp.-)
+    10:44:32 seq=  106 quara plunderer    dmg= 3773 ONS prey EW   O_fis=[1843,1883]    O_holy=[2111]    life=   0(N6 esp.-) mana= 213(N6 esp.-)
+    10:44:32 seq=  110 quara plunderer    dmg= 2642 ONS prey EW   O_fis=[1302,1344]    O_holy=[1478,1479] life=   0(N6 esp.-) mana= 121(N6 esp.-)
+    10:44:32 seq=  112 quara looter       dmg= 2196 ONS EW        O_fis=[1425,1468]    O_holy=[1465]    life=   0(N6 esp.-) mana= 126(N6 esp.-)
+    10:44:32 seq=  114 quara raider       dmg= 2104 ONS EW        O_fis=[1395,1440]    O_holy=[1404]    life=   0(N6 esp.-) mana= 129(N6 esp.-)
+    10:44:32 seq=114.01 quara plunderer    dmg=    0 OK                                                  life=   0(N6 esp.-) mana=   0(N6 esp.-)
+
+=== turno 10:45:14 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    10:45:14 seq=  620 quara plunderer    dmg=  577 CRIT OK prey EW O_fis=[433,474]      O_holy=[459,460] life= 423(N8 esp.-) mana= 275(N8 esp.-)
+    10:45:14 seq=  624 quara raider       dmg=  606 CRIT SB OK EW O_fis=[599,644]      O_holy=[575]     life= 519(N8 esp.-) mana= 360(N8 esp.-)
+    10:45:14 seq=  628 quara raider       dmg= 4788 CRIT SB EW    O_fis=[4412,4458]    O_holy=[4544,4545] life= 247(N8 esp.-) mana= 360(N8 esp.-)
+    10:45:14 seq=  631 quara raider       dmg= 3350 CRIT SB EW    O_fis=[3101,3147]    O_holy=[3179,3180] life=   0(N8 esp.-) mana= 176(N8 esp.-)
+    10:45:14 seq=  633 quara raider       dmg= 3350 CRIT SB EW    O_fis=[3101,3147]    O_holy=[3179,3180] life=   0(N8 esp.-) mana= 176(N8 esp.-)
+    10:45:14 seq=  635 quara looter       dmg= 2195 CRIT OK EW    O_fis=[2007,2051]    O_holy=[2083,2084] life=   0(N8 esp.-) mana= 140(N8 esp.-)
+    10:45:14 seq=  638 quara plunderer    dmg= 2459 CRIT OK prey EW O_fis=[1712,1753]    O_holy=[1957,1958,1959] life=   0(N8 esp.-) mana= 135(N8 esp.-)
+    10:45:14 seq=  641 quara raider       dmg=  309 CRIT SB OK EW O_fis=[328,374]      O_holy=[293,294] life=   0(N8 esp.-) mana= 176(N8 esp.-)
+
+################ aquatic Server Log.txt S1 ################
+sessão: sv=Channel Server Log saved Mon Aug 31 12:21:06 2026
+--- setup da sessão ---
+leech: life=27.00% mana=17.50% confianca=weak evidencias=63 contradicoes=0
+  vampiric embrace: quara looter +1.60%
+  void's call: quara raider +1.20%
+BM (Battle Momentum): OFF pierce=0.00% fonte=not_paladin
+utevo grav san: bonus=0.00% (multiplicador 1) fonte=no_utevo_grav_san_cast
+crit multiplier por componente: {} (fallback 1.899)
+
+=== turno 12:20:34 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=10 N_leech_aceito=10 leech.ok=true reason=ms_beam_subline_validated_no_a1
+    12:20:34 seq=  384 quara looter       dmg=  720 OK EW         O_fis=[769,812]      O_holy=[769]     life= 253(N10 esp.-) mana= 179(N10 esp.-)
+    12:20:34 seq=  388 quara raider       dmg= 1141 OK EW         O_fis=[1216,1261]    O_holy=[1218]    life=   0(N10 esp.-) mana= 183(N10 esp.-)
+    12:20:34 seq=  391 quara raider       dmg= 2438 EW            O_fis=[2546,2592]    O_holy=[2602,2603] life=   0(N10 esp.-) mana= 162(N10 esp.-)
+    12:20:34 seq=  393 quara raider       dmg= 1706 EW            O_fis=[1796,1841]    O_holy=[1821]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    12:20:34 seq=  394 quara raider       dmg= 1706 EW            O_fis=[1796,1841]    O_holy=[1821]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    12:20:34 seq=  395 quara raider       dmg= 1706 EW            O_fis=[1796,1841]    O_holy=[1821]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    12:20:34 seq=  396 quara plunderer    dmg= 2143 prey EW       O_fis=[1678,1720]    O_holy=[1918,1919,1920] life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    12:20:34 seq=  397 quara looter       dmg= 1781 EW            O_fis=[1835,1878]    O_holy=[1901]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    12:20:34 seq=  398 quara plunderer    dmg= 2143 prey EW       O_fis=[1678,1720]    O_holy=[1918,1919,1920] life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    12:20:34 seq=  399 quara raider       dmg= 1706 EW            O_fis=[1796,1841]    O_holy=[1821]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+
+=== turno 12:20:53 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=4 N_leech_aceito=4 leech.ok=true reason=ms_beam_subline_validated_no_a1
+    12:20:53 seq=  666 quara raider       dmg=  411 OK EW         O_fis=[467,512]      O_holy=[438]     life= 468(N4 esp.-) mana= 324(N4 esp.-)
+    12:20:53 seq=  670 quara looter       dmg=  888 OK EW         O_fis=[937,980]      O_holy=[947]     life= 180(N4 esp.-) mana= 111(N4 esp.-)
+    12:20:53 seq=  674 quara plunderer    dmg=   31 OK prey EW    O_fis=[66,106]       O_holy=[28,29]   life= 164(N4 esp.-) mana= 107(N4 esp.-)
+    12:20:53 seq=  678 quara raider       dmg= 1505 EW            O_fis=[1590,1635]    O_holy=[1607]    life= 164(N4 esp.-) mana= 114(N4 esp.-)
+
+################ aquatic Server Log.txt S2 ################
+sessão: sv=Channel Server Log saved Mon Aug 31 13:06:43 2026
+--- setup da sessão ---
+leech: life=27.25% mana=17.50% confianca=weak evidencias=21 contradicoes=0
+  vampiric embrace: quara looter +2.40%
+  void's call: quara raider +1.20%
+BM (Battle Momentum): OFF pierce=0.00% fonte=not_paladin
+utevo grav san: bonus=0.00% (multiplicador 1) fonte=no_utevo_grav_san_cast
+crit multiplier por componente: {} (fallback 1.900)
+
+=== turno 13:05:45 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=7 N_leech_aceito=7 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    13:05:45 seq=   53 quara looter       dmg=  464 OK EW         O_fis=[511,554]      O_holy=[495]     life= 230(N7 esp.-) mana= 142(N7 esp.-)
+    13:05:45 seq=   57 quara looter       dmg= 2006 EW            O_fis=[2062,2105]    O_holy=[2141]    life= 230(N7 esp.-) mana= 142(N7 esp.-)
+    13:05:45 seq=   60 quara raider       dmg= 1922 EW            O_fis=[2017,2062]    O_holy=[2052]    life= 206(N7 esp.-) mana= 145(N7 esp.-)
+    13:05:45 seq=   63 quara raider       dmg= 1345 EW            O_fis=[1425,1470]    O_holy=[1435]    life=   0(N7 esp.-) mana=  83(N7 esp.-)
+    13:05:45 seq=   65 quara looter       dmg= 1405 EW            O_fis=[1457,1500]    O_holy=[1499,1500] life=   0(N7 esp.-) mana=  81(N7 esp.-)
+    13:05:45 seq=   67 quara plunderer    dmg=  577 OK EW         O_fis=[592,633]      O_holy=[646]     life=   0(N7 esp.-) mana=  78(N7 esp.-)
+    13:05:45 seq=   70 quara plunderer    dmg= 1352 EW            O_fis=[1333,1373]    O_holy=[1513]    life=   0(N7 esp.-) mana=  78(N7 esp.-)
+
+=== turno 13:05:51 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=9 N_leech_aceito=9 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    13:05:51 seq=  138 quara raider       dmg=  763 CRIT SB OK EW O_fis=[458,503]      O_holy=[429]     life= 476(N9 esp.-) mana= 330(N9 esp.-)
+    13:05:51 seq=  142 quara raider       dmg= 4394 CRIT SB EW    O_fis=[2417,2462]    O_holy=[2468]    life= 472(N9 esp.-) mana= 330(N9 esp.-)
+    13:05:51 seq=  145 quara raider       dmg= 4394 CRIT SB EW    O_fis=[2417,2462]    O_holy=[2468]    life=   0(N9 esp.-) mana= 330(N9 esp.-)
+    13:05:51 seq=  147 quara raider       dmg= 3077 CRIT SB EW    O_fis=[1706,1751]    O_holy=[1728]    life=   0(N9 esp.-) mana= 145(N9 esp.-)
+    13:05:51 seq=  149 quara looter       dmg= 2376 CRIT OK EW    O_fis=[1301,1345]    O_holy=[1334]    life=   0(N9 esp.-) mana= 115(N9 esp.-)
+    13:05:51 seq=  152 quara plunderer    dmg= 2509 CRIT EW       O_fis=[1302,1343]    O_holy=[1478]    life=   0(N9 esp.-) mana= 111(N9 esp.-)
+    13:05:51 seq=  154 quara raider       dmg= 3077 CRIT SB EW    O_fis=[1706,1751]    O_holy=[1728]    life=   0(N9 esp.-) mana= 145(N9 esp.-)
+    13:05:51 seq=  156 quara looter       dmg= 2606 CRIT EW       O_fis=[1424,1467]    O_holy=[1464]    life=   0(N9 esp.-) mana= 115(N9 esp.-)
+    13:05:51 seq=  158 quara looter       dmg= 2606 CRIT EW       O_fis=[1424,1467]    O_holy=[1464]    life=   0(N9 esp.-) mana= 115(N9 esp.-)
+
+################ kim server log.txt S0 ################
+sessão: sv=Channel Server Log saved Tue Jul 14 16:43:45 2026
+--- setup da sessão ---
+leech: life=27.00% mana=18.00% confianca=strong evidencias=321 contradicoes=0
+  vampiric embrace: nighthunter +3.20%
+  void's call: sulphider +1.60%
+BM (Battle Momentum): OFF pierce=0.00% fonte=not_paladin
+utevo grav san: bonus=0.00% (multiplicador 1) fonte=no_utevo_grav_san_cast
+crit multiplier por componente: {"spell:exevo vis hur":1.72,"spell:exevo gran vis lux":1.8,"spell:exevo mort ora":1.72} (fallback 1.900)
+
+=== turno 16:13:18 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=3 N_leech_aceito=3 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:13:18 seq=  484 undertaker         dmg=  837 OK prey       O_fis=[636,669]      O_holy=[661]     life=   9(N3 esp.-) mana= 257(N3 esp.-)
+    16:13:18 seq=  488 nighthunter        dmg= 1335 prey          O_fis=[1044,1080]    O_holy=[964]     life=   0(N3 esp.-) mana= 107(N3 esp.-)
+    16:13:18 seq=  490 nighthunter        dmg= 1335 prey          O_fis=[1044,1080]    O_holy=[964]     life=   0(N3 esp.-) mana=  96(N3 esp.-)
+
+=== turno 16:19:24 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:19:24 seq= 2642 stalking stalk     dmg= 1695               O_fis=[1629,1662]    O_holy=[1754]    life=   0(N8 esp.-) mana= 306(N8 esp.-)
+    16:19:24 seq= 2645 undertaker         dmg=  111 OK prey       O_fis=[114,146]      O_holy=[88]      life=   0(N8 esp.-) mana=  19(N8 esp.-)
+    16:19:24 seq= 2648 undertaker         dmg=    0               O_fis=[33,66]        O_holy=[1,2]     life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    16:19:24 seq= 2649 undertaker         dmg= 1762 prey          O_fis=[1303,1336]    O_holy=[1391,1392] life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    16:19:24 seq= 2650 sulphur spouter    dmg= 1285               O_fis=[1371,1412]    O_holy=[1107]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    16:19:24 seq= 2651 undertaker         dmg=  856 OK prey       O_fis=[651,683]      O_holy=[677]     life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    16:19:24 seq= 2653 sulphider          dmg= 1605 prey          O_fis=[1370,1410]    O_holy=[1208]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    16:19:24 seq= 2654 undertaker         dmg= 1762 OK prey       O_fis=[1303,1336]    O_holy=[1391,1392] life=   0(N8 esp.-) mana=   0(N8 esp.-)
+
+=== turno 16:20:13 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=7 N_leech_aceito=7 leech.ok=true reason=ms_beam_subline_validated_no_a1
+    16:20:13 seq= 2940 nighthunter        dmg= 1037 OK prey       O_fis=[819,855]      O_holy=[748,749] life=   0(N7 esp.-) mana= 310(N7 esp.-)
+    16:20:13 seq= 2943 undertaker         dmg=    0               O_fis=[33,66]        O_holy=[1,2]     life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    16:20:13 seq= 2944 sulphur spouter    dmg= 1431               O_fis=[1522,1563]    O_holy=[1233]    life=   0(N7 esp.-) mana=  65(N7 esp.-)
+    16:20:13 seq= 2946 undertaker         dmg=    0               O_fis=[33,66]        O_holy=[1,2]     life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    16:20:13 seq= 2947 sulphider          dmg=  140 OK prey       O_fis=[157,197]      O_holy=[105]     life=   0(N7 esp.-) mana=  71(N7 esp.-)
+    16:20:13 seq= 2950 undertaker         dmg=    0               O_fis=[33,66]        O_holy=[1,2]     life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    16:20:13 seq= 2951 nighthunter        dmg=  737 OK prey       O_fis=[592,629]      O_holy=[532,533] life=   0(N7 esp.-) mana=  68(N7 esp.-)
+
+=== turno 16:21:00 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=9 N_leech_aceito=9 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:21:00 seq= 3216 stalking stalk     dmg= 1914               O_fis=[1835,1869]    O_holy=[1981]    life= 169(N9 esp.-) mana= 113(N9 esp.-)
+    16:21:00 seq= 3219 undertaker         dmg=    0               O_fis=[33,66]        O_holy=[1,2]     life=   0(N9 esp.-) mana=   0(N9 esp.-)
+    16:21:00 seq= 3220 sulphider          dmg= 2081 prey          O_fis=[1764,1804]    O_holy=[1566]    life= 147(N9 esp.-) mana= 107(N9 esp.-)
+    16:21:00 seq= 3223 sulphur spouter    dmg= 1666               O_fis=[1765,1806]    O_holy=[1434,1435,1436,1437] life= 147(N9 esp.-) mana=  98(N9 esp.-)
+    16:21:00 seq= 3226 undertaker         dmg= 1598 prey          O_fis=[1185,1218]    O_holy=[1261,1262] life=  97(N9 esp.-) mana=  65(N9 esp.-)
+    16:21:00 seq= 3229 nighthunter        dmg= 1523 prey          O_fis=[1186,1222]    O_holy=[1100]    life= 104(N9 esp.-) mana=  62(N9 esp.-)
+    16:21:00 seq= 3233 sulphider          dmg= 1456 prey          O_fis=[1247,1287]    O_holy=[1096]    life=  89(N9 esp.-) mana=  65(N9 esp.-)
+    16:21:00 seq= 3236 undertaker         dmg=  354 OK prey       O_fis=[288,320]      O_holy=[280]     life=  97(N9 esp.-) mana=  35(N9 esp.-)
+    16:21:00 seq= 3240 undertaker         dmg= 1598 prey          O_fis=[1185,1218]    O_holy=[1261,1262] life=  97(N9 esp.-) mana=   0(N9 esp.-)
+
+=== turno 16:21:24 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:21:24 seq= 3372 undertaker         dmg= 2235 prey          O_fis=[1645,1677]    O_holy=[1765]    life= 266(N8 esp.-) mana= 178(N8 esp.-)
+    16:21:24 seq= 3375 undertaker         dmg= 2235 prey          O_fis=[1645,1677]    O_holy=[1765]    life= 266(N8 esp.-) mana=  74(N8 esp.-)
+    16:21:24 seq= 3378 sulphider          dmg= 1581 prey          O_fis=[1350,1391]    O_holy=[1190]    life=  86(N8 esp.-) mana=   0(N8 esp.-)
+    16:21:24 seq= 3380 stalking stalk     dmg= 1454               O_fis=[1402,1436]    O_holy=[1505]    life=  93(N8 esp.-) mana=   0(N8 esp.-)
+    16:21:24 seq= 3382 undertaker         dmg=    0               O_fis=[33,66]        O_holy=[1,2]     life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    16:21:24 seq= 3383 undertaker         dmg= 1735 prey          O_fis=[1284,1316]    O_holy=[1370]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    16:21:24 seq= 3384 sulphider          dmg= 1581 prey          O_fis=[1350,1391]    O_holy=[1190]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    16:21:24 seq= 3385 undertaker         dmg= 1735 prey          O_fis=[1284,1316]    O_holy=[1370]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+
+=== turno 16:22:32 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=5 N_leech_aceito=5 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:22:32 seq= 3735 sulphider          dmg=  733 OK prey       O_fis=[648,689]      O_holy=[551,552] life= 341(N5 esp.-) mana= 248(N5 esp.-)
+    16:22:32 seq= 3739 stalking stalk     dmg= 1265               O_fis=[1224,1259]    O_holy=[1309,1310] life= 112(N5 esp.-) mana=  75(N5 esp.-)
+    16:22:32 seq= 3742 stalking stalk     dmg= 1265               O_fis=[1224,1259]    O_holy=[1309,1310] life= 112(N5 esp.-) mana=  75(N5 esp.-)
+    16:22:32 seq= 3745 undertaker         dmg=  396 OK prey       O_fis=[319,351]      O_holy=[313]     life= 106(N5 esp.-) mana=  39(N5 esp.-)
+    16:22:32 seq= 3749 stalking stalk     dmg= 1265               O_fis=[1224,1259]    O_holy=[1309,1310] life= 112(N5 esp.-) mana=   0(N5 esp.-)
+
+=== turno 16:24:47 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=5 N_leech_aceito=5 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:24:47 seq= 4443 nighthunter        dmg=  147 OK prey       O_fis=[147,183]      O_holy=[106]     life=  55(N5 esp.-) mana= 255(N5 esp.-)
+    16:24:47 seq= 4447 stalking stalk     dmg= 1354               O_fis=[1309,1342]    O_holy=[1402]    life=   0(N5 esp.-) mana=  80(N5 esp.-)
+    16:24:47 seq= 4449 undertaker         dmg= 1616 prey          O_fis=[1199,1231]    O_holy=[1277]    life=   0(N5 esp.-) mana=  76(N5 esp.-)
+    16:24:47 seq= 4451 nighthunter        dmg= 1541 prey          O_fis=[1200,1235]    O_holy=[1113]    life=   0(N5 esp.-) mana=  73(N5 esp.-)
+    16:24:47 seq= 4453 sulphider          dmg= 1472 prey          O_fis=[1259,1300]    O_holy=[1107,1108] life=   0(N5 esp.-) mana=  76(N5 esp.-)
+
+=== turno 16:25:08 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=10 N_leech_aceito=9 leech.ok=false reason=single_target_aa_all_action_without_positive_aa_evidence
+    16:25:08 seq= 4564 undertaker         dmg= 2937 prey          O_fis=[2151,2184]    O_holy=[2320]    life=   4(N9 esp.-) mana= 138(N9 esp.-)
+    16:25:08 seq= 4567 sulphur spouter    dmg= 2142               O_fis=[2257,2298]    O_holy=[1844,1845,1846,1847] life=   0(N9 esp.-) mana= 126(N9 esp.-)
+    16:25:08 seq= 4569 nighthunter        dmg= 1923 OK prey       O_fis=[1488,1524]    O_holy=[1388,1389] life=   0(N9 esp.-) mana= 132(N9 esp.-)
+    16:25:08 seq= 4572 sulphider          dmg= 2675 prey          O_fis=[2256,2296]    O_holy=[2013]    life=   0(N9 esp.-) mana= 137(N9 esp.-)
+    16:25:08 seq= 4574 sulphider          dmg= 1872 prey          O_fis=[1591,1632]    O_holy=[1409]    life=   0(N9 esp.-) mana=  74(N9 esp.-)
+    16:25:08 seq= 4576 undertaker         dmg=    0               O_fis=[33,66]        O_holy=[1,2]     life=   0(N9 esp.-) mana=   0(N9 esp.-)
+    16:25:08 seq= 4577 sulphider          dmg=  370 OK prey       O_fis=[348,388]      O_holy=[279]     life=   0(N9 esp.-) mana=  74(N9 esp.-)
+    16:25:08 seq= 4582 stalking stalk     dmg= 1724               O_fis=[1656,1689]    O_holy=[1784]    life=   0(N9 esp.-) mana=  78(N9 esp.-)
+    16:25:08 seq= 4584 nighthunter        dmg= 1961 OK prey       O_fis=[1517,1552]    O_holy=[1416]    life=   0(N9 esp.-) mana=  71(N9 esp.-)
+    16:25:08 seq=4584.01 sulphider          dmg=    0 OK                                                  life=   0(N9 esp.-) mana=   0(N9 esp.-)
+
+=== turno 16:28:42 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=11 N_leech_aceito=11 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:28:42 seq= 5851 undertaker         dmg= 1850 OK prey       O_fis=[1367,1400]    O_holy=[1461]    life= 291(N11 esp.-) mana= 194(N11 esp.-)
+    16:28:42 seq= 5855 sulphider          dmg= 1834 OK prey       O_fis=[1560,1600]    O_holy=[1378,1379,1380,1381,1382] life= 265(N11 esp.-) mana= 193(N11 esp.-)
+    16:28:42 seq= 5859 sulphur spouter    dmg= 2454               O_fis=[2579,2620]    O_holy=[2114]    life= 266(N11 esp.-) mana= 177(N11 esp.-)
+    16:28:42 seq= 5862 undertaker         dmg= 2355 prey          O_fis=[1732,1764]    O_holy=[1859,1860,1861,1862] life= 109(N11 esp.-) mana=  73(N11 esp.-)
+    16:28:42 seq= 5865 undertaker         dmg=    0               O_fis=[33,66]        O_holy=[1,2]     life=   0(N11 esp.-) mana=   0(N11 esp.-)
+    16:28:42 seq= 5866 undertaker         dmg= 1486 OK prey       O_fis=[1105,1137]    O_holy=[1174]    life= 109(N11 esp.-) mana=  73(N11 esp.-)
+    16:28:42 seq= 5870 nighthunter        dmg= 2246 prey          O_fis=[1731,1767]    O_holy=[1621]    life= 116(N11 esp.-) mana=  69(N11 esp.-)
+    16:28:42 seq= 5874 stalking stalk     dmg= 1973               O_fis=[1890,1924]    O_holy=[2042]    life= 114(N11 esp.-) mana=  76(N11 esp.-)
+    16:28:42 seq= 5877 nighthunter        dmg= 2246 prey          O_fis=[1731,1767]    O_holy=[1621]    life= 116(N11 esp.-) mana=  69(N11 esp.-)
+    16:28:42 seq= 5880 nighthunter        dmg= 1035 OK prey       O_fis=[818,853]      O_holy=[747]     life=  30(N11 esp.-) mana=  69(N11 esp.-)
+    16:28:42 seq= 5884 sulphur spouter    dmg= 1718               O_fis=[1818,1859]    O_holy=[1480]    life=   0(N11 esp.-) mana=  66(N11 esp.-)
+
+=== turno 16:28:49 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:28:49 seq= 5928 stalking stalk     dmg= 2198               O_fis=[2102,2136]    O_holy=[2275]    life=   0(N6 esp.-) mana= 129(N6 esp.-)
+    16:28:49 seq= 5930 stalking stalk     dmg=    0               O_fis=[34,69]        O_holy=[1,2,3]   life=   0(N6 esp.-) mana=   0(N6 esp.-)
+    16:28:49 seq= 5931 stalking stalk     dmg= 2198               O_fis=[2102,2136]    O_holy=[2275]    life=   0(N6 esp.-) mana= 129(N6 esp.-)
+    16:28:49 seq= 5933 sulphur spouter    dmg=  836 OK            O_fis=[907,948]      O_holy=[719,720,721,722] life=   0(N6 esp.-) mana= 113(N6 esp.-)
+    16:28:49 seq= 5936 sulphur spouter    dmg= 1207               O_fis=[1290,1331]    O_holy=[1040]    life=   0(N6 esp.-) mana= 120(N6 esp.-)
+    16:28:49 seq= 5938 nighthunter        dmg= 1577 OK prey       O_fis=[1226,1262]    O_holy=[1138,1139] life=   0(N6 esp.-) mana= 126(N6 esp.-)
+
+=== turno 16:29:18 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=5 N_leech_aceito=5 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:29:18 seq= 6081 undertaker         dmg= 1482 OK prey       O_fis=[1101,1134]    O_holy=[1170,1171] life= 446(N5 esp.-) mana= 298(N5 esp.-)
+    16:29:18 seq= 6085 nighthunter        dmg= 1716 prey          O_fis=[1331,1367]    O_holy=[1239]    life= 109(N5 esp.-) mana=  81(N5 esp.-)
+    16:29:18 seq= 6088 stalking stalk     dmg= 1508               O_fis=[1453,1487]    O_holy=[1561]    life=   0(N5 esp.-) mana=  89(N5 esp.-)
+    16:29:18 seq= 6090 sulphider          dmg= 1638 prey          O_fis=[1397,1438]    O_holy=[1232,1233] life=   0(N5 esp.-) mana=  84(N5 esp.-)
+    16:29:18 seq= 6092 undertaker         dmg= 1800 prey          O_fis=[1331,1363]    O_holy=[1421]    life=   0(N5 esp.-) mana=  85(N5 esp.-)
+
+=== turno 16:30:08 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:30:08 seq= 6355 sulphider          dmg= 2340 prey          O_fis=[1979,2019]    O_holy=[1761]    life=   0(N8 esp.-) mana= 147(N8 esp.-)
+    16:30:08 seq= 6357 sulphider          dmg= 1065 OK prey       O_fis=[923,963]      O_holy=[801]     life=   0(N8 esp.-) mana= 147(N8 esp.-)
+    16:30:08 seq= 6361 stalking stalk     dmg= 2154               O_fis=[2061,2094]    O_holy=[2229]    life=   0(N8 esp.-) mana= 156(N8 esp.-)
+    16:30:08 seq= 6363 undertaker         dmg=  838 OK prey       O_fis=[637,670]      O_holy=[661,662] life=   0(N8 esp.-) mana=  73(N8 esp.-)
+    16:30:08 seq= 6366 undertaker         dmg=  426 OK prey       O_fis=[341,373]      O_holy=[337]     life=   0(N8 esp.-) mana=  73(N8 esp.-)
+    16:30:08 seq= 6369 nighthunter        dmg= 1716 prey          O_fis=[1331,1367]    O_holy=[1239]    life=   0(N8 esp.-) mana=  70(N8 esp.-)
+    16:30:08 seq= 6371 sulphider          dmg= 1638 prey          O_fis=[1397,1438]    O_holy=[1232,1233] life=   0(N8 esp.-) mana=  72(N8 esp.-)
+    16:30:08 seq= 6373 sulphur spouter    dmg= 1312               O_fis=[1399,1440]    O_holy=[1129,1130,1131,1132] life=   0(N8 esp.-) mana=  67(N8 esp.-)
+
+=== turno 16:30:33 status=resolved reason=- ===
+  comp=spell label=Great Energy Beam (exevo gran vis lux) hits=6 N_leech_aceito=6 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    16:30:33 seq= 6544 sulphur spouter    dmg= 1479 OK            O_fis=[1571,1612]    O_holy=[1274]    life=   0(N6 esp.-) mana= 286(N6 esp.-)
+    16:30:33 seq= 6547 sulphur spouter    dmg=    0               O_fis=[42,84]        O_holy=[1,2]     life=   0(N6 esp.-) mana=   0(N6 esp.-)
+    16:30:33 seq= 6548 sulphider          dmg= 1728 prey          O_fis=[1472,1513]    O_holy=[1301]    life=   0(N6 esp.-) mana=  77(N6 esp.-)
+    16:30:33 seq= 6550 undertaker         dmg= 1051 OK prey       O_fis=[791,823]      O_holy=[830]     life=   0(N6 esp.-) mana=  77(N6 esp.-)
+    16:30:33 seq= 6553 sulphider          dmg= 1728 prey          O_fis=[1472,1513]    O_holy=[1301]    life=   0(N6 esp.-) mana=  77(N6 esp.-)
+    16:30:33 seq= 6555 sulphider          dmg= 1728 prey          O_fis=[1472,1513]    O_holy=[1301]    life=   0(N6 esp.-) mana=  77(N6 esp.-)
+
+################ death echo server log.txt S0 ################
+sessão: sv=Channel Server Log saved Fri Jul 10 11:06:45 2026
+--- setup da sessão ---
+leech: life=25.00% mana=16.00% confianca=weak evidencias=16 contradicoes=0
+  vampiric embrace: (nenhum)
+  void's call: (nenhum)
+BM (Battle Momentum): OFF pierce=0.00% fonte=not_paladin
+utevo grav san: bonus=0.00% (multiplicador 1) fonte=no_utevo_grav_san_cast
+crit multiplier por componente: {"spell:exevo mort ora":2} (fallback 1.641)
+
+=== turno 11:06:22 status=resolved reason=- ===
+  comp=arrow label=Auto ataque hits=1 N_leech_aceito=1 leech.ok=true reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    11:06:22 seq=  433 roaming dread      dmg=  119               O_fis=[185,244]      O_holy=[125]     life=  30(N1 esp.-) mana=  20(N1 esp.-)
+  comp=spell label=Great Death Beam (exevo max mort) hits=8 N_leech_aceito=8 leech.ok=false reason=ek_a1_forced_by_leech_cardinality_first_hit_n1_suffix_validated_beam_sublines
+    11:06:22 seq=  437 cyclursus          dmg= 1700               O_fis=[1839,1885]    O_holy=[1739]    life= 170(N8 esp.-) mana= 109(N8 esp.-)
+    11:06:22 seq=  440 cyclursus          dmg=  504 OK            O_fis=[579,625]      O_holy=[516]     life= 170(N8 esp.-) mana= 109(N8 esp.-)
+    11:06:22 seq=  444 roaming dread      dmg= 1805               O_fis=[1948,2007]    O_holy=[1888]    life= 181(N8 esp.-) mana= 116(N8 esp.-)
+    11:06:22 seq=  447 cyclursus          dmg= 1189               O_fis=[1301,1347]    O_holy=[1217]    life=  84(N8 esp.-) mana=  54(N8 esp.-)
+    11:06:22 seq=  450 roaming dread      dmg= 1263               O_fis=[1382,1441]    O_holy=[1322]    life=  89(N8 esp.-) mana=  57(N8 esp.-)
+    11:06:22 seq=  453 roaming dread      dmg= 1263               O_fis=[1382,1441]    O_holy=[1322]    life=  89(N8 esp.-) mana=  57(N8 esp.-)
+    11:06:22 seq=  456 roaming dread      dmg= 1263               O_fis=[1382,1441]    O_holy=[1322]    life=  89(N8 esp.-) mana=  57(N8 esp.-)
+    11:06:22 seq=  459 roaming dread      dmg= 1263               O_fis=[1382,1441]    O_holy=[1322]    life=  89(N8 esp.-) mana=  57(N8 esp.-)
+
+################ dlc ms Server Log.txt S0 ################
+sessão: sv=Channel Server Log saved Fri Jul 17 21:45:48 2026
+--- setup da sessão ---
+leech: life=27.75% mana=17.25% confianca=strong evidencias=971 contradicoes=0
+  vampiric embrace: darklight matter +3.20%
+  void's call: darklight striker +1.60%
+BM (Battle Momentum): OFF pierce=0.00% fonte=not_paladin
+utevo grav san: bonus=0.00% (multiplicador 1) fonte=no_utevo_grav_san_cast
+crit multiplier por componente: {"spell:exevo max mort":1.8,"spell:exevo gran flam hur":1.82,"spell:exevo mort ora":1.72,"spell:exevo gran mas flam":1.92} (fallback 1.900)
+
+=== turno 21:35:10 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=13 N_leech_aceito=12 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:35:10 seq=   48 walking pillar     dmg= 8552 CRIT prey EW  O_fis=[3356,3408]    O_holy=[3621,3622] life= 618(N12 esp.-) mana= 384(N12 esp.-)
+    21:35:10 seq=   51 darklight matter   dmg= 9187 CRIT prey EW  O_fis=[3624,3667]    O_holy=[3926]    life= 740(N12 esp.-) mana= 413(N12 esp.-)
+    21:35:10 seq=   54 darklight source   dmg= 6790 CRIT EW       O_fis=[3354,3403]    O_holy=[3622]    life= 613(N12 esp.-) mana=  23(N12 esp.-)
+    21:35:10 seq=   58 darklight striker  dmg= 3018 CRIT OK prey EW O_fis=[1421,1478]    O_holy=[1364,1365] life= 287(N12 esp.-) mana=   0(N12 esp.-)
+    21:35:10 seq=   61 darklight striker  dmg= 6452 CRIT prey EW  O_fis=[2973,3030]    O_holy=[2916,2917] life= 287(N12 esp.-) mana=   0(N12 esp.-)
+    21:35:10 seq=   63 darklight matter   dmg= 6432 CRIT prey EW  O_fis=[2550,2592]    O_holy=[2748,2749] life= 319(N12 esp.-) mana=   0(N12 esp.-)
+    21:35:10 seq=   65 bloodjaw           dmg= 4134 CRIT EW       O_fis=[2277,2338]    O_holy=[2216]    life= 230(N12 esp.-) mana=   0(N12 esp.-)
+    21:35:10 seq=   67 walking pillar     dmg= 5987 CRIT prey EW  O_fis=[2365,2417]    O_holy=[2534,2535] life= 266(N12 esp.-) mana=   0(N12 esp.-)
+    21:35:10 seq=   69 darklight striker  dmg= 2990 CRIT OK prey EW O_fis=[1409,1465]    O_holy=[1352]    life=  82(N12 esp.-) mana=   0(N12 esp.-)
+    21:35:10 seq=   72 bloodjaw           dmg= 4134 CRIT EW       O_fis=[2277,2338]    O_holy=[2216]    life=   0(N12 esp.-) mana=   0(N12 esp.-)
+    21:35:10 seq=   73 walking pillar     dmg= 5987 CRIT prey EW  O_fis=[2365,2417]    O_holy=[2534,2535] life=   0(N12 esp.-) mana=   0(N12 esp.-)
+    21:35:10 seq=   74 darklight matter   dmg= 6432 CRIT OK prey EW O_fis=[2550,2592]    O_holy=[2748,2749] life=   0(N12 esp.-) mana=   0(N12 esp.-)
+    21:35:10 seq=74.01 darklight striker  dmg=    0 OK                                                  life=   0(N12 esp.-) mana=   0(N12 esp.-)
+
+=== turno 21:35:59 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=7 N_leech_aceito=7 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:35:59 seq=  709 darklight striker  dmg= 5405 prey EW       O_fis=[4701,4757]    O_holy=[4643]    life= 480(N7 esp.-) mana= 327(N7 esp.-)
+    21:35:59 seq=  712 darklight source   dmg= 3983 EW            O_fis=[3732,3782]    O_holy=[4036,4037] life= 443(N7 esp.-) mana= 127(N7 esp.-)
+    21:35:59 seq=  715 darklight striker  dmg= 4769 OK prey EW    O_fis=[4154,4210]    O_holy=[4096]    life= 217(N7 esp.-) mana=   0(N7 esp.-)
+    21:35:59 seq=  718 bloodjaw           dmg= 2425 EW            O_fis=[2531,2592]    O_holy=[2470]    life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:35:59 seq=  719 bloodjaw           dmg= 2425 EW            O_fis=[2531,2592]    O_holy=[2470]    life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:35:59 seq=  720 darklight matter   dmg= 3772 prey EW       O_fis=[2836,2879]    O_holy=[3062,3063] life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:35:59 seq=  721 bloodjaw           dmg= 2425 EW            O_fis=[2531,2592]    O_holy=[2470]    life=   0(N7 esp.-) mana=   0(N7 esp.-)
+
+=== turno 21:36:07 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=11 N_leech_aceito=10 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:36:07 seq=  783 walking pillar     dmg= 4188 prey EW       O_fis=[3126,3178]    O_holy=[3369,3370] life= 372(N10 esp.-) mana= 232(N10 esp.-)
+    21:36:07 seq=  786 darklight matter   dmg= 4400 OK prey EW    O_fis=[3302,3344]    O_holy=[3573]    life= 446(N10 esp.-) mana= 249(N10 esp.-)
+    21:36:07 seq=  790 darklight striker  dmg= 4512 prey EW       O_fis=[3932,3989]    O_holy=[3875,3876] life= 401(N10 esp.-) mana=  54(N10 esp.-)
+    21:36:07 seq=  795 bloodjaw           dmg=  571 OK EW         O_fis=[643,703]      O_holy=[581]     life= 120(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:07 seq=  798 bloodjaw           dmg= 2023 EW            O_fis=[2123,2183]    O_holy=[2061]    life= 120(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:07 seq=  800 darklight striker  dmg= 3158 prey EW       O_fis=[2770,2827]    O_holy=[2713,2714] life= 150(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:07 seq=  802 darklight source   dmg= 2328 EW            O_fis=[2202,2251]    O_holy=[2359]    life= 138(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:07 seq=  804 darklight striker  dmg= 3158 prey EW       O_fis=[2770,2827]    O_holy=[2713,2714] life= 150(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:07 seq=  806 darklight striker  dmg= 3158 prey EW       O_fis=[2770,2827]    O_holy=[2713,2714] life=  48(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:07 seq=  808 darklight source   dmg= 2328 EW            O_fis=[2202,2251]    O_holy=[2359]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:07 seq=808.01 darklight source   dmg=    0 OK                                                  life=   0(N10 esp.-) mana=   0(N10 esp.-)
+
+=== turno 21:36:36 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=10 N_leech_aceito=10 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:36:36 seq= 1133 darklight source   dmg=  371 OK EW         O_fis=[393,442]      O_holy=[376]     life= 546(N10 esp.-) mana= 339(N10 esp.-)
+    21:36:36 seq= 1137 darklight matter   dmg= 4593 OK prey EW    O_fis=[3445,3488]    O_holy=[3729,3730] life= 658(N10 esp.-) mana= 187(N10 esp.-)
+    21:36:36 seq= 1141 walking pillar     dmg= 3490 prey EW       O_fis=[2615,2666]    O_holy=[2808]    life= 165(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:36 seq= 1143 walking pillar     dmg= 3490 prey EW       O_fis=[2615,2666]    O_holy=[2808]    life= 165(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:36 seq= 1146 darklight matter   dmg= 3750 prey EW       O_fis=[2821,2863]    O_holy=[3045]    life= 198(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:36 seq= 1148 bloodjaw           dmg= 2409 EW            O_fis=[2515,2575]    O_holy=[2453]    life= 143(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:36 seq= 1150 darklight striker  dmg= 3761 prey EW       O_fis=[3288,3344]    O_holy=[3231]    life= 178(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:36 seq= 1152 walking pillar     dmg= 3264 OK prey EW    O_fis=[2448,2499]    O_holy=[2624,2625,2626,2627,2628] life= 165(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:36 seq= 1155 darklight striker  dmg= 3761 prey EW       O_fis=[3288,3344]    O_holy=[3231]    life= 178(N10 esp.-) mana=   0(N10 esp.-)
+    21:36:36 seq= 1157 darklight striker  dmg= 3761 OK prey EW    O_fis=[3288,3344]    O_holy=[3231]    life= 178(N10 esp.-) mana=   0(N10 esp.-)
+
+=== turno 21:37:37 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=11 N_leech_aceito=10 leech.ok=false reason=single_target_aa_all_action_without_positive_aa_evidence
+    21:37:37 seq= 1923 bloodjaw           dmg= 4497 CRIT EW       O_fis=[2472,2532]    O_holy=[2410]    life= 270(N10 esp.-) mana= 427(N10 esp.-)
+    21:37:37 seq= 1926 darklight source   dmg= 5172 CRIT EW       O_fis=[2566,2615]    O_holy=[2758]    life=   0(N10 esp.-) mana= 492(N10 esp.-)
+    21:37:37 seq= 1928 walking pillar     dmg=  488 CRIT OK prey EW O_fis=[241,293]      O_holy=[206,207] life=   0(N10 esp.-) mana= 140(N10 esp.-)
+    21:37:37 seq= 1931 bloodjaw           dmg= 3494 CRIT EW       O_fis=[1934,1995]    O_holy=[1873]    life=   0(N10 esp.-) mana= 121(N10 esp.-)
+    21:37:37 seq= 1933 bloodjaw           dmg= 3494 CRIT EW       O_fis=[1934,1995]    O_holy=[1873]    life=   0(N10 esp.-) mana= 121(N10 esp.-)
+    21:37:37 seq= 1935 darklight striker  dmg= 5452 CRIT prey EW  O_fis=[2522,2578]    O_holy=[2465]    life=   0(N10 esp.-) mana= 165(N10 esp.-)
+    21:37:37 seq= 1937 walking pillar     dmg= 5060 CRIT prey EW  O_fis=[2007,2058]    O_holy=[2142]    life=   0(N10 esp.-) mana= 140(N10 esp.-)
+    21:37:37 seq= 1941 walking pillar     dmg= 4047 CRIT OK prey EW O_fis=[1615,1668]    O_holy=[1713,1714] life=   0(N10 esp.-) mana= 140(N10 esp.-)
+    21:37:37 seq= 1944 bloodjaw           dmg= 3494 CRIT EW       O_fis=[1934,1995]    O_holy=[1873]    life=   0(N10 esp.-) mana= 121(N10 esp.-)
+    21:37:37 seq= 1946 darklight matter   dmg= 5436 CRIT OK prey EW O_fis=[2162,2204]    O_holy=[2323]    life=   0(N10 esp.-) mana= 151(N10 esp.-)
+    21:37:37 seq=1946.01 darklight striker  dmg=    0 OK                                                  life=   0(N10 esp.-) mana=   0(N10 esp.-)
+
+=== turno 21:38:52 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:38:52 seq= 2863 darklight matter   dmg= 6811 CRIT OK prey EW O_fis=[2698,2740]    O_holy=[2910]    life=1171(N8 esp.-) mana= 400(N8 esp.-)
+    21:38:52 seq= 2867 darklight matter   dmg= 8596 CRIT prey EW  O_fis=[3394,3436]    O_holy=[3674]    life=1171(N8 esp.-) mana=   0(N8 esp.-)
+    21:38:52 seq= 2869 darklight matter   dmg= 6675 CRIT prey EW  O_fis=[2645,2687]    O_holy=[2852]    life= 414(N8 esp.-) mana=   0(N8 esp.-)
+    21:38:52 seq= 2871 bloodjaw           dmg= 4290 CRIT EW       O_fis=[2361,2422]    O_holy=[2300]    life= 298(N8 esp.-) mana=   0(N8 esp.-)
+    21:38:52 seq= 2873 walking pillar     dmg=  939 CRIT OK prey EW O_fis=[415,467]      O_holy=[398]     life= 345(N8 esp.-) mana=   0(N8 esp.-)
+    21:38:52 seq= 2876 walking pillar     dmg= 6213 CRIT prey EW  O_fis=[2452,2505]    O_holy=[2630,2631] life= 345(N8 esp.-) mana=   0(N8 esp.-)
+    21:38:52 seq= 2879 darklight source   dmg= 4933 CRIT EW       O_fis=[2450,2499]    O_holy=[2631]    life= 343(N8 esp.-) mana=   0(N8 esp.-)
+    21:38:52 seq= 2881 walking pillar     dmg= 6213 CRIT prey EW  O_fis=[2452,2505]    O_holy=[2630,2631] life= 345(N8 esp.-) mana=   0(N8 esp.-)
+
+=== turno 21:39:39 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=13 N_leech_aceito=13 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:39:39 seq= 3348 bloodjaw           dmg=  239 OK EW         O_fis=[305,366]      O_holy=[244]     life= 308(N13 esp.-) mana= 192(N13 esp.-)
+    21:39:39 seq= 3352 darklight striker  dmg= 4323 prey EW       O_fis=[3770,3828]    O_holy=[3713,3714,3715] life= 384(N13 esp.-) mana= 262(N13 esp.-)
+    21:39:39 seq= 3355 darklight striker  dmg= 4323 prey EW       O_fis=[3770,3828]    O_holy=[3713,3714,3715] life= 384(N13 esp.-) mana=   6(N13 esp.-)
+    21:39:39 seq= 3358 darklight striker  dmg= 3026 prey EW       O_fis=[2657,2713]    O_holy=[2599,2600] life= 128(N13 esp.-) mana=   0(N13 esp.-)
+    21:39:39 seq= 3360 darklight matter   dmg= 3016 prey EW       O_fis=[2278,2320]    O_holy=[2450]    life= 142(N13 esp.-) mana=   0(N13 esp.-)
+    21:39:39 seq= 3362 walking pillar     dmg= 2807 prey EW       O_fis=[2113,2165]    O_holy=[2258,2259] life= 119(N13 esp.-) mana=   0(N13 esp.-)
+    21:39:39 seq= 3364 darklight matter   dmg= 3016 prey EW       O_fis=[2278,2320]    O_holy=[2450]    life= 142(N13 esp.-) mana=   0(N13 esp.-)
+    21:39:39 seq= 3366 walking pillar     dmg= 2807 prey EW       O_fis=[2113,2165]    O_holy=[2258,2259] life= 119(N13 esp.-) mana=   0(N13 esp.-)
+    21:39:39 seq= 3368 darklight striker  dmg= 3026 prey EW       O_fis=[2657,2713]    O_holy=[2599,2600] life= 128(N13 esp.-) mana=   0(N13 esp.-)
+    21:39:39 seq= 3370 bloodjaw           dmg= 1938 EW            O_fis=[2035,2097]    O_holy=[1974,1975] life= 103(N13 esp.-) mana=   0(N13 esp.-)
+    21:39:39 seq= 3372 darklight source   dmg= 2229 EW            O_fis=[2111,2160]    O_holy=[2259]    life= 118(N13 esp.-) mana=   0(N13 esp.-)
+    21:39:39 seq= 3374 darklight striker  dmg= 3026 prey EW       O_fis=[2657,2713]    O_holy=[2599,2600] life= 128(N13 esp.-) mana=   0(N13 esp.-)
+    21:39:39 seq= 3376 darklight matter   dmg= 3016 OK prey EW    O_fis=[2278,2320]    O_holy=[2450]    life= 142(N13 esp.-) mana=   0(N13 esp.-)
+
+=== turno 21:41:41 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=13 N_leech_aceito=13 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:41:41 seq= 4956 walking pillar     dmg= 9397 CRIT prey EW  O_fis=[3682,3735]    O_holy=[3978,3979] life= 679(N13 esp.-) mana= 422(N13 esp.-)
+    21:41:41 seq= 4959 walking pillar     dmg= 9397 CRIT prey EW  O_fis=[3682,3735]    O_holy=[3978,3979] life= 679(N13 esp.-) mana= 422(N13 esp.-)
+    21:41:41 seq= 4962 darklight source   dmg= 7461 CRIT EW       O_fis=[3680,3729]    O_holy=[3979]    life= 674(N13 esp.-) mana= 419(N13 esp.-)
+    21:41:41 seq= 4965 darklight source   dmg= 5256 CRIT OK EW    O_fis=[2608,2657]    O_holy=[2803]    life= 674(N13 esp.-) mana= 419(N13 esp.-)
+    21:41:41 seq= 4969 darklight striker  dmg= 7087 CRIT prey EW  O_fis=[3261,3318]    O_holy=[3204,3205] life= 315(N13 esp.-) mana= 214(N13 esp.-)
+    21:41:41 seq= 4972 darklight matter   dmg= 6252 CRIT OK prey EW O_fis=[2479,2522]    O_holy=[2671,2672] life= 350(N13 esp.-) mana= 196(N13 esp.-)
+    21:41:41 seq= 4976 walking pillar     dmg= 6578 CRIT prey EW  O_fis=[2593,2645]    O_holy=[2785]    life= 293(N13 esp.-) mana= 182(N13 esp.-)
+    21:41:41 seq= 4979 darklight matter   dmg= 2307 CRIT OK prey EW O_fis=[942,985]      O_holy=[985,986] life= 350(N13 esp.-) mana= 196(N13 esp.-)
+    21:41:41 seq= 4983 darklight striker  dmg= 7087 CRIT prey EW  O_fis=[3261,3318]    O_holy=[3204,3205] life= 315(N13 esp.-) mana= 214(N13 esp.-)
+    21:41:41 seq= 4987 darklight matter   dmg= 7066 CRIT prey EW  O_fis=[2798,2840]    O_holy=[3020]    life= 204(N13 esp.-) mana= 196(N13 esp.-)
+    21:41:41 seq= 4990 darklight matter   dmg= 7052 CRIT OK prey EW O_fis=[2792,2835]    O_holy=[3013,3014] life=   0(N13 esp.-) mana= 196(N13 esp.-)
+    21:41:41 seq= 4994 walking pillar     dmg= 6578 CRIT prey EW  O_fis=[2593,2645]    O_holy=[2785]    life=   0(N13 esp.-) mana= 182(N13 esp.-)
+    21:41:41 seq= 4996 darklight striker  dmg= 7087 CRIT prey EW  O_fis=[3261,3318]    O_holy=[3204,3205] life=   0(N13 esp.-) mana= 214(N13 esp.-)
+
+=== turno 21:42:38 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=7 N_leech_aceito=7 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:42:38 seq= 5739 bloodjaw           dmg= 4080 CRIT EW       O_fis=[2249,2309]    O_holy=[2187]    life= 624(N7 esp.-) mana= 388(N7 esp.-)
+    21:42:38 seq= 5742 darklight striker  dmg= 6368 CRIT prey EW  O_fis=[2936,2992]    O_holy=[2879]    life= 778(N7 esp.-) mana=  34(N7 esp.-)
+    21:42:38 seq= 5745 darklight source   dmg= 3643 CRIT EW       O_fis=[1822,1871]    O_holy=[1943]    life= 284(N7 esp.-) mana=   0(N7 esp.-)
+    21:42:38 seq= 5747 bloodjaw           dmg= 3167 CRIT EW       O_fis=[1759,1820]    O_holy=[1698]    life= 195(N7 esp.-) mana=   0(N7 esp.-)
+    21:42:38 seq= 5749 darklight matter   dmg= 4928 CRIT prey EW  O_fis=[1964,2007]    O_holy=[2105,2106] life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:42:38 seq= 5750 darklight striker  dmg= 3253 CRIT OK prey EW O_fis=[1528,1584]    O_holy=[1471]    life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:42:38 seq= 5752 darklight matter   dmg= 4928 CRIT prey EW  O_fis=[1964,2007]    O_holy=[2105,2106] life=   0(N7 esp.-) mana=   0(N7 esp.-)
+
+=== turno 21:43:03 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:43:03 seq= 5981 darklight striker  dmg= 5747 prey EW       O_fis=[4993,5051]    O_holy=[4936,4937] life= 511(N8 esp.-) mana= 300(N8 esp.-)
+    21:43:03 seq= 5984 walking pillar     dmg= 5333 prey EW       O_fis=[3966,4020]    O_holy=[4290,4291,4292] life= 474(N8 esp.-) mana=   0(N8 esp.-)
+    21:43:03 seq= 5986 bloodjaw           dmg= 3682 EW            O_fis=[3812,3873]    O_holy=[3749,3750,3751,3752] life= 409(N8 esp.-) mana=   0(N8 esp.-)
+    21:43:03 seq= 5989 walking pillar     dmg= 3733 prey EW       O_fis=[2793,2845]    O_holy=[3003,3004] life= 233(N8 esp.-) mana=   0(N8 esp.-)
+    21:43:03 seq= 5991 walking pillar     dmg= 3733 prey EW       O_fis=[2793,2845]    O_holy=[3003,3004] life=  48(N8 esp.-) mana=   0(N8 esp.-)
+    21:43:03 seq= 5993 darklight matter   dmg= 3769 OK prey EW    O_fis=[2835,2877]    O_holy=[3060]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:43:03 seq= 5995 darklight matter   dmg= 4011 prey EW       O_fis=[3015,3057]    O_holy=[3257]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:43:03 seq= 5996 darklight striker  dmg= 4023 prey EW       O_fis=[3513,3570]    O_holy=[3456,3457] life=   0(N8 esp.-) mana=   0(N8 esp.-)
+
+=== turno 21:43:41 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=7 N_leech_aceito=7 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:43:41 seq= 6407 darklight striker  dmg= 4727 prey EW       O_fis=[4117,4174]    O_holy=[4060,4061] life= 342(N7 esp.-) mana= 232(N7 esp.-)
+    21:43:41 seq= 6410 walking pillar     dmg= 4386 prey EW       O_fis=[3272,3324]    O_holy=[3529]    life= 284(N7 esp.-) mana= 162(N7 esp.-)
+    21:43:41 seq= 6413 bloodjaw           dmg= 3028 EW            O_fis=[3146,3206]    O_holy=[3084]    life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:43:41 seq= 6415 darklight striker  dmg= 4727 prey EW       O_fis=[4117,4174]    O_holy=[4060,4061] life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:43:41 seq= 6417 walking pillar     dmg= 3071 prey EW       O_fis=[2307,2358]    O_holy=[2471]    life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:43:41 seq= 6419 walking pillar     dmg= 2330 OK prey EW    O_fis=[1763,1814]    O_holy=[1875]    life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:43:41 seq= 6421 darklight matter   dmg= 3298 prey EW       O_fis=[2486,2528]    O_holy=[2677,2678] life=   0(N7 esp.-) mana=   0(N7 esp.-)
+
+=== turno 21:44:27 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=6 N_leech_aceito=6 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:44:27 seq= 6939 darklight source   dmg= 2420 EW            O_fis=[2287,2336]    O_holy=[2452]    life= 633(N6 esp.-) mana= 418(N6 esp.-)
+    21:44:27 seq= 6942 darklight matter   dmg= 2856 prey EW       O_fis=[2158,2200]    O_holy=[2319]    life=   0(N6 esp.-) mana= 111(N6 esp.-)
+    21:44:27 seq= 6944 darklight source   dmg= 2111 EW            O_fis=[2001,2050]    O_holy=[2139]    life=   0(N6 esp.-) mana=  11(N6 esp.-)
+    21:44:27 seq= 6947 darklight striker  dmg= 2865 prey EW       O_fis=[2518,2574]    O_holy=[2461]    life=   0(N6 esp.-) mana=   0(N6 esp.-)
+    21:44:27 seq= 6948 darklight source   dmg= 2111 EW            O_fis=[2001,2050]    O_holy=[2139]    life=   0(N6 esp.-) mana=   0(N6 esp.-)
+    21:44:27 seq= 6950 darklight striker  dmg= 2865 prey EW       O_fis=[2518,2574]    O_holy=[2461]    life=   0(N6 esp.-) mana=   0(N6 esp.-)
+
+=== turno 21:44:36 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=11 N_leech_aceito=11 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:44:36 seq= 7080 darklight matter   dmg= 4775 prey EW       O_fis=[3580,3622]    O_holy=[3877]    life= 474(N11 esp.-) mana= 264(N11 esp.-)
+    21:44:36 seq= 7083 walking pillar     dmg= 3569 OK prey EW    O_fis=[2672,2724]    O_holy=[2872]    life= 395(N11 esp.-) mana= 216(N11 esp.-)
+    21:44:36 seq= 7087 walking pillar     dmg= 4445 prey EW       O_fis=[3315,3367]    O_holy=[3576]    life= 395(N11 esp.-) mana=   0(N11 esp.-)
+    21:44:36 seq= 7089 walking pillar     dmg= 3111 prey EW       O_fis=[2336,2388]    O_holy=[2503]    life= 147(N11 esp.-) mana=   0(N11 esp.-)
+    21:44:36 seq= 7091 darklight striker  dmg= 3352 prey EW       O_fis=[2936,2993]    O_holy=[2879,2880] life= 159(N11 esp.-) mana=   0(N11 esp.-)
+    21:44:36 seq= 7093 darklight source   dmg= 2470 EW            O_fis=[2334,2383]    O_holy=[2503]    life= 146(N11 esp.-) mana=   0(N11 esp.-)
+    21:44:36 seq= 7095 bloodjaw           dmg= 2148 EW            O_fis=[2250,2310]    O_holy=[2188]    life= 127(N11 esp.-) mana=   0(N11 esp.-)
+    21:44:36 seq= 7097 darklight matter   dmg=   90 OK prey EW    O_fis=[109,152]      O_holy=[73,74]   life= 176(N11 esp.-) mana=   0(N11 esp.-)
+    21:44:36 seq= 7100 darklight matter   dmg= 3342 prey EW       O_fis=[2518,2561]    O_holy=[2713,2714] life= 176(N11 esp.-) mana=   0(N11 esp.-)
+    21:44:36 seq= 7102 darklight striker  dmg=   82 OK prey EW    O_fis=[127,184]      O_holy=[70,71]   life= 159(N11 esp.-) mana=   0(N11 esp.-)
+    21:44:36 seq= 7105 darklight source   dmg= 2470 OK EW         O_fis=[2334,2383]    O_holy=[2503]    life= 146(N11 esp.-) mana=   0(N11 esp.-)
+
+=== turno 21:44:49 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:44:49 seq= 7241 walking pillar     dmg= 3837 prey EW       O_fis=[2868,2921]    O_holy=[3086,3087,3088] life= 469(N8 esp.-) mana= 292(N8 esp.-)
+    21:44:49 seq= 7244 darklight matter   dmg= 4122 prey EW       O_fis=[3096,3139]    O_holy=[3347,3348] life= 562(N8 esp.-) mana= 313(N8 esp.-)
+    21:44:49 seq= 7247 darklight striker  dmg= 3211 prey EW       O_fis=[2816,2872]    O_holy=[2759]    life=  32(N8 esp.-) mana= 122(N8 esp.-)
+    21:44:49 seq= 7250 darklight matter   dmg= 3201 prey EW       O_fis=[2415,2457]    O_holy=[2600]    life=   0(N8 esp.-) mana=  62(N8 esp.-)
+    21:44:49 seq= 7253 darklight striker  dmg= 3211 prey EW       O_fis=[2816,2872]    O_holy=[2759]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:44:49 seq= 7254 darklight striker  dmg= 3211 prey EW       O_fis=[2816,2872]    O_holy=[2759]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:44:49 seq= 7256 walking pillar     dmg= 2980 prey EW       O_fis=[2240,2292]    O_holy=[2398]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:44:49 seq= 7257 darklight striker  dmg= 3211 OK prey EW    O_fis=[2816,2872]    O_holy=[2759]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+
+=== turno 21:45:14 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=10 N_leech_aceito=10 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:45:14 seq= 7458 darklight striker  dmg= 4136 prey EW       O_fis=[3611,3667]    O_holy=[3554]    life= 368(N10 esp.-) mana= 250(N10 esp.-)
+    21:45:14 seq= 7461 darklight matter   dmg= 4123 prey EW       O_fis=[3097,3140]    O_holy=[3348,3349] life= 409(N10 esp.-) mana= 210(N10 esp.-)
+    21:45:14 seq= 7465 darklight striker  dmg= 2636 OK prey EW    O_fis=[2322,2378]    O_holy=[2265]    life= 368(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:14 seq= 7469 darklight striker  dmg= 2895 prey EW       O_fis=[2544,2601]    O_holy=[2487]    life= 147(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:14 seq= 7471 darklight striker  dmg= 2895 prey EW       O_fis=[2544,2601]    O_holy=[2487]    life= 147(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:14 seq= 7473 darklight matter   dmg= 2886 prey EW       O_fis=[2181,2223]    O_holy=[2344]    life= 164(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:14 seq= 7475 bloodjaw           dmg= 1855 EW            O_fis=[1951,2012]    O_holy=[1890]    life= 118(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:14 seq= 7477 darklight source   dmg= 2133 EW            O_fis=[2022,2071]    O_holy=[2162]    life= 136(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:14 seq= 7479 darklight source   dmg= 2133 EW            O_fis=[2022,2071]    O_holy=[2162]    life= 136(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:14 seq= 7481 walking pillar     dmg= 2687 OK prey EW    O_fis=[2024,2077]    O_holy=[2161,2162] life= 137(N10 esp.-) mana=   0(N10 esp.-)
+
+=== turno 21:45:37 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=10 N_leech_aceito=10 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:45:37 seq= 7748 darklight matter   dmg= 7925 CRIT prey EW  O_fis=[3133,3175]    O_holy=[3387]    life= 786(N10 esp.-) mana= 400(N10 esp.-)
+    21:45:37 seq= 7751 walking pillar     dmg= 7377 CRIT prey EW  O_fis=[2902,2954]    O_holy=[3124]    life= 656(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:37 seq= 7753 darklight source   dmg= 5858 CRIT EW       O_fis=[2900,2949]    O_holy=[3125]    life= 651(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:37 seq= 7755 bloodjaw           dmg= 3564 CRIT EW       O_fis=[1972,2032]    O_holy=[1910]    life= 227(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:37 seq= 7757 darklight matter   dmg= 5546 CRIT prey EW  O_fis=[2205,2247]    O_holy=[2370]    life= 305(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:37 seq= 7759 walking pillar     dmg= 5163 CRIT prey EW  O_fis=[2047,2099]    O_holy=[2186]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:37 seq= 7760 walking pillar     dmg= 5163 CRIT prey EW  O_fis=[2047,2099]    O_holy=[2186]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:37 seq= 7761 darklight source   dmg= 4099 CRIT EW       O_fis=[2044,2093]    O_holy=[2186]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:37 seq= 7762 darklight source   dmg= 4099 CRIT EW       O_fis=[2044,2093]    O_holy=[2186]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+    21:45:37 seq= 7763 darklight matter   dmg= 5546 CRIT prey EW  O_fis=[2205,2247]    O_holy=[2370]    life=   0(N10 esp.-) mana=   0(N10 esp.-)
+
+################ dlc ms Server Log.txt S1 ################
+sessão: sv=Channel Server Log saved Fri Jul 17 22:03:23 2026
+--- setup da sessão ---
+leech: life=27.75% mana=17.25% confianca=strong evidencias=1029 contradicoes=0
+  vampiric embrace: darklight matter +3.20%
+  void's call: darklight striker +1.60%
+BM (Battle Momentum): OFF pierce=0.00% fonte=not_paladin
+utevo grav san: bonus=0.00% (multiplicador 1) fonte=no_utevo_grav_san_cast
+crit multiplier por componente: {"spell:exevo gran flam hur":1.92,"spell:exevo max mort":1.62,"spell:exevo vis hur":1.82,"spell:exevo gran mas flam":1.8,"spell:exevo mort ora":1.82} (fallback 1.812)
+
+=== turno 21:52:37 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:52:37 seq=   30 darklight matter   dmg= 7267 CRIT prey EW  O_fis=[3014,3057]    O_holy=[3256,3257] life= 585(N8 esp.-) mana= 300(N8 esp.-)
+    21:52:37 seq=   33 bloodjaw           dmg= 1460 CRIT OK EW    O_fis=[882,943]      O_holy=[821]     life= 422(N8 esp.-) mana=   0(N8 esp.-)
+    21:52:37 seq=   36 walking pillar     dmg= 6144 CRIT OK prey EW O_fis=[2542,2593]    O_holy=[2728]    life= 148(N8 esp.-) mana=   0(N8 esp.-)
+    21:52:37 seq=   39 walking pillar     dmg= 6767 CRIT prey EW  O_fis=[2793,2846]    O_holy=[3004,3005] life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:52:37 seq=   40 darklight matter   dmg= 5085 CRIT prey EW  O_fis=[2122,2164]    O_holy=[2278]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:52:37 seq=   42 darklight striker  dmg= 5101 CRIT prey EW  O_fis=[2476,2532]    O_holy=[2419]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:52:37 seq=   43 bloodjaw           dmg= 3268 CRIT EW       O_fis=[1899,1959]    O_holy=[1837]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:52:37 seq=   44 darklight matter   dmg= 5085 CRIT prey EW  O_fis=[2122,2164]    O_holy=[2278]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+
+=== turno 21:52:46 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=5 N_leech_aceito=5 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:52:46 seq=   83 darklight striker  dmg= 4066 prey EW       O_fis=[3551,3607]    O_holy=[3493]    life= 497(N5 esp.-) mana= 338(N5 esp.-)
+    21:52:46 seq=   86 darklight matter   dmg= 4053 prey EW       O_fis=[3045,3088]    O_holy=[3291,3292] life= 224(N5 esp.-) mana= 274(N5 esp.-)
+    21:52:46 seq=   89 darklight striker  dmg= 3158 prey EW       O_fis=[2770,2827]    O_holy=[2713,2714] life=   0(N5 esp.-) mana=   0(N5 esp.-)
+    21:52:46 seq=   90 darklight striker  dmg= 3158 prey EW       O_fis=[2770,2827]    O_holy=[2713,2714] life=   0(N5 esp.-) mana=   0(N5 esp.-)
+    21:52:46 seq=   91 darklight striker  dmg= 3158 OK prey EW    O_fis=[2770,2827]    O_holy=[2713,2714] life=   0(N5 esp.-) mana=   0(N5 esp.-)
+
+=== turno 21:52:55 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=11 N_leech_aceito=11 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:52:55 seq=  192 darklight matter   dmg= 4831 OK prey EW    O_fis=[3622,3664]    O_holy=[3923]    life= 483(N11 esp.-) mana= 269(N11 esp.-)
+    21:52:55 seq=  196 walking pillar     dmg= 5577 prey EW       O_fis=[4145,4198]    O_holy=[4486,4487] life= 403(N11 esp.-) mana= 251(N11 esp.-)
+    21:52:55 seq=  199 bloodjaw           dmg= 1137 OK EW         O_fis=[1220,1280]    O_holy=[1158]    life= 348(N11 esp.-) mana= 217(N11 esp.-)
+    21:52:55 seq=  203 darklight matter   dmg= 5992 prey EW       O_fis=[4481,4524]    O_holy=[4865,4866] life= 483(N11 esp.-) mana= 195(N11 esp.-)
+    21:52:55 seq=  206 darklight source   dmg= 3100 EW            O_fis=[2916,2965]    O_holy=[3142]    life= 197(N11 esp.-) mana=   0(N11 esp.-)
+    21:52:55 seq=  208 darklight source   dmg= 3100 EW            O_fis=[2916,2965]    O_holy=[3142]    life= 197(N11 esp.-) mana=   0(N11 esp.-)
+    21:52:55 seq=  210 darklight striker  dmg=  172 OK prey EW    O_fis=[205,262]      O_holy=[147,148] life= 214(N11 esp.-) mana=   0(N11 esp.-)
+    21:52:55 seq=  213 darklight source   dmg= 3100 EW            O_fis=[2916,2965]    O_holy=[3142]    life= 197(N11 esp.-) mana=   0(N11 esp.-)
+    21:52:55 seq=  215 walking pillar     dmg= 3905 prey EW       O_fis=[2919,2971]    O_holy=[3142]    life= 199(N11 esp.-) mana=   0(N11 esp.-)
+    21:52:55 seq=  217 walking pillar     dmg= 3905 prey EW       O_fis=[2919,2971]    O_holy=[3142]    life=  59(N11 esp.-) mana=   0(N11 esp.-)
+    21:52:55 seq=  219 walking pillar     dmg= 3905 OK prey EW    O_fis=[2919,2971]    O_holy=[3142]    life=   0(N11 esp.-) mana=   0(N11 esp.-)
+
+=== turno 21:53:14 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=7 N_leech_aceito=7 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:53:14 seq=  442 bloodjaw           dmg= 4187 CRIT EW       O_fis=[2415,2476]    O_holy=[2353,2354] life= 640(N7 esp.-) mana= 398(N7 esp.-)
+    21:53:14 seq=  445 walking pillar     dmg= 1167 CRIT OK prey EW O_fis=[525,577]      O_holy=[518]     life= 741(N7 esp.-) mana= 162(N7 esp.-)
+    21:53:14 seq=  449 bloodjaw           dmg= 3252 CRIT EW       O_fis=[1889,1950]    O_holy=[1827,1828] life= 253(N7 esp.-) mana=   0(N7 esp.-)
+    21:53:14 seq=  451 darklight striker  dmg= 5077 CRIT prey EW  O_fis=[2464,2521]    O_holy=[2407,2408] life= 316(N7 esp.-) mana=   0(N7 esp.-)
+    21:53:14 seq=  453 darklight matter   dmg= 1098 CRIT OK prey EW O_fis=[492,534]      O_holy=[492]     life= 251(N7 esp.-) mana=   0(N7 esp.-)
+    21:53:14 seq=  456 walking pillar     dmg= 4711 CRIT prey EW  O_fis=[1961,2013]    O_holy=[2092]    life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    21:53:14 seq=  457 walking pillar     dmg= 1473 CRIT OK prey EW O_fis=[650,701]      O_holy=[654]     life=   0(N7 esp.-) mana=   0(N7 esp.-)
+
+=== turno 21:53:42 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=13 N_leech_aceito=12 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:53:42 seq=  716 bloodjaw           dmg= 2694 OK EW         O_fis=[2805,2866]    O_holy=[2744]    life= 320(N12 esp.-) mana= 199(N12 esp.-)
+    21:53:42 seq=  720 darklight striker  dmg= 2110 OK prey EW    O_fis=[1870,1926]    O_holy=[1813]    life= 400(N12 esp.-) mana= 272(N12 esp.-)
+    21:53:42 seq=  724 darklight striker  dmg= 4493 prey EW       O_fis=[3917,3974]    O_holy=[3860,3861] life= 400(N12 esp.-) mana= 243(N12 esp.-)
+    21:53:42 seq=  727 darklight matter   dmg= 3135 prey EW       O_fis=[2365,2407]    O_holy=[2546]    life= 148(N12 esp.-) mana=   0(N12 esp.-)
+    21:53:42 seq=  729 walking pillar     dmg= 2918 prey EW       O_fis=[2194,2247]    O_holy=[2348,2349] life= 124(N12 esp.-) mana=   0(N12 esp.-)
+    21:53:42 seq=  732 darklight source   dmg= 2318 EW            O_fis=[2193,2242]    O_holy=[2350]    life= 123(N12 esp.-) mana=   0(N12 esp.-)
+    21:53:42 seq=  734 darklight striker  dmg= 3145 prey EW       O_fis=[2759,2815]    O_holy=[2702]    life= 133(N12 esp.-) mana=   0(N12 esp.-)
+    21:53:42 seq=  736 darklight matter   dmg= 3135 prey EW       O_fis=[2365,2407]    O_holy=[2546]    life= 148(N12 esp.-) mana=   0(N12 esp.-)
+    21:53:42 seq=  738 bloodjaw           dmg= 2015 EW            O_fis=[2114,2175]    O_holy=[2052]    life= 107(N12 esp.-) mana=   0(N12 esp.-)
+    21:53:42 seq=  740 bloodjaw           dmg= 2015 EW            O_fis=[2114,2175]    O_holy=[2052]    life= 107(N12 esp.-) mana=   0(N12 esp.-)
+    21:53:42 seq=  742 darklight matter   dmg= 3135 prey EW       O_fis=[2365,2407]    O_holy=[2546]    life= 148(N12 esp.-) mana=   0(N12 esp.-)
+    21:53:42 seq=  744 darklight striker  dmg= 3145 prey EW       O_fis=[2759,2815]    O_holy=[2702]    life= 133(N12 esp.-) mana=   0(N12 esp.-)
+    21:53:42 seq=744.01 darklight striker  dmg=    0 OK                                                  life=   0(N12 esp.-) mana=   0(N12 esp.-)
+
+=== turno 21:54:22 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=11 N_leech_aceito=11 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:54:22 seq= 1221 darklight striker  dmg= 2713 OK prey EW    O_fis=[2387,2444]    O_holy=[2330,2331] life= 519(N11 esp.-) mana= 353(N11 esp.-)
+    21:54:22 seq= 1225 walking pillar     dmg= 3942 prey EW       O_fis=[2945,2998]    O_holy=[3171,3172] life= 482(N11 esp.-) mana= 300(N11 esp.-)
+    21:54:22 seq= 1228 darklight striker  dmg= 3297 prey EW       O_fis=[2888,2946]    O_holy=[2831,2832,2833] life= 147(N11 esp.-) mana= 100(N11 esp.-)
+    21:54:22 seq= 1231 bloodjaw           dmg= 2113 EW            O_fis=[2214,2275]    O_holy=[2152]    life= 118(N11 esp.-) mana=  73(N11 esp.-)
+    21:54:22 seq= 1234 darklight source   dmg= 2430 EW            O_fis=[2297,2346]    O_holy=[2463]    life= 135(N11 esp.-) mana=  84(N11 esp.-)
+    21:54:22 seq= 1237 darklight matter   dmg= 3287 prey EW       O_fis=[2477,2521]    O_holy=[2668,2669,2670] life= 163(N11 esp.-) mana=  91(N11 esp.-)
+    21:54:22 seq= 1240 darklight striker  dmg= 3297 prey EW       O_fis=[2888,2946]    O_holy=[2831,2832,2833] life= 147(N11 esp.-) mana= 100(N11 esp.-)
+    21:54:22 seq= 1243 darklight source   dmg= 1434 OK EW         O_fis=[1376,1425]    O_holy=[1453]    life= 135(N11 esp.-) mana=  84(N11 esp.-)
+    21:54:22 seq= 1247 darklight matter   dmg= 3287 prey EW       O_fis=[2477,2521]    O_holy=[2668,2669,2670] life= 163(N11 esp.-) mana=  91(N11 esp.-)
+    21:54:22 seq= 1251 walking pillar     dmg= 2633 OK prey EW    O_fis=[1985,2037]    O_holy=[2118,2119] life= 136(N11 esp.-) mana=  85(N11 esp.-)
+    21:54:22 seq= 1255 walking pillar     dmg= 3061 OK prey EW    O_fis=[2300,2351]    O_holy=[2463]    life= 136(N11 esp.-) mana=  85(N11 esp.-)
+
+=== turno 21:54:37 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=13 N_leech_aceito=12 leech.ok=false reason=single_target_aa_all_action_without_positive_aa_evidence
+    21:54:37 seq= 1448 darklight matter   dmg= 5435 prey EW       O_fis=[4069,4111]    O_holy=[4413]    life= 377(N12 esp.-) mana= 211(N12 esp.-)
+    21:54:37 seq= 1451 walking pillar     dmg= 5060 prey EW       O_fis=[3766,3818]    O_holy=[4071]    life= 315(N12 esp.-) mana= 196(N12 esp.-)
+    21:54:37 seq= 1454 walking pillar     dmg= 5060 prey EW       O_fis=[3766,3818]    O_holy=[4071]    life= 315(N12 esp.-) mana= 196(N12 esp.-)
+    21:54:37 seq= 1458 darklight matter   dmg= 4125 OK prey EW    O_fis=[3099,3141]    O_holy=[3350]    life= 377(N12 esp.-) mana= 211(N12 esp.-)
+    21:54:37 seq= 1462 darklight striker  dmg= 4495 OK prey EW    O_fis=[3919,3975]    O_holy=[3862]    life= 340(N12 esp.-) mana= 231(N12 esp.-)
+    21:54:37 seq= 1466 bloodjaw           dmg= 2445 EW            O_fis=[2552,2613]    O_holy=[2491]    life= 145(N12 esp.-) mana=  90(N12 esp.-)
+    21:54:37 seq= 1469 bloodjaw           dmg= 2445 EW            O_fis=[2552,2613]    O_holy=[2491]    life= 145(N12 esp.-) mana=  90(N12 esp.-)
+    21:54:37 seq= 1474 darklight striker  dmg= 3587 OK prey EW    O_fis=[3138,3195]    O_holy=[3081,3082] life= 181(N12 esp.-) mana= 123(N12 esp.-)
+    21:54:37 seq= 1478 bloodjaw           dmg= 2445 EW            O_fis=[2552,2613]    O_holy=[2491]    life= 145(N12 esp.-) mana=  90(N12 esp.-)
+    21:54:37 seq= 1481 darklight source   dmg= 2812 EW            O_fis=[2650,2699]    O_holy=[2850]    life= 166(N12 esp.-) mana= 104(N12 esp.-)
+    21:54:37 seq= 1484 darklight source   dmg= 2812 EW            O_fis=[2650,2699]    O_holy=[2850]    life= 166(N12 esp.-) mana= 104(N12 esp.-)
+    21:54:37 seq= 1487 walking pillar     dmg= 3541 prey EW       O_fis=[2652,2704]    O_holy=[2850]    life= 168(N12 esp.-) mana= 104(N12 esp.-)
+    21:54:37 seq=1487.01 darklight matter   dmg=    0 OK                                                  life=   0(N12 esp.-) mana=   0(N12 esp.-)
+
+=== turno 21:55:03 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:55:03 seq= 1774 walking pillar     dmg= 2805 OK prey EW    O_fis=[2112,2164]    O_holy=[2257]    life= 314(N8 esp.-) mana= 195(N8 esp.-)
+    21:55:03 seq= 1778 darklight matter   dmg= 4666 prey EW       O_fis=[3500,3542]    O_holy=[3789]    life= 376(N8 esp.-) mana= 210(N8 esp.-)
+    21:55:03 seq= 1781 darklight matter   dmg= 4666 prey EW       O_fis=[3500,3542]    O_holy=[3789]    life= 376(N8 esp.-) mana= 210(N8 esp.-)
+    21:55:03 seq= 1784 walking pillar     dmg= 1667 OK prey EW    O_fis=[1276,1328]    O_holy=[1341,1342] life= 314(N8 esp.-) mana= 195(N8 esp.-)
+    21:55:03 seq= 1788 bloodjaw           dmg= 1852 OK EW         O_fis=[1948,2008]    O_holy=[1886]    life= 190(N8 esp.-) mana= 118(N8 esp.-)
+    21:55:03 seq= 1792 darklight matter   dmg= 3266 prey EW       O_fis=[2463,2505]    O_holy=[2652]    life= 263(N8 esp.-) mana= 147(N8 esp.-)
+    21:55:03 seq= 1795 bloodjaw           dmg= 2100 EW            O_fis=[2201,2261]    O_holy=[2139]    life= 190(N8 esp.-) mana= 118(N8 esp.-)
+    21:55:03 seq= 1798 darklight striker  dmg= 3276 OK prey EW    O_fis=[2872,2928]    O_holy=[2815]    life= 155(N8 esp.-) mana= 161(N8 esp.-)
+
+=== turno 21:57:54 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=12 N_leech_aceito=12 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:57:54 seq= 4021 darklight source   dmg= 3506 EW            O_fis=[3292,3341]    O_holy=[3553]    life= 273(N12 esp.-) mana= 170(N12 esp.-)
+    21:57:54 seq= 4024 darklight source   dmg= 1042 OK EW         O_fis=[1014,1063]    O_holy=[1056]    life= 218(N12 esp.-) mana= 170(N12 esp.-)
+    21:57:54 seq= 4028 walking pillar     dmg= 4416 prey EW       O_fis=[3294,3346]    O_holy=[3553]    life=   0(N12 esp.-) mana= 171(N12 esp.-)
+    21:57:54 seq= 4030 darklight source   dmg=  373 OK EW         O_fis=[395,444]      O_holy=[378]     life=   0(N12 esp.-) mana= 170(N12 esp.-)
+    21:57:54 seq= 4033 darklight source   dmg= 1289 OK EW         O_fis=[1242,1291]    O_holy=[1306]    life=   0(N12 esp.-) mana= 170(N12 esp.-)
+    21:57:54 seq= 4036 darklight matter   dmg= 3320 prey EW       O_fis=[2502,2544]    O_holy=[2696]    life=   0(N12 esp.-) mana= 105(N12 esp.-)
+    21:57:54 seq= 4039 darklight source   dmg= 2454 EW            O_fis=[2319,2368]    O_holy=[2487]    life=   0(N12 esp.-) mana=  97(N12 esp.-)
+    21:57:54 seq= 4041 darklight matter   dmg=  582 OK prey EW    O_fis=[473,516]      O_holy=[472,473] life=   0(N12 esp.-) mana= 105(N12 esp.-)
+    21:57:54 seq= 4044 bloodjaw           dmg= 2134 EW            O_fis=[2235,2296]    O_holy=[2174]    life=   0(N12 esp.-) mana=  85(N12 esp.-)
+    21:57:54 seq= 4047 darklight matter   dmg= 3320 prey EW       O_fis=[2502,2544]    O_holy=[2696]    life=   0(N12 esp.-) mana= 105(N12 esp.-)
+    21:57:54 seq= 4049 darklight striker  dmg= 3330 prey EW       O_fis=[2918,2974]    O_holy=[2861]    life=   0(N12 esp.-) mana= 115(N12 esp.-)
+    21:57:54 seq= 4051 bloodjaw           dmg= 2134 OK EW         O_fis=[2235,2296]    O_holy=[2174]    life=   0(N12 esp.-) mana=  85(N12 esp.-)
+
+=== turno 21:58:41 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    21:58:41 seq= 4605 bloodjaw           dmg= 3599 OK EW         O_fis=[3727,3788]    O_holy=[3666]    life= 270(N8 esp.-) mana= 214(N8 esp.-)
+    21:58:41 seq= 4609 bloodjaw           dmg= 3801 EW            O_fis=[3933,3994]    O_holy=[3872]    life=   0(N8 esp.-) mana= 214(N8 esp.-)
+    21:58:41 seq= 4612 walking pillar     dmg= 5506 prey EW       O_fis=[4094,4146]    O_holy=[4430]    life=   0(N8 esp.-) mana= 247(N8 esp.-)
+    21:58:41 seq= 4614 darklight source   dmg= 4372 EW            O_fis=[4092,4142]    O_holy=[4430,4431] life=   0(N8 esp.-) mana= 246(N8 esp.-)
+    21:58:41 seq= 4616 darklight source   dmg= 3060 EW            O_fis=[2879,2928]    O_holy=[3101]    life=   0(N8 esp.-) mana= 172(N8 esp.-)
+    21:58:41 seq= 4618 darklight source   dmg= 3060 EW            O_fis=[2879,2928]    O_holy=[3101]    life=   0(N8 esp.-) mana= 107(N8 esp.-)
+    21:58:41 seq= 4620 walking pillar     dmg= 3853 prey EW       O_fis=[2880,2933]    O_holy=[3100]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+    21:58:41 seq= 4621 bloodjaw           dmg= 2660 OK EW         O_fis=[2771,2831]    O_holy=[2709]    life=   0(N8 esp.-) mana=   0(N8 esp.-)
+
+=== turno 22:00:15 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=9 N_leech_aceito=7 leech.ok=false reason=single_target_aa_all_action_without_positive_aa_evidence
+    22:00:15 seq= 5758 darklight striker  dmg= 4163 prey EW       O_fis=[3633,3690]    O_holy=[3576,3577] life= 509(N7 esp.-) mana= 300(N7 esp.-)
+    22:00:15 seq= 5761 walking pillar     dmg= 3863 prey EW       O_fis=[2887,2941]    O_holy=[3107,3108,3109] life= 472(N7 esp.-) mana=   0(N7 esp.-)
+    22:00:15 seq= 5765 darklight striker  dmg= 2921 OK prey EW    O_fis=[2567,2623]    O_holy=[2510]    life= 165(N7 esp.-) mana=   0(N7 esp.-)
+    22:00:15 seq= 5768 darklight striker  dmg= 1233 OK prey EW    O_fis=[1116,1173]    O_holy=[1059,1060] life= 165(N7 esp.-) mana=   0(N7 esp.-)
+    22:00:15 seq= 5771 darklight source   dmg= 2383 EW            O_fis=[2253,2302]    O_holy=[2415]    life= 152(N7 esp.-) mana=   0(N7 esp.-)
+    22:00:15 seq= 5775 walking pillar     dmg= 3001 prey EW       O_fis=[2256,2307]    O_holy=[2415]    life= 153(N7 esp.-) mana=   0(N7 esp.-)
+    22:00:15 seq= 5777 darklight source   dmg= 2383 OK EW         O_fis=[2253,2302]    O_holy=[2415]    life= 152(N7 esp.-) mana=   0(N7 esp.-)
+    22:00:15 seq=5777.01 darklight source   dmg=    0 OK                                                  life=   0(N7 esp.-) mana=   0(N7 esp.-)
+    22:00:15 seq=5777.02 darklight matter   dmg=    0 OK                                                  life=   0(N7 esp.-) mana=   0(N7 esp.-)
+
+=== turno 22:00:44 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=8 N_leech_aceito=8 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    22:00:44 seq= 6092 bloodjaw           dmg= 4460 CRIT EW       O_fis=[2569,2629]    O_holy=[2507]    life= 496(N8 esp.-) mana= 300(N8 esp.-)
+    22:00:44 seq= 6095 darklight matter   dmg= 5656 CRIT OK prey EW O_fis=[2356,2398]    O_holy=[2535]    life= 688(N8 esp.-) mana=   0(N8 esp.-)
+    22:00:44 seq= 6098 walking pillar     dmg= 6460 CRIT prey EW  O_fis=[2670,2721]    O_holy=[2869]    life= 574(N8 esp.-) mana=   0(N8 esp.-)
+    22:00:44 seq= 6100 walking pillar     dmg= 4522 CRIT prey EW  O_fis=[1885,1936]    O_holy=[2008]    life= 282(N8 esp.-) mana=   0(N8 esp.-)
+    22:00:44 seq= 6102 darklight matter   dmg= 4858 CRIT prey EW  O_fis=[2029,2071]    O_holy=[2176,2177] life= 338(N8 esp.-) mana=   0(N8 esp.-)
+    22:00:44 seq= 6104 darklight source   dmg=  795 CRIT OK EW    O_fis=[456,505]      O_holy=[445]     life= 280(N8 esp.-) mana=   0(N8 esp.-)
+    22:00:44 seq= 6107 walking pillar     dmg= 4138 CRIT OK prey EW O_fis=[1729,1781]    O_holy=[1837,1838] life= 282(N8 esp.-) mana=   0(N8 esp.-)
+    22:00:44 seq= 6110 bloodjaw           dmg= 3122 CRIT OK EW    O_fis=[1817,1877]    O_holy=[1755]    life= 243(N8 esp.-) mana=   0(N8 esp.-)
+
+=== turno 22:02:24 status=resolved reason=- ===
+  comp=spell label=Great Death Beam (exevo max mort) hits=7 N_leech_aceito=7 leech.ok=false reason=ms_beam_subline_validated_no_a1
+    22:02:24 seq= 7156 darklight source   dmg= 3068 OK EW         O_fis=[2886,2935]    O_holy=[3109]    life= 552(N7 esp.-) mana= 343(N7 esp.-)
+    22:02:24 seq= 7160 darklight matter   dmg= 2714 OK prey EW    O_fis=[2053,2095]    O_holy=[2203]    life= 666(N7 esp.-) mana= 239(N7 esp.-)
+    22:02:24 seq= 7164 darklight source   dmg= 2804 EW            O_fis=[2643,2692]    O_holy=[2842]    life= 219(N7 esp.-) mana=   0(N7 esp.-)
+    22:02:24 seq= 7166 walking pillar     dmg= 3532 prey EW       O_fis=[2644,2697]    O_holy=[2841,2842] life= 220(N7 esp.-) mana=   0(N7 esp.-)
+    22:02:24 seq= 7168 walking pillar     dmg= 3532 prey EW       O_fis=[2644,2697]    O_holy=[2841,2842] life= 220(N7 esp.-) mana=   0(N7 esp.-)
+    22:02:24 seq= 7170 bloodjaw           dmg= 2438 EW            O_fis=[2545,2605]    O_holy=[2483]    life= 190(N7 esp.-) mana=   0(N7 esp.-)
+    22:02:24 seq= 7172 walking pillar     dmg= 3532 prey EW       O_fis=[2644,2697]    O_holy=[2841,2842] life= 220(N7 esp.-) mana=   0(N7 esp.-)

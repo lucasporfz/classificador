@@ -77,6 +77,7 @@
     const selfHealPattern = /^You healed yourself for\s+(\d+)\s+hitpoints\./i;
     const externalHealPattern = /^You were healed by\s+(.+?)\s+for\s+(\d+)\s+hitpoints\./i;
     const potionUsePattern = /^Using one of\s+\d+\s+.+?\s+potions?\b/i;
+    const resourceLossPattern = /^You lose\s+\d+\s+(hitpoints|mana)\b/i;
     let pendingLeechHit = null;
     let lastPotionTs = null;
     let hasFieldRuneUse = false;
@@ -89,6 +90,11 @@
     const rawOrderByEvent = new Map();
     let rawLineOrdinal = 0;
     let barrierEpoch = 0;
+    // M-035b: quantas perdas de vida e de mana (`You lose N hitpoints/mana`, dano recebido
+    // ou magic shield) o server log mostrou antes de cada evento, no molde de `barrierEpoch`.
+    // Epocas iguais entre dois hits provam que a reserva nao perdeu nada no meio.
+    let lifeLossEpoch = 0;
+    let manaLossEpoch = 0;
 
     for (const rawLine of String(serverText || '').split(/\r?\n/)) {
       const m = tsPattern.exec(rawLine);
@@ -139,6 +145,8 @@
           lifeLeech: 0,
           manaLeech: 0,
           overkill: false,
+          lifeLossEpoch,
+          manaLossEpoch,
         };
         rawOrderByEvent.set(ev, { lineOrdinal, barrierEpoch });
         events.push(ev);
@@ -180,6 +188,8 @@
           lifeLeech: 0,
           manaLeech: 0,
           overkill: false,
+          lifeLossEpoch,
+          manaLossEpoch,
         };
         rawOrderByEvent.set(ev, { lineOrdinal, barrierEpoch });
         events.push(ev);
@@ -242,6 +252,11 @@
         rawOrderByEvent.set(ev, { lineOrdinal, barrierEpoch });
         events.push(ev); xpLines.push(ev);
         continue;
+      }
+      const loss = resourceLossPattern.exec(body);
+      if (loss) {
+        if (loss[1].toLowerCase() === 'mana') manaLossEpoch++;
+        else lifeLossEpoch++;
       }
       // D-011a: notificações de estado do mundo e dano recebido podem ser
       // intercalados pelo servidor e não são, sozinhos, nova autoria do XP.

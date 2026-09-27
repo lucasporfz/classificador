@@ -66,6 +66,9 @@
     // M-043/M-043a: estancia de sorcerer e estado de conversao de cada cast, inferidos
     // ANTES da resolucao; o leitor do elemento efetivo (unified-formulas) le daqui.
     'sorcererStanceSetup',
+    // M-035: stage da Beam Mastery da sessao (1, 2 ou 3), cravado antes da passada final;
+    // `null` = desconhecido, os tres stages admitidos.
+    'beamMasteryStage',
     'omegaSetup',
     'combatMasteryLadder',
     'bestiaryClassBonus',

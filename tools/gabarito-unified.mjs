@@ -48,6 +48,15 @@ const beamNoAaCheck = (expectedSpellHits, labelPart) => turn => {
   const central = hits.filter(h => h.beamSide === 'central').length;
   return side > 0 && central > 0 ? null : `esperado beamSide side+central; got side=${side} central=${central}`;
 };
+// M-035: o bloco final da spell fecha como beam (validador de sub-linhas), e nao so herda
+// `beamSide` de uma passada anterior.
+const beamFinalBlockValidatedCheck = turn => {
+  const spell = (turn.components || []).find(comp => comp.comp === 'spell');
+  const det = spell && spell.deterministic;
+  return det && det.ok && /^beam_subline_/.test(String(det.reason || ''))
+    ? null
+    : `esperado bloco final validado como beam; got ${det ? `${det.ok}/${det.reason}` : '-'}`;
+};
 const spellNoAaCheck = (expectedSpellHits, labelPart) => turn => {
   const c = counts(turn);
   if (!(c.arrow === 0 && c.spell === expectedSpellHits && c.rune === 0 && c.grenade === 0)) {
@@ -1287,8 +1296,11 @@ export const CASES = [
     beamNoAaCheck(13, 'Great Death Beam'), '17/Jul/2026'),
   C('dlc-ms-beam/21:36:49-ratio-0777', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:36:49',
     beamNoAaCheck(7, 'Great Death Beam'), '17/Jul/2026'),
+  // M-035, leech esparso na sub-linha (change B): o lateral de 5 hits tem 1 confirmacao de leech e 0
+  // contradicao. O bloco final tem de fechar como beam, nao so carregar carimbo de outra
+  // passada.
   C('dlc-ms-beam/21:44:27-ratio-0872', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:44:27',
-    beamNoAaCheck(6, 'Great Death Beam'), '17/Jul/2026'),
+    t => beamNoAaCheck(6, 'Great Death Beam')(t) || beamFinalBlockValidatedCheck(t), '17/Jul/2026'),
   // M-035/C-007/S-014e: as sub-linhas de beam tem cardinalidades
   // independentes. A ausencia de tres ancoras nao transforma o primeiro hit em
   // AA; o charm-kill observado continua como hit virtual do Great Death Beam.
@@ -1789,6 +1801,33 @@ export const CASES = [
     spellWithAaCheck(1, 16, 'Death Echo'), '19/Sep/2026'),
   C('sorcerer-converted-death-echo/alumnishocks 19:02:06', 'alumnishocks server log.txt', 'alumnishocks localchat.txt', '19:02:06',
     spellWithAaCheck(1, 14, 'Death Echo'), '19/Sep/2026'),
+  // M-035/M-035b (model-sorcerer-beam-sublines): os alvos da change B mantem a contagem A/S de
+  // antes e o bloco final fecha como beam (elemento pela estancia, central so em overkill
+  // provado pelo leech). Rotulos, elemento e stage ficam em
+  // tests/unified-beam-sublines-by-stance.test.mjs, que le o resultado inteiro do motor.
+  ...[
+    ['18:30:18', 1, 4], ['18:26:16', 1, 6], ['18:31:29', 1, 6], ['18:31:42', 1, 4], ['18:22:39', 1, 6],
+    ['18:25:16', 1, 10], ['18:25:35', 1, 5], ['18:27:45', 1, 6], ['18:28:09', 1, 6], ['18:30:11', 1, 3],
+    ['18:31:14', 1, 6],
+  ].map(([ts, arrow, spell]) => C(`beam-sublines-by-stance/alumnishocks 2 ${ts}`,
+    'alumnishocks 2 server log.txt', 'alumnishocks 2 localchat.txt', ts,
+    t => spellWithAaCheck(arrow, spell, 'Great Energy Beam')(t) || beamFinalBlockValidatedCheck(t), '21/Sep/2026')),
+  // Forma E: os quatro hits no mesmo nivel e o 361 OK com o leech dos 537 — sem sub-linha.
+  C('beam-sublines-by-stance/alumnishocks 2 18:31:58', 'alumnishocks 2 server log.txt', 'alumnishocks 2 localchat.txt', '18:31:58',
+    spellWithAaCheck(1, 4, 'Great Energy Beam', { central: 0, side: 0 }), '21/Sep/2026'),
+  C('beam-sublines-by-stance/aquatic S2 13:05:51', 'aquatic Server Log.txt', 'aquatic Local Chat.txt', '13:05:51',
+    t => spellNoAaCheck(9, 'Great Energy Beam')(t) || beamFinalBlockValidatedCheck(t), '31/Aug/2026'),
+  C('beam-sublines-by-stance/aquatic S0 10:44:32', 'aquatic Server Log.txt', 'aquatic Local Chat.txt', '10:44:32',
+    t => spellNoAaCheck(7, 'Great Energy Beam')(t) || beamFinalBlockValidatedCheck(t), '31/Aug/2026'),
+  C('beam-sublines-by-stance/dlc ms S1 21:52:46', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:52:46',
+    t => spellNoAaCheck(5, 'Great Death Beam')(t) || beamFinalBlockValidatedCheck(t), '17/Jul/2026'),
+  // Guardas decididas na Fase 3: continuam como estao, sem sub-linha.
+  C('beam-sublines-by-stance/kim 16:15:56', 'kim server log.txt', 'kim local chat.txt', '16:15:56',
+    spellWithAaCheck(0, 7, 'Great Energy Beam', { central: 0, side: 0 }), '14/Jul/2026'),
+  C('beam-sublines-by-stance/Mrowdy 2 17:16:37', 'Mrowdy Server Log 2.txt', 'Mrowdy Local Chat 2.txt', '17:16:37',
+    spellWithAaCheck(1, 5, 'Great Energy Beam', { central: 0, side: 0 }), '11/Jun/2026'),
+  C('beam-sublines-by-stance/ms boss 17:16:37', 'ms boss server log.txt', 'ms boss local chat.txt', '17:16:37',
+    spellWithAaCheck(1, 5, 'Great Energy Beam', { central: 0, side: 0 }), '11/Jun/2026'),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

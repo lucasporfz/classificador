@@ -2422,6 +2422,26 @@
     }
   }
 
+  // M-035: o stage da Beam Mastery e fato do personagem, um so na sessao. Vem dos beams cujo
+  // bloco final valida numa passada anterior a final: os discriminantes (os que um unico stage
+  // explica) precisam concordar. Sem beam discriminante, ou com discordancia, o stage fica
+  // desconhecido (D-006) e os tres continuam admitidos; nunca por maioria.
+  function inferBeamMasteryStageFromResolved(resolved) {
+    const discriminatingStages = [];
+    for (const turn of resolved || []) {
+      for (const component of turn.components || []) {
+        const beam = component.deterministic;
+        if (!beam || !beam.beam || !beam.ok || !Array.isArray(beam.beamValidStages)) continue;
+        if (beam.beamValidStages.length === 1) discriminatingStages.push(beam.beamValidStages[0]);
+      }
+    }
+    const stages = Array.from(new Set(discriminatingStages));
+    return {
+      stage: stages.length === 1 ? stages[0] : null,
+      evidence: { discriminating: discriminatingStages.length, stages },
+    };
+  }
+
   function classifyUnifiedParsed(server, local, options, bmDetection) {
     const shouldGoldInferLeech = !(options && options.leechSetup) && !(options && options.disableGoldLeechPipeline);
     const context = buildContext(server, local, Object.assign({}, options || {}, shouldGoldInferLeech ? { deferLeechSetupInference: true } : {}));
@@ -2448,6 +2468,12 @@
       return resolved;
     };
     let weaponPhysicalPierceDetection = null;
+    let beamMasteryStageEvidence = null;
+    const lockBeamMasteryStage = resolved => {
+      const inferred = inferBeamMasteryStageFromResolved(resolved);
+      context.beamMasteryStage = inferred.stage;
+      beamMasteryStageEvidence = inferred.evidence;
+    };
     // M-024/M-025: a consolidaÃ§Ã£o de granada cross-turno Ã© por-passe e dependente de
     // ordem temporal; o conjunto de casts jÃ¡ explodidos Ã© reiniciado a cada varredura.
     // CrÃ­tico por-componente (two-pass): a passada pass-1 (bootstrap crit grosso) rotula os
@@ -2550,6 +2576,8 @@
       weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(turns, facts, context);
       context.weaponPhysicalPierce = weaponPhysicalPierceDetection.pierce;
       SessionContext.invalidateReversalCache(context);
+      // M-035: stage da Beam Mastery pela passada sem leech, antes da passada final.
+      lockBeamMasteryStage(resolvedWithoutLeech);
       // M-016e: sÃ³ depois do leech real (nÃ£o o bootstrap) Ã© que o cluster
       // vida/mana-por-dano Ã© confiÃ¡vel para corrigir um estÃ¡gio atrasado que a
       // 1Âª passada (sem leech) nÃ£o conseguiu provar por reversÃ£o elemental.
@@ -2575,6 +2603,7 @@
       weaponPhysicalPierceDetection = inferWeaponPhysicalPierce(turns, facts, context);
       context.weaponPhysicalPierce = weaponPhysicalPierceDetection.pierce;
       SessionContext.invalidateReversalCache(context);
+      lockBeamMasteryStage(pass1);
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
       resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
@@ -2601,6 +2630,8 @@
       goldLeechObservationsSample: goldLeechObservations.slice(0, 20),
       gravSanSetup: context.gravSanSetup,
       stanceSetup: context.stanceSetup,
+      beamMasteryStage: context.beamMasteryStage == null ? null : context.beamMasteryStage,
+      beamMasteryStageEvidence,
       aaElement: context.aaElement || 'physical',
       aaElementDetection: aaElementDetection || { element: 'physical', source: 'not_run', counts: null, eligible: 0 },
       weaponPhysicalPierce: context.weaponPhysicalPierce || 0,
@@ -2740,6 +2771,7 @@
     inferBmPierceFromCharmDamage,
     inferCritByComponent,
     inferBmPierceFromCrossMobEvidence,
+    inferBeamMasteryStageFromResolved,
     buildTurns,
     reconsolidateMultiStageWithLeech,
     buildContext,

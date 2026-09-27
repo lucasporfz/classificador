@@ -1609,15 +1609,17 @@
 
   // O segundo candidato e ultimo recurso: so quando o primeiro NAO fecha entre mobs distintos e
   // ele fecha (criterio de M-043a). Dano que nao separa, ou nenhum que fecha: vale o primeiro.
-  // Beam fica fora nesta versao (o elemento dele e escolhido por validateBeamSublineBlock).
+  // Beam (M-035): o elemento das sub-linhas e decidido por validateBeamSublineBlock, na mesma
+  // ordem; o bloco generico de um beam que nao fecha usa o 1o elemento da maquina, porque
+  // central e lateral sao dois niveis legitimos e nao testam "fecha entre mobs".
   function sorcererSpellElement(action, hits, context) {
     const native = action && action.profile ? action.profile.element : 'unknown';
     // unified-validation carrega depois deste arquivo; sem ele (contexto montado a mao) vale o perfil.
     const validation = root.UnifiedValidation;
-    if (!validation || validation.isBeamAction(action)) return native;
+    if (!validation) return native;
     const candidates = sorcererSpellElementCandidates(action, context);
     if (!candidates) return native;
-    if (candidates.length === 1) return candidates[0];
+    if (candidates.length === 1 || validation.isBeamAction(action)) return candidates[0];
     const tolerance = validation.elementalBlockTolerance({ comp: 'spell', action });
     if (spellHitsCloseAcrossMobs(hits, candidates[0], context, tolerance) !== false) return candidates[0];
     return spellHitsCloseAcrossMobs(hits, candidates[1], context, tolerance) === true ? candidates[1] : candidates[0];

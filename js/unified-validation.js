@@ -45,6 +45,7 @@
     CUTOFF_KEY,
     PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS,
     sorcererSpellElement,
+    sorcererSpellElementCandidates,
   } = root.UnifiedFormulas;
 
   const {
@@ -1191,7 +1192,152 @@
   function beamSublineLeechOk(hits, action, context) {
     if (!hits || !hits.length) return false;
     const res = validateLeechBlockOfficialRates({ comp: 'spell', hits, action }, context);
-    return !res.usable || !!res.ok;
+    if (!res.usable || res.ok) return true;
+    // M-035 (leech esparso da sub-linha): a sub-linha e bloco de spell concreta deterministica,
+    // e vale a mesma regra de `shouldOverrideSparseLeechForConcreteDeterministicSpell` — ao
+    // menos uma confirmacao e nenhuma contradicao. Sem ela, 1 confirmacao reprovava e 0 passava.
+    return hasSparseLeechConfirmationWithoutContradiction(res);
+  }
+
+  // D-007/D-008a: estado de critico de um hit de beam (critico, Low Blow, Savage Blow,
+  // Onslaught). Nivel de original so e comparavel dentro do mesmo estado: entre estados a
+  // reversao depende do multiplicador de critico inferido, e Savage Blow nem tem normalizacao.
+  function beamCritStateKey(h) {
+    return (h.realCrit ? 1 : 0) + '|' + (h.lowBlow ? 1 : 0) + '|' +
+      (h.savageBlow ? 1 : 0) + '|' + (h.onslaught ? 1 : 0);
+  }
+
+  // M-035 + M-043: ordem em que o validador testa o elemento do beam. Com a estancia do cast
+  // conhecida, a da maquina de conversao (`converted` -> [estancia, nativo]; `arm`/`rearm` ->
+  // [estancia]; `native`/`unknown` -> [nativo, estancia]), o 2o so como ultimo recurso. Sessao
+  // anterior a 16/Jun/2026 (`not_applicable`): so o nativo. Estancia desconhecida: busca livre
+  // nos tres, com o spread primeiro. Contexto montado a mao, sem setup de estancia: a busca de
+  // antes (menor desvio da fracao primeiro).
+  //   mode 'ordered': um elemento por vez, na ordem, parando no primeiro que fecha;
+  //   mode 'spread':  os tres, o de menor spread vence e so ele decide o rotulo;
+  //   mode 'legacy':  os tres, o de menor desvio vence, rotulo pela uniao dos elementos.
+  function beamElementPlan(action, context) {
+    const candidates = sorcererSpellElementCandidates(action, context);
+    if (candidates) return { order: candidates, mode: 'ordered' };
+    const setup = context && context.sorcererStanceSetup;
+    if (!setup) return { order: BEAM_EFFECTIVE_ELEMENTS, mode: 'legacy' };
+    const native = action && action.profile && action.profile.element;
+    if (setup.stance === 'not_applicable' && native) return { order: [native], mode: 'ordered' };
+    return { order: BEAM_EFFECTIVE_ELEMENTS, mode: 'spread' };
+  }
+
+  // Originais, no elemento, de um hit se ele tivesse causado `dmg` sem truncamento: e assim que o
+  // dano real reconstruido pelo leech, ou o piso, vira um nivel comparavel ao das ancoras.
+  function beamOriginalsAtDamage(hit, dmg, element, context) {
+    const ev = elementalOriginalCandidates(Object.assign({}, hit, { dmg, overkill: false }), element, context);
+    return ev && ev.known && ev.originals && ev.originals.length ? ev.originals : null;
+  }
+
+  // Prey, Bounty, grav san e Protector inflam (ou reduzem) o dano exibido sem mexer no leech;
+  // o leech mede o dano ANTES deles, e esta escala o leva de volta ao dano exibido.
+  function leechBasisToShownScale(hit, context) {
+    const basis = leechDamageBasis(Object.assign({}, hit, { dmg: 1000 }), context);
+    return basis > 0 ? 1000 / basis : 1;
+  }
+
+  // M-035b: o que o leech absoluto de um overkill de beam pode provar (D-019/D-025). Por canal
+  // com leech, `reserveNeverFilled` diz se TODO hit principal seguinte do golpe ainda ganhou
+  // aquele recurso, sem nenhuma perda dele no server log no meio: se a reserva tivesse
+  // enchido com o overkill, o hit seguinte nao ganharia nada. A outra prova (vida e mana
+  // reconstroem o mesmo dano real) depende de N e sai de beamOverkillOriginalRange.
+  function beamOverkillLeechEvidence(hit, hits, context) {
+    const setup = context && context.leechSetup;
+    if (!setup || !hit || !hit.overkill || hit.virtual || hit.zeroDamageDodge) return null;
+    if (!(setup.lifeBase > 0) && !(setup.manaBase > 0)) return null;
+    if (bountyDamageBasisUnknown(hit, context)) return null;
+    const life = +hit.lifeLeech || 0;
+    const mana = +hit.manaLeech || 0;
+    if (!(life > 0) && !(mana > 0)) return null;
+    const later = hits.filter(h => (h.seq || 0) > (hit.seq || 0) && !h.virtual && !h.zeroDamageDodge);
+    const reserveNeverFilled = (leechField, lossEpochField) => later.length > 0
+      && later.every(h => (+h[leechField] || 0) > 0 && h[lossEpochField] === hit[lossEpochField]);
+    return {
+      life: life > 0 && !bountyLifeLevelUnknown(hit, setup)
+        ? { observed: life, reserveNeverFilled: reserveNeverFilled('lifeLeech', 'lifeLossEpoch') }
+        : null,
+      mana: mana > 0
+        ? { observed: mana, reserveNeverFilled: reserveNeverFilled('manaLeech', 'manaLossEpoch') }
+        : null,
+    };
+  }
+
+  // D-024/D-025: faixa de dano real, em dano exibido, que o leech observado de um canal admite
+  // com N, somando a tolerancia de leech e todas as taxas oficiais candidatas do hit.
+  function beamLeechRealDamageRange(hit, channel, observed, n, block, context) {
+    const rates = leechEffectiveRateCandidates(context.leechSetup, channel, block, hit, context);
+    if (!rates.length) return null;
+    const tolerance = leechValueToleranceForN(n, observed);
+    let low = Infinity;
+    let high = -Infinity;
+    for (const cand of rates) {
+      const perDamage = cand.rate * areaFactor(n);
+      if (!(perDamage > 0)) continue;
+      low = Math.min(low, (observed - tolerance - 1) / perDamage);
+      high = Math.max(high, (observed + tolerance) / perDamage);
+    }
+    if (!(high > low)) return null;
+    const scale = leechBasisToShownScale(hit, context);
+    return [low * scale, high * scale];
+  }
+
+  // M-035b: intervalo de ORIGINAL, no elemento do beam, do dano real PROVADO de um overkill
+  // com N. Prova: vida e mana concordam (caps independentes) ou, num canal, a reserva nunca
+  // encheu. Sem prova, `null`: o leech so da piso (beamOverkillFloorOriginal).
+  function beamOverkillOriginalRange(hit, evidence, n, element, block, context, memo) {
+    const key = 'range|' + hit.seq + '|' + n + '|' + element;
+    if (memo.has(key)) return memo.get(key);
+    const life = evidence.life && beamLeechRealDamageRange(hit, 'life', evidence.life.observed, n, block, context);
+    const mana = evidence.mana && beamLeechRealDamageRange(hit, 'mana', evidence.mana.observed, n, block, context);
+    const proven = [];
+    if (life && mana && Math.max(life[0], mana[0]) <= Math.min(life[1], mana[1])) proven.push(life, mana);
+    else {
+      if (life && evidence.life.reserveNeverFilled) proven.push(life);
+      if (mana && evidence.mana.reserveNeverFilled) proven.push(mana);
+    }
+    let out = null;
+    if (proven.length) {
+      const low = Math.max(1, Math.ceil(Math.max(...proven.map(r => r[0]))));
+      const high = Math.floor(Math.min(...proven.map(r => r[1])));
+      if (high >= low) {
+        const lowOriginals = beamOriginalsAtDamage(hit, low, element, context);
+        const highOriginals = beamOriginalsAtDamage(hit, high, element, context);
+        if (lowOriginals && highOriginals) out = [lowOriginals[0], highOriginals[highOriginals.length - 1]];
+      }
+    }
+    memo.set(key, out);
+    return out;
+  }
+
+  // M-035b (piso): o dano exibido de um overkill e o dano que o leech observado implica, com a
+  // MAIOR taxa admissivel, so podem SUBESTIMAR o dano real (D-011/D-025; capped-low, V-014).
+  // O maior dos dois, em original, e o menor original possivel do hit. Nao exige prova: so
+  // exclui sub-linhas abaixo dele. O limite inferior da faixa de beamLeechRealDamageRange e
+  // justamente o dano real com a maior taxa candidata.
+  function beamOverkillFloorOriginal(hit, n, element, block, context, memo) {
+    const key = 'floor|' + hit.seq + '|' + n + '|' + element;
+    if (memo.has(key)) return memo.get(key);
+    const shown = beamOriginalsAtDamage(hit, hit.dmg, element, context);
+    let floor = shown ? shown[0] : null;
+    const setup = context && context.leechSetup;
+    if (setup && !bountyDamageBasisUnknown(hit, context)) {
+      for (const channel of ['life', 'mana']) {
+        const observed = +(channel === 'life' ? hit.lifeLeech : hit.manaLeech) || 0;
+        if (!(observed > 0)) continue;
+        if (channel === 'life' && bountyLifeLevelUnknown(hit, setup)) continue;
+        const range = beamLeechRealDamageRange(hit, channel, observed, n, block, context);
+        const minDamage = range ? Math.ceil(range[0]) : 0;
+        if (!(minDamage > 0)) continue;
+        const originals = beamOriginalsAtDamage(hit, minDamage, element, context);
+        if (originals) floor = Math.max(floor == null ? -Infinity : floor, originals[0]);
+      }
+    }
+    memo.set(key, floor);
+    return floor;
   }
 
   function validateBeamSublineBlock(block, context) {
@@ -1199,26 +1345,111 @@
     if (!isBeamAction(action)) return null;
     const hits = (block.hits || []).filter(isMainHit);
     const visible = hits.filter(h => !h.overkill && !h.zeroDamageDodge && !h.virtual);
-    if (visible.length < 3) return { ok: false, beam: true, reason: 'beam_subline_not_enough_hits' };
+    const leechEvidence = new Map();
+    for (const h of hits) {
+      const evidence = beamOverkillLeechEvidence(h, hits, context);
+      if (evidence) leechEvidence.set(h, evidence);
+    }
+    // Com menos de 3 ancoras, so a forma A de M-035b (central por overkill provado) fecha.
+    if (hits.length < 3 || (visible.length < 3 && !leechEvidence.size)) {
+      return { ok: false, beam: true, reason: 'beam_subline_not_enough_hits' };
+    }
+    // S-014e: hit virtual de charm-kill entra na cardinalidade do componente sem estar em
+    // `hits`; o N real de uma sub-linha vai de count ate count + virtuais do bloco.
+    const virtualCount = (block.hits || []).filter(h => h && h.virtual && !hits.includes(h)).length;
+    const plan = beamElementPlan(action, context);
+    // M-035: o stage da Beam Mastery e fato do personagem. Com o stage da sessao cravado, so os
+    // pares dele sao admitidos; desconhecido, os tres.
+    const sessionStage = context && context.beamMasteryStage ? +context.beamMasteryStage : null;
+    const stages = sessionStage ? BEAM_MASTERY_STAGES.filter(s => s.stage === sessionStage) : BEAM_MASTERY_STAGES;
+    const enumerateAssignments = remaining => {
+      let assignments = [{ side: [], central: [] }];
+      for (const h of remaining) {
+        const next = [];
+        for (const assignment of assignments) {
+          next.push({ side: assignment.side.concat([h]), central: assignment.central });
+          next.push({ side: assignment.side, central: assignment.central.concat([h]) });
+        }
+        assignments = next;
+      }
+      return assignments;
+    };
 
     const results = [];
-    for (const element of BEAM_EFFECTIVE_ELEMENTS) {
+    for (const element of plan.order) {
       const perHit = [];
       for (const h of visible) {
         const ev = elementalOriginalCandidates(h, element, context);
         if (!ev || !ev.known || !ev.originals || !ev.originals.length) continue;
         const representative = representativeOriginal(ev.originals);
         if (representative == null) continue;
-        const state = (h.realCrit ? 1 : 0) + '|' + (h.lowBlow ? 1 : 0) + '|' +
-          (h.savageBlow ? 1 : 0) + '|' + (h.onslaught ? 1 : 0);
-        perHit.push({ hit: h, originals: ev.originals, representative, state });
+        perHit.push({ hit: h, originals: ev.originals, representative, state: beamCritStateKey(h) });
       }
-      if (perHit.length < 3) {
-        results.push({ ok: false, element, known: perHit.length, reason: 'beam_subline_not_enough_known_hits' });
-        continue;
-      }
+      // M-035b: um overkill do MESMO estado de critico das ancoras de uma sub-linha tem de
+      // caber no nivel dela — o piso nao pode passar do nivel, e o dano real provado tem de
+      // cruza-lo (com a tolerancia de cluster elemental). Estado diferente nao vota.
+      const memo = new Map();
+      const overkillFitsSubline = (h, count, cluster, anchorStates) => {
+        if (!h.overkill || h.virtual || !anchorStates.has(beamCritStateKey(h))) return true;
+        const tolerance = elementalClusterTolerance(cluster.center);
+        for (let virtualHits = 0; virtualHits <= virtualCount; virtualHits++) {
+          const floor = beamOverkillFloorOriginal(h, count + virtualHits, element, block, context, memo);
+          if (floor != null && floor > cluster.max + tolerance) continue;
+          const range = leechEvidence.has(h)
+            ? beamOverkillOriginalRange(h, leechEvidence.get(h), count + virtualHits, element, block, context, memo)
+            : null;
+          if (!range || (range[1] >= cluster.min - tolerance && range[0] <= cluster.max + tolerance)) return true;
+        }
+        return false;
+      };
       const elementResults = [];
-      const anchorGroups = [perHit];
+      // Para cada stage e leitura de contagem do bonus, a fracao observada tem de fechar. Com o
+      // central tirado do dano real de overkill (forma A), a fracao e testada contra o
+      // intervalo inteiro do central.
+      const tryStages = (sideCluster, centralCluster, sideHits, centralHits, side, central, fields) => {
+        for (const stage of stages) {
+          for (const hypothesis of beamStageFractions(stage, sideHits.length, centralHits.length)) {
+            const expectedFraction = hypothesis.fraction;
+            let delta;
+            let tolerance;
+            if (centralCluster.fromOverkill) {
+              const low = centralCluster.min * expectedFraction;
+              const high = centralCluster.max * expectedFraction;
+              tolerance = elementalClusterTolerance((low + high) / 2);
+              delta = sideCluster.center < low ? low - sideCluster.center
+                : (sideCluster.center > high ? sideCluster.center - high : 0);
+            } else {
+              const expectedSide = centralCluster.center * expectedFraction;
+              tolerance = elementalClusterTolerance(expectedSide);
+              delta = Math.abs(sideCluster.center - expectedSide);
+            }
+            if (delta > tolerance) continue;
+            const sideSet = new Set(sideHits);
+            elementResults.push(Object.assign({
+              ok: true,
+              element,
+              rate: stage.targetRate,
+              stage: stage.stage,
+              bonusCounting: hypothesis.counting,
+              expectedFraction,
+              beamFraction: sideCluster.center / centralCluster.center,
+              sideCount: sideHits.length,
+              centralCount: centralHits.length,
+              sideCluster,
+              centralCluster,
+              side,
+              central,
+              sideHits,
+              centralHits,
+              assignmentSignature: hits.map(h => sideSet.has(h) ? 's' : 'c').join(''),
+              delta,
+              tolerance,
+              reason: 'beam_subline_mastery_cluster',
+            }, fields || {}));
+          }
+        }
+      };
+      const anchorGroups = perHit.length >= 3 ? [perHit] : [];
       for (let groupIndex = 0; groupIndex < anchorGroups.length; groupIndex++) {
         const anchors = anchorGroups[groupIndex].slice().sort((a, b) => a.representative - b.representative);
         for (let split = 1; split < anchors.length; split++) {
@@ -1229,60 +1460,22 @@
           if (!sideCluster || !centralCluster) continue;
           if (sideCluster.span > elementalClusterTolerance(sideCluster.center)) continue;
           if (centralCluster.span > elementalClusterTolerance(centralCluster.center)) continue;
+          const sideStates = new Set(side.map(x => x.state));
+          const centralStates = new Set(central.map(x => x.state));
 
           // M-035/D-008/D-011/D-019/D-023-D-026: os clusters sao provados apenas
           // pelos hits de estado critico comparavel. Hits de outro estado e overkills
           // continuam hits principais reais; distribua-os entre side/central e deixe
           // a cardinalidade completa por leech eliminar as hipoteses impossiveis.
           const anchored = new Set(anchors.map(x => x.hit));
-          const remaining = hits.filter(h => !anchored.has(h));
-          let assignments = [{ side: [], central: [] }];
-          for (const h of remaining) {
-            const next = [];
-            for (const assignment of assignments) {
-              next.push({ side: assignment.side.concat([h]), central: assignment.central });
-              next.push({ side: assignment.side, central: assignment.central.concat([h]) });
-            }
-            assignments = next;
-          }
-
-          for (const assignment of assignments) {
+          for (const assignment of enumerateAssignments(hits.filter(h => !anchored.has(h)))) {
             const sideHits = side.map(x => x.hit).concat(assignment.side);
             const centralHits = central.map(x => x.hit).concat(assignment.central);
             if (!beamSublineLeechOk(sideHits, action, context)) continue;
             if (!beamSublineLeechOk(centralHits, action, context)) continue;
-            for (const stage of BEAM_MASTERY_STAGES) {
-              for (const hypothesis of beamStageFractions(stage, sideHits.length, centralHits.length)) {
-              const expectedFraction = hypothesis.fraction;
-              const rate = stage.targetRate;
-              const expectedSide = centralCluster.center * expectedFraction;
-              const tolerance = elementalClusterTolerance(expectedSide);
-              const delta = Math.abs(sideCluster.center - expectedSide);
-              if (delta > tolerance) continue;
-              const sideSet = new Set(sideHits);
-              elementResults.push({
-                ok: true,
-                element,
-                rate,
-                stage: stage.stage,
-                bonusCounting: hypothesis.counting,
-                expectedFraction,
-                beamFraction: sideCluster.center / centralCluster.center,
-                sideCount: sideHits.length,
-                centralCount: centralHits.length,
-                sideCluster,
-                centralCluster,
-                side,
-                central,
-                sideHits,
-                centralHits,
-                assignmentSignature: hits.map(h => sideSet.has(h) ? 's' : 'c').join(''),
-                delta,
-                tolerance,
-                reason: 'beam_subline_mastery_cluster',
-              });
-              }
-            }
+            if (!sideHits.every(h => overkillFitsSubline(h, sideHits.length, sideCluster, sideStates))) continue;
+            if (!centralHits.every(h => overkillFitsSubline(h, centralHits.length, centralCluster, centralStates))) continue;
+            tryStages(sideCluster, centralCluster, sideHits, centralHits, side, central);
           }
         }
 
@@ -1300,24 +1493,68 @@
           }
         }
       }
+      // M-035b (forma A): as ancoras formam UM nivel so. O central so aparece em overkill, e o
+      // nivel dele sai do dano real PROVADO pelo leech dos overkills postos no central, do
+      // mesmo estado de critico de alguma ancora; todas as ancoras sao laterais. Sem overkill
+      // provado no central nao ha central suposto.
+      if (!elementResults.length && perHit.length >= 1 && leechEvidence.size) {
+        const side = perHit.slice();
+        const sideStates = new Set(side.map(x => x.state));
+        const sideCluster = minimalCandidateCluster(side.map(x => x.originals));
+        if (sideCluster && sideCluster.span <= elementalClusterTolerance(sideCluster.center)) {
+          const anchored = new Set(side.map(x => x.hit));
+          for (const assignment of enumerateAssignments(hits.filter(h => !anchored.has(h)))) {
+            const sideHits = side.map(x => x.hit).concat(assignment.side);
+            const centralHits = assignment.central;
+            const provenCandidates = centralHits.filter(h => leechEvidence.has(h) && sideStates.has(beamCritStateKey(h)));
+            if (!provenCandidates.length) continue;
+            if (!beamSublineLeechOk(sideHits, action, context)) continue;
+            if (!beamSublineLeechOk(centralHits, action, context)) continue;
+            if (!sideHits.every(h => overkillFitsSubline(h, sideHits.length, sideCluster, sideStates))) continue;
+            for (let virtualHits = 0; virtualHits <= virtualCount; virtualHits++) {
+              const ranges = provenCandidates.map(h =>
+                beamOverkillOriginalRange(h, leechEvidence.get(h), centralHits.length + virtualHits, element, block, context, memo));
+              if (ranges.some(range => !range)) continue;
+              const low = Math.max(...ranges.map(range => range[0]));
+              const high = Math.min(...ranges.map(range => range[1]));
+              if (low > high + elementalClusterTolerance((low + high) / 2)) continue;
+              const min = Math.min(low, high);
+              const max = Math.max(low, high);
+              const centralCluster = { min, max, center: (min + max) / 2, span: max - min, fromOverkill: true };
+              if (!centralHits.every(h => overkillFitsSubline(h, centralHits.length, centralCluster, sideStates))) continue;
+              tryStages(sideCluster, centralCluster, sideHits, centralHits, side, [],
+                { centralFromOverkill: true, reason: 'beam_subline_central_from_overkill_leech' });
+            }
+          }
+        }
+      }
+      if (!perHit.length || (perHit.length < 3 && !elementResults.length)) {
+        results.push({ ok: false, element, known: perHit.length, reason: 'beam_subline_not_enough_known_hits' });
+      }
       results.push(...elementResults);
+      // Ordem da maquina de M-043: o proximo elemento so entra como ultimo recurso.
+      if (plan.mode === 'ordered' && elementResults.length) break;
     }
 
+    // Busca livre (estancia desconhecida): menor spread dentro dos niveis primeiro, o perfil no
+    // empate, e so as distribuicoes do elemento escolhido decidem o rotulo. Contexto sem setup
+    // de estancia (montado a mao) e ordem da maquina: menor desvio da fracao primeiro.
     const profileElement = action && action.profile && action.profile.element;
-    const ok = results.filter(r => r.ok).sort((a, b) =>
-      a.delta - b.delta
-      || (a.sideCluster.span + a.centralCluster.span) - (b.sideCluster.span + b.centralCluster.span)
-      || (a.element === profileElement ? -1 : 0)
-      || (b.element === profileElement ? 1 : 0)
-    );
+    const spanOf = r => r.sideCluster.span + r.centralCluster.span;
+    const profileFirst = (a, b) => (a.element === profileElement ? -1 : 0) || (b.element === profileElement ? 1 : 0);
+    const spreadSearch = plan.mode === 'spread';
+    const ok = results.filter(r => r.ok).sort(spreadSearch
+      ? (a, b) => spanOf(a) - spanOf(b) || profileFirst(a, b) || a.delta - b.delta
+      : (a, b) => a.delta - b.delta || spanOf(a) - spanOf(b) || profileFirst(a, b));
     const best = ok[0];
     if (!best) return { ok: false, beam: true, reason: 'beam_subline_no_mastery_cluster', candidates: results };
+    const pool = spreadSearch ? ok.filter(r => r.element === best.element) : ok;
 
     // D-006/C-007: mais de uma distribuicao valida nao derruba a prova inteira
     // do beam. Grave somente os hits cujo tier e unanime entre todas as explicacoes
     // mecanicamente validas; os divergentes permanecem sem beamSide e podem ser
     // exibidos como cobertura parcial, sem inventar certeza pelo dano truncado.
-    const assignmentSignatures = Array.from(new Set(ok.map(r => r.assignmentSignature)));
+    const assignmentSignatures = Array.from(new Set(pool.map(r => r.assignmentSignature)));
     const resolvedSideHits = [];
     const resolvedCentralHits = [];
     const ambiguousHits = [];
@@ -1347,7 +1584,11 @@
       beamExpectedFraction: best.expectedFraction,
       beamMasteryTargetRate: best.rate,
       beamMasteryStage: best.stage,
+      // Stages que alguma distribuicao valida admite: um so = beam discriminante do stage da
+      // sessao (inferBeamMasteryStageFromResolved).
+      beamValidStages: Array.from(new Set(pool.map(r => r.stage))),
       beamBonusCounting: best.bonusCounting,
+      beamCentralFromOverkill: !!best.centralFromOverkill,
       beamSideCount: resolvedSideHits.length,
       beamCentralCount: resolvedCentralHits.length,
       beamAmbiguousCount: ambiguousHits.length,
@@ -1366,7 +1607,7 @@
         tolerance: elementalClusterTolerance(best.centralCluster.center),
       },
       reason: best.reason,
-      rule: 'M-035/D-010a/S-004',
+      rule: 'M-035/M-035b/D-010a/S-004',
     };
   }
 
