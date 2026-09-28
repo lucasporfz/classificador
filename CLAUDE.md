@@ -96,6 +96,46 @@ Isso roda os três alvos (dá pra isolar com `--gabarito`, `--invariants`, `--te
 Cobriam a menos que o runner atual (três `tests/*.test.mjs` nunca eram chamados).
 CI (`.github/workflows/validate.yml`) sempre foi 100% Node e nunca dependeu deles.
 
+**C7 + C8 (28/Set/2026, `classify-off-main-thread`, UI; nenhum `js/unified-*` tocado).**
+C7 e C8 do survey `reports/architecture-deepening-candidates.md`. **Mexer na UI foi autorizado
+explicitamente pelo usuário** (o `CLAUDE.md` proíbe por padrão). Não muda classificação: nenhum
+arquivo do motor foi alterado, então não há dump — o gate foi `run-unified-checks` (**61/68**, as
+**mesmas 7 falhas** pré-existentes, nenhuma delas carregando `app.js`/`i18n.js`/`index.html`) mais um
+teste real em Chromium.
+
+- **C7 — o motor sai da thread da UI.** `js/unified-worker.js` (novo, **não** é `<script src>`: é
+  entry point de `new Worker`) carrega os mesmos arquivos do motor por `importScripts`, na MESMA
+  ordem de `index.html`; `js/classify-port.js` (novo) expõe
+  `ClassifyPort.classify(sv, lc, opts, { onProgress }) → { promise, cancel() }` com duas
+  implementações: Worker (padrão) e mesma thread (reserva para `file://`/CSP, com
+  `requestAnimationFrame` para pintar o status antes de travar). As 3 chamadas da UI passam por
+  `clsRunClassification` em `js/app.js`: cronômetro no status, botão desabilitado e `#btnClsCancel`
+  que mata o worker de verdade. **Os dois arquivos novos NÃO entram em `ENGINE_FILES` nem nas listas
+  das tools/tests** — eles não são do motor, e `importScripts` não existe fora do worker.
+- **A mensagem do worker não leva o `_context` inteiro** (42 campos, incluindo `_revCache` e os fatos
+  do log). A UI lê só `combatMasteryLadder` e `omegaSetup`; o worker manda essa projeção, e
+  `tests/ui-worker-port.test.mjs` falha se a UI passar a ler um terceiro campo. O resultado tem de
+  atravessar o **clone estrutural**: uma função no meio dele seria `DataCloneError` e tela vazia —
+  hoje não há nenhuma, e o teste roda o worker de verdade para provar.
+- **C8 — o mês da sessão tem um dono só.** `clsParseSessionDate` usa `UnifiedFormulas.sessionDateKey`
+  (D-016, conhece `Sept`); o `MONTHS` local sumiu. Fecha a pendência (c) de `infer-drone-bounty-talisman`.
+  Travado por `tests/ui-session-pairing-date.test.mjs`, que carrega só as declarações de `app.js`
+  (a fiação do DOM fica no fim do arquivo e precisa de navegador).
+- **Verificado em Chromium** (`playwright` existe no ambiente mas **não** é dependência do projeto; o
+  roteiro fica fora do `run-unified-checks`, que é 100% Node): worker criado, status "classificando…"
+  com a aba respondendo durante a classificação, tabela renderizada, cancelar devolvendo "cancelado",
+  zero erro de console. Armadilha: `page.fill` não aguenta os 3 MB do arquivo inteiro — usar uma
+  sessão, que é o que o seletor de pares põe na caixa.
+
+**Medição refeita em 28/Set/2026 (código `b03ed19`), que derruba duas conclusões de 18/Set:** o
+`15 sept` saiu de **232 turnos sem classificação para 1** (mudanças de sorcerer), e com isso **a sonda
+de BM deixou de custar** — era 55% do par, hoje é ~8%, porque a segunda classificação só dispara
+quando há turno sem classificação (contadores do memo idênticos com e sem `bmPierce` fixo). **C6 não
+rende mais nada.** O tempo do par ficou em 119,4 s (38,6 / 24,5 / 23,6 / 32,7) e o alvo agora é
+**C4**: `buildGrenadeCastAssignments` é **83% de S0** em tempo inclusivo, agora sem a dúvida de
+atribuição que existia quando havia duas classificações por sessão. Depois dele, o resíduo é leech
+(`observedLeechAcceptsN` 12%) e GC (8%).
+
 **Medição de C3 (18/Set/2026, `hit-reversal-memo`, otimização, drift ZERO, 1,50×).**
 C3 do survey `reports/architecture-deepening-candidates.md`, passo 3 da sequência (C2 → C1 → **C3**).
 `physicalOriginalInterval`/`elementalOriginalCandidates` ganharam uma **camada 1** consultada ANTES do

@@ -112,12 +112,15 @@ function clsSessionLabel(s) {
 }
 
 function clsParseSessionDate(s) {
-  const MONTHS = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
-  // header: "Channel ... saved Www Mmm DD HH:MM:SS YYYY" — hora = quando o arquivo foi salvo
-  const m = /saved \w+ (\w+) +(\d+) (\d{2}):(\d{2}):(\d{2}) (\d{4})/.exec(s.header);
+  // header: "Channel ... saved Www Mmm DD HH:MM:SS YYYY" — hora = quando o arquivo foi salvo.
+  // C8: a DATA sai de `sessionDateKey` (D-016, dono único do mês da sessão — é ele que
+  // conhece `Sept`); daqui sai só o horário de save, que o motor não precisa.
+  const m = /saved \w+ \w+ +\d+ (\d{2}):(\d{2}):(\d{2}) \d{4}/.exec(s.header);
   if (!m) return null;
-  const saveSec = +m[3]*3600 + +m[4]*60 + +m[5];
-  return { year: +m[6], month: MONTHS[m[1]] || 0, day: +m[2], saveSec };
+  const dateKey = UnifiedFormulas.sessionDateKey(s.header);
+  if (dateKey == null) return null;
+  const saveSec = +m[1]*3600 + +m[2]*60 + +m[3];
+  return { dateKey, saveSec };
 }
 
 function clsBuildPairs(svSessions, lcSessions) {
@@ -128,7 +131,7 @@ function clsBuildPairs(svSessions, lcSessions) {
     let best = null, bestDiff = Infinity;
     for (const lc of lcSessions) {
       const ld = clsParseSessionDate(lc);
-      if (!ld || ld.year !== sd.year || ld.month !== sd.month || ld.day !== sd.day) continue;
+      if (!ld || ld.dateKey !== sd.dateKey) continue;
       const diff = Math.abs(ld.saveSec - sd.saveSec);
       if (diff < bestDiff) { bestDiff = diff; best = lc; }
     }
@@ -1471,20 +1474,14 @@ function clsWireBrush(res) {
     if (!clsTurnView) return;
     const a = tr[clsTurnView.start], b = tr[clsTurnView.end];
     if (!a || !b) return;
-    $('clsStatus').textContent = t('cls_brush_running');
-    try {
-      const sv = clsSliceLogByTs($('clsServerInput').value, a.ts, b.ts + 1);
-      const lc = clsSliceLogByTs($('clsLocalInput').value, a.ts - 5, b.ts + 1);
-      const sliced = classifyWithLocalChat(sv, lc, { trace: true });
+    const sv = clsSliceLogByTs($('clsServerInput').value, a.ts, b.ts + 1);
+    const lc = clsSliceLogByTs($('clsLocalInput').value, a.ts - 5, b.ts + 1);
+    clsRunClassification(sv, lc, sliced => {
       clsTurnView = null;
       clsSliceActive = true;
       lastClsResult = sliced;
       renderClassifier(sliced);
-      $('clsStatus').textContent = t('cls_status_done');
-    } catch (err) {
-      $('clsStatus').textContent = 'erro: ' + err.message;
-      console.error(err);
-    }
+    }, 'cls_brush_running');
   });
 
   if (resetBtn) {
@@ -1492,18 +1489,12 @@ function clsWireBrush(res) {
       if (!clsSliceActive) { setView(0, n - 1); return; }
       // O resultado em vigor é de uma faixa: voltar ao todo é reclassificar a sessão.
       // Os textareas nunca foram tocados pelo recorte, então ainda têm o log completo.
-      $('clsStatus').textContent = t('cls_status_running');
-      try {
-        const full = classifyWithLocalChat($('clsServerInput').value, $('clsLocalInput').value, { trace: true });
+      clsRunClassification($('clsServerInput').value, $('clsLocalInput').value, full => {
         clsTurnView = null;
         clsSliceActive = false;
         lastClsResult = full;
         renderClassifier(full);
-        $('clsStatus').textContent = t('cls_status_done');
-      } catch (err) {
-        $('clsStatus').textContent = 'erro: ' + err.message;
-        console.error(err);
-      }
+      });
     });
   }
 
@@ -1756,6 +1747,52 @@ let lastClsResult = null;
 function setLastClassifierResult(res) { lastClsResult = res; }
 function onLangChange() { if (lastClsResult) renderClassifier(lastClsResult); }
 
+// C7: toda classificação da UI passa por aqui. O motor roda fora da thread da UI
+// (`ClassifyPort`), então a aba continua respondendo, o status conta os segundos e
+// o botão de cancelar mata o trabalho de verdade. Uma execução por vez.
+let clsRunning = null;
+
+function clsRunClassification(sv, lc, apply, runningKey) {
+  if (clsRunning) return;
+  const status = $('clsStatus');
+  const classifyBtn = $('btnClassify');
+  const cancelBtn = $('btnClsCancel');
+  const label = runningKey || 'cls_status_running';
+  const started = Date.now();
+  const paint = () => {
+    const secs = Math.round((Date.now() - started) / 1000);
+    status.textContent = secs > 0 ? t(label) + ' ' + secs + 's' : t(label);
+  };
+  paint();
+  const timer = setInterval(paint, 1000);
+  if (classifyBtn) classifyBtn.disabled = true;
+  if (cancelBtn) cancelBtn.style.display = '';
+
+  const finish = () => {
+    clearInterval(timer);
+    clsRunning = null;
+    if (classifyBtn) classifyBtn.disabled = false;
+    if (cancelBtn) cancelBtn.style.display = 'none';
+  };
+
+  clsRunning = ClassifyPort.classify(sv, lc, { trace: true });
+  clsRunning.promise.then(res => {
+    finish();
+    try {
+      apply(res);
+      status.textContent = t('cls_status_done');
+    } catch (err) {
+      status.textContent = 'erro: ' + err.message;
+      console.error(err);
+    }
+  }).catch(err => {
+    finish();
+    if (err && err.cancelled) { status.textContent = t('cls_status_cancelled'); return; }
+    status.textContent = 'erro: ' + err.message;
+    console.error(err);
+  });
+}
+
 // ---- wiring ----
 $('btnClsServerFile').addEventListener('click', () => { $('clsServerFileInput').value = ''; $('clsServerFileInput').click(); });
 $('btnClsLocalFile').addEventListener('click',  () => { $('clsLocalFileInput').value  = ''; $('clsLocalFileInput').click(); });
@@ -1768,19 +1805,14 @@ $('btnClassify').addEventListener('click', () => {
   const sv = $('clsServerInput').value.trim();
   const lc = $('clsLocalInput').value.trim();
   if (!sv || !lc) { $('clsStatus').textContent = t('cls_status_need_both'); return; }
-  $('clsStatus').textContent = t('cls_status_running');
-  try {
-    const res = classifyWithLocalChat(sv, lc, { trace: true });
+  clsRunClassification(sv, lc, res => {
     clsTurnView = null;   // classificação nova = faixa volta a ser a sessão inteira
     clsSliceActive = false;
     lastClsResult = res;
     renderClassifier(res);
-    $('clsStatus').textContent = t('cls_status_done');
-  } catch (err) {
-    $('clsStatus').textContent = 'erro: ' + err.message;
-    console.error(err);
-  }
+  });
 });
+$('btnClsCancel').addEventListener('click', () => { if (clsRunning) clsRunning.cancel(); });
 $('langPt').addEventListener('click', () => { LANG = 'pt'; applyI18n(); });
 $('langEn').addEventListener('click', () => { LANG = 'en'; applyI18n(); });
 
