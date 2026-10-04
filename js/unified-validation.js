@@ -46,6 +46,7 @@
     PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS,
     sorcererSpellElement,
     sorcererSpellElementCandidates,
+    multiStageFractionCloses,
   } = root.UnifiedFormulas;
 
   const {
@@ -657,7 +658,12 @@
   // `hullOf(candidates)` (opcional) devolve `[lo, hi]` tal que `reaches(candidates, o)` e
   // falso para todo `o` fora dele. So desempenho: um nivel fora do envelope de ALGUMA
   // linha falha naquela linha de qualquer jeito, entao pular esse nivel nao muda `found`.
-  function findOmegaAssignmentByLevel(hits, candidatesOf, reaches, levelsOf, hullOf) {
+  //
+  // `allowUnmarked` (M-016d/M-039): quando a busca roda sobre UM estagio de um bloco
+  // multiestagio, um estagio que ja tem nivel sem omega fica com a atribuicao minima dele
+  // (zero marcados) — ela nao e descartada, porque e outro estagio do bloco que precisa de
+  // omega.
+  function findOmegaAssignmentByLevel(hits, candidatesOf, reaches, levelsOf, hullOf, allowUnmarked) {
     const rows = [];
     for (const h of hits) {
       const no = candidatesOf(h, false);
@@ -697,14 +703,18 @@
       }
       // Atribuicao de zero marcados nao acrescenta nada: o caminho sem omega ja rodou e
       // falhou antes de chegar aqui.
-      if (ok && marked.size) found.push(marked);
+      if (ok && (marked.size || allowUnmarked)) found.push(marked);
     }
     if (!found.length) return null;
     const min = Math.min(...found.map(m => m.size));
     const minimal = found.filter(m => m.size === min);
     const key = m => [...m].map(h => h.seq).sort((a, b) => a - b).join(',');
     const first = key(minimal[0]);
-    return { marked: minimal[0], tied: minimal.some(m => key(m) !== first) };
+    // `candidates`: toda atribuicao distinta que algum nivel deriva (M-039b/M-039c: a
+    // coerencia blast/eco escolhe entre elas, sempre pela minima).
+    const byKey = new Map();
+    for (const m of found) if (!byKey.has(key(m))) byKey.set(key(m), m);
+    return { marked: minimal[0], tied: minimal.some(m => key(m) !== first), candidates: [...byKey.values()] };
   }
 
   // D-010/S-004: a tolerancia de intersecao do bloco elemental. Existe so para o residuo
@@ -1685,24 +1695,152 @@
     // residuo discreto entre mobs (quantizacao da mitigation), nunca para colar dois
     // niveis de verdade — o passo de omega e ~6%, ordens de grandeza acima dela.
     const tolerance = elementalBlockTolerance(block);
-    const found = findOmegaAssignmentByLevel(
-      hits,
+    const search = (group, allowUnmarked) => findOmegaAssignmentByLevel(
+      group,
       originalsOf,
       (originals, o) => originals.some(v => Math.abs(v - o) <= tolerance),
       originals => originals,
       // `originals` sai ordenado de elementalOriginalCandidates.
       originals => [originals[0] - tolerance, originals[originals.length - 1] + tolerance],
+      allowUnmarked,
     );
-    if (!found) return base;
-    // Mesma disciplina do eixo fisico: duas atribuicoes minimas DISTINTAS que fecham sao
-    // duas leituras igualmente apoiadas, e o nivel do bloco — que e quem deveria derivar o
-    // rotulo (D1) — fica indeterminado. Escolher uma seria decidir sem evidencia, contra
-    // D-006. Medido em `crypt` (unico fixture com omega): 0 empates em 151.634 atribuicoes
-    // elementais e 0 em 50.925 fisicas, entao este ramo e guarda, nao caminho quente.
-    if (found.tied) return base;
-    const retry = withOmegaAssignment(context, new Set(hits), found.marked,
+    // M-016d-1/M-039: um bloco multiestagio de confirmacao elemental tem um NIVEL POR
+    // ESTAGIO (blast integral, eco a 1/2), e cada estagio comprovado e uma explosao do seu
+    // cast. A atribuicao de omega e derivada do nivel de CADA estagio — um nivel unico para
+    // o bloco inteiro nao existe por construcao — e os hits sem estagio formam o seu proprio
+    // grupo. Os pares blast/eco do mesmo cast precisam continuar fechando a fracao declarada
+    // sob as atribuicoes escolhidas; depois o bloco inteiro e revalidado sob a uniao delas.
+    const multiStage = block.action && block.action.profile && block.action.profile.multiStage;
+    const stageKey = h => (h.multiStageStage ? h.multiStageStage + '@' + h.multiStageCastTs : '');
+    const staged = !!(multiStage && multiStage.confirmation === 'elemental' && hits.some(h => h.multiStageStage));
+    // S-004b: o bloco multiestagio nunca tem nivel comum entre estagios, entao sem
+    // contradicao ele ja termina em dispersao (evidencia ausente) — e isso, para ele, e
+    // "fechar sem omega": o bloco nao e tocado (M-039).
+    if (staged && base.evidence === 'absent') return base;
+    // M-039c (ultimo recurso): grupo SEM nivel comum entre mobs/estados — a dispersao cross-state
+    // que o bloco sem omega ja aceita como evidencia ausente (S-004b) — mas COM contradicao
+    // same-mob sem omega. O unico nivel definido ali e o de cada grupo (mob, estado) de S-004a,
+    // e cada um vira uma unidade com as atribuicoes que o seu nivel deriva. Devolve as unidades,
+    // `undefined` quando o grupo nao tem contradicao (nao e tocado) ou null para rejeitar.
+    const assignWithoutGroupLevel = group => {
+      const plain = group.map(hit => ({ hit, originals: originalsOf(hit, false) })).filter(x => x.originals);
+      if (!sameMobStateExactnessViolation(plain, context).violated) return undefined;
+      const byState = new Map();
+      for (const h of group) {
+        const key = elementalStateKey(h);
+        if (!byState.has(key)) byState.set(key, []);
+        byState.get(key).push(h);
+      }
+      const units = [];
+      for (const stateGroup of byState.values()) {
+        const found = search(stateGroup, true);
+        if (!found) return null;
+        units.push(found.candidates);
+      }
+      return units;
+    };
+    // M-039/M-039b/M-039c: a atribuicao do bloco e a combinacao das atribuicoes de cada unidade
+    // (unidades sao disjuntas) com o MENOR numero de marcados entre as que satisfazem `coherent`
+    // (sem predicado, todas). Mesma disciplina do eixo fisico: duas combinacoes minimas
+    // DISTINTAS sao duas leituras igualmente apoiadas e o nivel — que e quem deveria derivar o
+    // rotulo — fica indeterminado; escolher uma seria decidir sem evidencia (D-006). Sem
+    // predicado, a combinacao minima e a minima de cada unidade, e o empate e o empate de
+    // alguma unidade. Medido em `crypt`: 0 empates em 151.634 atribuicoes elementais e 0 em
+    // 50.925 fisicas, entao o empate e guarda, nao caminho quente.
+    const deriveAssignment = (units, coherent) => {
+      const sorted = units.map(c => c.slice().sort((a, b) => a.size - b.size));
+      const floorFrom = sorted.map(() => 0);
+      for (let i = sorted.length - 1; i >= 0; i--) floorFrom[i] = sorted[i][0].size + (floorFrom[i + 1] || 0);
+      let best = Infinity;
+      let winners = [];
+      const pick = [];
+      const walk = (i, size) => {
+        if (size + (floorFrom[i] || 0) > best) return;
+        if (i === sorted.length) {
+          const union = new Set();
+          for (const m of pick) for (const h of m) union.add(h);
+          if (coherent && !coherent(union)) return;
+          if (size < best) { best = size; winners = [union]; } else winners.push(union);
+          return;
+        }
+        for (const m of sorted[i]) {
+          pick.push(m);
+          walk(i + 1, size + m.size);
+          pick.pop();
+        }
+      };
+      walk(0, 0);
+      if (!winners.length) return null;
+      return { marked: winners[0], tied: winners.length > 1 };
+    };
+    let marked;
+    let byStateLevel = false;
+    if (!staged) {
+      const found = search(hits, false);
+      let units;
+      if (!found) {
+        units = assignWithoutGroupLevel(hits);
+        if (!units) return base;
+        byStateLevel = true;
+      } else {
+        units = [found.candidates];
+      }
+      const derived = deriveAssignment(units, null);
+      if (!derived || derived.tied || !derived.marked.size) return base;
+      marked = derived.marked;
+    } else {
+      const groups = new Map();
+      for (const h of hits) {
+        const key = stageKey(h);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(h);
+      }
+      const units = [];
+      for (const group of groups.values()) {
+        // O nivel do estagio deriva as atribuicoes, inclusive zero marcados quando ele ja tem
+        // nivel sem omega.
+        const found = search(group, true);
+        if (!found) {
+          // Estagio sem nivel comum entre mobs/estados: sem contradicao same-mob e a dispersao
+          // que o bloco ja aceita (S-004b) e ele nao e tocado (M-039); com ela, M-039c.
+          const fallback = assignWithoutGroupLevel(group);
+          if (fallback === null) return base;
+          if (fallback) units.push(...fallback);
+          continue;
+        }
+        units.push(found.candidates);
+      }
+      // Coerencia entre estagios (M-016d-1a sob a atribuicao), parte da derivacao: um estagio
+      // que fecha sozinho sob omega nao basta. Todo hit do eco com contraparte comparavel no
+      // blast do MESMO cast (mesmo mob e estado) tem de continuar fechando a fracao declarada
+      // com ela, com os originais que a atribuicao da a cada lado — e a atribuicao de um estagio
+      // e escolhida tambem por isso, nao so vetada depois.
+      const tiers = (multiStage.delayed && multiStage.delayed.tiers) || [];
+      const coherent = union => {
+        const assigned = h => originalsOf(h, union.has(h));
+        for (const echoHit of hits) {
+          if (!multiStage.delayed || echoHit.multiStageStage !== multiStage.delayed.id) continue;
+          const eo = assigned(echoHit);
+          if (!eo) continue;
+          const comparable = hits.filter(p => p.multiStageStage === multiStage.primary.id
+            && p.multiStageCastTs === echoHit.multiStageCastTs && elementalStateKey(p) === elementalStateKey(echoHit));
+          if (!comparable.length) continue;
+          if (!comparable.some(p => tiers.some(tier => multiStageFractionCloses(assigned(p), eo, tier)))) return false;
+        }
+        return true;
+      };
+      const derived = deriveAssignment(units, coherent);
+      if (!derived || derived.tied || !derived.marked.size) return base;
+      marked = derived.marked;
+    }
+    const retry = withOmegaAssignment(context, new Set(hits), marked,
       () => validateElementalBlockUnderAssignment(block, element, context));
-    return retry.ok ? Object.assign(retry, { omegaHits: found.marked }) : base;
+    // No bloco multiestagio, a revalidacao termina na dispersao entre estagios (evidencia
+    // ausente, S-004b) quando a contradicao same-mob sumiu: e o mesmo veredito que o bloco
+    // teria sem o par omega, e nao rejeita.
+    // Pelo mesmo motivo, sob M-039c (nao ha nivel comum por construcao).
+    const accepted = retry.ok || ((staged || byStateLevel) && retry.evidence === 'absent');
+    return accepted ? Object.assign(retry, { omegaHits: marked }) : base;
   }
 
   function validateElementalBlockUnderAssignment(block, element, context) {
@@ -3062,10 +3200,19 @@
       const label = def.actionLabel || actionLabel(comp, action);
       const id = comp + '_' + componentId;
       const hits = def.hits || [];
+      const omegaHits = def.deterministic && def.deterministic.omegaHits;
       for (const h of hits) {
         h.componentId = id;
         h.component = comp;
         h.actionLabel = label;
+        // M-039/M-039b: mesmo movimento de `finalizeTurn` — a atribuicao de omega do bloco
+        // vencedor vira rotulo do hit, e a evidencia (O/post do diagnostico, U-006) e
+        // re-derivada sob ele. `unified-turn-resolution` carrega depois deste arquivo.
+        if (omegaHits && omegaHits.has(h)) {
+          h.omegaActive = true;
+          const resolution = root.UnifiedTurnResolution;
+          if (resolution && resolution.enrichHitEvidence) resolution.enrichHitEvidence(h, context);
+        }
       }
       components.push({
         id,
@@ -3662,6 +3809,7 @@
     return null;
   }
   const API = {
+    componentCritState,
     effectiveLifeLeech,
     effectiveManaLeech,
     hitLeechFit,

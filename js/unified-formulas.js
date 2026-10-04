@@ -499,6 +499,15 @@
     return false;
   }
 
+  // M-016d/Transcendence: o estagio atrasado de uma spell multiestagio e o MESMO cast do
+  // blast, entao herda o estado de Transcendence do cast, nao o do segundo em que aterrissa.
+  // Caso-prova: `italian` 18:51:52 — blast em :52 dentro da janela (crit 2,15) e eco em :53
+  // fora dela, com `roaming dread 1060 = 2120/2` exato.
+  function transcendenceTsForHit(hit) {
+    if (hit && hit.multiStageStage === 'echo' && Number.isFinite(+hit.multiStageCastTs)) return +hit.multiStageCastTs;
+    return hit ? hit.ts : null;
+  }
+
   // V19: Perfect Shot adiciona +20 de dano no valor prÃ©-mitigaÃ§Ã£o do AA.
   // Modelagem atual: aplica depois do crÃ­tico e antes da mitigaÃ§Ã£o; se logs
   // futuros mostrarem que o crÃ­tico tambÃ©m multiplica o +20, este ponto fica
@@ -812,7 +821,7 @@
     if (base == null) return 1;
     // Transcendence: bÃ´nus ADITIVO de +15pp no multiplicador jÃ¡ resolvido (nÃ£o
     // multiplicativo) para hits crÃ­ticos dentro da janela [T, T+7] do gatilho.
-    let mult = isTranscendenceActiveAt(context, hit.ts) ? base + TRANSCENDENCE_CRIT_BONUS : base;
+    let mult = isTranscendenceActiveAt(context, transcendenceTsForHit(hit)) ? base + TRANSCENDENCE_CRIT_BONUS : base;
     if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);
     return mult;
   }
@@ -1625,7 +1634,23 @@
     return spellHitsCloseAcrossMobs(hits, candidates[1], context, tolerance) === true ? candidates[1] : candidates[0];
   }
 
+  // M-016d-1: relacao discreta entre um original do blast e um do estagio atrasado. Fecha
+  // quando algum original do eco fica a ELEMENTAL_INTERMEDIATE_TOLERANCE de FLOOR/CEIL(original
+  // do blast x fracao). Reusa a tolerancia intermediaria ja normativa de D-010a; nao introduz
+  // epsilon proprio da spell. Ex.: 820 -> 409 reverte para O 772 -> 385, vizinho discreto do O
+  // esperado 386. Serve a prova de estagio (par a par, `buildTurns`) e a coerencia entre os
+  // niveis dos estagios sob a atribuicao de omega (`validateElementalBlock`).
+  function multiStageFractionCloses(primaryOriginals, echoOriginals, tier) {
+    return !!(primaryOriginals && echoOriginals && tier)
+      && primaryOriginals.some(po => echoOriginals.some(eo => {
+        const lo = Math.floor(po * tier.numerator / tier.denominator);
+        const hi = Math.ceil(po * tier.numerator / tier.denominator);
+        return Math.abs(eo - lo) <= ELEMENTAL_INTERMEDIATE_TOLERANCE || Math.abs(eo - hi) <= ELEMENTAL_INTERMEDIATE_TOLERANCE;
+      }));
+  }
+
   const API = {
+    multiStageFractionCloses,
     spellHitsCloseAcrossMobs,
     sorcererCastStance,
     sorcererSpellElementCandidates,
@@ -1694,6 +1719,7 @@
     TRANSCENDENCE_CRIT_BONUS,
     ONSLAUGHT_DAMAGE_MULTIPLIER,
     isTranscendenceActiveAt,
+    transcendenceTsForHit,
     PERFECT_SHOT_PREMIT_BONUS,
     LEECH_VALUE_TOLERANCE_SMALL_BLOCK,
     LEECH_VALUE_TOLERANCE_LARGE_BLOCK,

@@ -71,6 +71,7 @@
     TRANSCENDENCE_CRIT_BONUS,
     ONSLAUGHT_DAMAGE_MULTIPLIER,
     isTranscendenceActiveAt,
+    transcendenceTsForHit,
     PERFECT_SHOT_PREMIT_BONUS,
     LEECH_VALUE_TOLERANCE_SMALL_BLOCK,
     LEECH_VALUE_TOLERANCE_LARGE_BLOCK,
@@ -1282,8 +1283,9 @@
 
   // Mapa elemento <- assinatura de charm ofensivo (charmSignature acima). Charms sem
   // elemento de dano claro (overpower/wound = fisico, ja coberto por
-  // physicalOriginalInterval via postMultiplier; overflux e mana, nao dano) ficam de fora
-  // dessa lista de elemento — mas wound (fisico) e divine_wrath (holy) SAO usados aqui.
+  // physicalOriginalInterval via postMultiplier; overflux causa dano proporcional a mana do
+  // personagem e so testemunha por razao, M-039a) ficam de fora dessa lista de elemento —
+  // mas wound (fisico) e divine_wrath (holy) SAO usados aqui.
   const CHARM_ELEMENT_MAP = {
     freeze: 'ice',
     enflame: 'fire',
@@ -1496,6 +1498,28 @@
   // Ausencia de testemunha e evidencia ausente (D-006), nao ausencia do perk: a sessao
   // simplesmente nao ganha candidato de original nenhum e o motor se comporta como antes.
   const OMEGA_WITNESS_MIN_PROCS = CHARM_WITNESS_MIN_PROCS;
+
+  // M-039a/C-008-nota: charms cujo dano escala com o PERSONAGEM (overpower = vida maxima,
+  // overflux = mana maxima) nunca fecham a formula absoluta de M-036, mas sofrem o mesmo
+  // ajuste por-hit. Eles testemunham omega e escada so pela RAZAO entre dois niveis
+  // observados da mesma linha — sem ancora e sem elemento: nada e previsto, entao nao ha
+  // erro de tabela a disfarcar, e o menor nivel e a base porque omega e escada so somam.
+  const RATIO_WITNESS_CHARMS = new Set(['overpower', 'overflux']);
+
+  // Testemunha de charm utilizavel por M-039/M-042: mesmas exclusoes das tres leituras
+  // (grav san, prey, Bounty, postura desconhecida). Devolve `{ sig, element, ratio }` ou
+  // null. Testemunha de razao nao tem elemento; proc que mata o alvo nao vota nela (o dano
+  // exibido e truncado pela vida restante, D-010g).
+  function omegaCharmWitness(ev, windows, context) {
+    if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey || ev.bountyTalisman) return null;
+    if (isWithinAnyWindow(ev.ts, windows)) return null;
+    // M-041: postura ainda nao observada => testemunha inutilizavel (D-006).
+    if (!isKnightStanceKnownAt(context, ev.ts)) return null;
+    const sig = charmSignature(ev);
+    if (RATIO_WITNESS_CHARMS.has(sig)) return ev.killedTarget ? null : { sig, element: null, ratio: true };
+    const element = CHARM_ELEMENT_MAP[sig];
+    return element ? { sig, element, ratio: false } : null;
+  }
 
   // M-040 - perk de pierce fisico da ARMA, inferido por sessao.
   //
@@ -1717,13 +1741,12 @@
     const events = (serverFacts && serverFacts.events) || [];
     const byKey = new Map();
     for (const ev of events) {
-      if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey || ev.bountyTalisman) continue;
-      if (isWithinAnyWindow(ev.ts, windows)) continue;
-      // M-041: postura ainda nao observada => proc inutilizavel (D-006).
-      if (!isKnightStanceKnownAt(context, ev.ts)) continue;
-      const sig = charmSignature(ev);
-      const element = CHARM_ELEMENT_MAP[sig];
-      if (!element) continue;
+      // M-042/M-039a: a escada e lida pela razao entre niveis, entao a testemunha de razao
+      // (overflux) entra aqui tambem — senao um knight cuja unica linha fosse overflux
+      // exibiria o sexto degrau como omega sem a protecao de M-042b.
+      const witness = omegaCharmWitness(ev, windows, context);
+      if (!witness) continue;
+      const { sig, element } = witness;
       const mob = normalizeName(ev.mob);
       if (!mob) continue;
       const ew = /expose weakness/i.test(ev.rawLine || '');
@@ -1765,13 +1788,9 @@
     const events = (serverFacts && serverFacts.events) || [];
     const byKey = new Map();
     for (const ev of events) {
-      if (!ev || ev.kind !== 'charm' || !(ev.dmg > 0) || ev.isPrey || ev.bountyTalisman) continue;
-      if (isWithinAnyWindow(ev.ts, windows)) continue;
-      // M-041: postura ainda nao observada => testemunha inutilizavel (D-006).
-      if (!isKnightStanceKnownAt(context, ev.ts)) continue;
-      const sig = charmSignature(ev);
-      const element = CHARM_ELEMENT_MAP[sig];
-      if (!element) continue;
+      const witness = omegaCharmWitness(ev, windows, context);
+      if (!witness) continue;
+      const { sig, element, ratio } = witness;
       const mob = normalizeName(ev.mob);
       if (!mob) continue;
       // Mesma chave de M-036: linhas com e sem Expose Weakness / amplification sao
@@ -1784,7 +1803,7 @@
       // diferentes sao populacoes distintas e nunca compartilham nivel.
       const stance = knightStanceAtTs(context, ev.ts);
       const key = mob + '|' + sig + '|' + element + '|' + (ew ? 1 : 0) + '|' + (amp ? 1 : 0) + '|' + stance;
-      if (!byKey.has(key)) byKey.set(key, { mob, charm: sig, element, ew, amp, stance, values: [] });
+      if (!byKey.has(key)) byKey.set(key, { mob, charm: sig, element, ratio, ew, amp, stance, values: [] });
       byKey.get(key).values.push(ev.dmg);
     }
     if (!byKey.size) return { active: false, multiplier: 1, source: 'no_elemental_charm_evidence_outside_grav_san', rows: [] };
@@ -1792,22 +1811,6 @@
     const rows = [];
     for (const r of byKey.values()) {
       if (r.values.length < OMEGA_WITNESS_MIN_PROCS) continue;
-      const mods = getMobMods(r.mob, context);
-      if (!mods || !(mods.hitpoints > 0)) continue;
-      const key = ELEMENT_KEYS[r.element];
-      if (!key || !(mods[key] > 0)) continue;
-      const pierce = pierceForElement(r.element, { exposeWeakness: r.ew, elementalAmplification: r.amp }, context);
-      const mit = mitigationMultiplier(mods, context);
-      // O bonus de classe de bestiario tambem multiplica o dano de charm; sem ele a
-      // ancora nao fecharia numa sessao que o tenha. Ele cancela na razao (b), entao
-      // entra so aqui.
-      const classMultiplier = bestiaryClassMultiplierForHit({ mob: r.mob }, context);
-      // M-041: o Protector e multiplicador pos-mitigacao e alcanca o charm; o previsto da
-      // linha tem de carrega-lo, senao a linha de Protector nunca ancora.
-      const stanceMultiplier = knightStanceMultiplierForStance(r.stance);
-      const expected = mods.hitpoints * 0.05 * mit * effectiveMod(+mods[key], pierce) * classMultiplier * stanceMultiplier;
-      if (!(expected > 0)) continue;
-
       const counts = new Map();
       for (const v of r.values) counts.set(v, (counts.get(v) || 0) + 1);
       const levels = [...counts.entries()]
@@ -1815,10 +1818,34 @@
         .map(([value, n]) => ({ value, n }))
         .sort((a, b) => a.value - b.value);
 
-      const anchorTolerance = Math.max(2, expected * CHARM_EXPECTED_TOLERANCE_RATIO);
-      const anchor = levels.find(L => Math.abs(L.value - expected) <= anchorTolerance);
+      let expected = null;
+      let anchor = null;
+      if (r.ratio) {
+        // M-039a: testemunha de razao. A base e o MENOR nivel (omega so soma); sem ancora,
+        // porque nada e previsto pela formula.
+        anchor = levels[0] || null;
+      } else {
+        const mods = getMobMods(r.mob, context);
+        if (!mods || !(mods.hitpoints > 0)) continue;
+        const key = ELEMENT_KEYS[r.element];
+        if (!key || !(mods[key] > 0)) continue;
+        const pierce = pierceForElement(r.element, { exposeWeakness: r.ew, elementalAmplification: r.amp }, context);
+        const mit = mitigationMultiplier(mods, context);
+        // O bonus de classe de bestiario tambem multiplica o dano de charm; sem ele a
+        // ancora nao fecharia numa sessao que o tenha. Ele cancela na razao (b), entao
+        // entra so aqui.
+        const classMultiplier = bestiaryClassMultiplierForHit({ mob: r.mob }, context);
+        // M-041: o Protector e multiplicador pos-mitigacao e alcanca o charm; o previsto da
+        // linha tem de carrega-lo, senao a linha de Protector nunca ancora.
+        const stanceMultiplier = knightStanceMultiplierForStance(r.stance);
+        expected = mods.hitpoints * 0.05 * mit * effectiveMod(+mods[key], pierce) * classMultiplier * stanceMultiplier;
+        if (!(expected > 0)) continue;
+        const anchorTolerance = Math.max(2, expected * CHARM_EXPECTED_TOLERANCE_RATIO);
+        anchor = levels.find(L => Math.abs(L.value - expected) <= anchorTolerance) || null;
+      }
       const row = {
         mob: r.mob, charm: r.charm, element: r.element, ew: r.ew, amp: r.amp, stance: r.stance,
+        witness: r.ratio ? 'ratio' : 'formula',
         n: r.values.length, expected, levels,
         baseLevel: anchor ? anchor.value : null, omegaLevel: null,
       };
@@ -1850,7 +1877,7 @@
       rows.push(row);
     }
 
-    const anchored = rows.filter(r => r.baseLevel != null);
+    const anchored = rows.filter(r => r.witness === 'formula' && r.baseLevel != null);
     const confirmed = rows.filter(r => r.omegaLevel != null);
     if (confirmed.length) {
       return { active: true, multiplier: OMEGA_MULTIPLIER, source: 'confirmed_by_charm_damage', rows, confirmedRows: confirmed.length, anchoredRows: anchored.length };
@@ -2067,7 +2094,7 @@
       if (!h || h.overkill) continue;
       if (h.savageBlow) continue;
       if (h.onslaught && h.realCrit) continue;
-      if (h.realCrit && isTranscendenceActiveAt(context, h.ts)) continue;
+      if (h.realCrit && isTranscendenceActiveAt(context, transcendenceTsForHit(h))) continue;
       const key = h.compKey;
       let dmg = +h.dmg || 0;
       if (!key || !(dmg > 0)) continue;
@@ -2164,6 +2191,7 @@
             compKey: key, mob: h.mob, dmg: h.dmg, realCrit: !!h.realCrit,
             overkill: !!h.overkill, isPrey: !!h.isPrey, bountyTalisman: !!h.bountyTalisman, ts: h.ts,
             onslaught: !!h.onslaught, savageBlow: !!h.savageBlow, exposeWeakness: !!h.exposeWeakness,
+            multiStageStage: h.multiStageStage || null, multiStageCastTs: h.multiStageCastTs,
             gravSanActive: comp.gravSanActive,
           });
         }

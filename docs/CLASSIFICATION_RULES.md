@@ -98,6 +98,45 @@
          `nighthunter 61 OK` é o AA (o leech declara `N = 1`) e não pode ser puxado para a spell.
          Caso-prova: `alumnishocks 2` `18:25:47`, os 5 hits do blast (antes só 2).
 
+      **Emenda de 03/Out/2026 — omega por hit e crit-state da explosão.** Duas cláusulas, ambas
+      dentro da classificação casado/contraditório/sem contraparte acima, sem alargar janela nem
+      confirmar eco por queda de dano.
+      4. **Omega por hit na prova.** Em sessão com omega ativo (M-039), cada hit tem o segundo
+         original candidato, e blast e eco são hits distintos: um pode ter o bônus e o outro não.
+         O par é testado primeiro **sem** omega; só quando nenhum hit comparável do blast fecha
+         assim, entra o segundo candidato de um lado, do outro ou dos dois. A transformação
+         continua sendo a fração declarada, exata, e a atribuição final de omega é derivada
+         depois, pelo nível de cada estágio (M-039b) — que também verifica que os pares casados
+         continuam fechando sob ela. Caso-prova: `italian` `18:49:36` — o `crypt mage 837`
+         (original `807`) e o `crypt mage 444` do eco (`428`, ou `403/404` com omega) só fecham
+         `1/2` com o eco em omega; sem isso o par contradizia, o `444` saía do eco pelo segundo
+         compartilhado e o turno morria em S-004a.
+      5. **Crit-state da explosão.** O crítico rola uma vez por ataque e atinge todos os alvos
+         igualmente (D-007/S-008), então todo hit não-overkill do segundo do eco é comparável com a
+         explosão no crit-state de componente (Low Blow fica fora, por ser por mob, D-008). Um hit
+         cujo crit-state difere do dos pares casados é **comparável que não fecha**: com outro cast
+         concreto cobrindo o segundo (T-002), ele sai do estágio atrasado; sem outro cast, é
+         contradição. Caso-prova: `italian` `18:49:31` → `A1 + Death Echo 17`. O eco não-crítico
+         de `18:49:33` dividia o segundo com o `roaming dread 201 CRIT` (vida `101`, a razão `0,50`
+         de `N = 1` por H-005e, contra `0,141` do eco), que é o auto ataque do ciclo seguinte:
+         `18:49:33` → `A1 + Energy Wave 4` (cast `exevo vis hur` de `:34`). Sem a cláusula, o `201`
+         ficava no eco e o turno morria em `mixed_crit_state`.
+      6. **O eco herda o estado de Transcendence do cast** (decisão do usuário, 04/Out/2026). O
+         estágio atrasado é o mesmo cast do blast; o bônus de crítico de Transcendence vale para ele
+         se o **cast** caiu dentro da janela, mesmo que o eco aterrisse fora dela (e vice-versa). A
+         prova de estágio reverte o candidato a eco como eco do cast em teste. Caso-prova:
+         `italian` `18:51:52` — blast em `:52` dentro da janela (crit `2,15`), eco em `:53` fora,
+         `roaming dread 1060 = 2120/2` exato → `A1 + Death Echo 11`.
+      7. **S-004a dentro da explosão.** A explosão tem o nível dos pares casados. Um hit do
+         segundo do eco fora desse nível, cujo par do **mesmo mob e estado** está no nível com
+         outro original (sem omega que os reconcilie; entre estados de omega diferentes vale a
+         folga de 1 ponto de S-004c), não fecha com a explosão: é evidência contrária, com o
+         tratamento do comparável que não fecha. Hit sem par do mesmo mob e estado continua
+         acompanhando. Caso-prova: `italian` `18:55:48` — eco crítico de `:50` no nível `542`
+         (`crypt mage 1118` casado, `roaming dread 1216` ×2) e o `roaming dread 218 CRIT` (O `97`,
+         vida `109` = `N = 1`), que é o AA do turno `18:55:50` do Great Death Beam de `:51` →
+         `18:55:48` `A1 + Death Echo 15` e `18:55:50` `A1 + Great Death Beam 3`.
+
     - **M-016d-1b — A via elemental pertence a quem declara confirmação elemental:** a confirmação por transformação elemental discreta SÓ se aplica a perfis cuja mecânica declarada é `confirmation: 'elemental'` (hoje, Death Echo). Spells multiestágio cuja confirmação declarada é por cluster de leech (M-016e, Spiritual Outburst) **não** podem ser confirmadas por esta via — elas permanecem para o passe de correção posterior, com o leech real já inferido. Sem essa reserva explícita, a separação depende do acaso de a reversão elemental nunca fechar (o que M-016e afirma, mas não garante hit a hit): sob o critério de M-016d-1a, um único par coincidente bastaria para a via elemental preemptar a via de leech. **A recíproca vale igual:** a via de **cluster de leech** também pertence só a quem a declara (`confirmation: 'leech_cluster'`). Um perfil de confirmação elemental cuja via falhe **não** pode ser consolidado por magnitude de cluster: o cluster de leech agrupa por razão vida/mana-por-dano, que separa mobs com e sem prey, então ele consolida **parte** do estágio atrasado e deixa o resto no turno seguinte — mesmo mob em dois níveis, morte por veto same-mob de S-004a. Caso-prova: `dlc ms 21:35:29`, em que só os dois `darklight source 583` viraram eco e os `788`/`788`/`733` ficaram para trás.
 
 - **M-016e — Spiritual Outburst multiestágio:** `Spiritual Outburst (exori gran mas nia)` de monk é a segunda spell multiestágio conhecida. Delay candidato: `1` OU `2` segundos após o término do blast inicial — os delays candidatos são tentados em ordem, e o motor avalia somente o primeiro segundo com pelo menos um hit não-overkill do jogador (gate guloso: não cai para o próximo delay só porque a prova falhar nesse segundo). Potência candidata: uma dentre três tiers — Stage 1 `3/8`, Stage 2 `1/2`, Stage 3 `5/8` — inferida somente pela transformação discreta de dano observada, sem sinal externo (não há combo counter nem outro sinal de log disponível); todo o bloco do estágio atrasado precisa fechar sob a MESMA fração, sem mistura de tiers no mesmo estágio.
@@ -551,6 +590,112 @@
   `0,10` da grade de D-030, e os níveis `×1,10` do charm ficam `−1` do previsto; isso não
   afeta a detecção de omega (os níveis base e `×1,06` fecham com delta `0`), mas pode virar
   resíduo em blocos dentro de janela de grav san.
+
+  - **M-039a — Testemunha de razão: `overpower charm` e `overflux charm` (decisão do usuário,
+    03/Out/2026):** o dano desses dois charms escala com o **personagem** (vida máxima no
+    `overpower`, mana máxima no `overflux`) e não fecha a fórmula absoluta de M-036, mas o proc
+    sofre o mesmo ajuste por-hit de omega. Eles testemunham omega **pela razão entre dois níveis
+    observados** da mesma linha, sem âncora — a extensão de `C-008-nota` ao `overflux`. A âncora
+    de M-039 existe para que um erro de tabela de ~6% não se disfarce de omega; na testemunha de
+    razão nada é previsto pela tabela, então esse risco não existe, e o multiplicador uniforme da
+    sessão (classe de bestiário, mana/vida do personagem) cancela na razão. Por isso a testemunha
+    de razão **não recebe elemento** e não entra em `CHARM_ELEMENT_MAP`: ela nunca alimenta
+    M-036, C-012a nem D-010g, que precisam da fórmula.
+
+    A linha de razão é agrupada pela mesma chave e com as mesmas exclusões das testemunhas de
+    fórmula (`mob`, charm, Expose Weakness, amplification, postura; fora de janela de `utevo grav
+    san`, sem prey, sem Bounty, postura conhecida), e cada nível exige o mesmo piso de `≥3` procs
+    de valor idêntico. **Proc que mata o alvo (`killedTarget`) não vota**: o dano exibido é
+    truncado pela vida restante (D-010g). A **base** é o **menor** nível da linha, porque omega
+    só soma. Sem escada (M-042), a linha confirma omega quando outro nível está a `×1,06` da base
+    dentro da mesma tolerância que M-039 já usa para o nível de omega (`max(2; esperado ×
+    1,25%)`); sob escada vale M-042b, com a base no lugar do nível ancorado. Os hits principais
+    continuam proibidos como testemunha.
+
+    A mesma linha de razão alimenta a detecção de escada de M-042 (que já se declara por razão
+    entre níveis), para que um knight cuja única testemunha seja `overflux` não exiba o sexto
+    degrau da escada de `1%` como omega sem a proteção de M-042b.
+
+    Caso-prova: `italian` S0 (`02/Out/2026`, sorcerer `Very Pog`): `crypt mage | overflux`, 28
+    procs em `1022` e 5 em `1083` (razão `1,0597`), intercalados no tempo (não é subida de nível),
+    mais dois kills truncados (`104`, `653`) que não votam. Sem esta cláusula a sessão abstinha
+    (`no_elemental_charm_evidence_outside_grav_san`) e 93 turnos morriam em
+    `same_mob_state_exact_original_mismatch` com pares exatos `×1,06` no mesmo mob e estado.
+    **Raio medido:** varredura do setup nas 146 sessões do corpus — só `italian` S0 muda de omega;
+    nenhuma linha de `overpower` (`tom`, `tom 2`, `tom 3`, `mazzerinbarrage`, …) exibe nível a
+    `×1,06` da base fora de escada, e as quatro escadas medidas (`picture`, `tom`, `tom 2`, `tom 3`)
+    ficam idênticas. `death echo` (o mesmo personagem, `10/Jul/2026`) tem `overflux` sem dois níveis
+    repetidos e continua abstendo (D-006).
+
+  - **M-039b — Omega em spell multiestágio: a atribuição é derivada do nível de CADA estágio
+    (03/Out/2026):** num bloco de spell multiestágio de confirmação elemental (M-016d-1, Death
+    Echo) não existe nível único do bloco — o blast e o eco estão, por construção, em níveis
+    distintos (integral e `1/2`). A busca de M-039 roda então **por estágio comprovado** (estágio
+    + cast de origem, os rótulos de M-016d-1a), e os hits sem estágio formam um grupo próprio —
+    eles **não** são rotulados como blast por isso. Em cada grupo valem as disciplinas de M-039:
+    o nível do grupo deriva a atribuição (zero marcados quando o grupo já tem nível sem omega),
+    vence a atribuição **mínima**, e empate entre atribuições mínimas distintas mantém a
+    rejeição (D-006). Um grupo **sem** nível comum entre mobs/estados e **sem** contradição
+    same-mob sem omega é a dispersão que o bloco já aceita (S-004b) e não é tocado; **com**
+    contradição, vale M-039c.
+
+    **Coerência conjunta, parte da derivação** (emenda de 04/Out/2026, decisão do usuário).
+    Estágios que fecham isolados não bastam: sob a união das atribuições, todo hit do eco que
+    tenha contraparte comparável no blast do **mesmo cast** (mesmo mob e estado, M-016d-1a) tem
+    de continuar fechando a fração declarada com ela, cada lado com o original que a atribuição
+    lhe deu. Essa relação é declarada entre os estágios, então ela **escolhe** a atribuição, e
+    não só a veta depois: cada unidade — o estágio com nível, ou o grupo `(mob, estado)` de
+    M-039c — oferece **todas** as atribuições que o seu nível deriva, e a atribuição do bloco é a
+    combinação com o **menor** número de marcados entre as que satisfazem a coerência. Empate
+    entre combinações mínimas coerentes distintas mantém a rejeição (D-006), e nenhuma combinação
+    coerente também. Quando a mínima de cada unidade já é coerente, ela é a combinação mínima
+    coerente, única — o resultado não muda. Depois o bloco inteiro é revalidado sob a união; a
+    dispersão entre estágios que sobra é evidência ausente (S-004b) e não rejeita — é o mesmo
+    veredito que o bloco teria sem o par omega.
+
+    Caso-prova: `italian` `18:49:09` → `A1 + Death Echo 19`. Blast em `:09` no nível `780` (death):
+    `cyclursus 829/879` e `roaming dread 879/933` são pares `×1,06` no mesmo mob e estado (o `879`
+    e o `933` marcados); eco em `:10` no nível `390`: `cyclursus 415/440`, `roaming dread
+    440/466` e `crypt mage 429` (`429`, `440`, `466` marcados). Sem esta cláusula a busca exigia um
+    nível comum ao blast e ao eco, que não existe, e o turno morria em
+    `same_mob_state_exact_original_mismatch`.
+
+    **Rótulo auditável.** O rótulo `omegaActive` da atribuição vencedora é gravado no hit também
+    quando o turno é fechado pelo resolvedor de AA single-target (V-011–V-015), não só pela busca
+    de partição — sem isso a sessão de sorcerer com omega resolvia o turno sem expor quais hits
+    tinham o bônus (U-006).
+
+  - **M-039c — Grupo sem nível comum: a atribuição é derivada por grupo de mesmo mob e estado
+    (decisão do usuário, 04/Out/2026; último recurso):** quando o bloco (ou o estágio, M-039b) não
+    tem nível comum entre mobs/estados — a dispersão cross-state que, sem omega, já é evidência
+    ausente (S-004b) — **e** tem contradição same-mob sem omega, o único nível definido é o de cada
+    grupo `(mob, estado)` de S-004a. Cada grupo deriva as próprias atribuições pelo seu nível, com
+    as disciplinas de M-039 (mínima; zero marcados quando o grupo já fecha; empate mantém a
+    rejeição, D-006). Num bloco multiestágio, a escolha entre elas é conjunta com o outro estágio
+    do mesmo cast, pela coerência blast/eco de M-039b (a combinação mínima coerente); fora dele,
+    é a mínima de cada grupo, e empate em qualquer grupo mantém a rejeição. A revalidação do bloco
+    inteiro continua valendo, e a dispersão que sobra não rejeita (S-004b). Fora desse caso a
+    derivação pelo nível do bloco não muda: um bloco que tem nível comum nunca chega aqui.
+
+    O par omega continua exato (`×1,06` revertido no mesmo mob e estado), então a cláusula não
+    afrouxa S-004a: ela só deixa de exigir que estados **não comparáveis** entre si caiam num nível
+    só. Causas medidas no caso-prova: Savage Blow sem normalização (D-008a) e o crítico do Death
+    Echo inferido em `2,00` contra `≈2,087` observado (`roaming dread 1834 / 879`), que põe o
+    crítico com Low Blow a ~4% do não-crítico do mesmo cast.
+
+    Casos-prova (`italian` S0): `18:52:32` — blast com `cyclursus 850/901` (originais `799/848`,
+    par omega) e `roaming dread 1880` CRIT-LB a `833`; `18:50:03` — Hell's Core convertido,
+    `roaming dread 3501/3711` CRIT (par omega) e `cyclursus 3984` Savage Blow a `1886`;
+    `18:52:39` e `18:54:24`, que já resolviam e só continuam resolvendo com esta cláusula depois
+    que a prova de estágio passou a considerar omega (M-016d-1a, item 4). **Caso-prova da
+    escolha conjunta (antes pendência):** `18:50:55` → `A1` (`crypt mage 147`, vida `74` = `N = 1`)
+    `+ Death Echo 18` (blast 5 em `:55`, eco 12 em `:56`). No blast os dois `roaming dread 1945`
+    CRIT-LB são idênticos (O `862`, ω `813`) e o grupo fecha **sem** marca, mas o eco `919` (O `407`)
+    só fecha `1/2` com eles em omega (`813/2`), e o `973` do eco (ω `406`) também. A mínima
+    isolada de cada grupo (5 marcados) não é coerente; a mínima coerente marca os dois
+    `1945`, o `cyclursus 879` (par `×1,06` do `829`, nível `780`), os três `cyclursus 440` (par do
+    `415`, nível `391`) e o `roaming dread 973` — 7 marcados, única. O `crypt mage 858`/`429`
+    (`827`/`413`) fica sem marca: marcar os dois também é coerente, mas não é mínimo.
 
 - **M-040 — Perk de pierce físico da arma (invisível ao dano de charm):** existe um perk
   vindo da **arma** que soma pierce ao eixo **físico**, aditivo às demais fontes de
@@ -3062,7 +3207,8 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   charm` escala com a vida do personagem e não fecha a fórmula absoluta de M-036, então ele **não**
   testemunha bônus de classe de bestiário. Ele continua testemunha de **razão** entre níveis (omega
   M-039 e escada de Combat Mastery M-042: valor modal e o degrau), e continua evento de kill
-  (D-011b).
+  (D-011b). O `overflux charm` (dano pela mana máxima do personagem) tem o mesmo papel, com a
+  forma da testemunha de razão declarada em **M-039a** (03/Out/2026).
 
 - **C-008 — Procs não são hits principais:** `damage reflection`, `wound charm`, `overpower charm`, **dano de field/DoT (M-038)** e procs anexos podem ser diagnósticos, mas não incrementam `N_leech`, não consomem cast, não viram componente e não criam AA virtual sem regra de borda/parcial aplicável.
 - **C-009 — Runa confirmada preserva fronteira, não turno novo:** `Using` pode confirmar execução e precedência de bloco compatível, mas não separa turno. Turno permanece bloco mecânico de ciclo conforme T-002 e combinações de T-005/T-006.

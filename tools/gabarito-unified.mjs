@@ -98,6 +98,25 @@ const componentActionAtCheck = (expected, comp, expectedActionClock) => turn => 
     ? null
     : `esperado acao de ${comp} em ${expectedActionClock}; got ${clock || '-'}`;
 };
+// M-016d-1a/M-039b: contagem de hits rotulados blast/eco no componente de spell e, quando
+// dado, o conjunto exato de `seq` com `omegaActive` no turno.
+const deathEchoStagesCheck = (primary, echo, omegaSeqs = null) => turn => {
+  const spell = (turn.components || []).find(comp => comp.comp === 'spell');
+  const hits = (spell && spell.hits) || [];
+  const gotPrimary = hits.filter(h => h.multiStageStage === 'primary').length;
+  const gotEcho = hits.filter(h => h.multiStageStage === 'echo').length;
+  if (gotPrimary !== primary || gotEcho !== echo) return `esperado blast/eco ${primary}/${echo}; got ${gotPrimary}/${gotEcho}`;
+  return omegaSeqs ? omegaSeqsCheck(omegaSeqs)(turn) : null;
+};
+const omegaSeqsCheck = seqs => turn => {
+  const got = (turn.components || []).flatMap(comp => comp.hits || []).filter(h => h.omegaActive).map(h => h.seq).sort((a, b) => a - b);
+  return got.join(',') === seqs.slice().sort((a, b) => a - b).join(',') ? null : `esperado omega em ${seqs.join(',')}; got ${got.join(',') || '-'}`;
+};
+const arrowSeqCheck = seqs => turn => {
+  const arrow = (turn.components || []).find(comp => comp.comp === 'arrow');
+  const got = ((arrow && arrow.hits) || []).map(h => h.seq);
+  return got.join(',') === seqs.join(',') ? null : `esperado AA seq ${seqs.join(',')}; got ${got.join(',') || '-'}`;
+};
 const spellWithAaCheck = (expectedArrowHits, expectedSpellHits, labelPart, expectedBeam = null) => turn => {
   const c = counts(turn);
   if (!(c.arrow === expectedArrowHits && c.spell === expectedSpellHits && c.rune === 0 && c.grenade === 0)) {
@@ -1828,6 +1847,56 @@ export const CASES = [
     spellWithAaCheck(1, 5, 'Great Energy Beam', { central: 0, side: 0 }), '11/Jun/2026'),
   C('beam-sublines-by-stance/ms boss 17:16:37', 'ms boss server log.txt', 'ms boss local chat.txt', '17:16:37',
     spellWithAaCheck(1, 5, 'Great Energy Beam', { central: 0, side: 0 }), '11/Jun/2026'),
+  // M-039a/M-039b/M-016d-1a (italian S0, 02/Out/2026, sorcerer `Very Pog`, estancia death): o
+  // omega da sessao vem da razao 1083/1022 do overflux; cada estagio do Death Echo deriva a
+  // propria atribuicao pelo seu nivel. 18:49:09: blast `780` (cyclursus 829/879, roaming dread
+  // 879/933) e eco `390` (415/440, 440/466, crypt mage 429); o 1o hit `cyclursus 129` declara N=1.
+  C('italian-omega-multistage/18:49:09', 'italian Server Log.txt', 'italian Local Chat.txt', '18:49:09',
+    t => spellWithAaCheck(1, 19, 'Death Echo')(t) || deathEchoStagesCheck(9, 10, [139, 148, 160, 163, 166, 181, 187, 190])(t), '02/Oct/2026'),
+  // Omega na prova de estagio: `crypt mage 837` (807) so fecha 1/2 com o `444` do eco em omega
+  // (403/404); sem isso o par contradizia e o 444 saia do eco.
+  C('italian-omega-multistage/18:49:36', 'italian Server Log.txt', 'italian Local Chat.txt', '18:49:36',
+    t => spellNoAaCheck(17, 'Death Echo')(t) || deathEchoStagesCheck(8, 7)(t), '02/Oct/2026'),
+  // Crit-state da explosao: o eco de 18:49:33 e nao-critico; o `roaming dread 201 CRIT` do mesmo
+  // segundo (vida 101 = N=1) e o AA do ciclo seguinte, nomeado pelo Energy Wave de :34.
+  C('italian-omega-multistage/18:49:31', 'italian Server Log.txt', 'italian Local Chat.txt', '18:49:31',
+    t => spellWithAaCheck(1, 17, 'Death Echo')(t) || deathEchoStagesCheck(8, 5)(t), '02/Oct/2026'),
+  C('italian-omega-multistage/18:49:33', 'italian Server Log.txt', 'italian Local Chat.txt', '18:49:33',
+    t => spellWithAaCheck(1, 4, 'Energy Wave')(t) || arrowSeqCheck([631])(t), '02/Oct/2026'),
+  // Contraprova sem estagio: Energy Wave convertido para death (estancia), omega no
+  // `roaming dread 1397` e no `crypt mage 1286` pelo nivel do bloco (1168 death).
+  C('italian-omega-multistage/18:49:07', 'italian Server Log.txt', 'italian Local Chat.txt', '18:49:07',
+    t => spellWithAaCheck(1, 5, 'Energy Wave')(t) || omegaSeqsCheck([120, 127])(t), '02/Oct/2026'),
+  // Death Echo todo critico; o `crypt mage 908 CRIT` de :06 (ex-1o hit de 18:49:06) e eco do cast :05.
+  C('italian-omega-multistage/18:49:04', 'italian Server Log.txt', 'italian Local Chat.txt', '18:49:04',
+    t => spellWithAaCheck(1, 18, 'Death Echo')(t) || deathEchoStagesCheck(8, 8)(t), '02/Oct/2026'),
+  // M-039c (decisao do usuario 04/Out/2026): sem nivel comum entre critico-LB/Savage Blow e
+  // nao-critico, a atribuicao sai de cada grupo mob+estado. 18:52:39 e 18:54:24 ja resolviam e
+  // sao a guarda contra a regressao do item 4 de M-016d-1a.
+  C('italian-omega-by-state/18:52:32', 'italian Server Log.txt', 'italian Local Chat.txt', '18:52:32',
+    t => spellNoAaCheck(17, 'Death Echo')(t) || deathEchoStagesCheck(7, 9)(t), '02/Oct/2026'),
+  C('italian-omega-by-state/18:50:03', 'italian Server Log.txt', 'italian Local Chat.txt', '18:50:03',
+    spellNoAaCheck(9, "Hell's Core"), '02/Oct/2026'),
+  C('italian-omega-by-state/18:52:39', 'italian Server Log.txt', 'italian Local Chat.txt', '18:52:39',
+    spellWithAaCheck(1, 8, 'Death Echo'), '02/Oct/2026'),
+  C('italian-omega-by-state/18:54:24', 'italian Server Log.txt', 'italian Local Chat.txt', '18:54:24',
+    spellWithAaCheck(1, 12, 'Death Echo'), '02/Oct/2026'),
+  // M-039b/M-039c (emenda 04/Out/2026): a coerencia blast/eco entra na derivacao. No blast os dois
+  // `roaming dread 1945` CRIT-LB (862 | 813) fecham sozinhos sem marca, mas o eco `919` (407) so
+  // fecha 1/2 com eles em omega (813/2): a combinacao minima COERENTE marca os dois. `crypt mage
+  // 147` (vida 74, N=1) e o AA. Blast 5 (o `34 OK` nao recebe o rotulo, M-016d-1a item 3); eco 12.
+  C('italian-omega-by-state/18:50:55', 'italian Server Log.txt', 'italian Local Chat.txt', '18:50:55',
+    t => spellWithAaCheck(1, 18, 'Death Echo')(t) || arrowSeqCheck([2138])(t)
+      || deathEchoStagesCheck(5, 12, [2142, 2151, 2154, 2173, 2182, 2185, 2194])(t), '02/Oct/2026'),
+  // M-016d-1a item 6: o eco herda Transcendence do cast (blast :52 na janela, eco :53 fora).
+  C('italian-echo-transcendence/18:51:52', 'italian Server Log.txt', 'italian Local Chat.txt', '18:51:52',
+    t => spellWithAaCheck(1, 11, 'Death Echo')(t) || deathEchoStagesCheck(2, 3)(t), '02/Oct/2026'),
+  // M-016d-1a item 7: `roaming dread 218 CRIT` (O 97, N=1) sai do eco de :50 e e o AA do turno
+  // 18:55:50 do Great Death Beam de :51.
+  C('italian-echo-same-mob/18:55:48', 'italian Server Log.txt', 'italian Local Chat.txt', '18:55:48',
+    t => spellWithAaCheck(1, 15, 'Death Echo')(t) || deathEchoStagesCheck(1, 6)(t), '02/Oct/2026'),
+  C('italian-echo-same-mob/18:55:50', 'italian Server Log.txt', 'italian Local Chat.txt', '18:55:50',
+    t => spellWithAaCheck(1, 3, 'Great Death Beam')(t) || arrowSeqCheck([7039])(t), '02/Oct/2026'),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 
