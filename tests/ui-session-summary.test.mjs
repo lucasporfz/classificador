@@ -134,7 +134,9 @@ const tableAfter = await readTable();
 const iBase = tableBefore.heads.findIndex(h => /sem cr|without crit/.test(h));
 const iEff = tableBefore.heads.findIndex(h => /com cr|with crit/.test(h));
 const iTotal = tableBefore.heads.findIndex(h => /total/.test(h));
-const valueChanges = new RegExp('cell\\[\\d+,(' + iEff + '|' + iTotal + ')\\]|share');
+// "Dano médio efetivo / turno" = dano total ÷ turnos da sessão: com o charm somado, o valor muda.
+const iSessionTurn = tableBefore.heads.findIndex(h => /efetivo \/ turno|effective dmg \/ turn/.test(h));
+const valueChanges = new RegExp('cell\\[\\d+,(' + [iEff, iTotal, iSessionTurn].filter(i => i >= 0).join('|') + ')\\]|share');
 const moved = [];
 before.forEach((row, i) => {
   const a = after[i];

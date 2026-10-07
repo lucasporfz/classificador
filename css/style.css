@@ -565,3 +565,22 @@ textarea:focus { outline: none; border-color: var(--border-focus); }
   border-radius: 999px; padding: 2px 9px; font-size: 11.5px; cursor: pointer; }
 .cls-turn-detail-table tr.cls-gs-on td:first-child { box-shadow: inset 3px 0 0 #E879F9; }
 .cls-turn-detail-table tr.cls-gs-off td:first-child { box-shadow: inset 3px 0 0 rgba(232,121,249,.3); }
+
+/* Reflect da armadura: fora da rotação, hachurado em âmbar para não se confundir com a paleta
+   de componentes nem com o ciano do charm (js/session-summary.js, clsArmorReflect). */
+.cls-reflect-dot { background: repeating-linear-gradient(45deg, var(--amber) 0 2px, transparent 2px 4px); border: 1px solid var(--amber); }
+.cls-share-bar > .cls-reflect-bar { background: repeating-linear-gradient(45deg, var(--amber) 0 3px, rgba(245, 158, 11, .35) 3px 6px); border-radius: 2px; }
+.cls-reflect-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid rgba(245, 158, 11, .5); border-radius: 4px; color: #f5b74a; font-size: 10px; font-weight: 600; letter-spacing: .03em; vertical-align: 1px; }
+.cls-reflect-row > td { border-top: 1px dashed rgba(245, 158, 11, .5); color: var(--text-muted); }
+.cls-reflect-share .cls-share-name, .cls-reflect-cell { color: #f5b74a; }
+
+/* Dano médio efetivo / turno (dano da linha ÷ todos os turnos da sessão) e rodapé que o soma. */
+.cls-session-turn, .cls-reflect-row > td.cls-session-turn { color: #7edcc0; }
+.cls-rotation-foot > td { border-top: 1px solid var(--border-hover); font-weight: 600; color: var(--text); }
+
+/* Tooltip explicativo de cabeçalho (data-cls-tip), na camada #clsTargetTip. */
+[data-cls-tip] { cursor: help; }
+th[data-cls-tip] > .cls-th-inner > span:first-child, th[data-cls-tip]:not(:has(.cls-th-inner)), .cls-share-head > [data-cls-tip] {
+  text-decoration: underline dotted rgba(140, 170, 200, .55); text-underline-offset: 3px;
+}
+.cls-head-tip { max-width: 340px; line-height: 1.5; text-transform: none; letter-spacing: normal; font-weight: 400; }

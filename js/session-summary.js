@@ -134,6 +134,27 @@ function clsCharmsEquipped(unified) {
   return { charms, total };
 }
 
+/*
+ * Reflect da ARMADURA: linhas `(damage reflection)` com `due to your attack`. O parser já as tira
+ * dos hits principais como kind 'reflect' (C-008/D-027) — aqui só se soma. Não é componente: vem
+ * do ataque do mob, não de uma ação do jogador, então fica fora da rotação, do N_leech e do uptime.
+ * O reflect do PARRY CHARM (`damage reflection, parry charm`) fica de fora: o parser o marca como
+ * kind 'charm', e a guarda por /charm/ mantém isso explícito.
+ */
+function clsArmorReflect(unified) {
+  const server = (unified && unified.facts && unified.facts.server) || {};
+  const byMob = new Map();
+  let total = 0, procs = 0;
+  (server.events || []).forEach(ev => {
+    if (ev.kind !== 'reflect' || /charm/i.test(ev.rawLine || '')) return;
+    procs++; total += ev.dmg;
+    const mob = byMob.get(ev.mob) || { dmg: 0, procs: 0 };
+    mob.dmg += ev.dmg; mob.procs++;
+    byMob.set(ev.mob, mob);
+  });
+  return { total, procs, byMob };
+}
+
 function clsSessionSummaryModel(res) {
   const unified = res && res.unifiedSource;
   if (!unified || unified.error) return null;
@@ -168,6 +189,7 @@ function clsSessionSummaryModel(res) {
     charmTotal,
     charmByComponent: byComponent,
     charmUnattributed: unattributed,
+    reflect: clsArmorReflect(unified),
     mobs: [...mobMap.values()].sort((a, b) => b.dmg - a.dmg).slice(0, 12),
     life,
     mana,
@@ -328,19 +350,28 @@ function clsSessionSummaryHtml(res, model) {
           bountyMobs.map(esc).join(' · ') + '</b></div>' : '') +
     '</div>';
 
+  // A coluna de reflect só existe quando houve reflect da armadura na sessão (knight).
+  const hasReflect = model.reflect.procs > 0;
+  const tipTh = (key, label, right) => '<th' + (right ? ' style="text-align:right"' : '') +
+    ' data-cls-tip="' + esc(t(key)) + '">' + label + '</th>';
   const creatures =
     '<div class="cls-summary-card cls-summary-wide"><div class="cls-summary-lab">' + t('cls_summary_creatures') + '</div>' +
-      '<table class="cls-table"><thead><tr><th>' + t('cls_summary_creature') + '</th>' +
-        '<th style="text-align:right">' + t('cls_summary_hits') + '</th>' +
-        '<th style="text-align:right">' + t('cls_summary_damage') + '</th>' +
-        '<th style="text-align:right">' + t('cls_summary_charm') + '</th>' +
-        '<th style="text-align:right">' + t('cls_summary_minor_charms') + '</th></tr></thead><tbody>' +
+      '<table class="cls-table"><thead><tr>' + tipTh('cls_tip_cre_name', t('cls_summary_creature'), false) +
+        tipTh('cls_tip_cre_hits', t('cls_summary_hits'), true) +
+        tipTh('cls_tip_cre_dmg', t('cls_summary_damage'), true) +
+        (hasReflect ? tipTh('cls_tip_cre_reflect', t('cls_summary_reflect'), true) : '') +
+        tipTh('cls_tip_cre_charm', t('cls_summary_charm'), true) +
+        tipTh('cls_tip_cre_minor', t('cls_summary_minor_charms'), true) + '</tr></thead><tbody>' +
       model.mobs.map(mob => {
         const list = model.charms.filter(charm => charm.kind !== 'leech' && charm.byMob.has(mob.mob));
         const minor = model.charms.filter(charm => charm.kind === 'leech' && charm.byMob.has(mob.mob));
+        const reflect = model.reflect.byMob.get(mob.mob);
         return '<tr><td>' + esc(mob.mob) + '</td>' +
           '<td style="text-align:right">' + clsFmtInt(mob.hits) + '</td>' +
           '<td style="text-align:right">' + clsFmtInt(mob.dmg) + '</td>' +
+          (!hasReflect ? '' : '<td style="text-align:right" class="cls-reflect-cell">' + (reflect
+            ? clsFmtInt(reflect.dmg) + ' <span class="cls-dim">(' + reflect.procs + '×)</span>'
+            : '<span class="cls-dim">—</span>') + '</td>') +
           '<td style="text-align:right">' + (list.length ? list.map(charm =>
             '<i class="cls-charm-dot" style="background:' + charm.color + '"></i>' + esc(charm.name) +
             (charm.dmg ? ' · ' + clsFmtInt(charm.byMob.get(mob.mob)) : ' <span class="cls-dim">' + charm.byMob.get(mob.mob) + '×</span>')
@@ -350,7 +381,7 @@ function clsSessionSummaryHtml(res, model) {
           ).join(' &nbsp; ') : '<span class="cls-dim">—</span>') + '</td></tr>';
       }).join('') +
       (model.charmUnattributed.procs ?
-        '<tr><td class="cls-dim">' + t('cls_summary_charm_orphan') + '</td><td></td><td></td>' +
+        '<tr><td class="cls-dim">' + t('cls_summary_charm_orphan') + '</td><td></td><td></td>' + (hasReflect ? '<td></td>' : '') +
         '<td style="text-align:right" class="cls-dim">' + clsFmtInt(model.charmUnattributed.dmg) +
         ' (' + model.charmUnattributed.procs + ' ' + t('cls_summary_procs') + ')</td><td></td></tr>' : '') +
       '</tbody></table></div>';

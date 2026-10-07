@@ -634,6 +634,22 @@ function clsWireTargetTooltips(res) {
   });
 }
 
+// Tooltip explicativo dos cabeçalhos (`data-cls-tip`): rotação, composição e criaturas.
+// Reusa a mesma camada do tooltip por criatura, que já é fixed e não é cortada pelo
+// overflow da tabela.
+function clsWireHeaderTips() {
+  document.querySelectorAll('#clsResults [data-cls-tip]').forEach(el => {
+    el.addEventListener('mouseenter', e => {
+      const tip = clsTargetTooltipEl();
+      tip.innerHTML = '<div class="cls-head-tip">' + clsEscapeHtml(el.getAttribute('data-cls-tip')) + '</div>';
+      tip.style.display = 'block';
+      clsPlaceTargetTooltip(e);
+    });
+    el.addEventListener('mousemove', clsPlaceTargetTooltip);
+    el.addEventListener('mouseleave', clsHideTargetTooltip);
+  });
+}
+
 // Ordem de exibição = dano efetivo total decrescente, com a cor derivada dessa ordem.
 // Função pura de `res`, então renderClassifier e renderClassifierCharts chegam à mesma
 // ordem e às mesmas cores sem precisar passar nada entre elas.
@@ -749,9 +765,21 @@ function renderClassifier(res) {
   // duas linhas sem empurrar o slot da % para uma linha só dele — é isso que permite
   // colunas estreitas o bastante para a tabela inteira caber sem rolagem horizontal.
   const charmSpacer = '<span class="cls-charm-plus" aria-hidden="true"></span>';
-  const numTh = (label, spacer, charmSlot) =>
-    '<th style="text-align:right"><div class="cls-th-inner"><span>' + label + '</span>' +
+  // Tooltip de cabeçalho: texto base + frase do reflect quando a sessão tem reflect da armadura.
+  const reflect = summary ? summary.reflect : { total: 0, procs: 0 };
+  const hasReflect = reflect.procs > 0;
+  const tipText = (key, reflectKey) => t(key) + (hasReflect && reflectKey ? ' ' + t(reflectKey) : '');
+  const tipAttr = (key, reflectKey) => ' data-cls-tip="' + clsEscapeHtml(tipText(key, reflectKey)) + '"';
+  const numTh = (label, spacer, charmSlot, tip) =>
+    '<th style="text-align:right"' + (tip || '') + '><div class="cls-th-inner"><span>' + label + '</span>' +
       (charmSlot ? charmSpacer : '') + (spacer ? pctSpacer : '') + '</div></th>';
+  // "Dano médio efetivo / turno": dano total da linha ÷ TODOS os turnos da sessão — a
+  // contribuição da linha a um turno qualquer da hunt. Difere do toggle "Turno" (que divide
+  // pelos turnos em que o componente saiu); a coluna soma o dano médio por turno da sessão.
+  const sessionTurns = Math.max(1, +res.totalTurns || 0);
+  // Sem slot "+N": com o switch de charm ligado o valor já inclui o charm (sai do dano total).
+  const sessionTurnCell = value =>
+    '<td style="text-align:right" class="cls-session-turn">' + (value == null ? '' : f1(value)) + '</td>';
   const rowsHtml = ranked.rows.map(r => {
     const adjustedCell = !showAdjustedHits ? '' :
       '<td style="text-align:right">' + f2(gravSanAdjusted.adjustedByKey[clsGravSanRowIdentity(r)] || 0) + '</td>';
@@ -766,6 +794,7 @@ function renderClassifier(res) {
       '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td>' + adjustedCell +
       '<td style="text-align:right"' + (clsCharmDamageOn ? ' class="cls-dim"' : '') + '>' + rowDmg(r, 'base') +
       '</td><td style="text-align:right">' + rowDmg(r, 'eff') + clsCharmPlus(rowCharmPerMetric(r)) + '</td>' +
+      sessionTurnCell(rowEff / sessionTurns) +
       '<td style="text-align:right">' + clsFmtInt(rowEff) +
       pctCell(shareTotal > 0 ? (rowEff / shareTotal) * 100 : 0) +
       clsCharmPlusBlock(rowCharmTotal(r)) + '</td></tr>';
@@ -791,11 +820,33 @@ function renderClassifier(res) {
         '</td><td></td><td style="text-align:right">' + f2(tier.hitsMean) + '</td>' + tierAdjustedCell +
         '<td style="text-align:right">' + tierBaseCell + '</td>' +
         '<td style="text-align:right">' + rowDmg(tier, 'eff') + clsCharmPlus(null) + '</td>' +
+        sessionTurnCell(tierEff / sessionTurns) +
         '<td style="text-align:right">' + clsFmtInt(tierEff) +
         pctCell(shareTotal > 0 ? (tierEff / shareTotal) * 100 : 0) + clsCharmPlusBlock(null) + '</td></tr>';
     }).join('');
     return main + sub;
   }).join('');
+  // Reflect da armadura: linha hachurada FORA da rotação (não é componente — js/session-summary.js,
+  // clsArmorReflect). Sem turnos, hits nem dano base; a % é sobre jogador + reflect.
+  const reflectDenom = shareTotal + reflect.total;
+  const reflectPct = reflectDenom > 0 ? (reflect.total / reflectDenom) * 100 : 0;
+  const reflectAvg = hasReflect ? reflect.total / reflect.procs : 0;
+  const reflectRowHtml = !hasReflect ? '' :
+    '<tr class="cls-reflect-row"><td><span class="cls-share-dot cls-reflect-dot"></span>' + t('cls_reflect_armor') +
+      ' <span class="cls-reflect-tag">' + t('cls_reflect_outside') + '</span></td>' +
+      '<td style="text-align:right">' + clsFmtInt(reflect.procs) + '<span class="cls-pct">' + t('cls_reflect_procs') + '</span></td>' +
+      '<td style="text-align:right">—</td>' + (showAdjustedHits ? '<td></td>' : '') +
+      '<td style="text-align:right">—</td>' +
+      '<td style="text-align:right">' + (clsRotationDamageMetric === 'turn' ? '—' : f1(reflectAvg)) + clsCharmPlus(null) + '</td>' +
+      sessionTurnCell(reflect.total / sessionTurns) +
+      '<td style="text-align:right">' + clsFmtInt(reflect.total) + pctCell(reflectPct) + clsCharmPlusBlock(null) + '</td></tr>';
+  // Rodapé: a coluna "efetivo / turno" soma o dano médio por turno da sessão (com reflect).
+  const rotationFootHtml =
+    '<tfoot><tr class="cls-rotation-foot"><td>' + t('cls_rotation_total') + ' <span class="cls-dim">' +
+      t(hasReflect ? 'cls_rotation_total_turns_reflect' : 'cls_rotation_total_turns').replace('{n}', res.totalTurns) + '</span></td>' +
+      '<td></td><td></td>' + (showAdjustedHits ? '<td></td>' : '') + '<td></td><td></td>' +
+      sessionTurnCell(reflectDenom / sessionTurns) +
+      '<td style="text-align:right">' + clsFmtInt(reflectDenom) + pctSpacer + clsCharmPlusBlock(null) + '</td></tr></tfoot>';
   const gravSanRowsHtml = (res.gravSanRows || []).map(r =>
     '<tr><td>' + (r.kind === 'arrow' ? t('cls_comp_arrow') : r.label) + '</td><td style="text-align:right">' + r.turns +
       '</td><td style="text-align:right">' + f2(r.hitsMean) + '</td><td style="text-align:right">' + gravSanRowDmg(r, 'base') +
@@ -837,14 +888,16 @@ function renderClassifier(res) {
   // "auto": ela absorve a sobra, mas as colunas fixas somadas podiam espremê-la a ~97px
   // (caso com a coluna de grav san) e o nome do componente saía truncado. O piso vira um
   // min-width na tabela; quando nem ele cabe, quem rola é o container, não o texto.
-  const rotationCols = { turns: 150, hits: 74, gravSan: 120, dmgBase: 150, dmgEff: 150, total: 146 };
+  const rotationCols = { turns: 150, hits: 74, gravSan: 120, dmgBase: 150, dmgEff: 150, sessionTurn: 120, total: 146 };
   const CLS_NAME_COL_MIN = 300;
   const rotationMinWidth = CLS_NAME_COL_MIN + rotationCols.turns + rotationCols.hits +
-    (showAdjustedHits ? rotationCols.gravSan : 0) + rotationCols.dmgBase + rotationCols.dmgEff + rotationCols.total;
+    (showAdjustedHits ? rotationCols.gravSan : 0) + rotationCols.dmgBase + rotationCols.dmgEff +
+    rotationCols.sessionTurn + rotationCols.total;
   const rotationColgroup =
     '<colgroup><col><col style="width:' + rotationCols.turns + 'px"><col style="width:' + rotationCols.hits + 'px">' +
       (showAdjustedHits ? '<col style="width:' + rotationCols.gravSan + 'px">' : '') +
       '<col style="width:' + rotationCols.dmgBase + 'px"><col style="width:' + rotationCols.dmgEff + 'px">' +
+      '<col style="width:' + rotationCols.sessionTurn + 'px">' +
       '<col style="width:' + rotationCols.total + 'px"></colgroup>';
   const rotationMetricHtml =
     '<div class="cls-component-chart-tools">' +
@@ -911,7 +964,14 @@ function renderClassifier(res) {
       '</div>' +
       '<div class="cls-share-bar"><i style="width:' + f1(p - charmPct) + '%;background:' + ranked.colorOf(row) + '"></i>' +
         '<i class="cls-share-charm" style="width:' + f1(charmPct) + '%"></i></div>';
-  }).join('');
+  }).join('') + (!hasReflect ? '' :
+    '<div class="cls-share-row cls-reflect-share">' +
+      '<div class="cls-share-name"><span class="cls-share-dot cls-reflect-dot"></span>' + t('cls_reflect_armor') + '</div>' +
+      '<div class="cls-share-turns">—</div><div class="cls-share-arrow">→</div>' +
+      '<div class="cls-share-pct">' + f1(reflectPct) + '%</div>' +
+      '<div class="cls-share-total">' + clsFmtInt(reflect.total) + clsCharmPlusBlock(null) + '</div>' +
+    '</div>' +
+    '<div class="cls-share-bar"><i class="cls-reflect-bar" style="width:' + f1(reflectPct) + '%"></i></div>');
   const shareHtml = !ranked.rows.length || shareTotal <= 0 ? '' :
     clsSectionHeadHtml('cls_h_damage_share', 'clsCharmSwitchShare', summary) +
     '<div class="cls-share">' +
@@ -922,9 +982,10 @@ function renderClassifier(res) {
           .replace('{pct}', '<strong>' + f1(shareTopPct) + '%</strong>')
           .replace('{total}', '<strong>' + clsFmtInt(shareTotal) + '</strong>')
           .replace('{turns}', '<strong>' + res.totalTurns + '</strong>') + '</p>' +
-        '<div class="cls-share-row cls-share-head"><div>' + t('cls_th_comp') + '</div>' +
-          '<div>' + t('cls_share_leg_turns') + '</div><div></div>' +
-          '<div>' + t('cls_share_leg_dmg') + '</div><div>' + t('cls_th_dmg_total') + '</div></div>' +
+        '<div class="cls-share-row cls-share-head"><div' + tipAttr('cls_tip_share_comp', 'cls_tip_share_comp_reflect') + '>' + t('cls_th_comp') + '</div>' +
+          '<div' + tipAttr('cls_tip_share_turns') + '>' + t('cls_share_leg_turns') + '</div><div></div>' +
+          '<div' + tipAttr('cls_tip_share_pct', 'cls_tip_share_pct_reflect') + '>' + t('cls_share_leg_dmg') + '</div>' +
+          '<div' + tipAttr('cls_tip_share_total') + '>' + t('cls_th_dmg_total') + '</div></div>' +
         shareLegend +
       '</div>' +
     '</div>';
@@ -965,14 +1026,20 @@ function renderClassifier(res) {
     '<p class="cls-share-note cls-charm-note">' + (clsCharmDamageOn ? t('cls_charm_note') : '&nbsp;') + '</p>' +
     rotationMetricHtml +
     '<div class="cls-table-scroll"><table class="cls-table cls-rotation-table" style="min-width:' + rotationMinWidth + 'px">' + rotationColgroup +
-      '<thead><tr><th>' + t('cls_th_comp') + '</th>' +
-      numTh(t('cls_th_turns_uptime'), true) +
-      numTh(t('cls_th_hits'), false) +
-      (showAdjustedHits ? numTh(t('cls_th_hits_gravsan_adjusted'), false) : '') +
-      numTh(t('cls_th_dmg_base') + dmgModeSuffix, false) +
-      numTh(t('cls_th_dmg_eff') + dmgModeSuffix, false, true) +
-      numTh(t('cls_th_dmg_total'), true) +
-      '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' +
+      '<thead><tr><th' + tipAttr('cls_tip_comp', 'cls_tip_comp_reflect') + '>' + t('cls_th_comp') + '</th>' +
+      numTh(t('cls_th_turns_uptime'), true, false, tipAttr('cls_tip_turns', 'cls_tip_turns_reflect')) +
+      numTh(t('cls_th_hits'), false, false, tipAttr('cls_tip_hits')) +
+      (showAdjustedHits ? numTh(t('cls_th_hits_gravsan_adjusted'), false, false, tipAttr('cls_tip_gravsan')) : '') +
+      numTh(t('cls_th_dmg_base') + dmgModeSuffix, false, false,
+        tipAttr(clsRotationDamageMetric === 'turn' ? 'cls_tip_base_turn' : 'cls_tip_base_hit')) +
+      numTh(t('cls_th_dmg_eff') + dmgModeSuffix, false, true, clsRotationDamageMetric === 'turn'
+        ? tipAttr('cls_tip_eff_turn', 'cls_tip_eff_turn_reflect') : tipAttr('cls_tip_eff_hit', 'cls_tip_eff_hit_reflect')) +
+      numTh(t('cls_th_dmg_session_turn'), false, false,
+        ' data-cls-tip="' + clsEscapeHtml(tipText('cls_tip_session_turn', 'cls_tip_session_turn_reflect').replace('{n}', res.totalTurns)) + '"') +
+      numTh(t('cls_th_dmg_total'), true, false, tipAttr('cls_tip_total', 'cls_tip_total_reflect')) +
+      '</tr></thead><tbody>' + rowsHtml + reflectRowHtml + '</tbody>' + rotationFootHtml + '</table></div>' +
+    (hasReflect ? '<p class="cls-share-note">' + t('cls_reflect_note').replace('{total}', clsFmtInt(reflectDenom)) +
+      (clsRotationDamageMetric === 'turn' ? '' : ' ' + t('cls_reflect_note_hit')) + '</p>' : '') +
     '<p class="cls-share-note">' + t('cls_share_note') + '</p>' +
     '<p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0">' +
       t('cls_unmatched').replace('{u}', res.excludedTurns).replace('{n}', res.totalTurns) + '</p>' +
@@ -982,6 +1049,7 @@ function renderClassifier(res) {
   renderClassifierCharts(res, compDefs);
   clsWireBrush(res);
   clsWireTargetTooltips(res);
+  clsWireHeaderTips();
   // Os dois switches de charm (composição e rotação) compartilham um estado só.
   document.querySelectorAll('#clsResults [data-cls-charm-switch]').forEach(input => {
     input.addEventListener('change', function() {
