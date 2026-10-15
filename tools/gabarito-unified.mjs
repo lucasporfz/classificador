@@ -358,6 +358,48 @@ export const CASES = [
       const has681 = !!(arrow && (arrow.hits || []).some(h => h.seq === 3377 && h.dmg === 681));
       return has681 ? null : 'esperado hit seq=3377 dmg=681 no componente arrow';
     }),
+  // fix-leech-base-vote-exact-fit (C-006): crit misto em RP. O crit e por ataque
+  // (D-007/S-008), entao a fronteira de crit e o corte. A partição era vetada so pela mana
+  // dos hits criticos, +2 acima do esperado com a taxa 16%; a vida fecha exata no mesmo N, e
+  // com 16,25% (16% de imbuement + 1 stack de Conviction, grade de D-020) todos os hits fecham.
+  C('gloompillar/08:35:28', 'gloompillar Server Log.txt', 'gloompillar Local Chat.txt', '08:35:28',
+    t => { const c = counts(t); return (c.arrow === 3 && c.spell === 4 && c.rune === 0 && c.grenade === 0) ? null : `esperado A3 S4 (Ethereal Barrage critica); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  C('gloompillar/08:35:50', 'gloompillar Server Log.txt', 'gloompillar Local Chat.txt', '08:35:50',
+    t => { const c = counts(t); return (c.arrow === 4 && c.spell === 4 && c.rune === 0 && c.grenade === 0) ? null : `esperado A4 S4 (Ethereal Barrage critica); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  // mk 14/Jun: o overkill critico 245 (darklight matter) herda o bloco critico (D-012).
+  C('mk/05:47:24', 'mk server log.txt', 'mk localchat.txt', '05:47:24',
+    t => { const c = counts(t); return (c.arrow === 3 && c.spell === 5 && c.rune === 0 && c.grenade === 0) ? null : `esperado A3 S5 (Divine Caldera critica); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '14/Jun/2026'),
+  // barrage: AA critico (roaming dread 1200-1243) e Caldera critica (1367) no mesmo segundo,
+  // niveis distintos no mesmo mob; a mana fecha com 16,25% + Void's Call em roaming dread.
+  C('barrage/19:04:38', 'barrage Server Log.txt', 'barrage local chat.txt', '19:04:38',
+    t => { const c = counts(t); return (c.arrow === 10 && c.spell === 8 && c.rune === 0 && c.grenade === 0) ? null : `esperado A10 S8; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+  C('mazzerinbarrage/01:24:44', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '01:24:44',
+    t => { const c = counts(t); return (c.arrow === 2 && c.spell === 4 && c.rune === 0 && c.grenade === 0) ? null : `esperado A2 S4 (Divine Caldera critica); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '09/Jul/2026'),
+  // AA critico 4 (com o overkill critico 315 no prefixo) antes do Using de Great Fireball.
+  C('mazzerinbarrage/23:30:02', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '23:30:02',
+    t => { const c = counts(t); return (c.arrow === 4 && c.spell === 0 && c.rune === 6 && c.grenade === 0) ? null : `esperado A4 R6; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '07/Jun/2026'),
+  // MECANICA LEGADA DECLARADA (Drain Body, pre-cutoff; decisao do usuario em 06/Out/2026:
+  // nao corrigir). A classificacao certa e A11 S13 G11 em 22:22:18 (cast `exevo tempo mas san`
+  // 22:22:16, granada ~1028 acima da Caldera ~864) e A12 R13 em 22:22:20. Mas 7 dos 11 hits da
+  // granada estao em criatura com Sap Strength, e Drain Body II soma +4 pp de life leech nelas
+  // (0,5075 -> 0,5475, mana identica), o que nenhuma taxa unica de sessao fecha. Com a mana
+  // certa (16,25%) o bloco perde a confirmacao que a mana a 16% dava por acaso.
+  // Estes casos fixam o estado ACEITO, nao o correto:
+  // - 22:22:18 fica sem classificacao;
+  // - 22:22:20 herda a granada: os 2 hits 652 sao Great Fireball, erro conhecido.
+  // Se Drain Body vier a ser modelado, voltam a A11 S13 G11 e A12 R13.
+  // Ver reports/fix-leech-base-vote-exact-fit/3.2-patamares-de-vida.md.
+  C('mazzerinbarrage-drain-body-legacy/22:22:18', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '22:22:18',
+    t => { const c = counts(t); return (t.status === 'unresolved' && t.reason === 'no_valid_partition' && c.arrow === 0 && c.spell === 0 && c.rune === 0 && c.grenade === 0) ? null : `esperado unresolved/no_valid_partition (Drain Body, legado); status=${t.status} reason=${t.reason} A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '07/Jun/2026'),
+  C('mazzerinbarrage-drain-body-legacy/22:22:20', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '22:22:20',
+    t => { const c = counts(t); return (c.arrow === 12 && c.spell === 0 && c.rune === 11 && c.grenade === 2) ? null : `esperado A12 R11 G2 (erro conhecido por Drain Body; correto seria A12 R13); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '07/Jun/2026'),
+  // mazzerinbarrage S2 (grupo F, 4.1 de fix-leech-base-vote-exact-fit): no mesmo segundo,
+  // tres ataques com estado de crit distinto. AA critico 5, Divine Caldera nao critica 11
+  // (`exevo mas san` 23:23:03) e Divine Grenade critica 8 (`exevo tempo mas san` 23:23:01,
+  // explode em c+2). Os niveis holy confirmam: granada acima da Caldera. Com N 5/11/8, o
+  // leech fecha nos patamares de vida da sessao (janela de grav san 23:23:00).
+  C('mazzerinbarrage/23:23:03', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '23:23:03',
+    t => { const c = counts(t); return (c.arrow === 5 && c.spell === 11 && c.rune === 0 && c.grenade === 8) ? null : `esperado A5 S11 G8; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }, '07/Jun/2026'),
   // essence/Bakragore: boss unitario com cast `exori gran con` no timestamp.
   // Cada componente fica com um hit: primeiro AA, segundo spell.
   C('essence/00:23:29', 'essence server log.txt', 'essence local chat.txt', '00:23:29',

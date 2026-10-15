@@ -893,6 +893,9 @@
         const main = (comp && comp.hits || []).filter(hit =>
           isMainHit(hit) && !hit.virtual && !hit.overkill
           && !hit.isPrey && !hit.elementalAmplification
+          // D-010g: o multiplicador de critico e inferido, nao exato; o erro dele passa do
+          // residuo de 1 ponto de S-004a entre mobs distintos (drone ingol 18:34:05).
+          && !hit.realCrit
         );
         if (!action || !element || element === 'unknown' || element === 'physical') continue;
         if (isTerraBurstAction(action) || isChainedPenanceAction(action)) continue;

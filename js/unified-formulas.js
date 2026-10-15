@@ -739,6 +739,30 @@
     return [Math.floor((y - 1) / q) + 1, Math.floor(y / q)];
   }
 
+  // D-010a/D-010b: o passo da resistencia da criatura e `E = ROUND(O × m)`, com .5 para cima
+  // ("round for creatures"). A inversao e feita em inteiros: em ponto flutuante
+  // 5 × 1,1 = 5,500000000000001 e o ROUND erraria justamente no .5. Os mods das tabelas tem
+  // 2 casas; a escala de 10^6 aceita tambem mods sinteticos e da o mesmo resultado em 2 casas.
+  // ROUND(O × m) = y  <=>  O × mS ∈ [S·y − S/2, S·y + S/2 − 1]. Intervalo vazio quando lo > hi.
+  const MOD_ROUND_SCALE = 1000000;
+  function modScaled(q) {
+    const mS = Math.round(q * MOD_ROUND_SCALE);
+    if (!(mS > 0) || Math.abs(q * MOD_ROUND_SCALE - mS) > 1e-3) throw new Error('mod da criatura com mais de 6 casas: ' + q);
+    return mS;
+  }
+
+  function invRound(y, q) {
+    if (!(q > 0)) return null;
+    return invRoundRange(y, y, q);
+  }
+
+  // Uniao das inversoes para E ∈ [yMin, yMax] (eixo fisico, D-010b): o intervalo e continuo.
+  function invRoundRange(yMin, yMax, q) {
+    const mS = modScaled(q);
+    const half = MOD_ROUND_SCALE / 2;
+    return [Math.ceil((MOD_ROUND_SCALE * yMin - half) / mS), Math.floor((MOD_ROUND_SCALE * yMax + half - 1) / mS)];
+  }
+
   function intersectInterval(a, b) {
     if (!a) return b || null;
     if (!b) return a || null;
@@ -857,7 +881,9 @@
     m *= gravSanMultiplierAtTs(context, hit && hit.ts, hit);
     m *= knightStanceMultiplierAtTs(context, hit && hit.ts);
     m *= bestiaryClassMultiplierForHit(hit, context);
-    m *= omegaMultiplierForHit(hit, context);
+    // M-039 (14/Out/2026): omega NAO e pos-mitigacao. Ele entra antes da resistencia da
+    // criatura, O' = ROUND(O × 1,06), e e desfeito depois da inversao do mod (ver
+    // elementalOriginalCandidatesCore e physicalOriginalIntervalCore).
     return m;
   }
 
@@ -995,6 +1021,10 @@
     // (ratio 0,9998 -> 0,9156 a +8%). Ver docs/CLASSIFICATION_RULES.md, M-040.
     if (element === 'physical' && hit && hit.dmg != null && context && context.weaponPhysicalPierce) {
       p += context.weaponPhysicalPierce;
+    }
+    // M-040a - o mesmo tipo de perk no eixo death (+0,04), com a mesma cegueira do charm.
+    if (element === 'death' && hit && hit.dmg != null && context && context.weaponDeathPierce) {
+      p += context.weaponDeathPierce;
     }
     return p;
   }
@@ -1255,8 +1285,10 @@
     // mesmo mob e mesmo estado -- um marcado, outro nao -- colidiriam e o segundo
     // receberia o original do primeiro (ex.: thunder arrow 18:57:18 tem dois
     // "oozing corpus 595" e dois "mycobiontic beetle 552").
+    // M-039: fator de omega do hit (1 sem omega). Ele saiu de `post`, entao entra na chave.
+    const omega = omegaMultiplierForHit(hit, context);
     const revCache = context && (context._revCache || (context._revCache = new Map()));
-    const cacheKey = revCache && ('E|' + element + '|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + terraBurstBonusMultiplier + '|' + perfectShotBonus);
+    const cacheKey = revCache && ('E|' + element + '|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + terraBurstBonusMultiplier + '|' + perfectShotBonus + '|' + omega);
     if (revCache && revCache.has(cacheKey)) return revCache.get(cacheKey);
     const postIntervals = inversePostMultiplierIntervals(+hit.dmg, post);
     if (!postIntervals.length) { const r = { known: true, originals: [], reason: 'invalid_post_multiplier' }; if (revCache) rememberReversal(revCache, cacheKey, r); return r; }
@@ -1291,9 +1323,15 @@
                       // crÃ­tico) tÃªm soluÃ§Ã£o exata e Ãºnica â€” perturbar sÃ³ `aa` nunca alcanÃ§a
                       // esse gap. Ver design.md de extend-elemental-intermediate-tolerance-to-mod-inversion.
                       for (let ee = Math.max(1, e - t); ee <= e + t; ee++) {
-                        const oIv = invCeil(ee, mod);
+                        const oIv = invRound(ee, mod);
                         if (!oIv) continue;
-                        for (let o = oIv[0]; o <= oIv[1]; o++) if (o > 0) out.add(o);
+                        for (let o = oIv[0]; o <= oIv[1]; o++) {
+                          if (!(o > 0)) continue;
+                          if (omega === 1) { out.add(o); continue; }
+                          // M-039: o' = ROUND(o × 1,06); o original sem o bonus sai de invRound.
+                          const wIv = invRound(o, omega);
+                          for (let w = wIv[0]; w <= wIv[1]; w++) if (w > 0) out.add(w);
+                        }
                       }
                     }
                   }
@@ -1333,8 +1371,9 @@
     const perfectShotBonus = hit && hit.perfectShot ? PERFECT_SHOT_PREMIT_BONUS : 0;
     // MemoizaÃ§Ã£o (sÃ³-desempenho): mesma justificativa de elementalOriginalCandidates â€”
     // a reversÃ£o fÃ­sica depende sÃ³ destes escalares resolvidos, nÃ£o da partiÃ§Ã£o.
+    const omega = omegaMultiplierForHit(hit, context);
     const revCache = context && (context._revCache || (context._revCache = new Map()));
-    const cacheKey = revCache && ('P|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + perfectShotBonus + '|' + armorLow + '|' + armorHigh);
+    const cacheKey = revCache && ('P|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + perfectShotBonus + '|' + armorLow + '|' + armorHigh + '|' + omega);
     if (revCache && revCache.has(cacheKey)) return revCache.get(cacheKey);
     const postIntervals = inversePostMultiplierIntervals(+hit.dmg, post);
     if (!postIntervals.length) { const r = { known: true, interval: null, reason: 'invalid_post_multiplier' }; if (revCache) rememberReversal(revCache, cacheKey, r); return r; }
@@ -1377,8 +1416,10 @@
     // Caso A=0/dano baixo fica tratado de forma conservadora pelo mesmo intervalo ampliado.
     const eMin = Math.max(1, aMin + armorLow);
     const eMax = Math.max(eMin, aMax + armorHigh);
-    const oMin = Math.floor((eMin - 1) / mod) + 1;
-    const oMax = Math.floor(eMax / mod);
+    // D-010b: passo do mod em ROUND, invertido sobre o intervalo continuo [eMin, eMax].
+    const [preMin, preMax] = invRoundRange(eMin, eMax, mod);
+    // M-039: o omega entra antes do mod (O' = ROUND(O × 1,06)) e sai depois dele.
+    const [oMin, oMax] = omega === 1 ? [preMin, preMax] : invRoundRange(preMin, preMax, omega);
     const interval = oMax >= oMin ? [oMin, oMax] : null;
     const result = { known: true, interval, mod, mitigation: mit, post, postIntervals, postInverse: 'floor_or_ceil', crit, critSetup: context && context.critSetup, perfectShotBonus, armorEff, armorLow, armorHigh };
     if (revCache) rememberReversal(revCache, cacheKey, result);
@@ -1753,6 +1794,8 @@
     effectiveMod,
     invFloor,
     invCeil,
+    invRound,
+    invRoundRange,
     intersectInterval,
     intersectIntervalTol,
     intervalWidth,

@@ -155,7 +155,10 @@ export function filterExcludedSessions(serverName, pairs) {
   return pairs.filter(pair => !exclusionFor(serverName, pair.sv));
 }
 
-export function createUnifiedContext(root = process.cwd()) {
+// `afterFile(file, context)` roda depois de cada arquivo do motor. Serve para sonda trocar
+// uma função exportada ANTES do arquivo que a desestrutura carregar (ver
+// tools/sweep-session-setups.mjs).
+export function createUnifiedContext(root = process.cwd(), { afterFile } = {}) {
   const context = {
     console: silentConsole,
     Math,
@@ -179,6 +182,7 @@ export function createUnifiedContext(root = process.cwd()) {
   vm.createContext(context);
   for (const file of ENGINE_FILES) {
     vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
+    if (afterFile) afterFile(file, context);
   }
   return context;
 }

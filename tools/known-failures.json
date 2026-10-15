@@ -1,0 +1,37 @@
+[
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL invariants/bakradrone: 09:57:20 M-009",
+    "reason": "Limite declarado em S-014f (boss unitario, 3 hits, unresolved)."
+  },
+  {
+    "target": "tests/experimental-ui-parity.test.mjs",
+    "signature": "tests/experimental-ui-parity.test.mjs ",
+    "reason": "Pre-existente: assert {arrow:0} contra {arrow:1,rune:1}."
+  },
+  {
+    "target": "tests/mob-element-regime.test.mjs",
+    "signature": "tests/mob-element-regime.test.mjs ",
+    "reason": "Pre-existente: ReferenceError MOB_ELEMENT_MODS is not defined."
+  },
+  {
+    "target": "tests/unified-experimental-coverage.test.mjs",
+    "signature": "tests/unified-experimental-coverage.test.mjs ",
+    "reason": "Pre-existente: contrato de tamanho do gabarito defasado."
+  },
+  {
+    "target": "tests/unified-grav-san-ratio-witness.test.mjs",
+    "signature": "tests/unified-grav-san-ratio-witness.test.mjs ",
+    "reason": "Pre-existente: o codigo de D-030b/D-030c que o teste exercita esta em git stash."
+  },
+  {
+    "target": "tests/unified-overkill-xp-continuity.test.mjs",
+    "signature": "tests/unified-overkill-xp-continuity.test.mjs ",
+    "reason": "Pre-existente: autoria de XP depende de fix-xp-attribution-across-mobs."
+  },
+  {
+    "target": "tests/unified-spiritual-outburst-multistage.test.mjs",
+    "signature": "tests/unified-spiritual-outburst-multistage.test.mjs ",
+    "reason": "Pre-existente: assert [1,2] contra [1]."
+  }
+]

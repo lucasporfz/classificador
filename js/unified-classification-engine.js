@@ -100,6 +100,7 @@
     effectiveMod,
     invFloor,
     invCeil,
+    invRound,
     intersectInterval,
     intersectIntervalTol,
     intervalWidth,
@@ -1537,6 +1538,70 @@
   const WEAPON_PIERCE_MIN_BLOCK_MOBS = 2;   // sem mob distinto nao ha o que discriminar
   const WEAPON_PIERCE_MIN_BLOCKS = 3;
 
+  // M-040a - o mesmo tipo de perk de arma no eixo DEATH (+0,04), inferido por sessao e cego ao
+  // charm como o de M-040. Testemunha: alcancabilidade EXATA. O dano F de um hit death
+  // nao-critico com P = 1 tem de vir de algum inteiro O' com FLOOR(ROUND(O' × m) × M) = F, seja
+  // qual for o original (rolagem, sub-linha de beam, eco 1/2, omega): com m > 1 o ROUND pula
+  // valores, e um tier errado deixa hits observados sem solucao. Nao depende de particao.
+  // Roda antes de `buildTurns`, depois da estancia (M-043), que diz quais casts saem em death.
+  const WEAPON_DEATH_PIERCE_TIERS = Object.freeze([0, 0.04]);
+  const WEAPON_DEATH_PIERCE_MIN_CONTRADICTIONS = 3;   // corroboracao de M-040: hits,
+  const WEAPON_DEATH_PIERCE_MIN_MOBS = 2;             // mobs
+  const WEAPON_DEATH_PIERCE_MIN_SECONDS = 2;          // e instantes distintos
+
+  function deathDamageReachable(dmg, mod, mit) {
+    const aIv = invFloor(dmg, mit);
+    if (!aIv) return false;
+    for (let e = aIv[0]; e <= aIv[1]; e++) {
+      const oIv = invRound(e, mod);
+      if (oIv && oIv[1] >= oIv[0]) return true;
+    }
+    return false;
+  }
+
+  function inferWeaponDeathPierce(serverFacts, context) {
+    const result = (pierce, source, tiers, witnesses) => ({ pierce, active: pierce > 0, source, candidates: WEAPON_DEATH_PIERCE_TIERS, tiers: tiers || null, witnesses: witnesses || 0 });
+    const stance = context && context.sorcererStanceSetup;
+    const deathCasts = ((stance && stance.casts) || []).filter(c => c.effectiveElement === 'death');
+    if (!deathCasts.length) return result(0, 'no_death_cast');
+    const mainHits = ((serverFacts && serverFacts.hits) || []).filter(isMainHit);
+    const seen = new Set();
+    const witnesses = [];
+    for (const cast of deathCasts) {
+      // Como em M-043a: so o 1o hit da janela pode ser o auto ataque do ciclo.
+      const win = mainHits.filter(h => h.ts >= cast.ts && h.ts <= cast.ts + 1)
+        .sort((a, b) => (a.seq || 0) - (b.seq || 0)).slice(1);
+      for (const h of win) {
+        if (seen.has(h.seq)) continue;
+        if (h.overkill || h.realCrit || h.onslaught || !(h.dmg > 0) || h.isPrey || h.bountyTalisman || h.perfectShot) continue;
+        const post = postMultiplier(h, context);
+        if (post == null || Math.abs(post - 1) > 1e-9) continue;
+        const mods = getMobMods(h.mob, context);
+        if (!mods || !(mods.deathDmgMod > 0)) continue;
+        seen.add(h.seq);
+        witnesses.push({ hit: h, mods });
+      }
+    }
+    if (!witnesses.length) return result(0, 'no_death_witness');
+    const tiers = WEAPON_DEATH_PIERCE_TIERS.map(tier => {
+      const bad = witnesses.filter(({ hit, mods }) => !deathDamageReachable(+hit.dmg,
+        effectiveMod(+mods.deathDmgMod, pierceForElement('death', hit, context) + tier),
+        mitigationMultiplier(mods, context)));
+      return {
+        tier,
+        contradictions: bad.length,
+        mobs: new Set(bad.map(b => normalizeName(b.hit.mob))).size,
+        seconds: new Set(bad.map(b => b.hit.ts)).size,
+      };
+    });
+    const corroborated = t => t.contradictions >= WEAPON_DEATH_PIERCE_MIN_CONTRADICTIONS
+      && t.mobs >= WEAPON_DEATH_PIERCE_MIN_MOBS && t.seconds >= WEAPON_DEATH_PIERCE_MIN_SECONDS;
+    const perk = tiers.find(t => t.tier > 0);
+    const none = tiers.find(t => t.tier === 0);
+    if (perk.contradictions === 0 && corroborated(none)) return result(perk.tier, 'exact_reachability_of_death_hits', tiers, witnesses.length);
+    return result(0, perk.contradictions === 0 && none.contradictions === 0 ? 'no_discriminating_evidence' : 'abstain_not_unique', tiers, witnesses.length);
+  }
+
   function inferWeaponPhysicalPierce(turns, facts, context) {
     const inactive = source => ({ pierce: 0, active: false, source, tiers: WEAPON_PHYSICAL_PIERCE_TIERS, corroboration: null });
     // M-040: o perk e equipamento de ROYAL PALADIN, e so sessao de RP tem testemunha dele.
@@ -2476,6 +2541,12 @@
     // M-043/M-043a: a estancia e o estado de conversao de cada cast precisam existir ANTES de
     // `buildTurns` (a prova de estagio do Death Echo ja usa o elemento efetivo).
     context.sorcererStanceSetup = inferSorcererStanceSetup(server, local, context);
+    // M-040a: o death pierce da arma usa os casts que a estancia poe em death e entra antes de
+    // `buildTurns` (a prova de estagio do Death Echo ja reverte em death). A estancia foi
+    // inferida com pierce 0 e nao e reinferida.
+    const weaponDeathPierceDetection = inferWeaponDeathPierce(server, context);
+    context.weaponDeathPierce = weaponDeathPierceDetection.pierce;
+    SessionContext.invalidateReversalCache(context);
     const turns = buildTurns(server.hits, local.spellCasts, context);
     const facts = { server, local };
     let resolvedTurns;
@@ -2664,6 +2735,8 @@
       aaElementDetection: aaElementDetection || { element: 'physical', source: 'not_run', counts: null, eligible: 0 },
       weaponPhysicalPierce: context.weaponPhysicalPierce || 0,
       weaponPhysicalPierceDetection: weaponPhysicalPierceDetection || { pierce: 0, active: false, source: 'not_run', tiers: WEAPON_PHYSICAL_PIERCE_TIERS, corroboration: null },
+      weaponDeathPierce: context.weaponDeathPierce || 0,
+      weaponDeathPierceDetection,
       bestiaryClassDamageBonus: context.bestiaryClassBonus,
       critSetup: context.critSetup,
       spellLeechBonusCandidates: SPELL_LEECH_BONUS_CANDIDATES,

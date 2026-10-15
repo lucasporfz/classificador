@@ -122,16 +122,27 @@ The engine SHALL use offensive charm damage as the primary Bounty Damage witness
 
 ### Requirement: Damage fallback SHALL be candidate-independent
 
-If the charm witness cannot resolve Damage, every fallback SHALL use only evidence frozen independently of the candidate, including a deterministic area component with marked and unmarked hits or Mana Leech whose `N` is already known independently. Candidate-dependent classifications and samples promoted to gold after applying that candidate SHALL NOT vote for it. A component SHALL vote only when its unmarked hits alone already share a common original with no candidate applied; the unknown originals of its marked hits MUST NOT disqualify it. A level SHALL be accepted only with at least one fit, zero contradictions and no other zero-contradiction level; ranking by fewest contradictions MUST NOT select a level.
+If the charm witness cannot resolve Damage, every fallback SHALL use only evidence frozen independently of the candidate, including a deterministic area component with marked and unmarked hits or Mana Leech whose `N` is already known independently. Candidate-dependent classifications and samples promoted to gold after applying that candidate SHALL NOT vote for it. A component SHALL vote only when its unmarked hits alone already share a common original with no candidate applied; the unknown originals of its marked hits MUST NOT disqualify it. Critical hits (`realCrit`, including Low Blow and Savage Blow) SHALL NOT vote, neither as marked nor as control, because the critical multiplier is inferred rather than exact and its error exceeds the 1-point S-004a residue between distinct mobs. A level SHALL be accepted only with at least one fit, zero contradictions and no other zero-contradiction level; ranking by fewest contradictions MUST NOT select a level.
 
 #### Scenario: Mixed Terra Wave confirms level 26
 
 - **GIVEN** the Terra Wave at `13:39:15` has unmarked hits that reverse to
-  original 1290
-- **AND** its marked 1598 hits reverse to intervals 1292–1293 at level 25,
-  1289–1290 at level 26, and 1286–1287 at level 27
+  a common original
+- **AND** its marked 1598 hits are reversed at levels 25, 26 and 27
 - **WHEN** the common-original fallback is evaluated
-- **THEN** only level 26 is compatible with original 1290
+- **THEN** only level 26 is compatible with the unmarked common original
+
+#### Scenario: Critical component does not vote
+
+- **GIVEN** `drone ingol` S0 `18:34:05` Divine Caldera, all hits critical: marked `boar man 1811`
+  ×2 and unmarked `carnivostrich 1762` ×4
+- **AND** with the inferred critical multiplier `1,92` the marked hits reverse 2 points away from
+  the control at level 25, while a free critical multiplier reproduces both damages only at
+  level 25
+- **WHEN** the fallback collects evidence
+- **THEN** that component does not vote
+- **AND** the session infers Damage level 25 with zero contradictions (36 fits under the ROUND
+  step), and Life level 5
 
 #### Scenario: Candidate-created gold sample is rejected
 
@@ -294,3 +305,4 @@ When neither the charm witness nor the deterministic-component fallback resolves
 - **GIVEN** fewer than 3 marked hits fit exactly any level at or below the ceiling
 - **WHEN** the Mana fallback verdict is taken
 - **THEN** Bounty Damage remains `unknown`
+

@@ -6,8 +6,9 @@
 // contradicao dura, mesmo entre estados de omega diferentes.
 //
 // Sintetico de proposito: mob controlado (mitigation 0, holyDmgMod 1, pierce 0) para que a
-// cadeia de D-010a colapse em `F = FLOOR(O x post)` e os originais possam ser conferidos a
-// mao dentro do proprio teste. Nao depende de nenhuma tabela real nem de classificar turno.
+// cadeia de D-010a colapse em `F = O` sem omega e `F = ROUND(O x 1,06)` com omega (M-039, omega
+// antes da resistencia, 14/Out/2026) e os originais possam ser conferidos a mao dentro do
+// proprio teste. Nao depende de nenhuma tabela real nem de classificar turno.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
@@ -46,8 +47,9 @@ const block = (...dmgs) => ({
 // A folga so pode existir quando o motor ESTA autorizado a relaxar (ultimo recurso).
 const relaxed = omegaActive => Object.assign(context(omegaActive), { _omegaCrossStateTolerance: 1 });
 
-// Ancoras: com mod = mit = 1 e post = 1, `O = F`. Com post = 1.06, `O = invFloor(F, 1.06)`.
-test('ancoras: a cadeia colapsa em F = FLOOR(O x post) neste mob sintetico', () => {
+// Ancoras: com mod = mit = 1, `O = F` sem omega e `O = invRound(F, 1.06)` com omega.
+// (O argumento `post` de `originals` so diz se o hit tem omega.)
+test('ancoras: a cadeia colapsa em F = ROUND(O x 1,06) neste mob sintetico', () => {
   const c = context(true);
   const originals = (dmg, post) => {
     const h = Object.assign(hit(dmg, 1), post === 1.06 ? { omegaActive: true } : {});
@@ -58,7 +60,7 @@ test('ancoras: a cadeia colapsa em F = FLOOR(O x post) neste mob sintetico', () 
   assert.deepEqual(originals(700, 1), [700], 'hit sem omega: O = F');
   assert.deepEqual(originals(742, 1.06), [700], '742 com omega reverte EXATO para 700 — o par ja fecha hoje');
   assert.deepEqual(originals(743, 1.06), [701], '743 com omega reverte para 701 — 1 ponto acima de 700');
-  assert.deepEqual(originals(745, 1.06), [702, 703], '745 com omega reverte para 702/703 — 2 pontos acima de 700');
+  assert.deepEqual(originals(744, 1.06), [702], '744 com omega reverte para 702 — 2 pontos acima de 700');
 });
 
 test('S-004c: par misto de omega a 1 ponto nao e contradicao', () => {
@@ -76,7 +78,7 @@ test('S-004c: par misto de omega ja exato continua fechando sem a folga', () => 
 });
 
 test('S-004c: par misto de omega a 2 pontos continua contradicao', () => {
-  const r = V.validateElementalBlock(block(700, 745), 'holy', relaxed(true));
+  const r = V.validateElementalBlock(block(700, 744), 'holy', relaxed(true));
   assert.equal(r.ok, false, 'a folga e de 1 ponto e nao pode colar 2');
   assert.equal(r.reason, 'same_mob_state_exact_original_mismatch');
 });
@@ -91,10 +93,11 @@ test('S-004c: a folga so alcanca o par MISTO', () => {
 });
 
 test('S-004c: par que ja fechava sem a folga continua fechando igual', () => {
-  // 700/701 ja reconcilia hoje com os DOIS hits marcados omega (interseccao em 661, porque a
-  // inversao do passo pos-mitigacao admite FLOOR e CEIL). A folga MUST NOT mudar isso.
-  const before = V.validateElementalBlock(block(700, 701), 'holy', context(true));
-  const after = V.validateElementalBlock(block(700, 701), 'holy', relaxed(true));
+  // 700/742 fecha na avaliacao estrita (o 742 com omega reverte exato para 700). A folga MUST
+  // NOT mudar isso. (Ate 14/Out/2026 o par era 700/701, que so fechava com os dois marcados
+  // pela dupla hipotese FLOOR/CEIL do omega pos-mitigacao, o modelo antigo de M-039.)
+  const before = V.validateElementalBlock(block(700, 742), 'holy', context(true));
+  const after = V.validateElementalBlock(block(700, 742), 'holy', relaxed(true));
   assert.equal(before.ok, true, 'pre-condicao: o par ja fecha hoje');
   assert.equal(after.ok, true);
   assert.deepEqual(after.intersection, before.intersection, 'a interseccao nao pode mudar');

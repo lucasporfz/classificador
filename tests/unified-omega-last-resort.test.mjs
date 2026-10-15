@@ -3,7 +3,8 @@
 // Turnos-prova, todos em `crypt` (sessao unica, o unico fixture do corpus com omega):
 //
 //   07:32:06  residuo de 1 ponto no par misto (cyclursus 761/808, O={764} vs O={765,766})
-//             -> resolve pela folga, e carrega o sinal dela
+//             -> resolvia pela folga; desde 14/Out/2026 (omega antes da resistencia, M-039)
+//                fecha na avaliacao estrita
 //   07:54:02  antes: unresolved com 31 hits
 //             -> resolve como AA 10 | Divine Caldera 12 | Divine Grenade 9, devolvendo a
 //                granada do cast 07:54:00 ao turno em que ela explode (c+2)
@@ -39,16 +40,20 @@ const shape = turn => (turn.components || [])
 
 test('S-004c: a folga destrava a familia de 1 ponto de `crypt`', () => {
   const unresolved = (crypt().turns || []).filter(t => t.status !== 'resolved');
-  assert.equal(unresolved.length, 1,
-    `crypt sai de 118 para 1 turno sem classificacao (sobrou: ${unresolved.map(t => t.clock).join(' ')})`);
-  assert.equal(unresolved[0].clock, '07:52:37', 'o unico resto conhecido e 07:52:37 (pendencia declarada)');
+  // 07:52:37: pendencia declarada. 07:35:27, 07:53:27 e 07:56:02: blocos de spell CRITICOS que
+  // deixaram de resolver com o omega antes da resistencia (M-039, 14/Out/2026), por causa do
+  // critico inferido; custo aceito pelo usuario (S-004c-nota).
+  assert.deepEqual(unresolved.map(t => t.clock).sort(), ['07:35:27', '07:52:37', '07:53:27', '07:56:02'],
+    `crypt: 4 turnos sem classificacao conhecidos (sobrou: ${unresolved.map(t => t.clock).join(' ')})`);
 });
 
-test('S-004c: 07:32:06 resolve pela folga e carrega o sinal', () => {
+test('S-004c: 07:32:06 resolve na avaliacao estrita (o residuo de 1 ponto era do modelo antigo)', () => {
+  // Ate 14/Out/2026 era o caso-prova da folga (cyclursus 761/808, O={764} vs O={765,766}). Com o
+  // omega antes da resistencia (M-039) o par fecha exato, sem a folga.
   const turn = turnAt('07:32:06');
   assert.ok(turn, 'turno existe');
   assert.equal(turn.status, 'resolved');
-  assert.equal(turn.omegaCrossStateToleranceUsed, 1, 'o turno declara que usou a folga de 1 ponto');
+  assert.ok(!turn.omegaCrossStateToleranceUsed, 'o turno nao precisa mais da folga');
 });
 
 test('S-004c: a granada volta para o turno em que explode (07:54:02 / 07:54:04)', () => {
@@ -80,6 +85,8 @@ test('S-004c: os vizinhos que ja resolviam ficam identicos e sem a folga', () =>
 
 test('S-004c: a folga so aparece em turno que a avaliacao estrita nao resolvia', () => {
   const used = (crypt().turns || []).filter(t => t.omegaCrossStateToleranceUsed);
-  assert.equal(used.length, 117, '117 dos 118 turnos antes sem classificacao passam pela folga');
+  // 117 sob CEIL no passo do mod, 140 sob ROUND com o omega pos-mitigacao, 33 com o omega antes
+  // da resistencia (M-039 e S-004c, emenda de 14/Out/2026).
+  assert.equal(used.length, 33, '33 turnos de crypt passam pela folga');
   for (const turn of used) assert.equal(turn.status, 'resolved', 'a folga so e adotada quando resolve');
 });

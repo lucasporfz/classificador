@@ -10,7 +10,7 @@
 //
 // O heap padrao do V8 (~4 GB) estoura ao classificar todas as fixtures pre-cutoff num
 // unico processo (reconstrucao holy + deteccao de BM em 2 passes), entao cada alvo
-// herda --max-old-space-size=8192 (era o papel do tests/conftest.py).
+// herda um teto de heap maior (ver HEAP abaixo).
 //
 // Uso:
 //   node tools/run-unified-checks.mjs           # tudo
@@ -18,14 +18,21 @@
 //   node tools/run-unified-checks.mjs --invariants # so a varredura de invariantes
 //   node tools/run-unified-checks.mjs --tests      # so os tests/*.test.mjs
 //   node tools/run-unified-checks.mjs --gabarito --match barrage
+//
+// No fim, cada falha e comparada com tools/known-failures.json por assinatura de caso
+// (ver tools/known-failures.mjs). Saida: 0 = nada falhou; 1 = so falhas conhecidas;
+// 3 = alguma falha NOVA; 2 = uso invalido.
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compareFailures, failureSignatures, loadKnownFailures } from './known-failures.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const HEAP = '--max-old-space-size=8192';
+// O gabarito + invariantes com cache frio passa de 8 GB (OOM medido em 07/Out/2026). O flag
+// passado ao filho vence o NODE_OPTIONS, entao o teto e ajustavel aqui: UNIFIED_CHECKS_HEAP_MB.
+const HEAP = `--max-old-space-size=${process.env.UNIFIED_CHECKS_HEAP_MB || 14336}`;
 
 const WORKFLOW = {
   name: 'gabarito prioritario + invariantes mecanicas',
@@ -118,9 +125,12 @@ if (!targets.length) {
 }
 
 let failed = 0;
+const signaturesByTarget = new Map();
 for (const target of targets) {
   process.stdout.write(`▶ ${target.name}\n`);
   const { ok, out } = run(target);
+  const signatures = failureSignatures(target.name, out, ok);
+  if (signatures.length) signaturesByTarget.set(target.name, signatures);
   if (ok) {
     console.log(`  OK`);
   } else {
@@ -131,4 +141,18 @@ for (const target of targets) {
 }
 
 console.log(`\n${targets.length - failed}/${targets.length} alvos OK`);
-process.exit(failed ? 1 : 0);
+
+const { fresh, stillKnown, gone } = compareFailures({
+  signaturesByTarget,
+  known: loadKnownFailures(ROOT),
+  ran: new Set(targets.map(target => target.name)),
+  complete: match === null,
+});
+console.log(`Falhas conhecidas presentes: ${stillKnown.length}`);
+console.log(`FALHAS NOVAS: ${fresh.length}`);
+for (const item of fresh) console.log(`  - ${item.signature}`);
+if (gone.length) {
+  console.log(`CONHECIDAS QUE SUMIRAM: ${gone.length} (atualizar tools/known-failures.json)`);
+  for (const entry of gone) console.log(`  - ${entry.signature}`);
+}
+process.exit(fresh.length ? 3 : failed ? 1 : 0);

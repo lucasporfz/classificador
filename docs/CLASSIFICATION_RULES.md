@@ -372,7 +372,7 @@
   EW e com amp). Com 251 linhas amplificadas contra 20 não amplificadas, a mediana caía na
   população amplificada e era comparada ao esperado da outra; a razão `1,33/1,25` era
   arredondada para um "bônus de 6% da classe `slime`" inexistente, que virava
-  `postMultiplier` e derrubava o original da runa de `751` para `709`.
+  `postMultiplier` e derrubava o original da runa de `751` para `709` (valores sob o passo `CEIL` anterior; com `ROUND`, D-010a, o original comum do bloco é `752`).
 
   Procs dentro de uma janela de utevo grav san são excluídos (grav san
   também infla dano de charm, M-016/`inferGravSanSetup`). "due to active charm upgrade" no
@@ -458,10 +458,20 @@
 
 - **M-039 — Perk omega (bônus de dano por vida baixa do alvo):** existe um perk do
   **personagem** que multiplica o dano por **exatamente `1,06`** quando o alvo está com
-  pouca vida. Ele é **binário por-hit** (um hit tem ou não tem o bônus), é
-  **multiplicador plano pós-mitigação** — entra no mesmo ponto de prey, `utevo grav san` e
-  bônus de classe de bestiário (`postMultiplier`) e afeta igualmente a reversão física e a
-  elemental — e está **dentro** da base de leech.
+  pouca vida. Ele é **binário por-hit** (um hit tem ou não tem o bônus), afeta igualmente a
+  reversão física e a elemental e está **dentro** da base de leech.
+
+  **O omega entra ANTES da resistência da criatura, com `ROUND`** (emenda de 14/Out/2026,
+  change `omega-before-resistance-and-weapon-death-pierce`; fato de domínio trazido pelo Tom e
+  confirmado pelo usuário). No hit com omega, `O' = ROUND(O × 1,06)` e só então
+  `E = ROUND(O' × m)` (D-010a/D-010b); omega **não** é multiplicador pós-mitigação e não entra em
+  `P`. A reversão desfaz o omega depois de desfazer o mod, com a mesma aritmética inteira:
+  `O ∈ invRound(O', 1,06)`. O perk **alpha** (mais dano com vida alta, declarado e não modelado,
+  H-005e) também arredonda com `ROUND`. A redação anterior ("multiplicador plano pós-mitigação",
+  invertido com FLOOR ∪ CEIL) era a causa da inexatidão registrada em S-004c-nota. Medição
+  (`reports/omega-before-resistance-2026-10-14.md`), pares de omega não-críticos do mesmo turno,
+  componente, estágio, mob e estado, omega em `O` × em `E` × pós-mitigação: `crypt` 45/38/35 de 46;
+  `15 sept` 93/82/62 de 100; `italian` 38/20/22 de 39 com o death pierce da arma (M-040a).
 
   **Omega NÃO é descontado da base de leech, e isso é a consequência direta da medição.**
   O desconto de `leechDamageBasis` existe para multiplicadores que inflam o dano exibido
@@ -571,7 +581,8 @@
   mob e mesmo estado** está em razão `1,0612`: exatamente um hit é marcado, e os outros sete
   não. No bloco de AA físico, `cyclursus 968` contra `cyclursus 912` está em `1,0614`; a
   interseção de `O` do bloco é vazia por `7` e fecha marcando **exatamente um** hit
-  (`O` do `968` desloca de `[587,632]` para `[555,601]`). Os 7 hits de `:11` são a granada
+  (`O` do `968` desloca de `[587,632]` para `[555,601]`; sob a cadeia de 14/Out/2026, com o omega
+  antes da resistência, de `[599,644]` para `[565,608]`, contra `[567,613]` do `912`). Os 7 hits de `:11` são a granada
   do `exevo tempo mas san` de `07:30:08` explodindo em `cast+3` (M-023); seis normalizam
   para o mesmo nível holy e o sétimo (`cyclursus 780`) é overkill e herda o bloco contíguo
   (D-012). Fixtures sem a escada permanecem idênticos (o detector encontra o conjunto vazio
@@ -791,6 +802,40 @@
     turnos sem classificação com holy `+4%`, `darklight rp` de `1` para `25`. Enquanto não
     modelado, o efeito declarado é viés de **−1,8%** no dano base holy de uma sessão que tenha
     o perk, sem consequência para classificação.
+
+- **M-040a — Perk de death pierce da arma (invisível ao dano de charm):**
+  `ESTADO: decidida e IMPLEMENTADA em 14/Out/2026 (change `omega-before-resistance-and-weapon-death-pierce`; fato do usuário).`
+
+  Existe um perk de arma que soma **`+0,04`** de pierce ao eixo **death**, aditivo às demais fontes de
+  `pierceForElement`. É o mesmo tipo de perk de M-040, em outro elemento: fato do **personagem por
+  sessão** (a arma muda entre sessões), aplicado só a **hit real de dano** e **cego ao dano de charm**
+  (decisão do usuário, 14/Out/2026) — as testemunhas de charm de M-036, C-012a, M-039 e D-010g não o
+  recebem. Por D-010c, num mob com `deathDmgMod ≥ 1` ele vale `+0,02` no mod efetivo.
+
+  **Detecção por sessão (`inferWeaponDeathPierce`), pela alcançabilidade exata.** O dano `F` de um
+  hit death não-crítico com `P = 1` tem de vir de algum inteiro: existe `O'` com
+  `FLOOR(ROUND(O' × m) × M) = F` (D-010a). Isso vale qualquer que seja o original (rolagem de AA,
+  sub-linha de beam, eco `1/2`, omega, alpha), porque todos chegam ao passo do mod como inteiro; e com
+  `m > 1` o `ROUND` pula valores de `E`, então um tier de pierce errado deixa hits observados **sem
+  solução**. O teste é por hit, sem partição nem rótulo. Testemunhas: os hits principais brutos de
+  `[cast, cast + 1]` de cada cast ofensivo do dono cujo elemento efetivo previsto pela máquina de
+  estância (M-043) é `death`, sem o primeiro hit da janela (pode ser o auto ataque, como em M-043a),
+  excluindo crítico, Onslaught, overkill, dano 0, prey, Bounty, Perfect Shot e `P ≠ 1`. Tiers:
+  `[0; 0,04]`. Um hit contradiz o tier cujo mod efetivo não o alcança. O detector adota `0,04` só
+  quando esse tier tem **zero** contradições e o tier `0` é contradito com a corroboração de M-040
+  (≥ 3 hits, ≥ 2 mobs, ≥ 2 instantes distintos); fora disso **abstém-se** (`0`, D-006), com o motivo.
+  Roda antes de `buildTurns` (a prova de estágio do Death Echo, M-016d-1a, já reverte em death),
+  depois da estância, que é inferida com pierce `0` e não é reinferida.
+
+  Caso-prova: `italian` S0 (02/Out/2026, sorcerer `Very Pog`, Decay): 1.465 testemunhas em 3 mobs;
+  tier `0` contradito por 176 (3 mobs, 94 instantes), tier `0,04` por nenhum ⇒ `0,04`. Sem o perk, a
+  própria cadeia sem omega não fechava (hits sem original inteiro em 6/83, 8/91 e 18/128 por mob,
+  revertidos só pela tolerância intermediária), e os pares de omega não fechavam em posição nenhuma
+  (M-039). Controles: `death echo` S0 (o mesmo personagem, 10/Jul/2026) contradiz os dois tiers e
+  abstém; `alumnishocks 2` S0 contradiz `0,04` em um mob só e abstém; `kim`, `dlc ms`, `aquatic` e
+  `alumnishocks` não discriminam. Sessão de sorcerer anterior a 16/Jun/2026 não tem estância e,
+  portanto, não tem testemunha.
+  (M-040, M-043, M-043a, D-010a, D-010c, D-006)
 
 - **M-041 — Postura de knight: três estados de dano, dirigidos por cast:**
   `ESTADO: decidida e IMPLEMENTADA em 06/Set/2026 (change `model-knight-protector-stance`).`
@@ -1251,7 +1296,9 @@
 - **D-009a — Reversão de Onslaught:** Onslaught adiciona `+60%` fixo ao dano, ADITIVO com o multiplicador de crítico (não multiplicativo, mesmo modelo do bônus de Transcendence). Ao reconstruir originais físicos ou elementais (D-010a a D-010c) de qualquer hit marcado com Onslaught, em qualquer componente (AA, spell, runa, granada) e qualquer vocação, o classificador deve desfazer esse bônus no mesmo passo em que desfaz o crítico: hit com Onslaught e sem crítico real usa fator `1,6`; hit com Onslaught e crítico real usa `multiplicadorDeCrítico + 0,6`. Omitir essa reversão infla o dano em até 60% antes da comparação de originais, o que pode esvaziar interseções físicas (S-004/S-007) que seriam válidas e vetar partições corretas indicadas pela fronteira de crit-state (D-007/S-008).
 - **D-010 — Modificadores:** reverter Expose Weakness, prey e demais modificadores antes de comparar originais.
 
-- **D-010a — Pipeline discreto de dano elemental:** para reconstruir originais elementais a partir do dano observado, o classificador deve usar a ordem discreta abaixo. É proibido reconstruir original elemental por divisão simples, porque `CEIL`, `FLOOR`, mitigation, prey e demais multiplicadores podem alterar o conjunto de originais possíveis em 1 ou mais pontos. Hits marcados com `perfect shot` exigem, além desta cadeia, a reversão de **D-010f**.
+- **D-010a — Pipeline discreto de dano elemental:** para reconstruir originais elementais a partir do dano observado, o classificador deve usar a ordem discreta abaixo. É proibido reconstruir original elemental por divisão simples, porque `ROUND`, `FLOOR`, mitigation, prey e demais multiplicadores podem alterar o conjunto de originais possíveis em 1 ou mais pontos. Hits marcados com `perfect shot` exigem, além desta cadeia, a reversão de **D-010f**.
+
+  **O passo da resistência da criatura é `ROUND`** (emenda de 08/Out/2026, change `round-creature-resistance-step`, decisão do usuário). Fato de domínio trazido pelo Tom: na resistência elemental do alvo, o jogo arredonda com "floor for players, round for creatures"; dano do jogador em criatura passa por `E = ROUND(O × m)`. O `.5` arredonda para cima (`std::round` em positivos) — **premissa registrada**: medido, arredondar o `.5` para baixo não muda nenhum turno do corpus, então ela não é testável hoje. Como o mod efetivo tem 2 casas (tabela e D-010c), a inversão é feita em inteiros (`m100 = ROUND(m × 100)`); em ponto flutuante `5 × 1,1 = 5,500000000000001` e o `ROUND` erraria exatamente no `.5`. Medição que sustenta a troca (`reports/round-creature-resistance-2026-10-08.md`, corpus inteiro): o fechamento exato cross-mob (S-004) dos blocos elementais resolvidos sobe de 52% para 81% dos blocos, e o uso da tolerância intermediária nesses hits cai 69%.
 
 ```text
 F = dano final exibido no Server Log
@@ -1260,7 +1307,8 @@ m = elementModEfetivo, já incorporando pierce, Expose Weakness e demais altera�
 M = mitigationMultiplier = 1 - mitigation / 100
 P = postMitigationMultiplier = prey e demais multiplicadores pós-mitigação conhecidos; se ausente, P = 1
 
-E = CEIL(O × m)
+O' = ROUND(O × 1,06) no hit com omega (M-039); sem omega, O' = O
+E = ROUND(O' × m)       (.5 para cima)
 A = FLOOR(E × M)
 F = FLOOR(A × P)
 ```
@@ -1270,6 +1318,7 @@ A inversão deve ser feita por intervalos discretos:
 ```text
 invFloor(y, q) = [CEIL(y / q), CEIL((y + 1) / q) - 1]
 invCeil(y, q)  = [FLOOR((y - 1) / q) + 1, FLOOR(y / q)]
+invRound(y, q) = [CEIL((100y - 50) / q100), FLOOR((100y + 49) / q100)],  q100 = ROUND(q × 100)
 ```
 
 Para dano elemental puro:
@@ -1277,7 +1326,8 @@ Para dano elemental puro:
 ```text
 A_candidates = invFloor(F, P)
 E_candidates = união de invFloor(A, M) para cada A em A_candidates
-O_candidates = união de invCeil(E, m) para cada E em E_candidates
+O_candidates = união de invRound(E, m) para cada E em E_candidates
+                (no hit com omega, cada O' resultante vira invRound(O', 1,06))
 ```
 
 O resultado elemental é um conjunto discreto de originais possíveis. Se `m`, `M` ou `P` forem desconhecidos, a evidência de original desse eixo é desconhecida, não contradição (D-006).
@@ -1295,7 +1345,8 @@ armorEff = ROUND(armor × (1 - armorPenetration))
 armorLow = MAX(FLOOR(armorEff / 2), 0)
 armorHigh = MAX(FLOOR(armorEff / 2) × 2 - 1, 0)
 
-E = CEIL(O × m)
+O' = ROUND(O × 1,06) no hit com omega (M-039); sem omega, O' = O
+E = ROUND(O' × m)       (.5 para cima, como em D-010a)
 R = armorRoll, com R ∈ [armorLow, armorHigh]
 A = MAX(E - R, 0)
 B = FLOOR(A × M)
@@ -1314,13 +1365,16 @@ A_max = maior valor em A_candidates
 E_min = A_min + armorLow
 E_max = A_max + armorHigh
 
-O_min = FLOOR((E_min - 1) / m) + 1
-O_max = FLOOR(E_max / m)
+O_min = CEIL((100 × E_min - 50) / m100)
+O_max = FLOOR((100 × E_max + 49) / m100)      m100 = ROUND(m × 100)
 ```
+
+No hit com omega, `[O_min, O_max]` acima é o intervalo de `O'`, e o original é a inversão de
+`ROUND(O × 1,06)` sobre ele, com a mesma aritmética.
 
 O resultado físico é o intervalo `[O_min, O_max]`. Para hits zerados ou quase zerados, o caso `A = 0` deve ser tratado separadamente, porque a armadura pode absorver todo o dano físico antes da mitigação.
 
-- **D-010c — Modificador efetivo por pierce/Expose Weakness:** pierce e Expose Weakness não devem ser aplicados como bônus final direto de dano. Eles alteram o modificador efetivo `m` usado em `CEIL(O × m)`. Quando o modificador base do mob e o pierce forem conhecidos, usar:
+- **D-010c — Modificador efetivo por pierce/Expose Weakness:** pierce e Expose Weakness não devem ser aplicados como bônus final direto de dano. Eles alteram o modificador efetivo `m` usado em `ROUND(O × m)`. Quando o modificador base do mob e o pierce forem conhecidos, usar:
 
 ```text
 effectiveMod(baseMod, pierce):
@@ -1432,7 +1486,13 @@ L=26 -> 12,75%
   não vota; minoritário **acima** do modal ou empate no topo deixa o componente sem
   voto; marcado sem repetição não vota. A comparação marcado × controle é entre mobs
   distintos e aceita o resíduo de arredondamento por hit de S-004a
-  (`ELEMENTAL_INTERMEDIATE_TOLERANCE`, 1 ponto de original). Aplicar um nível
+  (`ELEMENTAL_INTERMEDIATE_TOLERANCE`, 1 ponto de original). **Hit crítico não vota**, nem
+  como marcado nem como controle (emenda de 08/Out/2026, change `round-creature-resistance-step`,
+  decisão do usuário): o multiplicador de crítico é inferido, não exato, e o erro dele passa
+  desse resíduo de 1 ponto entre mobs distintos. Caso-prova: `drone ingol` `18:34:05`, Divine
+  Caldera crítica, `boar man 1811` ×2 marcado contra `carnivostrich 1762` ×4. Com o crítico
+  inferido `1,92`, o marcado reverte a 2 pontos do controle no nível 25 e contradiz; com o
+  crítico livre, só o nível 25 reproduz os dois danos. Aplicar um nível
   não pode mover fronteira, alterar cardinalidade ou promover a própria
   observação a “ouro” para depois votar nesse mesmo nível. Capped-low e
   overkill não fixam nível. A grade não recebe teto arbitrário: somente níveis
@@ -1485,7 +1545,8 @@ L=26 -> 12,75%
   Caldera pela partição congelada (`18:28:23`: `708` ao lado de `831 ×3`) e o
   resíduo de 1 ponto entre mobs. Com o valor modal repetido e a folga de S-004a, o
   nível 25 (`+12,5%`) fecha **30 componentes com 0 contradições**; 24 tem 5
-  contradições e 26 tem 16. Com o dano conhecido, a Life de D-022b cai no nível 5.
+  contradições e 26 tem 16. Com o passo do mod em `ROUND` (D-010a) e sem hit crítico
+  (08/Out/2026), o nível 25 fecha **36 componentes com 0 contradições**; 24 tem 3 e 26 tem 20. Com o dano conhecido, a Life de D-022b cai no nível 5.
 - **D-010g-1 — Teto de mana e ramo de Mana Leech do fallback (emenda de 21/Set/2026, change `fix-tom3-bounty-mana-and-aa-evidence`):**
   com o nível de Bounty Damage desconhecido, o canal de **mana** de um hit marcado não é evidência
   ausente por inteiro: o Bounty (>= +2,5% no nível 0) só **divide** a base de leech, e o Bounty Life
@@ -1696,6 +1757,23 @@ senão:
   `13:36:13`, o AA marcado tem EW; a taxa efetiva de Mana só é 19% se o perk
   tiver sido inferido nessa sessão, e Mana 24 observado é capped-low de qualquer
   forma, portanto não discrimina nível de Bounty.
+
+  **Origem do perk: Drain Body (passiva pré-cutoff; declarado em 07/Out/2026, decisão do
+  usuário).** Drain Body I/II/III soma, por criatura, **+1/+2/+3 pp de Mana Leech** em
+  criatura com Expose Weakness e **+3/+4/+5 pp de Life Leech** em criatura com
+  **Sap Strength**. A metade de mana é o que esta regra modela (o `+2` é o tier II).
+  **A metade de vida é declarada e NÃO modelada:** o Server Log só mostra Sap pelo ataque
+  recebido (`... damage reduction by Sap Strength`), por nome de mob e não por indivíduo, então
+  a vida da sessão tem dois patamares reais e nenhuma taxa única de C-006 fecha os dois.
+  Medido em `mazzerinbarrage` S0/S1/S3 e `mk` S2 (pré-cutoff): 0,5075 e 0,5475 (+4 pp, tier
+  II), com mana idêntica no mesmo hit. Os hits do patamar alto têm Sap visível no mesmo nome
+  em ±10 s em 332/342 e 487/489 casos. `mazzerinbarrage` S13 (09/Jul, pós-cutoff) não tem Sap
+  e tem um patamar só. Turnos que quebram por isso ficam **sem classificação ou errados por
+  mecânica legada**, não viram alvo. Exemplo: com a mana a 16,25% (change
+  `fix-leech-base-vote-exact-fit`), `mazzerinbarrage` `07/Jun/2026` `22:22:18` fica sem
+  classificação e `22:22:20` herda uma granada falsa
+  (`reports/fix-leech-base-vote-exact-fit/3.2-patamares-de-vida.md`). Antes de suspeitar de
+  outra causa para vida acima do esperado em sessão pré-cutoff, procurar linhas de Sap.
 
 - **D-022b — Bounty Talisman: multiplicador de Life Leech por hit:** o efeito
   `Life Leech From Task Creatures` usa a mesma grade discreta de D-010g, mas
@@ -1938,8 +2016,8 @@ overkillMinimo = Dreal_min - danoMostrado
 - **S-004 — Interseção:** hits do mesmo componente determinístico devem possuir interseção de originais.
 - **S-004a — Exatidão same-mob/same-estado:** dentro de um bloco determinístico elemental, hits não-overkill do **mesmo mob** com o **mesmo estado de modificadores** (mesma presença de Expose Weakness, prey, elemental amplification e Perfect Shot, e mesmos flags de crit/Low Blow/Savage Blow/Onslaught) são comparações **exatas**: mesmo componente ⇒ mesmo dano final (D-010a é função determinística de `(O, m, M, P)`). Perfect Shot ausente é o valor zero desse estado, não evidência desconhecida; somente a tolerância cross-state já vigente pode comparar hits com presença diferente de Perfect Shot. Qualquer tolerância de interseção usada pela implementação para absorver resíduo de arredondamento discreto (ex.: quantização da mitigation) aplica-se **somente** entre mobs distintos ou entre estados distintos do mesmo mob; dentro do mesmo `(mob, estado)`, conjuntos de originais disjuntos são fronteira obrigatória (S-005) e invalidam o bloco — inclusive contra o fallback de cluster. Caso-prova: `mazzerinbarrage 23:46:36`, darklight matter+EW `F=986 ⇒ O={982}` vs `F=987 ⇒ O={983}` sob `P=1` — o 987 não pode pertencer à mesma Divine Caldera dos dois 986. Low Blow e Savage Blow entram aqui como estado do hit/mob, não como exigência de que todos os mobs do componente compartilhem o mesmo charm.
 - **S-004b — Classes de diagnóstico determinístico (contradição × evidência ausente):** um veredito reprovado (`ok:false`) de bloco determinístico pertence a exatamente uma de duas classes, e o diagnóstico deve **declarar qual**, porque `ok:false` sozinho não distingue as duas e quem só lê o diagnóstico (auditoria de invariantes, relatórios) não pode reimplementar a regra que o produziu. As classes são: **(a) contradição mecânica** — o bloco viola S-004/S-005/H-001/H-002 e a partição precisa mudar; **(b) evidência ausente** (D-006) — a regra que produziu o veredito já declara que ele não rejeita o bloco. São de classe (b), e somente elas: **dispersão cross-mob** (`elemental_cluster_span_too_wide`), que V-015b/V-015d proíbem usar como rejeição porque mobs distintos revertem para originais distintos sem contradição; e **mecânica declarada de múltiplos níveis por-mob ainda sem rótulo** (`same_mob_state_exact_original_mismatch` num bloco isento pelo gate de S-004a — beam M-035, estágio não-elemental M-016e, Terra/Ice Burst, Chained Penance M-037), cuja isenção já significa ausência de evidência negativa, e cujo diagnóstico deve nomear a mecânica que isentou. A classe (b) do caso de isenção é atribuída **no ponto em que a isenção é decidida**, não dentro do validador elemental: o mesmo motivo `same_mob_state_exact_original_mismatch` continua sendo contradição num bloco cuja ação não declara múltiplos níveis. O padrão é **fail-loud**: veredito reprovado sem classe declarada conta como contradição, para que um motivo novo apareça em vez de passar silencioso. Declarar a classe não altera `ok`, veto, ordem de validação, tolerância nem partição escolhida — ela descreve um veredito já tomado. Casos-prova: `Mrowdy 2` S0 `17:55:02` (Energy Wave, 6 hits em 3 mobs ⇒ dispersão cross-mob) e `kim` S0 `16:12:55` (Great Energy Beam, `undertaker` `1580/2011 = 0,786` ⇒ isenção por M-035, dentro da fração declarada de M-035a).
-- **S-004c — Omega é estado do hit no gate de exatidão same-mob, e a folga é último recurso:** a **atribuição de omega** sob teste (M-039) faz parte do "estado de modificadores" que S-004a usa para formar o grupo de exatidão. Dois hits não-overkill do mesmo mob e mesmo estado observado cuja atribuição de omega **difere** (um marcado, outro não) são comparação **cross-state**, não exata: a eles aplica-se a `OMEGA_CROSS_STATE_TOLERANCE` de **1** ponto de dano original. Hits com a **mesma** atribuição de omega continuam com interseção **exata** (tolerância 0), inclusive dentro do mesmo grupo, e uma divergência de **2 pontos ou mais** entre estados de omega diferentes continua sendo contradição dura `same_mob_state_exact_original_mismatch`. Esta folga existe **somente** em sessão com omega detectado e **não** se estende por analogia a nenhum outro modificador de hit. **Ela é último recurso por turno:** a resolução avalia o turno primeiro com a folga desligada (comportamento vigente) e só reavalia com a folga ligada quando a avaliação estrita não resolve o turno, adotando o resultado relaxado apenas se ele resolver — nenhuma partição relaxada compete, pontua ou desempata contra uma partição estrita, logo **todo turno que resolve estrito resolve com a mesma partição e o mesmo rótulo**. É a mesma disciplina que D-010b/S-007 já impõem a omega no eixo físico ("último recurso e mínimo"). O turno resolvido pela folga carrega `omegaCrossStateToleranceUsed`. Medição que fixa o valor 1: em `crypt`, dos blocos holy em que o motor **acha** a atribuição de omega e o retry falha mesmo assim, o grupo violador é misto (omega + não-omega) em **601 de 603** e está a distância de **exatamente 1 ponto** em **601** (313 de 313 nos turnos de um único nível holy). Casos-prova: `crypt` `07:32:06` (`cyclursus 761/808`, `O(sem) = {764}` vs `O(com) = {765,766}`) e o par `07:54:02`/`07:54:04`, em que destravar o primeiro devolve a granada do cast `07:54:00` ao turno em que ela explode (`c+2`) e apaga do segundo um `Divine Barrage` de 1 hit a `464` — dano de AA, não de spell. (S-004a, S-004b, M-039, D-006, D-010a)
-  - **S-004c-nota — Limitação conhecida e aceita: o modelo de omega não é exato.** A folga de 1 ponto é consequência declarada de uma inexatidão medida, não um limiar escolhido. Reconstruindo os **101** pares de omega distintos confirmados de `crypt` (mesmo turno, mesma ação, mesmo mob, mesmo estado, `P = 1`, sem crit): o passo pós-mitigação com `FLOOR` puro — que é o que D-010a e M-039 descrevem — acerta **43,5%**; nenhuma combinação de posição na cadeia, arredondamento e pierce fecha 100% (a melhor, omega pré-mitigação com `round` e pierce 0%, faz **91,1%**); e **não existe multiplicador único** que sirva para todos os pares em nenhum arredondamento (`cyclursus 738 → 781` exige `x ∈ [1,05827 ; 1,05962)` e `roaming dread 742 → 787` exige `x ∈ [1,06065 ; 1,06199)` — disjuntos). O motor já compensa parte disso admitindo `FLOOR` **e** `CEIL` na inversão do passo pós-mitigação, o que cobre `dF = big − FLOOR(small × 1,06) ∈ {0, +1}`; os pares que ainda falham estão em `dF ∈ {−1, +2}`, exatamente um passo fora. Corrigir o modelo de omega em si permanece **fora de escopo e não trabalhado**: mover omega para antes da mitigação está falsificado no motor (131 e 244 turnos sem classificação contra 118 do baseline), assim como ajustar pierce holy ou físico. Diagnóstico completo: `reports/crypt-omega-1-nivel.md`.
+- **S-004c — Omega é estado do hit no gate de exatidão same-mob, e a folga é último recurso:** a **atribuição de omega** sob teste (M-039) faz parte do "estado de modificadores" que S-004a usa para formar o grupo de exatidão. Dois hits não-overkill do mesmo mob e mesmo estado observado cuja atribuição de omega **difere** (um marcado, outro não) são comparação **cross-state**, não exata: a eles aplica-se a `OMEGA_CROSS_STATE_TOLERANCE` de **1** ponto de dano original. Hits com a **mesma** atribuição de omega continuam com interseção **exata** (tolerância 0), inclusive dentro do mesmo grupo, e uma divergência de **2 pontos ou mais** entre estados de omega diferentes continua sendo contradição dura `same_mob_state_exact_original_mismatch`. Esta folga existe **somente** em sessão com omega detectado e **não** se estende por analogia a nenhum outro modificador de hit. **Ela é último recurso por turno:** a resolução avalia o turno primeiro com a folga desligada (comportamento vigente) e só reavalia com a folga ligada quando a avaliação estrita não resolve o turno, adotando o resultado relaxado apenas se ele resolver — nenhuma partição relaxada compete, pontua ou desempata contra uma partição estrita, logo **todo turno que resolve estrito resolve com a mesma partição e o mesmo rótulo**. É a mesma disciplina que D-010b/S-007 já impõem a omega no eixo físico ("último recurso e mínimo"). O turno resolvido pela folga carrega `omegaCrossStateToleranceUsed`. Medição que fixa o valor 1: em `crypt`, dos blocos holy em que o motor **acha** a atribuição de omega e o retry falha mesmo assim, o grupo violador é misto (omega + não-omega) em **601 de 603** e está a distância de **exatamente 1 ponto** em **601** (313 de 313 nos turnos de um único nível holy). Casos-prova: `crypt` `07:32:06` (`cyclursus 761/808`, `O(sem) = {764}` vs `O(com) = {765,766}`) e o par `07:54:02`/`07:54:04`, em que destravar o primeiro devolve a granada do cast `07:54:00` ao turno em que ela explode (`c+2`) e apaga do segundo um `Divine Barrage` de 1 hit a `464` — dano de AA, não de spell. **Emenda de 14/Out/2026** (change `omega-before-resistance-and-weapon-death-pierce`): com o omega antes da resistência (M-039) e o death pierce da arma (M-040a), a folga continua sendo o mesmo último recurso, mas os turnos que passam por ela caem de **196 para 55** (`crypt` 140 → 33, `15 sept` S0–S3 25 → 11, `italian` 31 → 11). `crypt` `07:32:06` deixa de ser caso-prova: agora fecha na avaliação estrita. Dos 55 que sobram, 35 têm bloco de spell ou granada **crítico**, cujo multiplicador é inferido e não exato (D-010g, M-039c); os outros 20 são pares de 1 ponto ainda não explicados (ex.: `15 sept` `bloodjaw`, entrada manual da tabela; `italian` `18:53:06`, `cyclursus 2317/2456`). (S-004a, S-004b, M-039, D-006, D-010a)
+  - **S-004c-nota — Limitação conhecida e aceita: o modelo de omega não é exato.** **Atualização de 14/Out/2026:** a inexatidão descrita abaixo era do modelo pós-mitigação. Com o omega antes da resistência e `ROUND` (M-039), os pares de omega não-críticos fecham exatos em `crypt` 45/46, `15 sept` 93/100 e `italian` 38/39 (`reports/omega-before-resistance-2026-10-14.md`); a frase "mover omega para antes da mitigação está falsificado" se referia a pôr o omega antes da mitigação, mas depois do mod, e continua valendo para essa posição. O resíduo que sobra está em S-004c (emenda de 14/Out/2026): sobretudo o crítico inferido, e por isso a folga de 1 ponto fica. **Custo aceito pelo usuário:** 4 turnos com bloco de spell crítico deixam de resolver (`crypt` `07:35:27`, `07:53:27`, `07:56:02`; `15 sept` S0 `03:26:50`); a partição certa existe e morre só por S-004a no crítico inferido. Texto original, sobre o modelo antigo: a folga de 1 ponto é consequência declarada de uma inexatidão medida, não um limiar escolhido. Reconstruindo os **101** pares de omega distintos confirmados de `crypt` (mesmo turno, mesma ação, mesmo mob, mesmo estado, `P = 1`, sem crit): o passo pós-mitigação com `FLOOR` puro — que é o que D-010a e M-039 descrevem — acerta **43,5%**; nenhuma combinação de posição na cadeia, arredondamento e pierce fecha 100% (a melhor, omega pré-mitigação com `round` e pierce 0%, faz **91,1%**); e **não existe multiplicador único** que sirva para todos os pares em nenhum arredondamento (`cyclursus 738 → 781` exige `x ∈ [1,05827 ; 1,05962)` e `roaming dread 742 → 787` exige `x ∈ [1,06065 ; 1,06199)` — disjuntos). O motor já compensa parte disso admitindo `FLOOR` **e** `CEIL` na inversão do passo pós-mitigação, o que cobre `dF = big − FLOOR(small × 1,06) ∈ {0, +1}`; os pares que ainda falham estão em `dF ∈ {−1, +2}`, exatamente um passo fora. Corrigir o modelo de omega em si permanece **fora de escopo e não trabalhado**: mover omega para antes da mitigação está falsificado no motor (131 e 244 turnos sem classificação contra 118 do baseline), assim como ajustar pierce holy ou físico. Diagnóstico completo: `reports/crypt-omega-1-nivel.md`.
 - **S-005 — Fronteira obrigatória:** originais comparáveis e incompatíveis obrigam uma fronteira.
 - **S-006 — Blocos unitários:** componentes com somente um hit são válidos.
 - **S-007 — Físico:** AA e Ethereal Barrage exigem coerência entre intervalos físicos. O eixo do AA é físico **por padrão**, e só deixa de ser quando a própria sessão prova o contrário — ver **S-007b**. Ethereal Barrage é **sempre** física: é spell, tem elemento no perfil da ação, e não é munição.
@@ -2802,9 +2880,9 @@ Verificar que:
 - somente RP pode possuir AA de área, sempre respeitando uma única instância de AA por ciclo;
 - empate de dano entre AA single-target e spell usa leech por dano somente após as evidências anteriores e sem overkill;
 - em turno dominado por overkill, a cardinalidade por leech separa blocos como `N = 1` e `N = k` sem usar razão `leech / danoMostrado`, inclusive quando originais holy estão indisponíveis — verificar `bastion 15:21:37` e `bastion 15:24:22`;
-- originais elementais são reconstruídos por `CEIL(O × modEfetivo)`, `FLOOR` de mitigation e `FLOOR` dos multiplicadores pós-mitigação, nunca por divisão simples;
+- originais elementais e físicos são reconstruídos com `ROUND(O × modEfetivo)` no passo da resistência da criatura (invertido em inteiros), `FLOOR` de mitigation e `FLOOR` dos multiplicadores pós-mitigação, nunca por divisão simples;
 - originais físicos são reconstruídos por intervalo de armor roll (`armorLow..armorHigh`), nunca por média física de DPT;
-- pierce, Expose Weakness e `active elemental amplification` alteram `modEfetivo` antes do `CEIL(O × modEfetivo)`, e não são bônus finais diretos;
+- pierce, Expose Weakness e `active elemental amplification` alteram `modEfetivo` antes do `ROUND(O × modEfetivo)`, e não são bônus finais diretos;
 - o setup de leech do personagem é combinação plausível de imbuements (até 2 slots), Conviction Perks (até 4 stacks) e perk de arma (até 4 stacks em mana, até 10 em vida), nunca percentual arbitrário;
 - bônus de mob por leech usa somente `Vampiric Embrace` ou `Void’s Call`;
 - no máximo um mob possui `Vampiric Embrace`;
@@ -2912,7 +2990,7 @@ Os casos abaixo são normativos. As contagens usam `A=arrow`, `S=spell`, `R=rune
 | 30 | barrage `19:04:40` | `A10 S9`. Intervalos físicos se sobrepõem; leech ≈0,0955 → ≈0,120 define o desempate. | Usar leech antes de esgotar a evidência física. |
 | 31 | barrage `19:00:15` | `A5 S6` (S-018/D-029). Turno de Divine Caldera (`exevo mas san`, sem `exori dir moe`); sem mob mods pós-corte. Os 5 hits de AA de área têm life-leech = 0; os 6 de Caldera têm life-leech ≈165 (cap zera os 2 últimos). A fronteira geral por leech de vida separa A5 S6. | Colapsar o turno em `A0 S11` por ausência de mob mods pós-corte. |
 | 32 | mazzerinbarrage `23:46:36` (sessão 30/Jun/2026 23:45–23:51) | `A12 S12` (S-004a + degeneração de alinhamento). Cast `exevo mas san` no mesmo segundo dos 24 hits. darklight matter+EW `986/986` são Caldera (`O={982}` sob P=1; `O∈[876,877]` sob o buff de `utevo grav san` de `23:46:32`) e `987` é AA (`O={983}` ≠ 982; físico `[844,887]` ∩ bloco AA `[881,887]`). O corte `12,24` fecha com leech 24/24 exato e ambos os blocos buffados. | Colar 986/987 do mesmo mob+estado por tolerância de interseção (S-004a) ou escolher `A11 S13` por alinhamento cast↔turno degenerado maximizando o bloco de spell. |
-| 33 | mazzerinbarrage `03:42:26` (sessão 17/Jun/2026 salva `03:48:57`) | `A4 S4`. 4 hits de AA físico variável (591/583/606/590) + 4 hits críticos idênticos de Divine Caldera (`exevo mas san`, 1533 cada) no mesmo mob (boar man). A reversão holy exata do bloco crítico (`mit=0,96551513671875`, `crit=2,00` calibrado da sessão, `mod=1,12` = holyDmgMod 1,1 + pierce BM 0,04) cai num buraco de arredondamento: `invCeil(794, 1,12)` não tem solução inteira (708→793, 709→795, pula 794). Descartada hipótese de escalar errado por 7 outros hits críticos do mesmo mob/spell/sessão (danos 1517, 1498, 1384, 1539, 1602, 1901, 1401) que fecham sem problema com os MESMOS `mod`/`crit`. A tolerância intermediária elemental (`ELEMENTAL_INTERMEDIATE_TOLERANCE`), estendida também à etapa final da cadeia (inversão do `mod` elemental, não só a etapa inicial pós-`post`), aceita os vizinhos `708`/`709` como original. Mesma classe de gap resolve, na mesma sessão, os turnos `03:48:33` (`A6 S6`) e `03:48:39` (`A7 S6`). | Rejeitar o turno como `unresolved` por o gap de arredondamento cair na etapa final da cadeia D-010a, onde a tolerância antes só cobria a etapa inicial (`aa`, pós-`post`). Ver `openspec/changes/extend-elemental-intermediate-tolerance-to-mod-inversion` (arquivado). |
+| 33 | mazzerinbarrage `03:42:26` (sessão 17/Jun/2026 salva `03:48:57`) | `A4 S4`. 4 hits de AA físico variável (591/583/606/590) + 4 hits críticos idênticos de Divine Caldera (`exevo mas san`, 1533 cada) no mesmo mob (boar man). A reversão holy exata do bloco crítico (`mit=0,96551513671875`, `crit=2,00` calibrado da sessão, `mod=1,12` = holyDmgMod 1,1 + pierce BM 0,04) caía num buraco de arredondamento enquanto o passo do mod era `CEIL`: `invCeil(794, 1,12)` não tem solução inteira (708→793, 709→795, pula 794). **Desde 08/Out/2026 o passo é `ROUND` (D-010a): `709 × 1,12 = 794,08 → 794` fecha exato, sem a tolerância** — o buraco era sintoma do arredondamento errado. Descartada hipótese de escalar errado por 7 outros hits críticos do mesmo mob/spell/sessão (danos 1517, 1498, 1384, 1539, 1602, 1901, 1401) que fecham sem problema com os MESMOS `mod`/`crit`. A tolerância intermediária elemental (`ELEMENTAL_INTERMEDIATE_TOLERANCE`), estendida também à etapa final da cadeia (inversão do `mod` elemental, não só a etapa inicial pós-`post`), aceitava os vizinhos `708`/`709` como original e continua necessária para outros hits (sob `ROUND` sobram ~2.000 hits em blocos resolvidos, quase todos críticos, cujo multiplicador é inferido). Mesma classe de gap resolve, na mesma sessão, os turnos `03:48:33` (`A6 S6`) e `03:48:39` (`A7 S6`). | Rejeitar o turno como `unresolved` por o gap de arredondamento cair na etapa final da cadeia D-010a, onde a tolerância antes só cobria a etapa inicial (`aa`, pós-`post`). Ver `openspec/changes/extend-elemental-intermediate-tolerance-to-mod-inversion` (arquivado). |
 | 34 | uhax 3 `20:49:26` (sessão 30/Jun/2026 salva `21:02:55`) | `partial_edge_missing_evidence`: primeiro turno parcial com 7 hits de druid, sem spell ofensiva concreta no Local Chat e sem `Using one of ... runes` no Server Log disponível; a única hipótese gerada é `arrow[7]`, inválida por M-031/M-032. O turno permanece diagnosticável, mas não entra na visualização operacional nem na contagem de sem classificação. | Inventar AA de área para druid, inventar runa/spell ausente ou contar perda de informação de borda como falha operacional. |
 | 34a | death echo `11:06:01` (sessão salva 10/Jul/2026) | `partial_edge_missing_evidence`: primeiro turno parcial; o Server Log começa depois do blast inicial de Death Echo, preservando apenas o bloco baixo do estágio atrasado e um AA antes dos 7 hits críticos de Energy Wave em `:02`. O cast concreto de Energy Wave explica apenas o sufixo, e M-016d-1a proíbe confirmar o estágio atrasado sem ao menos um par comparável com o blast inicial. O turno inteiro permanece diagnosticável, mas fica fora da operação, métricas e relatório. | Confirmar o estágio atrasado sem contraparte, fundir os 17 hits em Energy Wave ou manter um primeiro turno não resolvido como pendência operacional. |
 | 34b | mrowdy 2 `17:19:16` (sessão salva 11/Jun/2026) | Permanece `unresolved/no_valid_partition`: é o início de uma sessão interna colada no meio do mega-log, sem cast ofensivo nem linha `Using` preservados. O motor não pode inferir runa; por decisão explícita do usuário, a chave `mrowdy 2\|2026-06-11\|17:19:16` entra somente no catálogo de pendências aceitas do relatório. | Inventar runa a partir de conhecimento externo, marcar o turno como resolvido ou criar heurística temporal para detectar emendas internas. |

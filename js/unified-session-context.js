@@ -74,6 +74,8 @@
     'bestiaryClassBonus',
     'aaElement',
     'weaponPhysicalPierce',
+    // M-040a: death pierce da arma, cravado antes de `buildTurns`.
+    'weaponDeathPierce',
     'bmPierce',
   ]);
 
