@@ -236,9 +236,9 @@ function clsDetailComponentLabel(hit, turn) {
     const id = String(comp || 'unresolved_component_1').replace(/^unresolved_component_/, '') || '1';
     const rawReason = (hit && (hit.reason || hit.experimentalReason)) || (turn && turn.unifiedReason) || 'missing_mechanical_resolution';
     const reason = /^(mechanical_|missing_)/.test(String(rawReason)) ? rawReason : 'missing_mechanical_resolution:' + rawReason;
-    return 'Componente não resolvido ' + id + ' (' + reason + ')';
+    return t('cls_td_unresolved').replace('{id}', id).replace('{reason}', reason);
   }
-  if (comp === 'arrow') return 'auto ataque';
+  if (comp === 'arrow') return t('cls_td_aa');
   if (comp === 'spell') return turn && turn.spell ? clsSpellNameSafe(turn.spell) : 'spell';
   if (comp === 'rune') return turn && turn.rune ? turn.rune : 'rune';
   if (comp === 'grenade') return turn && turn.gren ? clsSpellNameSafe(turn.gren) : 'grenade';
@@ -247,11 +247,11 @@ function clsDetailComponentLabel(hit, turn) {
 
 function clsDetailCritLabel(hit) {
   if (!hit) return '-';
-  if (hit.onslaught) return (hit.realCrit || hit.lowBlow) ? (hit.savageBlow ? 'Crítico savage blow e Onslaught' : 'Crítico e Onslaught') : 'Onslaught';
+  if (hit.onslaught) return (hit.realCrit || hit.lowBlow) ? t(hit.savageBlow ? 'cls_td_crit_savage_onslaught' : 'cls_td_crit_onslaught') : 'Onslaught';
   if (hit.type === 'crit' || hit.realCrit || hit.lowBlow) {
-    if (hit.lowBlow) return 'crítico low blow';
-    if (hit.savageBlow) return 'crítico savage blow';
-    return 'crítico';
+    if (hit.lowBlow) return t('cls_td_crit_low_blow');
+    if (hit.savageBlow) return t('cls_td_crit_savage_blow');
+    return t('cls_td_crit');
   }
   return '-';
 }
@@ -287,7 +287,10 @@ function clsRowLabel(row) {
   return row && row.kind === 'arrow' ? t('cls_comp_arrow') : (row && row.label) || '';
 }
 
+let clsTurnDetailArgs = null;
+
 function renderTurnDetail(turns, res, selectedIndex) {
+  clsTurnDetailArgs = [turns, res, selectedIndex];
   const old = document.getElementById('clsTurnDetail');
   if (old) old.remove();
 
@@ -317,19 +320,19 @@ function renderTurnDetail(turns, res, selectedIndex) {
     : (list.length > 1 ? (String(activeIndex + 1) + ' / ' + String(list.length)) : '');
   const headerHtml =
     '<div class="cls-turn-detail-head">' +
-      '<h3 class="cls-h">Detalhes do turno</h3>' +
+      '<h3 class="cls-h">' + t('cls_td_title') + '</h3>' +
       '<div class="cls-turn-detail-nav">' +
-        '<button type="button" class="cls-turn-detail-prev" ' + (canPrev ? '' : 'disabled') + '>&lt;-- turno anterior</button>' +
+        '<button type="button" class="cls-turn-detail-prev" ' + (canPrev ? '' : 'disabled') + '>' + t('cls_td_prev') + '</button>' +
         '<span class="cls-turn-detail-index">' + clsEscapeHtml(navLabel) + '</span>' +
-        '<button type="button" class="cls-turn-detail-next" ' + (canNext ? '' : 'disabled') + '>proximo turno --&gt;</button>' +
+        '<button type="button" class="cls-turn-detail-next" ' + (canNext ? '' : 'disabled') + '>' + t('cls_td_next') + '</button>' +
       '</div>' +
-      '<button type="button" class="cls-turn-detail-close" aria-label="Fechar">x</button>' +
+      '<button type="button" class="cls-turn-detail-close" aria-label="' + t('cls_td_close') + '">x</button>' +
     '</div>';
 
   if (!list.length) {
     panel.innerHTML =
       headerHtml +
-      '<p class="cls-turn-detail-empty">Dados individuais não disponíveis para este gráfico</p>';
+      '<p class="cls-turn-detail-empty">' + t('cls_td_empty') + '</p>';
   } else {
     const turn = activeTurn;
     const counts = turn.counts || {};
@@ -352,15 +355,16 @@ function renderTurnDetail(turns, res, selectedIndex) {
     panel.innerHTML =
       headerHtml +
       '<div class="cls-turn-detail-block">' +
-        '<p class="cls-turn-detail-meta"><strong>Turno:</strong> ' + clsFmtTurnTs(turn.ts) +
-          ' &nbsp;·&nbsp; <strong>Componentes:</strong> ' +
+        '<p class="cls-turn-detail-meta"><strong>' + t('cls_td_turn') + ':</strong> ' + clsFmtTurnTs(turn.ts) +
+          ' &nbsp;·&nbsp; <strong>' + t('cls_td_components') + ':</strong> ' +
           'AA ' + (counts.arrow || 0) + ', spell ' + (counts.spell || 0) +
           ', rune ' + (counts.rune || 0) + ', grenade ' + (counts.grenade || 0) +
           gravSanChip +
           conversionChip +
         '</p>' +
         '<table class="cls-table cls-turn-detail-table"><thead><tr>' +
-          '<th>Timestamp</th><th>Dano</th><th>Tipo/Componente</th><th>Crítico/Onslaught</th><th>Estado do hit</th><th>Overkill</th><th>Mob alvo</th>' +
+          ['cls_td_th_ts', 'cls_td_th_dmg', 'cls_td_th_comp', 'cls_td_th_crit', 'cls_td_th_state', 'cls_td_th_overkill', 'cls_td_th_mob']
+            .map(k => '<th>' + t(k) + '</th>').join('') +
         '</tr></thead><tbody>' +
           hits.map(h =>
             '<tr class="' + (h.gravSanActive === true ? 'cls-gs-on' : h.gravSanTested ? 'cls-gs-off' : '') + convRowClass(h) + '">' +
@@ -369,7 +373,7 @@ function renderTurnDetail(turns, res, selectedIndex) {
               '<td>' + clsEscapeHtml(clsDetailComponentLabel(h, turn)) + '</td>' +
               '<td>' + clsEscapeHtml(clsDetailCritLabel(h)) + '</td>' +
               '<td>' + clsEscapeHtml(clsDetailHitStateLabel(h)) + '</td>' +
-              '<td>' + (h.ok ? 'sim' : '-') + '</td>' +
+              '<td>' + (h.ok ? t('cls_summary_yes') : '-') + '</td>' +
               '<td>' + clsEscapeHtml(h.mob || '') + '</td>' +
             '</tr>'
           ).join('') +
@@ -1813,7 +1817,11 @@ function renderClassifierCharts(res, compDefs) {
 // re-renderiza ao trocar de idioma se já houver resultado
 let lastClsResult = null;
 function setLastClassifierResult(res) { lastClsResult = res; }
-function onLangChange() { if (lastClsResult) renderClassifier(lastClsResult); }
+function onLangChange() {
+  if (lastClsResult) renderClassifier(lastClsResult);
+  // O painel do turno é montado uma vez; reabre no idioma novo se estiver aberto.
+  if (clsTurnDetailArgs && document.getElementById('clsTurnDetail')) renderTurnDetail(...clsTurnDetailArgs);
+}
 
 // C7: toda classificação da UI passa por aqui. O motor roda fora da thread da UI
 // (`ClassifyPort`), então a aba continua respondendo, o status conta os segundos e
