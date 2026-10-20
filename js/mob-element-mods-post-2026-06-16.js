@@ -5,6 +5,10 @@
 // UnifiedClassificationEngine possa escolher o regime correto por data.
 //
 // Fonte: mathiasbynens/tibia-json data/bestiary.json (mitigações atualizadas).
+// Em 2026-10-20 entraram os 21 mobs que o bestiary.json atual tem e esta tabela não tinha
+// (os 6 "devoted radiant", os 6 "radiant", moonspawn/moonstone, jaracal, iceplume strider,
+// silverfrost sentinel, true feverbloom asura), copiados sem ajuste. Só o fixture
+// `ms devoted` (20/Out/2026) os tem: templar, zealot e inquisitor.
 // O mob "bloodjaw" é adicionado manualmente (não está no bestiary). Armor calibrado
 // em 2026-07-03 contra os 13 pares de sessão de logs/mazzerinbarrage (varredura
 // 100–140 minimizando turnos unresolved no Unified): plateau ótimo 125–130, usado 128
@@ -222,6 +226,12 @@
   "demon parrot":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":18,"mitigation":0.76,"bestiaryClass":"Bird","hitpoints":360},
   "demon skeleton":{"physicalDmgMod":1,"holyDmgMod":1.25,"iceDmgMod":1,"fireDmgMod":0,"energyDmgMod":1,"earthDmgMod":0,"deathDmgMod":0,"armor":25,"mitigation":1.44,"bestiaryClass":"Undead","hitpoints":400},
   "destroyer":{"physicalDmgMod":0.8,"holyDmgMod":1.03,"iceDmgMod":1.15,"fireDmgMod":0.7,"energyDmgMod":0,"earthDmgMod":0.8,"deathDmgMod":0.8,"armor":35,"mitigation":2.76,"bestiaryClass":"Demon","hitpoints":3700},
+  "devoted radiant acolyte":{"physicalDmgMod":0.95,"holyDmgMod":0.95,"iceDmgMod":0.9,"fireDmgMod":0.6,"energyDmgMod":1.1,"earthDmgMod":1.05,"deathDmgMod":0.7,"armor":105,"mitigation":5.36,"bestiaryClass":"Human","hitpoints":39790},
+  "devoted radiant inquisitor":{"physicalDmgMod":1.1,"holyDmgMod":0.75,"iceDmgMod":1.05,"fireDmgMod":1.05,"energyDmgMod":0.75,"earthDmgMod":0.9,"deathDmgMod":1.1,"armor":120,"mitigation":6.1,"bestiaryClass":"Human","hitpoints":40020},
+  "devoted radiant paragon":{"physicalDmgMod":0.9,"holyDmgMod":1,"iceDmgMod":0.95,"fireDmgMod":0.7,"energyDmgMod":1.1,"earthDmgMod":1.15,"deathDmgMod":0.8,"armor":118,"mitigation":5.12,"bestiaryClass":"Human","hitpoints":41400},
+  "devoted radiant templar":{"physicalDmgMod":0.95,"holyDmgMod":0.75,"iceDmgMod":1.1,"fireDmgMod":1.1,"energyDmgMod":0.8,"earthDmgMod":0.95,"deathDmgMod":1.05,"armor":135,"mitigation":5.36,"bestiaryClass":"Human","hitpoints":42550},
+  "devoted radiant warden":{"physicalDmgMod":0.9,"holyDmgMod":1.1,"iceDmgMod":0.9,"fireDmgMod":0.7,"energyDmgMod":1.1,"earthDmgMod":1.05,"deathDmgMod":0.8,"armor":140,"mitigation":5.12,"bestiaryClass":"Human","hitpoints":44275},
+  "devoted radiant zealot":{"physicalDmgMod":1.15,"holyDmgMod":0.8,"iceDmgMod":1.05,"fireDmgMod":1.05,"energyDmgMod":0.6,"earthDmgMod":0.9,"deathDmgMod":1.1,"armor":106,"mitigation":4.63,"bestiaryClass":"Human","hitpoints":41980},
   "devourer":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":0.85,"fireDmgMod":1,"energyDmgMod":1.05,"earthDmgMod":0,"deathDmgMod":0.9,"armor":45,"mitigation":2.31,"bestiaryClass":"Slime","hitpoints":1900},
   "diabolic imp":{"physicalDmgMod":1,"holyDmgMod":1.05,"iceDmgMod":1.1,"fireDmgMod":0,"energyDmgMod":1,"earthDmgMod":0.5,"deathDmgMod":0.9,"armor":29,"mitigation":2.31,"bestiaryClass":"Demon","hitpoints":1950},
   "diamond servant":{"physicalDmgMod":1,"holyDmgMod":1.15,"iceDmgMod":1,"fireDmgMod":0.9,"energyDmgMod":0,"earthDmgMod":0.25,"deathDmgMod":1,"armor":25,"mitigation":1.31,"bestiaryClass":"Construct","hitpoints":1000},
@@ -398,6 +408,7 @@
   "ice golem":{"physicalDmgMod":0.8,"holyDmgMod":0,"iceDmgMod":0,"fireDmgMod":0,"energyDmgMod":1.2,"earthDmgMod":1,"deathDmgMod":0,"armor":47,"mitigation":1.09,"bestiaryClass":"Construct","hitpoints":385},
   "ice witch":{"physicalDmgMod":1,"holyDmgMod":0.7,"iceDmgMod":0,"fireDmgMod":0.5,"energyDmgMod":1.1,"earthDmgMod":0.6,"deathDmgMod":1.1,"armor":70,"mitigation":1.44,"bestiaryClass":"Human","hitpoints":650},
   "icecold book":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":0,"fireDmgMod":1.1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":82,"mitigation":3.45,"bestiaryClass":"Inkborn","hitpoints":21000},
+  "iceplume strider":{"physicalDmgMod":1.05,"holyDmgMod":0.9,"iceDmgMod":0.9,"fireDmgMod":1.05,"energyDmgMod":0.9,"earthDmgMod":1.05,"deathDmgMod":1.05,"armor":85,"mitigation":3.68,"bestiaryClass":"Construct","hitpoints":8500},
   "iks ahpututu":{"physicalDmgMod":1.05,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":0.95,"energyDmgMod":1,"earthDmgMod":0.75,"deathDmgMod":1,"armor":34,"mitigation":2,"bestiaryClass":"Undead","hitpoints":1630},
   "iks aucar":{"physicalDmgMod":0.95,"holyDmgMod":1,"iceDmgMod":1.05,"fireDmgMod":0.95,"energyDmgMod":1.05,"earthDmgMod":1,"deathDmgMod":1.1,"armor":36,"mitigation":2.09,"bestiaryClass":"Undead","hitpoints":1520},
   "iks chuka":{"physicalDmgMod":1,"holyDmgMod":1.1,"iceDmgMod":1,"fireDmgMod":0.95,"energyDmgMod":1.05,"earthDmgMod":1,"deathDmgMod":0.85,"armor":29,"mitigation":1.56,"bestiaryClass":"Undead","hitpoints":1240},
@@ -426,6 +437,7 @@
   "iron servant replica":{"physicalDmgMod":1,"holyDmgMod":0.8,"iceDmgMod":1,"fireDmgMod":0.75,"energyDmgMod":0.75,"earthDmgMod":1.1,"deathDmgMod":1.1,"armor":17,"mitigation":0.97,"bestiaryClass":"Construct","hitpoints":1000},
   "ironblight":{"physicalDmgMod":0.85,"holyDmgMod":1,"iceDmgMod":0.8,"fireDmgMod":0.4,"energyDmgMod":0.95,"earthDmgMod":0,"deathDmgMod":0.6,"armor":84,"mitigation":3.82,"bestiaryClass":"Elemental","hitpoints":6600},
   "island troll":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":6,"mitigation":0.32,"bestiaryClass":"Humanoid","hitpoints":50},
+  "jaracal":{"physicalDmgMod":0.95,"holyDmgMod":0.9,"iceDmgMod":1.1,"fireDmgMod":0.85,"energyDmgMod":1.05,"earthDmgMod":1.05,"deathDmgMod":0.9,"armor":65,"mitigation":3.08,"bestiaryClass":"Mammal","hitpoints":3200},
   "jellyfish":{"physicalDmgMod":1.05,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":0,"energyDmgMod":1.05,"earthDmgMod":0,"deathDmgMod":1,"armor":11,"mitigation":0.48,"bestiaryClass":"Aquatic","hitpoints":55},
   "juggernaut":{"physicalDmgMod":0.7,"holyDmgMod":1.05,"iceDmgMod":0.9,"fireDmgMod":0.7,"energyDmgMod":1.1,"earthDmgMod":0.8,"deathDmgMod":1,"armor":70,"mitigation":2.76,"bestiaryClass":"Demon","hitpoints":18000},
   "jungle moa":{"physicalDmgMod":0.9,"holyDmgMod":1,"iceDmgMod":0.9,"fireDmgMod":1,"energyDmgMod":0.9,"earthDmgMod":1.05,"deathDmgMod":1.1,"armor":30,"mitigation":1.65,"bestiaryClass":"Bird","hitpoints":1300},
@@ -521,6 +533,10 @@
   "monk's apparition":{"physicalDmgMod":0.8,"holyDmgMod":0.6,"iceDmgMod":1,"fireDmgMod":1.1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1.2,"armor":0,"mitigation":4.87,"bestiaryClass":"Undead","hitpoints":25000},
   "mooh'tah warrior":{"physicalDmgMod":0.95,"holyDmgMod":1,"iceDmgMod":0.9,"fireDmgMod":0.85,"energyDmgMod":0.95,"earthDmgMod":0.9,"deathDmgMod":0.85,"armor":37,"mitigation":2.13,"bestiaryClass":"Humanoid","hitpoints":1200},
   "moohtant":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":0.85,"fireDmgMod":0.95,"energyDmgMod":0.85,"earthDmgMod":0,"deathDmgMod":0.9,"armor":42,"mitigation":1.74,"bestiaryClass":"Humanoid","hitpoints":3200},
+  "moonspawn blightspitter":{"physicalDmgMod":1.05,"holyDmgMod":1.02,"iceDmgMod":1,"fireDmgMod":1.12,"energyDmgMod":0.85,"earthDmgMod":0.75,"deathDmgMod":0.85,"armor":80,"mitigation":3.22,"bestiaryClass":"Plant","hitpoints":8500},
+  "moonspawn oozecrown":{"physicalDmgMod":1.05,"holyDmgMod":1.06,"iceDmgMod":1.06,"fireDmgMod":1.08,"energyDmgMod":0.95,"earthDmgMod":0.82,"deathDmgMod":0.9,"armor":75,"mitigation":3.45,"bestiaryClass":"Plant","hitpoints":9200},
+  "moonstone excavator":{"physicalDmgMod":1.05,"holyDmgMod":0.9,"iceDmgMod":0.85,"fireDmgMod":1.1,"energyDmgMod":1.1,"earthDmgMod":0.2,"deathDmgMod":0.8,"armor":47,"mitigation":2.09,"bestiaryClass":"Human","hitpoints":5100},
+  "moonstone overseer":{"physicalDmgMod":1.05,"holyDmgMod":0.85,"iceDmgMod":0.95,"fireDmgMod":1.1,"energyDmgMod":1.1,"earthDmgMod":0.7,"deathDmgMod":0.75,"armor":45,"mitigation":2.44,"bestiaryClass":"Human","hitpoints":5450},
   "mould phantom":{"physicalDmgMod":1.1,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":0.5,"deathDmgMod":1,"armor":100,"mitigation":3.92,"bestiaryClass":"Undead","hitpoints":28000},
   "muglex clan assassin":{"physicalDmgMod":1.1,"holyDmgMod":0.8,"iceDmgMod":1,"fireDmgMod":0.95,"energyDmgMod":1.05,"earthDmgMod":1.05,"deathDmgMod":1.1,"armor":0,"mitigation":0.04,"bestiaryClass":"Humanoid","hitpoints":45},
   "muglex clan footman":{"physicalDmgMod":1,"holyDmgMod":0.8,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":1.1,"deathDmgMod":1.1,"armor":0,"mitigation":0.04,"bestiaryClass":"Humanoid","hitpoints":30},
@@ -629,6 +645,12 @@
   "quara raider":{"physicalDmgMod":0.95,"holyDmgMod":0.9,"iceDmgMod":0,"fireDmgMod":0.8,"energyDmgMod":1.1,"earthDmgMod":1.15,"deathDmgMod":1,"armor":95,"mitigation":4.39,"bestiaryClass":"Aquatic","hitpoints":12500},
   "rabbit":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":1,"mitigation":0.08,"bestiaryClass":"Mammal","hitpoints":15},
   "rabid wolf":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1.1,"fireDmgMod":1.1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":1,"mitigation":0.08,"bestiaryClass":"Mammal","hitpoints":75},
+  "radiant acolyte":{"physicalDmgMod":0.95,"holyDmgMod":0.95,"iceDmgMod":0.9,"fireDmgMod":0.6,"energyDmgMod":1.05,"earthDmgMod":1.05,"deathDmgMod":0.7,"armor":95,"mitigation":4.87,"bestiaryClass":"Human","hitpoints":34600},
+  "radiant inquisitor":{"physicalDmgMod":1.1,"holyDmgMod":0.75,"iceDmgMod":1.1,"fireDmgMod":1.05,"energyDmgMod":0.8,"earthDmgMod":0.95,"deathDmgMod":1.05,"armor":110,"mitigation":4.63,"bestiaryClass":"Human","hitpoints":34800},
+  "radiant paragon":{"physicalDmgMod":0.9,"holyDmgMod":1,"iceDmgMod":0.95,"fireDmgMod":0.7,"energyDmgMod":1.1,"earthDmgMod":1.15,"deathDmgMod":0.8,"armor":108,"mitigation":4.63,"bestiaryClass":"Human","hitpoints":36000},
+  "radiant templar":{"physicalDmgMod":0.95,"holyDmgMod":0.75,"iceDmgMod":1.1,"fireDmgMod":1.1,"energyDmgMod":0.8,"earthDmgMod":0.95,"deathDmgMod":1.05,"armor":125,"mitigation":4.87,"bestiaryClass":"Human","hitpoints":37000},
+  "radiant warden":{"physicalDmgMod":0.9,"holyDmgMod":1.1,"iceDmgMod":0.9,"fireDmgMod":0.7,"energyDmgMod":1.1,"earthDmgMod":1.05,"deathDmgMod":0.8,"armor":130,"mitigation":4.63,"bestiaryClass":"Human","hitpoints":38500},
+  "radiant zealot":{"physicalDmgMod":1.15,"holyDmgMod":0.8,"iceDmgMod":1.05,"fireDmgMod":1.05,"energyDmgMod":0.6,"earthDmgMod":0.9,"deathDmgMod":1.1,"armor":106,"mitigation":4.15,"bestiaryClass":"Human","hitpoints":36500},
   "rage squid":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1.15,"fireDmgMod":0,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":78,"mitigation":3.45,"bestiaryClass":"Inkborn","hitpoints":17000},
   "ragged rabid wolf":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1.1,"fireDmgMod":1.1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":3,"mitigation":0.12,"bestiaryClass":"Mammal","hitpoints":120},
   "raging fire":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1.1,"fireDmgMod":0,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":0.8,"armor":50,"mitigation":2.09,"bestiaryClass":"Elemental","hitpoints":1800},
@@ -688,6 +710,7 @@
   "sight of surrender":{"physicalDmgMod":0.7,"holyDmgMod":1.05,"iceDmgMod":0.6,"fireDmgMod":0.65,"energyDmgMod":0.9,"earthDmgMod":0.8,"deathDmgMod":0.8,"armor":92,"mitigation":3.68,"bestiaryClass":"Magical","hitpoints":28000},
   "silencer":{"physicalDmgMod":0.95,"holyDmgMod":1.25,"iceDmgMod":0.85,"fireDmgMod":0.7,"energyDmgMod":0.85,"earthDmgMod":0,"deathDmgMod":0.35,"armor":71,"mitigation":2.9,"bestiaryClass":"Magical","hitpoints":5400},
   "silver rabbit":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":1,"mitigation":0.08,"bestiaryClass":"Mammal","hitpoints":15},
+  "silverfrost sentinel":{"physicalDmgMod":1.1,"holyDmgMod":0.9,"iceDmgMod":0.85,"fireDmgMod":1.05,"energyDmgMod":0.9,"earthDmgMod":1.1,"deathDmgMod":1.1,"armor":110,"mitigation":2.99,"bestiaryClass":"Construct","hitpoints":9500},
   "sineater inferniarch":{"physicalDmgMod":1.05,"holyDmgMod":1.05,"iceDmgMod":1.05,"fireDmgMod":0,"energyDmgMod":1.1,"earthDmgMod":1,"deathDmgMod":0.9,"armor":68,"mitigation":3.08,"bestiaryClass":"Demon","hitpoints":9150},
   "skeleton":{"physicalDmgMod":1,"holyDmgMod":1.25,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":0,"armor":2,"mitigation":0.35,"bestiaryClass":"Undead","hitpoints":50},
   "skeleton elite warrior":{"physicalDmgMod":1,"holyDmgMod":1.25,"iceDmgMod":1,"fireDmgMod":1.05,"energyDmgMod":1.05,"earthDmgMod":0.95,"deathDmgMod":0,"armor":75,"mitigation":3.45,"bestiaryClass":"Undead","hitpoints":7800},
@@ -756,6 +779,7 @@
   "troll guard":{"physicalDmgMod":1,"holyDmgMod":0.9,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":0.8,"earthDmgMod":1.1,"deathDmgMod":1.1,"armor":4,"mitigation":0.24,"bestiaryClass":"Humanoid","hitpoints":60},
   "troll legionnaire":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":12,"mitigation":1.01,"bestiaryClass":"Humanoid","hitpoints":210},
   "true dawnfire asura":{"physicalDmgMod":1.1,"holyDmgMod":1.1,"iceDmgMod":1.05,"fireDmgMod":0,"energyDmgMod":1.1,"earthDmgMod":1,"deathDmgMod":0.8,"armor":77,"mitigation":3.45,"bestiaryClass":"Demon","hitpoints":8500},
+  "true feverbloom asura":{"physicalDmgMod":1,"holyDmgMod":1.05,"iceDmgMod":1.1,"fireDmgMod":-0.5,"energyDmgMod":1.05,"earthDmgMod":0.85,"deathDmgMod":1.1,"armor":90,"mitigation":3.45,"bestiaryClass":"Demon","hitpoints":8600},
   "true frost flower asura":{"physicalDmgMod":1,"holyDmgMod":0.7,"iceDmgMod":0,"fireDmgMod":1.1,"energyDmgMod":1.1,"earthDmgMod":1.1,"deathDmgMod":0.8,"armor":72,"mitigation":3.36,"bestiaryClass":"Demon","hitpoints":4000},
   "true midnight asura":{"physicalDmgMod":1,"holyDmgMod":0.7,"iceDmgMod":0.9,"fireDmgMod":0.9,"energyDmgMod":1.1,"earthDmgMod":1.1,"deathDmgMod":0,"armor":75,"mitigation":3.45,"bestiaryClass":"Demon","hitpoints":9000},
   "truffle":{"physicalDmgMod":1,"holyDmgMod":1.05,"iceDmgMod":1.05,"fireDmgMod":1.1,"energyDmgMod":1,"earthDmgMod":0.7,"deathDmgMod":0.9,"armor":13,"mitigation":0.6,"bestiaryClass":"Fey","hitpoints":70},
@@ -827,6 +851,7 @@
   "wild horse":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1,"armor":2,"mitigation":0.08,"bestiaryClass":"Mammal","hitpoints":75},
   "wild warrior":{"physicalDmgMod":1.05,"holyDmgMod":0.9,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":1,"earthDmgMod":1,"deathDmgMod":1.05,"armor":8,"mitigation":0.72,"bestiaryClass":"Human","hitpoints":135},
   "wilting leaf golem":{"physicalDmgMod":1,"holyDmgMod":1,"iceDmgMod":1.05,"fireDmgMod":1.05,"energyDmgMod":1,"earthDmgMod":0.6,"deathDmgMod":1,"armor":21,"mitigation":1.05,"bestiaryClass":"Plant","hitpoints":380},
+  "winged jaracal":{"physicalDmgMod":0.95,"holyDmgMod":0.9,"iceDmgMod":1.1,"fireDmgMod":0.85,"energyDmgMod":1.05,"earthDmgMod":1.05,"deathDmgMod":0.9,"armor":75,"mitigation":3.92,"bestiaryClass":"Mammal","hitpoints":8200},
   "winter wolf":{"physicalDmgMod":1,"holyDmgMod":0.9,"iceDmgMod":0.8,"fireDmgMod":0.9,"energyDmgMod":1.05,"earthDmgMod":1,"deathDmgMod":1.1,"armor":2,"mitigation":0.24,"bestiaryClass":"Mammal","hitpoints":30},
   "wisp":{"physicalDmgMod":0.4,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":0.6,"earthDmgMod":0.1,"deathDmgMod":0,"armor":7,"mitigation":0.68,"bestiaryClass":"Fey","hitpoints":115},
   "witch":{"physicalDmgMod":1.05,"holyDmgMod":1,"iceDmgMod":1,"fireDmgMod":1,"energyDmgMod":0,"earthDmgMod":0.8,"deathDmgMod":1.05,"armor":8,"mitigation":0.48,"bestiaryClass":"Human","hitpoints":300},

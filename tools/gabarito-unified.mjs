@@ -1939,6 +1939,30 @@ export const CASES = [
     t => spellWithAaCheck(1, 15, 'Death Echo')(t) || deathEchoStagesCheck(1, 6)(t), '02/Oct/2026'),
   C('italian-echo-same-mob/18:55:50', 'italian Server Log.txt', 'italian Local Chat.txt', '18:55:50',
     t => spellWithAaCheck(1, 3, 'Great Death Beam')(t) || arrowSeqCheck([7039])(t), '02/Oct/2026'),
+  // ms devoted (20/Out/2026, sorcerer `Nightt Gaze`, estancia Decay): os tres mobs da caca
+  // (devoted radiant templar/zealot/inquisitor) faltavam na tabela pos-cutoff, e sem reversao
+  // o eco do Death Echo nunca era provado (M-016d-1a) — ele ia parar no turno seguinte. Com a
+  // tabela, o eco e a metade do blast no mesmo mob e estado (ex.: 02:43:27 templar 1334 -> 666,
+  // inquisitor 1109 -> 554) e fica no turno do blast; o turno seguinte reancora 1 s depois. Os
+  // 4 "AA" de S1 (03:07:44, 03:11:36, 03:12:49, 03:13:18) eram o blast de 1 alvo ou o eco
+  // (inquisitor 561 = 1122/2). Os hits virtuais sao charm-kill com N exato (S-014e): 02:42:11
+  // Hell's Core N=13 nos tres mobs, 02:45:02 N=11, 02:46:43 N=8, 02:47:53 N=4.
+  ...[
+    ['02:39:57', 5, 'Death Echo'], ['02:40:00', 1, 'Energy Wave'], ['02:42:11', 13, "Hell's Core"],
+    ['02:42:56', 8, 'Death Echo'], ['02:42:59', 3, 'Energy Wave'], ['02:43:27', 14, 'Death Echo'],
+    ['02:44:02', 4, 'Death Echo'], ['02:44:05', 4, 'Great Death Beam'], ['02:45:02', 11, "Hell's Core"],
+    ['02:46:40', 19, 'Death Echo'], ['02:46:43', 8, 'Great Fire Wave'], ['02:47:53', 4, 'Energy Wave'],
+    ['02:48:55', 26, 'Death Echo'], ['02:48:58', 10, 'Great Death Beam'], ['02:49:33', 18, 'Death Echo'],
+    ['02:49:36', 9, 'Great Death Beam'],
+    ['03:06:20', 10, 'Death Echo'], ['03:06:23', 4, 'Great Death Beam'], ['03:07:42', 3, 'Death Echo'],
+    ['03:07:45', 6, 'Great Death Beam'], ['03:10:12', 16, 'Death Echo'], ['03:10:15', 7, "Hell's Core"],
+    ['03:11:36', 3, 'Death Echo'], ['03:11:59', 11, 'Death Echo'], ['03:12:02', 3, 'Energy Wave'],
+    ['03:12:49', 4, 'Death Echo'], ['03:13:18', 3, 'Death Echo'], ['03:16:39', 16, 'Death Echo'],
+    ['03:16:42', 7, 'Energy Wave'],
+  ].map(([ts, spell, label]) => C(`ms-devoted-mob-table/${ts}`, 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', ts,
+    spellNoAaCheck(spell, label), '20/Oct/2026')),
+  C('ms-devoted-mob-table/02:43:30', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '02:43:30',
+    sharedCountCheck({ arrow: 0, spell: 0, rune: 7, grenade: 0 }), '20/Oct/2026'),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 
