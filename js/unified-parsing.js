@@ -533,7 +533,9 @@
       // contrária — os comparáveis que não fecham, que são justamente os do outro cast.
       // Hits sem contraparte e overkills continuam acompanhando a explosão, como no
       // segundo exclusivo: excluí-los também deixaria pedaços do eco no segundo, que
-      // viram âncora de um turno órfão. Caso-prova: `dlc ms` `21:35:29`, onde o eco `1/2`
+      // viram âncora de um turno órfão. A exceção são os que a ordem do log ou o piso do
+      // overkill põem no bloco do outro cast (emenda de 20/Out/2026, na consolidação
+      // abaixo). Caso-prova: `dlc ms` `21:35:29`, onde o eco `1/2`
       // do `exevo mort ora` de `:27` (`583`/`788`/`733`) divide o segundo com o
       // `exevo gran flam hur` de `:29` (`1546`/`2092`/`1947`).
       const echoSecondSharedWithOtherCast = (spellCasts || []).some(other => other !== cast
@@ -653,75 +655,113 @@
       // Os pares casados continuam tendo de fechar todos sob a MESMA fração (uma
       // explosão tem uma única potência); overkills acompanham, mas nunca provam.
       let winningTier = null, matchedPrimary = null, matchedEcho = null, otherCastHits = null;
-      for (const tier of tiers) {
-        const mp = new Set();
-        const me = [];
-        const other = new Set();
-        let contradicted = false;
-        for (const echoHit of echoCandidates) {
-          if (!knownOriginals(comparableEvidence.echo.get(echoHit.id))) continue; // sem contraparte (D-006)
-          const comparable = comparableTo(echoHit);
-          if (!comparable.length) continue; // sem contraparte (D-006)
-          const primaryHit = closingPrimary(stageEvidence, comparable, echoHit, tier);
-          if (!primaryHit) {
-            if (!echoSecondSharedWithOtherCast) { contradicted = true; break; } // contradição real
-            other.add(echoHit); // explicável pelo outro cast concreto do segundo (T-002)
-            continue;
+      const proveStage = comparableOf => {
+        for (const tier of tiers) {
+          const mp = new Set();
+          const me = [];
+          const other = new Set();
+          let contradicted = false;
+          for (const echoHit of echoCandidates) {
+            if (!knownOriginals(comparableEvidence.echo.get(echoHit.id))) continue; // sem contraparte (D-006)
+            const comparable = comparableOf(echoHit);
+            if (!comparable.length) continue; // sem contraparte (D-006)
+            const primaryHit = closingPrimary(stageEvidence, comparable, echoHit, tier);
+            if (!primaryHit) {
+              if (!echoSecondSharedWithOtherCast) { contradicted = true; break; } // contradição real
+              other.add(echoHit); // explicável pelo outro cast concreto do segundo (T-002)
+              continue;
+            }
+            mp.add(primaryHit);
+            me.push(echoHit);
           }
-          mp.add(primaryHit);
-          me.push(echoHit);
-        }
-        // D-007/S-008: o critico rola uma vez por ataque e atinge todos os alvos da explosao
-        // igualmente, entao TODO hit nao-overkill do segundo do eco e comparavel com a explosao
-        // no crit-state de componente (Low Blow fora, por ser por mob, D-008). Um hit cujo
-        // crit-state difere do dos pares casados nao fecha com a explosao: e evidencia
-        // contraria, tratada como o comparavel que nao fecha (excluido quando outro cast
-        // concreto cobre o segundo, contradicao quando nao ha). Caso-prova: `italian`
-        // 18:49:31 — o eco nao-critico de 18:49:33 e o `roaming dread 201 CRIT` do mesmo
-        // segundo, que declara N=1 pelo leech e e o AA do ciclo seguinte.
-        if (!contradicted && me.length) {
-          const critOf = root.UnifiedValidation.componentCritState;
-          const explosionCrit = critOf(me[0]);
-          if (me.every(h => critOf(h) === explosionCrit)) {
+          // D-007/S-008: o critico rola uma vez por ataque e atinge todos os alvos da explosao
+          // igualmente, entao TODO hit nao-overkill do segundo do eco e comparavel com a explosao
+          // no crit-state de componente (Low Blow fora, por ser por mob, D-008). Um hit cujo
+          // crit-state difere do dos pares casados nao fecha com a explosao: e evidencia
+          // contraria, tratada como o comparavel que nao fecha (excluido quando outro cast
+          // concreto cobre o segundo, contradicao quando nao ha). Caso-prova: `italian`
+          // 18:49:31 — o eco nao-critico de 18:49:33 e o `roaming dread 201 CRIT` do mesmo
+          // segundo, que declara N=1 pelo leech e e o AA do ciclo seguinte.
+          if (!contradicted && me.length) {
+            const critOf = root.UnifiedValidation.componentCritState;
+            const explosionCrit = critOf(me[0]);
+            if (me.every(h => critOf(h) === explosionCrit)) {
+              for (const echoHit of echoCandidates) {
+                if (me.includes(echoHit) || other.has(echoHit) || critOf(echoHit) === explosionCrit) continue;
+                if (!echoSecondSharedWithOtherCast) { contradicted = true; break; }
+                other.add(echoHit);
+              }
+            }
+          }
+          // S-004a dentro da explosao: a explosao tem um nivel (o dos pares casados), e dois hits
+          // do mesmo mob e estado na mesma explosao tem o mesmo original. Um hit do segundo do eco
+          // fora desse nivel cujo par do MESMO mob e estado esta no nivel com outro original
+          // (sem omega que os reconcilie, M-039; entre estados de omega diferentes vale a folga de
+          // 1 ponto de S-004c) nao fecha com a explosao: evidencia contraria, mesmo tratamento do
+          // comparavel que nao fecha. Hit sem par do mesmo mob e estado continua acompanhando
+          // (M-016d-1a). Caso-prova: `italian` 18:55:48 — eco critico de :50 no nivel 542
+          // (`crypt mage 1118` casado, `roaming dread 1216` x2) e o `roaming dread 218 CRIT`
+          // (O 97, vida 109 = N=1), AA do turno 18:55:50 do Great Death Beam de :51.
+          if (!contradicted && me.length) {
+            const levelTolerance = root.UnifiedValidation.elementalBlockTolerance({ comp: 'spell', action: cast });
+            const candidatesOf = h => {
+              const plain = knownOriginals(stageEvidence.echo.get(h.id));
+              const omega = stageEvidence.echoOmega ? knownOriginals(stageEvidence.echoOmega.get(h.id)) : null;
+              return [plain && { omega: false, originals: plain }, omega && { omega: true, originals: omega }].filter(Boolean);
+            };
+            const near = (a, b, tolerance) => a.originals.some(v => b.originals.some(x => Math.abs(v - x) <= tolerance));
+            const atLevel = h => me.includes(h) || me.some(m => candidatesOf(m).some(a => candidatesOf(h).some(b => near(a, b, levelTolerance))));
+            const sameOriginal = (p, q) => candidatesOf(p).some(a => candidatesOf(q).some(b =>
+              near(a, b, a.omega === b.omega ? 0 : OMEGA_CROSS_STATE_TOLERANCE)));
             for (const echoHit of echoCandidates) {
-              if (me.includes(echoHit) || other.has(echoHit) || critOf(echoHit) === explosionCrit) continue;
+              if (me.includes(echoHit) || other.has(echoHit) || atLevel(echoHit)) continue;
+              const refuted = echoCandidates.some(q => q !== echoHit && !other.has(q)
+                && elementalStateKey(q) === elementalStateKey(echoHit) && atLevel(q) && !sameOriginal(q, echoHit));
+              if (!refuted) continue;
               if (!echoSecondSharedWithOtherCast) { contradicted = true; break; }
               other.add(echoHit);
             }
           }
+          // A queda de um bloco sem nenhum par comparável não prova explosão alguma:
+          // exige-se ao menos um par casado, além de nenhuma contradição.
+          if (!contradicted && me.length) return { tier, matchedPrimary: mp, matchedEcho: me, otherCastHits: other };
         }
-        // S-004a dentro da explosao: a explosao tem um nivel (o dos pares casados), e dois hits
-        // do mesmo mob e estado na mesma explosao tem o mesmo original. Um hit do segundo do eco
-        // fora desse nivel cujo par do MESMO mob e estado esta no nivel com outro original
-        // (sem omega que os reconcilie, M-039; entre estados de omega diferentes vale a folga de
-        // 1 ponto de S-004c) nao fecha com a explosao: evidencia contraria, mesmo tratamento do
-        // comparavel que nao fecha. Hit sem par do mesmo mob e estado continua acompanhando
-        // (M-016d-1a). Caso-prova: `italian` 18:55:48 — eco critico de :50 no nivel 542
-        // (`crypt mage 1118` casado, `roaming dread 1216` x2) e o `roaming dread 218 CRIT`
-        // (O 97, vida 109 = N=1), AA do turno 18:55:50 do Great Death Beam de :51.
-        if (!contradicted && me.length) {
-          const levelTolerance = root.UnifiedValidation.elementalBlockTolerance({ comp: 'spell', action: cast });
-          const candidatesOf = h => {
-            const plain = knownOriginals(stageEvidence.echo.get(h.id));
-            const omega = stageEvidence.echoOmega ? knownOriginals(stageEvidence.echoOmega.get(h.id)) : null;
-            return [plain && { omega: false, originals: plain }, omega && { omega: true, originals: omega }].filter(Boolean);
-          };
-          const near = (a, b, tolerance) => a.originals.some(v => b.originals.some(x => Math.abs(v - x) <= tolerance));
-          const atLevel = h => me.includes(h) || me.some(m => candidatesOf(m).some(a => candidatesOf(h).some(b => near(a, b, levelTolerance))));
-          const sameOriginal = (p, q) => candidatesOf(p).some(a => candidatesOf(q).some(b =>
-            near(a, b, a.omega === b.omega ? 0 : OMEGA_CROSS_STATE_TOLERANCE)));
-          for (const echoHit of echoCandidates) {
-            if (me.includes(echoHit) || other.has(echoHit) || atLevel(echoHit)) continue;
-            const refuted = echoCandidates.some(q => q !== echoHit && !other.has(q)
-              && elementalStateKey(q) === elementalStateKey(echoHit) && atLevel(q) && !sameOriginal(q, echoHit));
-            if (!refuted) continue;
-            if (!echoSecondSharedWithOtherCast) { contradicted = true; break; }
-            other.add(echoHit);
+        return null;
+      };
+      let proof = proveStage(comparableTo);
+      // M-016d-1a, emenda de 20/Out/2026: par cross-mob pelo original comum do cast, como ultimo
+      // recurso. So roda quando nenhum hit do eco tem par do mesmo mob e estado no blast (a prova
+      // same-mob decide sempre que existe), o blast tem um original comum (um sorteio por cast,
+      // S-004; com um hit so, o dele) e a janela do blast nao esta no primeiro bloco de 2 s da
+      // sessao (T-007: o blast pode estar cortado pelo inicio do log). Ai cada hit do eco e
+      // comparavel com todo hit do blast no mesmo estado de critico, de qualquer mob, e a fracao
+      // continua exata. Caso-prova: `ms devoted` S0 02:40:03, blast de 1 alvo `templar 1340`
+      // (death {1048,1049}) e eco `zealot 706` x2 ({523,524}); sem a prova o 1340 virava AA.
+      if (!proof) {
+        const noSameMobCounterpart = echoCandidates.every(e => !knownOriginals(comparableEvidence.echo.get(e.id)) || !comparableTo(e).length);
+        const blast = primaryWindow.filter(p => p !== excludedFirst && knownOriginals(stageEvidence.primary.get(p.id)));
+        const levelTolerance = root.UnifiedValidation.elementalBlockTolerance({ comp: 'spell', action: cast });
+        const firstOriginals = blast.length ? knownOriginals(stageEvidence.primary.get(blast[0].id)) : [];
+        const commonLevel = firstOriginals.some(v => blast.every(q =>
+          knownOriginals(stageEvidence.primary.get(q.id)).some(x => Math.abs(x - v) <= levelTolerance)));
+        const edgeWindow = primaryWindow.some(h => h.ordTs - sorted[0].ordTs < 2);
+        if (noSameMobCounterpart && commonLevel && !edgeWindow) {
+          const critStateOf = h => [h.type || '', h.realCrit ? 1 : 0, h.lowBlow ? 1 : 0, h.savageBlow ? 1 : 0, h.onslaught ? 1 : 0].join('|');
+          proof = proveStage(echoHit => blast.filter(p => critStateOf(p) === critStateOf(echoHit)));
+          // Provado assim, o rotulo de blast segue a ordem do log: a explosao e um sorteio so, e
+          // todo hit da janela a partir do primeiro hit no nivel comum e blast, inclusive dodge e
+          // overkill; o 1o hit excluido como auto ataque fica de fora (`kim` 16:17:37).
+          if (proof) {
+            const windowRun = [cast.ts - 1, cast.ts].flatMap(ts => hitsByTs.get(ts) || [])
+              .filter(h => !delayedByHit.has(h.id) && h !== excludedFirst)
+              .sort((a, b) => (a.seq || 0) - (b.seq || 0));
+            const start = windowRun.findIndex(h => blast.includes(h));
+            if (start >= 0) proof.matchedPrimary = new Set(windowRun.slice(start));
           }
         }
-        // A queda de um bloco sem nenhum par comparável não prova explosão alguma:
-        // exige-se ao menos um par casado, além de nenhuma contradição.
-        if (!contradicted && me.length) { winningTier = tier; matchedPrimary = mp; matchedEcho = me; otherCastHits = other; break; }
+      }
+      if (proof) {
+        winningTier = proof.tier; matchedPrimary = proof.matchedPrimary; matchedEcho = proof.matchedEcho; otherCastHits = proof.otherCastHits;
       }
       // Segundo só-overkill: não há par para casar nem para contradizer. A
       // consolidação NÃO afirma potência alguma sobre o bloco — nenhum hit recebe
@@ -740,9 +780,51 @@
       // Uma vez que pares comparáveis provam timing + potência, a explosão de
       // área inteira no mesmo timestamp é o estágio atrasado. Isso preserva hits
       // cujo original não é calculável e overkills, sem usá-los como prova.
-      const consolidatedEcho = (otherCastHits && otherCastHits.size)
+      let consolidatedEcho = (otherCastHits && otherCastHits.size)
         ? echoBlock.filter(h => !otherCastHits.has(h))
         : echoBlock;
+      // M-016d-1a, emenda de 20/Out/2026: no segundo compartilhado com outro cast (T-002), o eco
+      // tambem nao leva os hits que a ordem do log ou a magnitude poem no bloco do outro cast.
+      if (otherCastHits && otherCastHits.size && matchedEcho.length) {
+        // Contiguidade (D-012): a explosao de cada cast sai contigua no Server Log. Com os pares
+        // casados todos antes do 1o hit atribuido ao outro cast, todo hit depois dele nao e eco
+        // (simetrico com o outro cast antes); intercalados, a ordem nao decide (`alumnishocks` S0
+        // 19:01:52). Caso-prova: `ms devoted` S1 03:05:04, o `templar 3041` de seq 786 depois do
+        // Hell's Core de 03:05:03.
+        const seqOf = h => h.seq || 0;
+        const echoSeqs = matchedEcho.map(seqOf);
+        const otherSeqs = Array.from(otherCastHits).map(seqOf);
+        const otherFirst = Math.min(...otherSeqs), otherLast = Math.max(...otherSeqs);
+        if (Math.max(...echoSeqs) < otherFirst) consolidatedEcho = consolidatedEcho.filter(h => seqOf(h) < otherFirst);
+        else if (otherLast < Math.min(...echoSeqs)) consolidatedEcho = consolidatedEcho.filter(h => seqOf(h) > otherLast);
+        // Piso do overkill (D-011/D-025, o principio de M-035b item 4): o dano exibido de um
+        // overkill so subestima o real. Revertido como eco deste cast, um overkill no crit-state
+        // da explosao cujo MENOR original possivel passa do nivel dos pares casados mais a
+        // tolerancia nao e eco; o piso so exclui, nunca confirma nivel. Caso-prova: `italian` S0
+        // 18:53:31, `crypt mage 2138 OK` com original minimo 1910 contra 421 do eco.
+        const critOf = root.UnifiedValidation.componentCritState;
+        const explosionCrit = critOf(matchedEcho[0]);
+        const stageElement = stageEvidence === comparableEvidence ? stageElements[0] : stageElements[1];
+        const echoLevel = [];
+        for (const m of matchedEcho) {
+          echoLevel.push(...(knownOriginals(stageEvidence.echo.get(m.id)) || []));
+          if (stageEvidence.echoOmega) echoLevel.push(...(knownOriginals(stageEvidence.echoOmega.get(m.id)) || []));
+        }
+        if (echoLevel.length) {
+          const levelCeiling = Math.max(...echoLevel) + root.UnifiedValidation.elementalBlockTolerance({ comp: 'spell', action: cast });
+          const floorOf = h => {
+            const asEchoHit = Object.assign({}, h, { multiStageStage: delayed.id, multiStageCastTs: cast.ts });
+            const originals = (knownOriginals(elementalOriginalCandidates(asEchoHit, stageElement, stageContext)) || []).slice();
+            if (omegaSession) originals.push(...(knownOriginals(omegaOriginals(asEchoHit, stageElement)) || []));
+            return originals.length ? Math.min(...originals) : null;
+          };
+          consolidatedEcho = consolidatedEcho.filter(h => {
+            if (!h.overkill || h.zeroDamageDodge || critOf(h) !== explosionCrit) return true;
+            const floor = floorOf(h);
+            return floor == null || floor <= levelCeiling;
+          });
+        }
+      }
       // M-016d-1a: com estancia conhecida, a primeira explosao cobre tambem todo hit nao-overkill
       // da janela IDENTICO a um casado (mesmo mob, estado e dano). Overkill nao: ele herda o bloco
       // contiguo (D-012) e poderia puxar um AA em overkill para a spell (`kim` 16:25:13).

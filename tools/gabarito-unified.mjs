@@ -1917,8 +1917,11 @@ export const CASES = [
   // sao a guarda contra a regressao do item 4 de M-016d-1a.
   C('italian-omega-by-state/18:52:32', 'italian Server Log.txt', 'italian Local Chat.txt', '18:52:32',
     t => spellNoAaCheck(17, 'Death Echo')(t) || deathEchoStagesCheck(7, 9)(t), '02/Oct/2026'),
+  // 9 -> 11 em 20/Out/2026 (M-016d-1a, contiguidade no segundo compartilhado; aprovado pelo
+  // usuario): na ordem do log, `roaming dread 3486 OK` e `crypt mage 1023 OK` estao entre os
+  // `3501`/`3984` do Hell's Core, e nao junto do eco do `exevo mort ora` de 18:50:01.
   C('italian-omega-by-state/18:50:03', 'italian Server Log.txt', 'italian Local Chat.txt', '18:50:03',
-    spellNoAaCheck(9, "Hell's Core"), '02/Oct/2026'),
+    spellNoAaCheck(11, "Hell's Core"), '02/Oct/2026'),
   C('italian-omega-by-state/18:52:39', 'italian Server Log.txt', 'italian Local Chat.txt', '18:52:39',
     spellWithAaCheck(1, 8, 'Death Echo'), '02/Oct/2026'),
   C('italian-omega-by-state/18:54:24', 'italian Server Log.txt', 'italian Local Chat.txt', '18:54:24',
@@ -1939,6 +1942,18 @@ export const CASES = [
     t => spellWithAaCheck(1, 15, 'Death Echo')(t) || deathEchoStagesCheck(1, 6)(t), '02/Oct/2026'),
   C('italian-echo-same-mob/18:55:50', 'italian Server Log.txt', 'italian Local Chat.txt', '18:55:50',
     t => spellWithAaCheck(1, 3, 'Great Death Beam')(t) || arrowSeqCheck([7039])(t), '02/Oct/2026'),
+  // M-016d-1a, emenda de 20/Out/2026 (segundo do eco compartilhado com outro cast): a explosao
+  // de cada cast sai contigua no log (D-012), e um overkill cujo menor original, revertido como
+  // eco, passa do nivel dos pares casados nao e eco (D-011/D-025, M-035b item 4). 18:50:01: os
+  // dois overkills do bloco do Hell's Core saem do eco (ver italian-omega-by-state/18:50:03).
+  // 18:53:29/31: `1019 OK`, `2138 OK` e `1209 OK` saem pelo piso; `11 OK` e `1241 OK`, depois do
+  // 1o hit nao-overkill do Great Death Beam, pela ordem.
+  C('italian-echo-shared-second/18:50:01', 'italian Server Log.txt', 'italian Local Chat.txt', '18:50:01',
+    t => spellWithAaCheck(1, 15, 'Death Echo')(t) || arrowSeqCheck([1105])(t), '02/Oct/2026'),
+  C('italian-echo-shared-second/18:53:29', 'italian Server Log.txt', 'italian Local Chat.txt', '18:53:29',
+    t => spellWithAaCheck(1, 14, 'Death Echo')(t) || arrowSeqCheck([4578])(t), '02/Oct/2026'),
+  C('italian-echo-shared-second/18:53:31', 'italian Server Log.txt', 'italian Local Chat.txt', '18:53:31',
+    spellNoAaCheck(12, 'Great Death Beam'), '02/Oct/2026'),
   // ms devoted (20/Out/2026, sorcerer `Nightt Gaze`, estancia Decay): os tres mobs da caca
   // (devoted radiant templar/zealot/inquisitor) faltavam na tabela pos-cutoff, e sem reversao
   // o eco do Death Echo nunca era provado (M-016d-1a) — ele ia parar no turno seguinte. Com a
@@ -1963,6 +1978,32 @@ export const CASES = [
     spellNoAaCheck(spell, label), '20/Oct/2026')),
   C('ms-devoted-mob-table/02:43:30', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '02:43:30',
     sharedCountCheck({ arrow: 0, spell: 0, rune: 7, grenade: 0 }), '20/Oct/2026'),
+  // M-016d-1a, emenda de 20/Out/2026 (par cross-mob pelo original comum do cast, ultimo
+  // recurso): sem par do mesmo mob e estado, o eco e comparado com o blast inteiro no mesmo
+  // estado de critico, quando o blast tem original comum (S-004). 02:40:03: blast de 1 alvo
+  // `templar 1340` (death {1048,1049}) e eco `zealot 706` x2 ({523,524}); sem a prova, o 1340
+  // virava AA. Provado assim, o rotulo de blast segue a ordem do log (kim 16:17:37: os dois
+  // `nighthunter 993` e o dodge de :37 sao blast; o dodge e o `496 OK` de :38 sao eco).
+  C('ms-devoted-echo-cross-mob/02:40:03', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '02:40:03',
+    t => spellNoAaCheck(3, 'Death Echo')(t) || deathEchoStagesCheck(1, 2)(t), '20/Oct/2026'),
+  C('ms-devoted-echo-cross-mob/03:06:25', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '03:06:25',
+    t => spellNoAaCheck(3, 'Death Echo')(t) || deathEchoStagesCheck(2, 1)(t), '20/Oct/2026'),
+  C('kim-echo-cross-mob/16:17:37', 'kim server log.txt', 'kim local chat.txt', '16:17:37',
+    t => spellNoAaCheck(6, 'Death Echo')(t) || deathEchoStagesCheck(3, 3)(t), '14/Jul/2026'),
+  C('kim-echo-cross-mob/16:29:56', 'kim server log.txt', 'kim local chat.txt', '16:29:56',
+    t => spellNoAaCheck(3, 'Death Echo')(t) || deathEchoStagesCheck(2, 1)(t), '14/Jul/2026'),
+  // T-007: no primeiro turno da sessao o blast pode estar cortado pelo inicio do log, e o
+  // ultimo recurso nao roda; o turno fica como antes, sem rotulo de estagio.
+  C('italian-echo-cross-mob/18:49:00', 'italian Server Log.txt', 'italian Local Chat.txt', '18:49:00',
+    t => spellNoAaCheck(9, 'Death Echo')(t) || deathEchoStagesCheck(0, 0)(t), '02/Oct/2026'),
+  // M-016d-1a, emenda de 20/Out/2026 (segundo compartilhado): no log, o eco do `exevo mort ora`
+  // de 03:05:02 (8 hits em :04) vem antes do Hell's Core de 03:05:03, e o ultimo `templar 3041`
+  // (seq 786, marcado overkill pela XP de outro membro da party) vem depois dele, com o leech dos
+  // templars do Hell's Core. Pela contiguidade (D-012) e pelo piso do overkill ele nao e eco.
+  C('ms-devoted-echo-shared-second/03:05:02', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '03:05:02',
+    t => spellNoAaCheck(15, 'Death Echo')(t) || deathEchoStagesCheck(7, 8)(t), '20/Oct/2026'),
+  C('ms-devoted-echo-shared-second/03:05:04', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '03:05:04',
+    spellNoAaCheck(9, "Hell's Core"), '20/Oct/2026'),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

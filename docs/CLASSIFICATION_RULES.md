@@ -66,7 +66,7 @@
 
     - **M-016d-1c — Segundo candidato só de overkill:** o gate guloso acima procura o primeiro segundo com pelo menos um hit **não-overkill** porque overkill não é avaliável: o dano exibido é truncado e, por D-011/D-012a, não prova nem contradiz a transformação de potência. Quando **nenhum** dos delays candidatos oferece segundo avaliável e existe um segundo composto **exclusivamente** de hits de overkill, esse segundo é o estágio atrasado e é consolidado no turno do blast. Justificativa: M-016d já declara que o cast explica um blast e um estágio atrasado e **não pode ser reutilizado depois de ambos serem consolidados**; deixar o segundo só-overkill de fora não é neutro — ele vira âncora de um turno independente (T-002) e o **mesmo** cast passa a nomear componentes em dois turnos consolidados, contradizendo M-015/N-007/N-008. Entre evidência ausente (D-006) e violação certa de invariante, a evidência ausente cede. A consolidação **não afirma potência alguma**: nenhum hit do bloco recebe marcação de fração/tier, nenhum dano ou hit virtual é criado (D-006/T-003), e a exceção só vale quando o perfil declara **uma única** fração candidata — com duas ou mais haveria uma escolha real a fazer sem evidência, e o motor continua não decidindo. Caso-prova: `kim` `14/Jul/2026` `16:24:28` — blast `stalking stalk 889` em `:29` e eco `172 overkill` em `:30`, do mesmo `exevo mort ora` de `16:24:29`, resolvem como um único turno `A1 S2`; antes o `:30` era um turno próprio nomeado pelo mesmo cast. Contraprova preservada: `kim 16:22:16` e `dlc ms 21:42:51`/`21:35:29` têm segundo avaliável e continuam decididos por M-016d-1a, sem passar por aqui.
 
-    - **M-016d-1a — Contradição × evidência ausente na confirmação do estágio:** ao testar uma fração candidata, cada hit não-overkill do segundo do eco cai em **uma** de três categorias: **casado** (existe hit comparável no blast — mesmo mob e mesmo estado de modificadores, com original elemental calculável dos dois lados — e a transformação discreta fecha); **contraditório** (existe hit comparável e ele **não** fecha); **sem contraparte** (não existe hit comparável, ou o original não é calculável de algum dos lados). A fração é rejeitada **somente** por hit contraditório. Hit **sem contraparte** é evidência ausente (D-006) e **não** rejeita a fração — a ausência de um hit comparável no blast não prova que a relação de potência falhou. A fração vence quando há **ao menos um** par casado e **nenhum** contraditório; um bloco composto só de hits sem contraparte não confirma estágio algum. Exigir que *todos* os candidatos casem trata as duas categorias como iguais e derruba a confirmação inteira por um único mob que o blast não acertou — sem a marcação de estágio, blast e eco ficam fundidos no mesmo bloco elemental e o turno morre no veto same-mob de S-004a, com o mesmo mob em dois níveis (integral e `1/2`). Casos-prova: `kim 16:22:16` — blast `undertaker 1070` em `:16` e eco `undertaker 535` em `:17` (`1/2` exato) casam, mas o `stalking stalk 449` do mesmo segundo não tem contraparte (o único outro mob do blast entrou como dodge de dano zero); `dlc ms 21:42:51` — `walking pillar 1450→725`, `darklight matter 1557→778` e `bloodjaw 1001→500` confirmam `1/2`, e o `darklight striker 781` acompanha sem contraparte. **Segundo compartilhado com outro cast concreto:** T-002 já declara que o segundo do estágio atrasado pode conter, legitimamente, hits de um cast concreto diferente. Quando existe outro cast ofensivo concreto do dono cuja janela normativa (M-012/M-013) cobre esse segundo, um hit comparável que **não** fecha sob a fração é evidência **daquele** cast e **não** rejeita a fração: a alternativa existe e está declarada. Sem outro cast assim, nada além do estágio atrasado poderia ter produzido o hit, e a contradição continua real. Nesse segundo compartilhado, a consolidação exclui do estágio atrasado **somente** os hits com evidência contrária (os comparáveis que não fecham); hits sem contraparte e overkills continuam acompanhando a explosão, como no segundo exclusivo — retirá-los também deixa pedaços do eco soltos, que viram âncora de turno órfão (medido: 3 turnos novos sem classificação). ~~Contraexemplo preservado: `dlc ms 21:35:29`, cujos dois níveis têm razão ≈`0,377` (não `1/2`), permanece não resolvido — não é par blast/eco.~~ **Corrigido:** aquela razão `0,377` não compara dois níveis da mesma explosão — compara o **eco** com o bloco de **outra spell** que caiu no mesmo segundo. O par blast/eco existe e é exato entre `:27` e `:29`: `exevo mort ora` em `21:35:27` (`source 1167`, `matter 1578`, `pillar 1468`) reverte para `O` `1079`/`1169`/`1077`, cujo `1/2` reproduz `583`/`788`/`733` nos três mobs; os `1546`/`2092`/`1947` do mesmo segundo são o `exevo gran flam hur` castado em `21:35:29`. O turno resolve como `Great Fire Wave` e o eco completo fica com o cast de origem.
+    - **M-016d-1a — Contradição × evidência ausente na confirmação do estágio:** ao testar uma fração candidata, cada hit não-overkill do segundo do eco cai em **uma** de três categorias: **casado** (existe hit comparável no blast — mesmo mob e mesmo estado de modificadores, com original elemental calculável dos dois lados — e a transformação discreta fecha); **contraditório** (existe hit comparável e ele **não** fecha); **sem contraparte** (não existe hit comparável, ou o original não é calculável de algum dos lados). A fração é rejeitada **somente** por hit contraditório. Hit **sem contraparte** é evidência ausente (D-006) e **não** rejeita a fração — a ausência de um hit comparável no blast não prova que a relação de potência falhou. A fração vence quando há **ao menos um** par casado e **nenhum** contraditório; um bloco composto só de hits sem contraparte não confirma estágio algum. Exigir que *todos* os candidatos casem trata as duas categorias como iguais e derruba a confirmação inteira por um único mob que o blast não acertou — sem a marcação de estágio, blast e eco ficam fundidos no mesmo bloco elemental e o turno morre no veto same-mob de S-004a, com o mesmo mob em dois níveis (integral e `1/2`). Casos-prova: `kim 16:22:16` — blast `undertaker 1070` em `:16` e eco `undertaker 535` em `:17` (`1/2` exato) casam, mas o `stalking stalk 449` do mesmo segundo não tem contraparte (o único outro mob do blast entrou como dodge de dano zero); `dlc ms 21:42:51` — `walking pillar 1450→725`, `darklight matter 1557→778` e `bloodjaw 1001→500` confirmam `1/2`, e o `darklight striker 781` acompanha sem contraparte. **Segundo compartilhado com outro cast concreto:** T-002 já declara que o segundo do estágio atrasado pode conter, legitimamente, hits de um cast concreto diferente. Quando existe outro cast ofensivo concreto do dono cuja janela normativa (M-012/M-013) cobre esse segundo, um hit comparável que **não** fecha sob a fração é evidência **daquele** cast e **não** rejeita a fração: a alternativa existe e está declarada. Sem outro cast assim, nada além do estágio atrasado poderia ter produzido o hit, e a contradição continua real. Nesse segundo compartilhado, a consolidação exclui do estágio atrasado **somente** os hits com evidência contrária (os comparáveis que não fecham); hits sem contraparte e overkills continuam acompanhando a explosão, como no segundo exclusivo — retirá-los também deixa pedaços do eco soltos, que viram âncora de turno órfão (medido: 3 turnos novos sem classificação). **(Emendado em 20/Out/2026: saem também os hits que a ordem do log ou o piso do overkill põem no bloco do outro cast — itens 9 e 10 abaixo.)** ~~Contraexemplo preservado: `dlc ms 21:35:29`, cujos dois níveis têm razão ≈`0,377` (não `1/2`), permanece não resolvido — não é par blast/eco.~~ **Corrigido:** aquela razão `0,377` não compara dois níveis da mesma explosão — compara o **eco** com o bloco de **outra spell** que caiu no mesmo segundo. O par blast/eco existe e é exato entre `:27` e `:29`: `exevo mort ora` em `21:35:27` (`source 1167`, `matter 1578`, `pillar 1468`) reverte para `O` `1079`/`1169`/`1077`, cujo `1/2` reproduz `583`/`788`/`733` nos três mobs; os `1546`/`2092`/`1947` do mesmo segundo são o `exevo gran flam hur` castado em `21:35:29`. O turno resolve como `Great Fire Wave` e o eco completo fica com o cast de origem.
 
       **Emenda de 26/Set/2026 — sorcerer com estância conhecida (`M-043`, change
       `infer-sorcerer-stance-before-resolution`).** Três ajustes, todos só quando a estância do
@@ -136,6 +136,78 @@
          (`crypt mage 1118` casado, `roaming dread 1216` ×2) e o `roaming dread 218 CRIT` (O `97`,
          vida `109` = `N = 1`), que é o AA do turno `18:55:50` do Great Death Beam de `:51` →
          `18:55:48` `A1 + Death Echo 15` e `18:55:50` `A1 + Great Death Beam 3`.
+
+      **Emenda de 20/Out/2026 — par cross-mob pelo original comum e o segundo compartilhado**
+      (change `fix-death-echo-cross-mob-echo-and-shared-second`, decisão do usuário). Três
+      cláusulas, todas dentro da classificação casado/contraditório/sem contraparte acima; a fração
+      continua exata e nenhuma janela é alargada.
+      8. **Par cross-mob pelo original comum do cast, como último recurso.** Quando a prova acima
+         não acha fração vencedora **e** nenhum hit não-overkill do segundo do eco tem hit
+         comparável do mesmo mob e estado no blast, a prova é repetida com outro comparável. Os
+         hits da janela do blast com original conhecido (sem o primeiro hit excluído pelo item 2)
+         precisam ter um original comum — um sorteio por cast (S-004), na tolerância de
+         `elementalBlockTolerance`; com um hit só, o dele. Então todo hit do blast no mesmo estado
+         de crítico (tipo, crítico, Low Blow, Savage Blow, Onslaught) é comparável a cada hit do
+         eco, de qualquer mob. Sem original comum no blast o último recurso não roda; com a janela
+         do blast no primeiro bloco de 2 s da sessão também não (T-007: o blast pode estar cortado
+         pelo início do log; `italian` S0 `18:49:00` fica como antes, sem rótulo de estágio). Como
+         ele só roda sem par same-mob, nenhum turno cuja prova same-mob vence ou contradiz a
+         fração muda. **Limite declarado:** o elemento da prova é o que o item 1 escolheu, e o
+         alternativo não é retestado aqui, porque a escolha do item 1 depende de pares same-mob
+         que fecham, e o último recurso só roda sem eles. Medido em 20/Out/2026: o último recurso
+         roda em 12 casts das 8 fixtures com Death Echo do dono e prova 4; dos 8 que não provam, 2
+         têm elemento alternativo (`kim` `16:20:51` e `16:22:20`, energy e death) e também não
+         provariam nele. Provado o eco assim, o rótulo de blast segue a ordem do log: todo hit da
+         janela do blast, em ordem de `seq`, a partir do primeiro hit no nível comum — inclusive
+         dodge e overkill — é blast, e o primeiro hit excluído como auto ataque fica de fora.
+         Caso-prova: `ms devoted` S0 (`20/Out/2026`) `02:40:03` → `A0 + Death Echo 3`. O blast de
+         um alvo `devoted radiant templar 1340` (death `{1048,1049}`) e o eco
+         `devoted radiant zealot 706` ×2 (`{523,524}`) são a metade exata do original comum, em
+         outro mob; sem a prova, o canal multiestágio de AA single-target separava o `1340` como
+         AA, numa sessão cujo AA de varinha dá 141–177. Só rótulo, mesma contagem: `kim`
+         `16:17:37` (`A0 S6`, blast/eco 3/3: `nighthunter 993`, dodge e `nighthunter 993` em `:37`;
+         `stalking stalk 436`, dodge e `nighthunter 496 OK` em `:38`), `kim` `16:29:56` (`A0 S3`,
+         2/1) e `ms devoted` S1 `03:06:25` (`A0 S3`, 2/1). Neste último o `templar 1349` está
+         marcado overkill pela XP do zealot (autoria da XP em party, pendência de D-011a), e sem
+         ele não há par same-mob; quando a autoria for corrigida, a prova same-mob passa a existir
+         e o resultado é o mesmo.
+      9. **Contiguidade no segundo compartilhado (D-012).** A explosão de cada cast sai contígua no
+         Server Log. Quando o segundo do eco é coberto por outro cast concreto (T-002), a prova
+         achou pares casados e algum comparável que não fechou ficou com o outro cast: se todos os
+         pares casados vêm antes do primeiro hit que ficou com o outro cast, todo hit posterior a
+         esse primeiro hit sai do eco; se todos vêm depois do último, todo hit anterior a ele sai.
+         Intercalados, a ordem não decide e nada sai por aqui. Contraprova: `alumnishocks` S0
+         `19:01:52`, em que o `dragolisk 383` excluído está dentro do próprio eco (o mesmo mob em
+         dois níveis, M-043a), continua `A1 + Death Echo 16`.
+      10. **Piso do overkill no segundo compartilhado (D-011/D-025; o princípio de M-035b item 4).**
+          Nas mesmas condições do item 9, um overkill no crit-state de componente da explosão cujo
+          **menor** original possível, revertido como eco do cast no elemento da prova (com o
+          candidato de omega em sessão com omega), passa do maior original dos pares casados mais
+          `elementalBlockTolerance` não é eco. O piso só exclui, nunca confirma nível.
+
+      Os hits que saem do eco pelos itens 9 e 10 ficam no segundo em que aterrissaram e são
+      classificados no turno dele, com o outro cast; nenhum hit é criado nem removido (T-003).
+      Casos-prova. `ms devoted` S1 `03:05:02`/`03:05:04` → `A0 + Death Echo 15` (blast 7, eco 8) e
+      `A0 + Hell's Core 9`: o último `templar 3041` (seq 786) vem no log depois dos 8 hits do
+      Hell's Core e tem o leech dos templars dele (`N = 9` exato); o parser o marca overkill
+      porque a XP do inquisitor, de outro membro da party, chega depois de duas linhas de dano
+      recebido. `italian` S0 `18:50:01`/`18:50:03` → `A1 + Death Echo 15` e `A0 + Hell's Core 11`:
+      `roaming dread 3486 OK` e `crypt mage 1023 OK` estão entre os `3501`/`3984` do Hell's Core.
+      `italian` S0 `18:53:29`/`18:53:31` → `A1 + Death Echo 14` e `A0 + Great Death Beam 12`:
+      `roaming dread 1019 OK`, `crypt mage 2138 OK` (original mínimo `1910` contra `421` do eco) e
+      `roaming dread 1209 OK` estão antes do 1º hit não-overkill do beam, onde a ordem não decide,
+      e saem pelo piso; `cyclursus 11 OK` (abaixo do nível) e `crypt mage 1241 OK`, depois dele,
+      saem pela ordem. Só a contiguidade move 2 dos 5; só o piso move 4 e deixa o
+      `crypt mage 1023 OK` no eco. Medido nas 8 fixtures em que o dono lança `exevo mort ora`
+      (2.257 turnos): muda a contagem desses 7 turnos e só o rótulo dos 3 do item 8; as outras 41
+      fixtures não têm Death Echo.
+
+      **Pendência declarada (20/Out/2026): rótulo de blast pela ordem no caminho same-mob.** O
+      rótulo pela ordem do item 8 vale só no último recurso cross-mob. Levá-lo também à prova
+      same-mob muda o rótulo de 314 turnos nas 8 fixtures (`ms devoted` 77, `dlc ms` 65, `kim` 64,
+      `italian` 55, `alumnishocks 2` 35, `aquatic` 11, `death echo` 4, `alumnishocks` 3), nenhuma
+      contagem, e revoga a exceção de overkill do item 3 e os asserts de estágio existentes. Fica
+      para change própria.
 
     - **M-016d-1b — A via elemental pertence a quem declara confirmação elemental:** a confirmação por transformação elemental discreta SÓ se aplica a perfis cuja mecânica declarada é `confirmation: 'elemental'` (hoje, Death Echo). Spells multiestágio cuja confirmação declarada é por cluster de leech (M-016e, Spiritual Outburst) **não** podem ser confirmadas por esta via — elas permanecem para o passe de correção posterior, com o leech real já inferido. Sem essa reserva explícita, a separação depende do acaso de a reversão elemental nunca fechar (o que M-016e afirma, mas não garante hit a hit): sob o critério de M-016d-1a, um único par coincidente bastaria para a via elemental preemptar a via de leech. **A recíproca vale igual:** a via de **cluster de leech** também pertence só a quem a declara (`confirmation: 'leech_cluster'`). Um perfil de confirmação elemental cuja via falhe **não** pode ser consolidado por magnitude de cluster: o cluster de leech agrupa por razão vida/mana-por-dano, que separa mobs com e sem prey, então ele consolida **parte** do estágio atrasado e deixa o resto no turno seguinte — mesmo mob em dois níveis, morte por veto same-mob de S-004a. Caso-prova: `dlc ms 21:35:29`, em que só os dois `darklight source 583` viraram eco e os `788`/`788`/`733` ficaram para trás.
 
@@ -1619,6 +1691,22 @@ L=26 -> 12,75%
   notificação `One or more primal pods have spawned.` e então por XP no mesmo
   segundo; a notificação não é nova ação do jogador, o charm mantém
   `killedTarget=true` e Energy Wave continua com 5 hits.
+
+  **Pendência declarada (20/Out/2026, change `fix-death-echo-cross-mob-echo-and-shared-second`):
+  em log de party, a frase "dano recebido intercalado ... não prova nova autoria" está contradita
+  pela medição.** No corpus inteiro, sessão solo nunca tem dano recebido entre o hit e a XP
+  (embora ele apareça entre dois hits em 15% dos pares de hits) e a XP fixa por mob tem pureza
+  `1,000`; em party há 664 hits com dano recebido entre o hit e a XP, e a XP aponta outro mob em
+  446 (pureza `0,78`–`0,96`): é o kill de outro membro da party caindo depois de um hit nosso. A
+  variante "dano recebido como barreira" desfaz 657 de 12.849 overkills e muda **24 turnos em 10
+  fixtures**: resolve 4 pendências (`gloompillar` `08:35:28`/`08:35:50`, que viram o `A3 S4`/
+  `A4 S4` do gabarito, e `moonsilver` S0 `05:18:59`/`05:25:14`), mas regride o caso 6 do apêndice
+  (`jaded` `19:59:49`, `A9 S12` → `A10 S11`) e tira 4 turnos de classificação
+  (`mazzerinbarrage` S4 `23:25:45`, `mk` S0 `19:50:41`, `19:52:57` e `19:53:18`). A XP fixa por
+  mob não serve de prova sem dado novo: em party o mapa XP→mob só sai por maioria, e a tabela de
+  mobs não tem XP de bestiário. O comportamento não muda aqui; a autoria da XP em log de party vai
+  para a change `fix-xp-attribution-across-mobs` (diff da variante em
+  `reports/fix-death-echo-cross-mob-echo-and-shared-second/variante-a1-diff.txt`).
 - **D-011b — Charm que mata fica com a XP (emenda de D-011a, 21/Set/2026, decisão do usuário):**
   o charm entra no log **antes** do hit do ataque que o disparou. Logo `hit → charm → XP` quer dizer
   que o charm matou o próprio alvo (`killedTarget`), e a XP é dele, com **qualquer** nome de mob; o

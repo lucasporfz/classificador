@@ -36,6 +36,8 @@ A avaliação de uma fração candidata SHALL classificar cada hit não-overkill
 
 Em sessão de sorcerer com estância conhecida (M-043), o **primeiro** hit da janela do blast (em ordem de `seq`) MUST NOT ser tratado como hit comparável quando os **demais** hits da janela têm um original comum a pelo menos dois mobs distintos no elemento previsto (nível do blast, com a tolerância de `elementalBlockTolerance`) e nenhum original desse primeiro hit fica dentro dessa tolerância do nível. Só o primeiro hit pode ser o auto ataque do ciclo (V-011, M-032), e um auto ataque não é hit do blast. Nenhum outro hit da janela é excluído: o mesmo mob pode aparecer no blast em mais de um nível observado (`alumnishocks` S0 `19:01:11`, `wardragon` 757 e 739 em energy), e cada um continua comparável.
 
+Quando a avaliação acima não acha fração vencedora **e** nenhum hit não-overkill do segundo do eco tem hit comparável do mesmo mob e estado no blast, o motor SHALL repetir a avaliação, como último recurso, com o **par cross-mob pelo original comum do cast**: os hits da janela do blast (sem o primeiro hit excluído pelo parágrafo anterior) com original conhecido precisam ter um original comum (um único sorteio por cast, S-004; tolerância de `elementalBlockTolerance`; com um hit só, o dele), e então cada hit não-overkill do eco SHALL ser comparável a todo hit do blast no mesmo estado de crítico (tipo, crítico, Low Blow, Savage Blow, Onslaught), de qualquer mob. As três categorias, as frações e as demais cláusulas desta regra valem iguais, exceto a troca para o elemento alternativo, que depende de pares same-mob que fecham e por isso não é retestada no último recurso: a prova usa o elemento que a avaliação same-mob escolheu. Sem original comum no blast, o último recurso MUST NOT rodar; com a janela do blast no primeiro turno da sessão (`partialEdge`, T-007), também MUST NOT rodar, porque o blast pode estar cortado pelo início do log. Quando o último recurso prova o eco, o rótulo de blast SHALL seguir a ordem do log: todo hit da janela do blast, em ordem de `seq`, a partir do primeiro hit no nível comum — inclusive dodge e overkill — é blast; o primeiro hit excluído como auto ataque fica de fora. Ele também MUST NOT rodar quando algum hit do eco tem contraparte do mesmo mob e estado, de modo que um turno cuja prova same-mob hoje vence ou contradiz a fração não muda.
+
 Uma fração candidata SHALL ser rejeitada quando **qualquer** hit for classificado como contraditório. Hits **sem contraparte** MUST ser tratados como evidência ausente conforme D-006 e MUST NOT, por si sós, rejeitar a fração candidata — a ausência de um hit comparável no blast não é prova de que a relação de potência falhou. Todos os hits **casados** MUST fechar contra a MESMA fração candidata — um bloco não pode ser explicado por duas frações diferentes simultaneamente, pois uma única explosão tem uma única potência.
 
 Os originais da prova SHALL ser reconstruídos no elemento efetivo previsto pela máquina de conversão de M-043. Quando, nesse elemento, algum par comparável não fecha (inclusive um par que seria desculpado por outro cast concreto no segundo do eco), e no elemento alternativo (nativo ou estância, nunca um terceiro) **todos** os pares comparáveis fecham, a prova SHALL usar o alternativo, mantendo o conjunto de hits comparáveis decidido no elemento previsto. Motivo medido: o eco sai cerca de 1 ponto de dano acima da metade exata, e a folga de 1 ponto de original de D-010a absorve isso em death (`darklight source` 1184 → 593: originais 1200 → 601) mas não em fire (1048 → 526), porque o passo de arredondamento depende do modificador do elemento. Sem estância conhecida, o elemento da prova SHALL ser o do perfil, como antes.
@@ -57,8 +59,24 @@ Evidência insuficiente SHALL permanecer explícita como componente não resolvi
 - **THEN** essa fração candidata MUST ser rejeitada, mesmo que outros pares do bloco fechem sob ela
 
 #### Scenario: Bloco sem nenhum par casado não confirma estágio
-- **WHEN** nenhum hit do segundo candidato possui contraparte comparável no blast inicial, de modo que não existe par casado algum
+- **WHEN** nenhum hit do segundo candidato possui contraparte comparável no blast inicial — nem do mesmo mob e estado, nem pelo original comum do cast no último recurso —, de modo que não existe par casado algum
 - **THEN** o motor MUST NOT confirmar o estágio atrasado por ausência de contradição, e o bloco SHALL seguir pela classificação normativa ordinária
+
+#### Scenario: Blast de um alvo prova o eco em outro mob pelo original comum
+- **WHEN** `ms devoted` S0 (`20/Oct/2026`, estância `death`) tem o cast `exevo mort ora` de `02:40:03`, cujo único hit na janela do blast é `devoted radiant templar 1340` (original death `{1048,1049}`), e o eco de `02:40:04` traz `devoted radiant zealot 706` ×2 (original `{523,524}`), sem hit de `zealot` no blast
+- **THEN** a fração `1/2` SHALL vencer pelo par cross-mob, o `1340` SHALL receber o rótulo de blast e os dois `706` o de eco, e o turno SHALL resolver `A0 + Death Echo 3`, sem auto ataque
+
+#### Scenario: O blast do último recurso segue a ordem do log
+- **WHEN** `kim` S0 (`14/Jul/2026`) tem o cast `exevo mort ora` de `16:17:37` com blast `nighthunter 993`, `sulphider` dodge (dano 0) e `nighthunter 993` em `:37`, e eco `stalking stalk 436`, `sulphider` dodge e `nighthunter 496 OK` em `:38`, sem `stalking stalk` no blast
+- **THEN** o eco SHALL ser provado pelo par cross-mob, os 3 hits de `:37` SHALL receber o rótulo de blast e os 3 de `:38` o de eco, e o turno SHALL continuar `A0 + Death Echo 6`
+
+#### Scenario: O último recurso não roda no turno de borda
+- **WHEN** a janela do blast cai no primeiro turno da sessão, como `italian` S0 `18:49:00` (primeiro turno do log, blast visível `crypt mage 829`)
+- **THEN** o par cross-mob MUST NOT ser consultado, e o turno SHALL ficar como sem esta regra
+
+#### Scenario: O último recurso não roda quando existe par do mesmo mob
+- **WHEN** algum hit não-overkill do segundo do eco tem hit comparável do mesmo mob e estado no blast
+- **THEN** a prova SHALL ser decidida só pela comparação same-mob, e o par cross-mob MUST NOT ser consultado
 
 #### Scenario: Tier candidato é escolhido pelo fechamento discreto, não por ordem de declaração
 - **WHEN** o blast inicial de `exori gran mas nia` em `monk 2 07:19:35` produz danos como `1523` (chastener) e `1517` (chastener), e o bloco de `07:19:36` produz respectivamente `947` e `934`
@@ -85,6 +103,7 @@ Evidência insuficiente SHALL permanecer explícita como componente não resolvi
 
 - **WHEN** `dlc ms` S0 (estância `fire`, Death Echo `converted`) tem o blast `darklight source 1184` e o eco `darklight source 593` em `21:37:23`/`:24`
 - **THEN** a prova SHALL fechar pelo elemento alternativo (`death`) e o turno SHALL continuar `A0 + Death Echo 18`, como antes desta mudança
+
 
 ### Requirement: Echo atrasado não ancora nem desloca o próximo turno
 
@@ -278,3 +297,39 @@ Quando a prova de estágio de M-016d-1a confirma a fração por potência, em se
 
 - **WHEN** `kim` S0 classifica `16:25:13`, cujo primeiro hit é `nighthunter 61 CRIT OK` (leech declara `N = 1`)
 - **THEN** esse hit MUST NOT receber o rótulo `primary`, e o turno SHALL continuar `A1 + Death Echo 9`
+
+### Requirement: No segundo compartilhado, o eco não leva hits do bloco do outro cast
+
+A consolidação SHALL tirar do estágio atrasado os hits que a ordem do log ou a magnitude põem no bloco de outro cast, quando o segundo do eco também é coberto por outro cast ofensivo concreto do dono
+(T-002, M-016d-1a), a prova achou pares casados e ao menos um comparável que não fechou ficou com o
+outro cast. Isso vale além dos comparáveis que não fecham, que já ficam com o outro cast:
+
+- **Contiguidade (D-012).** A explosão de cada cast sai contígua no Server Log. Se todos os pares
+  casados do eco vêm antes do primeiro hit atribuído ao outro cast (ordem de `seq`), todo hit
+  posterior a esse primeiro hit MUST NOT ser eco; se todos vêm depois do último hit atribuído ao outro
+  cast, todo hit anterior a esse último hit MUST NOT ser eco. Com pares casados e hits do outro cast
+  intercalados, a ordem não decide e nada sai por este item.
+- **Piso do overkill (D-011, D-025; o mesmo princípio de M-035b item 4).** Um hit overkill no
+  crit-state de componente da explosão cujo **menor** original possível, revertido como eco do cast no
+  elemento da prova (com o candidato de omega quando a sessão tem omega), passa do maior original dos
+  pares casados mais `elementalBlockTolerance` MUST NOT ser eco. O piso só exclui; nunca confirma
+  nível.
+
+Os hits que saem do eco continuam no segundo em que aterrissaram e são classificados no turno dele,
+com o outro cast. Nenhum hit é criado nem removido (T-003).
+
+#### Scenario: Overkill depois do bloco do Hell's Core não é eco
+- **WHEN** `ms devoted` S1 (`20/Oct/2026`) tem o eco do `exevo mort ora` de `03:05:02` em `03:05:04` (8 hits, `712`/`561`/`674`), seguido no log pelo Hell's Core do cast de `03:05:03` (`templar 3041` ×3, `zealot 3210` ×4, `inquisitor 2529`) e por último o `templar 3041` de seq 786 marcado overkill
+- **THEN** o seq 786 MUST NOT ser eco, `03:05:02` SHALL resolver `A0 + Death Echo 15` (blast 7, eco 8) e `03:05:04` SHALL resolver `A0 + Hell's Core 9`
+
+#### Scenario: Overkills dentro do bloco do outro cast saem do eco
+- **WHEN** `italian` S0 (`02/Oct/2026`) tem o eco crítico do `exevo mort ora` de `18:50:01` em `18:50:03` (`1058`, `1017` ×2, `961` ×2, `993`) e, no mesmo segundo, o Hell's Core do cast de `18:50:03`, com `roaming dread 3486 OK` e `crypt mage 1023 OK` entre os `3501`/`3984` do Hell's Core
+- **THEN** os dois overkills SHALL ficar com o Hell's Core: `18:50:01` → `A1 + Death Echo 15` e `18:50:03` → `A0 + Hell's Core 11`
+
+#### Scenario: Ordem e piso decidem juntos o fim do eco
+- **WHEN** `italian` S0 tem o eco do `exevo mort ora` de `18:53:29` em `18:53:31` (`482`, `429` ×2, `455` ×3) seguido do Great Death Beam do cast de `18:53:31`, com `roaming dread 1019 OK`, `crypt mage 2138 OK` e `roaming dread 1209 OK` antes do primeiro hit não-overkill do beam e `cyclursus 11 OK` e `crypt mage 1241 OK` depois dele
+- **THEN** os três primeiros SHALL sair do eco pelo piso, os dois últimos pela ordem, e `18:53:29` → `A1 + Death Echo 14`, `18:53:31` → `A0 + Great Death Beam 12`
+
+#### Scenario: Pares casados e outro cast intercalados não mudam nada
+- **WHEN** `alumnishocks` S0 tem, no segundo do eco do cast de `19:01:52`, o hit excluído como do outro cast no meio dos pares casados
+- **THEN** a contiguidade MUST NOT tirar hit algum do eco, e o turno SHALL continuar `A1 + Death Echo 16`
