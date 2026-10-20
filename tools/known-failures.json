@@ -33,5 +33,70 @@
     "target": "tests/unified-spiritual-outburst-multistage.test.mjs",
     "signature": "tests/unified-spiritual-outburst-multistage.test.mjs ",
     "reason": "Pre-existente: assert [1,2] contra [1]."
+  },
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL gloompillar/08:35:28:",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL gloompillar/08:35:50:",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL mk/05:47:24:",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL barrage/19:04:38:",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL mazzerinbarrage/01:24:44:",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL mazzerinbarrage/23:30:02:",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL mazzerinbarrage-drain-body-legacy/22:22:18:",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL mazzerinbarrage-drain-body-legacy/22:22:20:",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL mazzerinbarrage/23:23:03:",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "tests/unified-leech-base-vote-exact-fit.test.mjs",
+    "signature": "tests/unified-leech-base-vote-exact-fit.test.mjs ✖ ordem do voto: referencia por ok, admissivel por high, vencedor por exact",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "tests/unified-leech-base-vote-exact-fit.test.mjs",
+    "signature": "tests/unified-leech-base-vote-exact-fit.test.mjs ✖ gloompillar S0: mana 0,1625 (Conviction por encaixe exato)",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "tests/unified-leech-base-vote-exact-fit.test.mjs",
+    "signature": "tests/unified-leech-base-vote-exact-fit.test.mjs ✖ barrage S0: mana 0,1625 com Void",
+    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+  },
+  {
+    "target": "tests/unified-weapon-physical-pierce-detection.test.mjs",
+    "signature": "FAIL moonsilver: nenhum turno sem classificacao",
+    "reason": "Pendencia aceita no commit 022f8cc (moonsilver S0 05:18:59/05:25:14, passo do mod em ROUND); Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
   }
 ]
