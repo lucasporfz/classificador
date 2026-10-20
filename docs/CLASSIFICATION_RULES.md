@@ -426,6 +426,25 @@
   fora de janela de grav san permanecem idênticos (o detector retorna `bonus: 0` e o
   pós-passe é inerte).
 
+  - **M-036a — O bônus de classe infla o dano exibido, não o leech:**
+    `ESTADO: decidida em 20/Out/2026 (usuário) e NÃO implementada — `leechDamageBasis`
+    (`js/unified-setup-inference.js`) ainda não divide pelo multiplicador de classe.`
+
+    O leech é creditado sobre o dano **antes** do bônus de classe de bestiário, como prey,
+    Bounty e `utevo grav san` (D-030), e ao contrário de omega (M-039). Logo a base de leech
+    (D-023/D-024) de um hit em mob da classe detectada divide o dano exibido por
+    `1 + bônus`. Medição model-free em `ingol ed` S0 (Bird `+5%`): dentro de cada componente
+    — mesmo cast, mesmo `N` e mesma taxa —, a mediana de `vida / dano` dos mobs Bird contra a
+    dos não-Bird dá `0,9532` em 153 componentes mistos (`1/1,05 = 0,9524`; se o leech
+    acompanhasse o bônus, seria `1`). Primeira medição em 01/Set/2026 (`0,9529`); re-medida
+    em 20/Out/2026 com o motor vigente.
+
+    Sessão em que **todos** os mobs são da classe não discrimina: o bônus fica uniforme e se
+    confunde com a taxa da grade de D-020. Caso: `ms devoted` (20/Out/2026, três
+    `devoted radiant` Human, `+3%`) fecha igual com o bônus dentro da base e vida `25%` ou
+    fora dela e vida `25,75%`. Corrigir o motor muda a taxa inferida dessas sessões e o `N`
+    que a inversão do leech declara (H-005e) nos mobs da classe; o drift exige change própria.
+
 - **M-037 — Decay de cadeia de Chained Penance (mecânica declarada, não reconstruída):**
   `Chained Penance (exori med pug)` de monk (holy, área) encadeia entre alvos e **perde
   uma fração fixa de dano a cada pulo da cadeia** — o dano cai monotonicamente ao longo
