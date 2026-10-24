@@ -198,11 +198,15 @@ test('M-035b estado: aquatic S0 10:44:52 continua beam em energy, stage 3', () =
   assert.equal(beamResult.beamMasteryStage, 3);
 });
 
-// Decisao 3 da Fase 3: ambiguidade real, os dois overkills ficam sem rotulo.
-test('M-035b: dlc ms S0 21:35:10 deixa 2990 OK e 6432 OK sem rotulo (central 4 e lateral 9 fecham dos dois jeitos)', () => {
+// Decisao 3 da Fase 3: ambiguidade real, o overkill fica sem rotulo. O `darklight matter 6432` de
+// seq 74 tem `You lose` antes da XP (D-011a, emenda de 24/Out/2026, fix-xp-attribution-across-mobs):
+// nao e overkill e vai ao lateral com o gemeo 6432 de seq 63 do mesmo cast (mesmo mob, estado e
+// dano). Esperado novo aprovado pelo usuario no gate da Fase 3 da change (24/Out/2026, pergunta 6).
+test('M-035b: dlc ms S0 21:35:10 deixa 2990 OK sem rotulo e os dois 6432 no lateral', () => {
   const labels = beamLabels(turnAt(DLC(0), '21:35:10'));
   const none = labels.none.split(', ');
-  assert.ok(none.includes('2990 OK') && none.includes('6432 OK'), `sem rotulo: ${labels.none}`);
+  assert.ok(none.includes('2990 OK') && !none.includes('6432 OK'), `sem rotulo: ${labels.none}`);
+  assert.equal(labels.side.split(', ').filter(tok => tok === '6432').length, 2, `lateral: ${labels.side}`);
 });
 
 // Decisao 6 (Fase 4): na forma A, overkill com leech sem prova nao pode ser central.
@@ -218,7 +222,9 @@ const COLLATERAL_LABELS = [
   ['kim 16:25:08: o 1923 OK vai ao central pelo leech dele', KIM, '16:25:08', ['1923 OK'], ['1961 OK']],
   ['dlc ms S0 21:36:07: o 4400 OK vai ao central', () => DLC(0), '21:36:07', ['4400 OK'], []],
   ['dlc ms S1 21:52:37: o piso do 6144 OK passa do lateral 2055', () => DLC(1), '21:52:37', ['6144 OK'], []],
-  ['dlc ms S1 21:58:41: o piso do 3599 OK (3666) passa do lateral 2709', () => DLC(1), '21:58:41', ['3599 OK'], ['2660 OK']],
+  // O `bloodjaw 2660` (seq 4621) tem `You lose 636` antes da XP: nao e overkill (D-011a, emenda de
+  // 24/Out/2026) e continua no lateral (aprovado no gate da Fase 3 da change, pergunta 6).
+  ['dlc ms S1 21:58:41: o piso do 3599 OK (3666) passa do lateral 2709', () => DLC(1), '21:58:41', ['3599 OK'], ['2660']],
 ];
 for (const [name, source, clock, centralHas, sideHas] of COLLATERAL_LABELS) {
   test(`M-035b colateral: ${name}`, () => {

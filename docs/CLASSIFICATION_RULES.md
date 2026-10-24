@@ -167,10 +167,10 @@
          AA, numa sessão cujo AA de varinha dá 141–177. Só rótulo, mesma contagem: `kim`
          `16:17:37` (`A0 S6`, blast/eco 3/3: `nighthunter 993`, dodge e `nighthunter 993` em `:37`;
          `stalking stalk 436`, dodge e `nighthunter 496 OK` em `:38`), `kim` `16:29:56` (`A0 S3`,
-         2/1) e `ms devoted` S1 `03:06:25` (`A0 S3`, 2/1). Neste último o `templar 1349` está
-         marcado overkill pela XP do zealot (autoria da XP em party, pendência de D-011a), e sem
-         ele não há par same-mob; quando a autoria for corrigida, a prova same-mob passa a existir
-         e o resultado é o mesmo.
+         2/1) e `ms devoted` S1 `03:06:25` (`A0 S3`, 2/1). Neste último o `templar 1349` chega à
+         prova marcado overkill (a XP só cai em `03:06:26`), e sem ele não há par same-mob; ele não
+         é overkill pelo eco `templar 674` na metade exata (D-011c), mas a marca só sai depois da
+         prova, e o rótulo 2/1 vem da prova feita antes da desmarcação.
       9. **Contiguidade no segundo compartilhado (D-012).** A explosão de cada cast sai contígua no
          Server Log. Quando o segundo do eco é coberto por outro cast concreto (T-002), a prova
          achou pares casados e algum comparável que não fechou ficou com o outro cast: se todos os
@@ -189,9 +189,10 @@
       classificados no turno dele, com o outro cast; nenhum hit é criado nem removido (T-003).
       Casos-prova. `ms devoted` S1 `03:05:02`/`03:05:04` → `A0 + Death Echo 15` (blast 7, eco 8) e
       `A0 + Hell's Core 9`: o último `templar 3041` (seq 786) vem no log depois dos 8 hits do
-      Hell's Core e tem o leech dos templars dele (`N = 9` exato); o parser o marca overkill
-      porque a XP do inquisitor, de outro membro da party, chega depois de duas linhas de dano
-      recebido. `italian` S0 `18:50:01`/`18:50:03` → `A1 + Death Echo 15` e `A0 + Hell's Core 11`:
+      Hell's Core e tem o leech dos templars dele (`N = 9` exato); a XP do inquisitor, de outro
+      membro da party, chega depois de duas linhas de dano recebido, e desde a emenda de D-011a
+      de 24/Out/2026 ele não é overkill (até lá o parser o marcava, e a contiguidade sozinha já o
+      tirava do eco). `italian` S0 `18:50:01`/`18:50:03` → `A1 + Death Echo 15` e `A0 + Hell's Core 11`:
       `roaming dread 3486 OK` e `crypt mage 1023 OK` estão entre os `3501`/`3984` do Hell's Core.
       `italian` S0 `18:53:29`/`18:53:31` → `A1 + Death Echo 14` e `A0 + Great Death Beam 12`:
       `roaming dread 1019 OK`, `crypt mage 2138 OK` (original mínimo `1910` contra `421` do eco) e
@@ -248,7 +249,7 @@
 
   Caso-prova: `logs/bastion server log ek.txt` / `logs/bastion local chat ek.txt` (`Sat Jun 13 2026`, personagem com bônus `+125%` ⇒ `A = 2.25`), turno `15:21:16` — componente `Executioner's Throw` de 4 hits raubritter: `1115` (life `184`, mana `65`) = base; `2243` (life `420`, mana `146`), `668 OK` (life `423`, mana `147`) e `340 OK` (life `431`, mana `128`, leech > dano exibido) = amped ⇒ **3 amped + 1 base**. Fixtures sem `exori amp kor` permanecem idênticos (o pós-passe encontra o conjunto vazio e retorna sem mutar nada).
 
-  **Precedência do overkill (emenda de 21/Set/2026, decisão do usuário).** Depois dos passes de leech e da escolha de `A`, todo hit observado (não virtual) do componente `Executioner's Throw` com `overkill = true` termina `amped`, com multiplicador `A`, ou `null` quando `A` for indeterminado, mesmo que o leech aponte `base` ou esteja ausente. O bônus é de execução, e o leech de um hit fatal fica capado pela vida que falta ao jogador, então ele subestima. A promoção não alimenta a calibração de leech nem a escolha de `A`, e não move hit entre componentes. Risco aceito: um hit que matou sem o bônus sai `amped`. **Limitação declarada:** a promoção confia no marcador de overkill de D-011a, que hoje pode herdar a XP de um proc em outro mob. Medido em 21/Set/2026: 4 de 95 promoções (`tom` `12:26:25` e `12:30:16`, `tom 2` `13:04:16`, `bastion` `15:23:18`), a corrigir em change própria (`fix-xp-attribution-across-mobs`). Atualização de 21/Set/2026 (D-011b): `tom 2` `13:04:16` e `bastion` `15:23:18` deixaram de herdar a XP (charm que mata fica com ela); `tom` `12:26:25` e `12:30:16` continuam, para `fix-xp-attribution-across-mobs`.
+  **Precedência do overkill (emenda de 21/Set/2026, decisão do usuário).** Depois dos passes de leech e da escolha de `A`, todo hit observado (não virtual) do componente `Executioner's Throw` com `overkill = true` termina `amped`, com multiplicador `A`, ou `null` quando `A` for indeterminado, mesmo que o leech aponte `base` ou esteja ausente. O bônus é de execução, e o leech de um hit fatal fica capado pela vida que falta ao jogador, então ele subestima. A promoção não alimenta a calibração de leech nem a escolha de `A`, e não move hit entre componentes. Risco aceito: um hit que matou sem o bônus sai `amped`. A promoção confia no marcador de overkill de D-011a, que desde 24/Out/2026 não herda a XP de proc em mob de outro nome nem a de outro membro da party (dano recebido no meio); as 4 promoções falsas medidas em 21/Set/2026 (`tom` `12:26:25` e `12:30:16`, `tom 2` `13:04:16`, `bastion` `15:23:18`) saíram, as três últimas por D-011b (o charm que mata fica com a XP) e `tom` `12:26:25` pela emenda de D-011a, com o tier então decidido por M-034c.
 
 - **M-034a — O tier de mastery do Executioner's Throw é cravado pelo TETO DE ALVOS do cast:** `ESTADO: decidida e IMPLEMENTADA em 27/Ago/2026 (change `fix-amp-kor-tier-inference-and-h005g-cut-gate`). Emenda a M-034, cuja formulação original ("o `A` vem da razão de dano dos hits limpos") produzia o tier errado.`
 
@@ -289,6 +290,36 @@
   A1 + Executioner's Throw 4; `10:01:24` (594 e 69 com dano real × F 641 e 1268, razão 0,505) → A1 + 2.
   Premissa medida em `reports/fix-tom3-d5-premise-prototype.md`: 18 grupos compatíveis; as 2 exceções
   são hits sem overkill com o tier rotulado errado, fora do domínio do item 3.
+
+- **M-034c — Golpe sem linha de mana recebe o tier do golpe do mesmo mob e estado no mesmo cast
+  (24/Out/2026, change `fix-xp-attribution-across-mobs`, decisão do usuário):** depois da precedência
+  do overkill (M-034), um hit observado do componente `Executioner's Throw` que **não** é overkill e
+  **não** tem linha de mana (`manaLeech = 0`: a mana estava cheia, e o canal primário de M-034 não
+  diz nada) recebe o tier de outro hit do mesmo cast, do mesmo mob e estado (a chave de M-034b:
+  mob, crítico, Expose Weakness, Bounty, prey), que tenha **dano real exato** pelo leech (vida e
+  mana concordam) e tier já decidido. O dano real do hit sem mana é o dano mostrado (ele não é
+  overkill), sem os multiplicadores que ficam fora da base de leech; os dois lados são comparados
+  em dano real × `F` do bloco. Razão abaixo de `EXEC_LEECH_GAP` nos dois sentidos dá o mesmo tier;
+  razão a partir do gap dá o outro tier, desde que o salto seja coerente (para cima contra um irmão
+  `base`, para baixo contra um irmão `amped`). Um salto incoerente (o dobro de um irmão já `amped`, ou
+  a metade de um irmão `base`) é contradição e impede a decisão, como dois irmãos votando tiers
+  diferentes; sem nenhum irmão, também fica o resultado anterior. A vida do hit sem mana **não** decide contra esse par, porque ela é capada
+  pela vida que falta ao jogador. A decisão não alimenta a calibração de mana nem a escolha de `A`
+  (mesmo princípio da precedência do overkill) e não usa reversão física. Nenhuma constante nova:
+  `EXEC_LEECH_GAP` já é a fronteira entre tiers. Caso-prova: `tom` S0 (sem data) `12:26:25`, bloco
+  de 4 — `marksman 809 OK` e `marksman 1524 OK` (vida 423, mana 128 cada: dano real exato 2443–2446
+  a `N = 4`), `skirmisher 2576` e `marksman 2681` (vida 190, sem linha de mana, sem overkill pela
+  emenda de D-011a) — o `2681` fica `amped` ×2,25 (razão ≈ 1,10 contra os dois marksman cortados), e
+  não `base` pela vida 190; o turno continua `A1 S4`. Medido nos 450 hits de Executioner das 7
+  fixtures em que o dono lança `exori amp kor`: além dele, mudam só 4 rótulos, todos coerentes com
+  o leech — `tom 2` `13:08:53` `chastener 2873` (amped, o nível do `2865` amped do mesmo cast),
+  `tom 2` `13:05:14` `chastener 1293` (base: razão 0,47 contra o `1139 OK` de dano real 2725),
+  `tom 3` `09:49:12` `skirmisher 2690` (amped, igual ao `2686`) e `tom 3` `09:52:49` `skirmisher
+  2450` (amped, contra os três skirmishers cortados de dano real ≈ 2230). Irmão sem dano real
+  exato não vota (`tom` `12:36:19`, `marksman 1230 OK` com vida 427 e mana 77: o `marksman 1105`
+  conserva o tier). Fora desta regra (achado registrado): `tom` `12:35:15` `skirmisher 1185` e
+  `tom 3` `09:57:37` `marksman 1213` saem `amped` pelo corte bimodal da mana capada, mas o par com
+  os cortados do mesmo mob diz `base`.
 
 - **M-035 — Sub-linhas central/side de beams de sorcerer:** os beams `Energy Beam (exevo vis lux)`, `Great Energy Beam (exevo gran vis lux)` e `Great Death Beam (exevo max mort)` viram reta de 3 com a mastery de beam (1 central + 2 laterais), e os laterais causam uma **fração** do dano do beam central. A Beam Mastery tem **três stages**, e cada um fixa **ao mesmo tempo** essa fração e o bônus de dano por alvo atingido — os dois são o mesmo eixo, não constantes independentes:
 
@@ -1673,16 +1704,48 @@ L=26 -> 12,75%
   prova overkill do hit anterior quando a relação permanece contínua na ordem
   integral das linhas timestampadas do Server Log. Para `hit → XP`, podem ser
   transparentes as sublinhas já pertencentes à cadeia do ataque
-  (`life/mana leech`, charm e reflection); para `charm → XP`, `life/mana
-  leech`. Outra ação explícita do jogador que esteja ausente do vetor de eventos
-  do passe — atualmente o uso de poção, já reconhecido pelo
-  `potionUsePattern` canônico — rompe a continuidade e torna a autoria do XP
-  desconhecida. Uma notificação de estado do mundo ou dano recebido pode ser
-  intercalado pelo servidor e, sozinho, não prova uma nova autoria; fatos já
+  (`life/mana leech`, charm que não mata, e reflection ou field no **mesmo** mob);
+  para `charm → XP`, `life/mana leech` e field no mesmo mob. Outra ação explícita
+  do jogador que esteja ausente do vetor de eventos do passe — atualmente o uso de
+  poção, já reconhecido pelo `potionUsePattern` canônico — rompe a continuidade e
+  torna a autoria do XP desconhecida. Uma notificação de estado do mundo pode ser
+  intercalada pelo servidor e, sozinha, não prova uma nova autoria; fatos já
   modelados continuam bloqueando pelo próprio critério de “próximo evento
   relevante”. Evidência ausente não pode virar `overkill` nem `killedTarget`
   (D-006/C-003). A janela temporal vigente de até um segundo permanece
   necessária, mas não substitui a continuidade.
+
+  **Emenda de 24/Out/2026 (change `fix-xp-attribution-across-mobs`, decisão do usuário).** Duas
+  quebras novas, as duas para `hit → XP` e para `charm → XP`:
+  1. **Dano recebido** (`You lose N hitpoints` ou `You lose N mana`, com ou sem atacante nomeado)
+     entre o candidato e a XP rompe a continuidade, em qualquer log, solo ou party. Em party é o
+     kill de outro membro caindo depois de um hit nosso; em sessão solo o dano recebido nunca
+     aparece entre o hit e a XP (medido no corpus inteiro, pendência abaixo). Caso-prova:
+     `jaded` S7 (`10/Jun/2026`) `19:59:49`, `sopping corpus 208` (vida 21, mana 7), duas linhas
+     `You lose N hitpoints due to an attack by an oozing corpus` e a XP: o `208` não é overkill e
+     é AA pelo leech dos AAs no mesmo mob → `A10 S11` (caso 6 do apêndice). Para o charm:
+     `hakka` S15 (`11/Jun/2026`) `22:17:35`, curse charm `639` no `bug tracker`, `You lose 338
+     mana` e XP: o charm não matou, não há auto ataque invisível (S-014e/C-008) e o turno é
+     `A0 R14`.
+  2. **Reflection ou field em mob de outro nome** normalizado entre o hit e a XP interrompe a busca
+     do próximo evento: o hit fica sem XP. Entre o charm e a XP, field em mob de outro nome
+     interrompe do mesmo jeito (reflection já não era transparente para o charm). O proc não ganha
+     `killedTarget` nem hit virtual. Com o mesmo nome, nada muda, sem inferir identidade de
+     instância. Caso-prova: `picture` S0 (sem data, party) `20:43:54`, `emerald tortoise 252`
+     (vida 70, mana 45), reflection em `gore horn`, dano recebido e XP: o `252` declara `N = 1`
+     pelo leech (H-005e) e o turno é `A1 S5`; `tom 3` S0 `09:49:06`, `skirmisher 1741` com a
+     reflection no `chastener` antes da XP, `A0 S8`.
+  O golpe desmarcado volta a interseção, magnitude e leech (D-011) e entra na taxa da sessão
+  (C-006), o que muda a mana de `gloompillar` S0 e `moonsilver` S0 de 16% para 16,25%:
+  `gloompillar` `08:35:28`/`08:35:50` e `moonsilver` `05:18:59`/`05:25:14` passam a ter
+  classificação, e `gloompillar` `08:36:36` (`A9 S8`) e `moonsilver` `05:21:11` (`A8 S2`) e
+  `05:24:59` (`A8 S9`) vão ao corte em que a vida, que não muda, fecha exata. Dependentes do voto de mana 16% × 16,25% (decisão pendente, nem alvo nem
+  regressão): `mk` S0 (`10/Jun/2026`) `19:50:41`, `19:52:57` e `19:53:18` (ficam sem
+  classificação, com a mana da sessão caindo para 16%) e `19:53:10`; `mazzerinbarrage` S4
+  `23:25:45` (o `darklight striker 2404 CRIT` deixa de ser overkill; a 16% fica sem
+  classificação, a 16,25% o leech 391 fecha exato); `moonsilver` S0 `05:22:05` (vira
+  `A13 S10`, mas pelo log o `mycobiontic beetle 723 OK` sugou o nível dos besouros do auto
+  ataque e é AA, `A14 S9`: anotação para quem mexer na taxa ou na escolha do corte desse turno).
   Caso-prova: `jaded S7`, sessão salva em `10/Jun/2026`, turno `21:01:52`.
   Depois do hit `seq 3894` (`mycobiontic beetle 825`) existe uso de poção antes
   do XP de `21:01:53`; portanto o hit permanece
@@ -1707,14 +1770,50 @@ L=26 -> 12,75%
   mobs não tem XP de bestiário. O comportamento não muda aqui; a autoria da XP em log de party vai
   para a change `fix-xp-attribution-across-mobs` (diff da variante em
   `reports/fix-death-echo-cross-mob-echo-and-shared-second/variante-a1-diff.txt`).
+  **Resolvida em 24/Out/2026** pela emenda acima: a frase saiu, e o dano recebido rompe a
+  continuidade. O caso 6 do apêndice estava errado e passou a `A10 S11` (o `208` é AA pelo leech);
+  dos 4 turnos que saíam de classificação, `mazzerinbarrage` S4 `23:25:45` e `mk` S0 `19:50:41`,
+  `19:52:57` e `19:53:18` ficaram como dependentes do voto de mana, listados na emenda. A XP do
+  bestiary continua sendo só pista, não prova de autoria.
 - **D-011b — Charm que mata fica com a XP (emenda de D-011a, 21/Set/2026, decisão do usuário):**
   o charm entra no log **antes** do hit do ataque que o disparou. Logo `hit → charm → XP` quer dizer
   que o charm matou o próprio alvo (`killedTarget`), e a XP é dele, com **qualquer** nome de mob; o
-  hit anterior **não** é overkill. Charm que não mata continua transparente para `hit → XP`.
-  Reflection e field seguem D-011a. Prova independente pela XP fixa por mob, no corpus inteiro: dos
+  hit anterior **não** é overkill. Charm que não mata continua transparente para `hit → XP`, com
+  qualquer nome. Reflection e field seguem D-011a: transparentes no mesmo mob, e, desde a emenda de
+  24/Out/2026, rompem a ligação em mob de outro nome (entre o charm e a XP, o field em outro mob
+  quer dizer que o charm não matou). Caso-prova (asserts restaurados em 24/Out/2026): `tom 2` S0
+  `13:04:16`, `chastener 1260`
+  (seq 6103) → overpower no `skirmisher` → XP: o overpower matou e fica com a XP, o `1260` não é
+  overkill e não é promovido a amped (M-034), `A1 S4` com o virtual do skirmisher. Prova independente pela XP fixa por mob, no corpus inteiro: dos
   casos em que a XP separa os dois mobs, 343 batem com o mob do charm e 0 com o do hit. Caso-prova
   `tom 3` `10:00:15` (skirmisher 837 → overpower 4 em outro skirmisher → XP): o 837 não é overkill,
   declara N=1 e é o AA.
+- **D-011c — Golpe do blast com eco na metade exata não é overkill (24/Out/2026, change
+  `fix-xp-attribution-across-mobs`, decisão do usuário):** na prova de estágio do Death Echo
+  (M-016d-1), um hit da janela do blast marcado overkill perde a marca quando o primeiro segundo
+  candidato do eco que tem hit não-overkill traz, depois dele na ordem do log, um hit do **mesmo**
+  mob normalizado e do mesmo estado elemental cujo dano mostrado é a metade do dano mostrado do
+  blast, com diferença de no máximo 1. O eco prova que aquele monstro sobreviveu ao blast: a XP que
+  veio logo depois do golpe é de outro mob. O eco pode estar marcado overkill e continua marcado.
+  "A XP caiu entre o blast e o eco" sozinho não desmarca nada (`alumnishocks 2` `18:21:52`,
+  `wardragon 68`, sem eco na metade exata, continua overkill).
+
+  **Quando a marca sai (decisão do usuário, por enquanto):** ao fim da prova de estágio do mesmo
+  cast. A prova e o rótulo blast/eco desse cast saem das marcas de antes (como até aqui), e a marca
+  cai logo depois, ainda dentro da formação de turnos. Toda inferência de sessão que roda depois da
+  formação de turnos vê o hit desmarcado: a taxa de leech e os minor charms (C-006), o crítico por
+  componente, o tier do Executioner. As que rodam antes, porque a própria prova de estágio depende
+  delas (estância de sorcerer, death pierce da arma, omega, crítico de partida) ou porque saem de
+  charm e postura, não veem a desmarcação: desmarcar antes delas seria desmarcar antes da prova. Medido nas 12 sessões das 8 fixtures com Death Echo do
+  dono: 57 golpes perdem a marca (`ms devoted` 28, `dlc ms` 20, `kim` 8, `italian` 1), nenhum
+  turno muda de contagem e nenhum rótulo de estágio muda por esta regra. Desmarcar **antes** da
+  prova punha o golpe na comparação same-mob e mudava o rótulo de 60 turnos (em `ms devoted` S1
+  `03:06:25` o `zealot 1424` perdia o rótulo de blast); as formas que consertam isso no caminho
+  same-mob são a pendência do rótulo pela ordem do log (M-016d-1a) e estão medidas em
+  `reports/fix-xp-attribution-fase3.md`, seção 5, pergunta 1, para revisão futura. Caso-prova:
+  `ms devoted` S1 (`20/Out/2026`) `03:06:25`, blast `devoted radiant zealot 1424` e
+  `devoted radiant templar 1349` (seguido de XP em `03:06:26`) e eco `templar 674`: o `1349` (seq
+  1832) não é overkill, e o turno é `A0 + Death Echo 3`, blast 2 / eco 1.
 
 - **D-012 — Herança de overkill:** recebe o componente do bloco contíguo definido pelos outros hits; nunca cria fronteira.
   - **D-012a — Turno 100% overkill não admite fronteira sem evidência independente:** quando
@@ -3060,7 +3159,7 @@ Os casos abaixo são normativos. As contagens usam `A=arrow`, `S=spell`, `R=rune
 | 3 | highwin `08:47:16` | `A8 R12 G10`. Granada holy ≈980 e AA; a runa impacta no segundo seguinte. | Misturar impactos de timestamps diferentes. |
 | 4 | mk `05:46:16` | `A5 R8`. A explosão real ocorreu em `:15`; o bloco de `:16` está no nível físico do AA. | Criar granada falsa em cast+4. |
 | 5 | jaded `19:59:47` | `A9 S12 G9`. Caldera e granada são separadas por originais holy incompatíveis, embora ambas sejam críticas. | Fundir Caldera e granada por crit-state igual. |
-| 6 | jaded `19:59:49` | `A9 S12`. AA físico espalhado + Caldera do cast `:50`. | Classificar AA como granada por proximidade temporal isolada. |
+| 6 | jaded `19:59:49` | `A10 S11`. AA físico espalhado + Caldera do cast `:50`. O `sopping corpus 208` (seq 425, vida 21, mana 7) tem duas linhas de dano recebido antes da XP, não é overkill (D-011a, emenda de 24/Out/2026) e é AA pelo leech dos AAs no mesmo mob. (Era `A9 S12` até 24/Out/2026, com o `208` marcado overkill e herdado pela Caldera.) | Classificar AA como granada por proximidade temporal isolada; herdar a XP de outro membro da party. |
 | 6b | jaded `19:49:59` | `A11 R12`. Os quatro `503` em roaming dread são fire determinístico (original 517) = great fireball, confirmado pela linha `Using great fireball` (M-017/M-018a); o AA do mesmo mob varia (473/492/513/528, físico). | Absorver o bloco determinístico da runa no AA porque o original físico de um hit coincide com o range do AA (D-005/V-002). |
 | 7 | darklight RP `09:14:16` | `A2 S1`. Hits 405/501 são AA; 1067 é Strong Ethereal Spear. | Promover o turno inteiro para spell single-target. |
 | 8 | Hakka `21:56:25` | `A1`, marcado `partialEdge`. Hit 504 pertence a uma ação cuja âncora ficou na sessão anterior. | Contar o corte de borda como AA perdido ou confirmado. |

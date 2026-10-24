@@ -86,6 +86,13 @@ recebido, magic shield) apareceu no meio. É a única medida de dano que atraves
 o alpha (M-034b, M-035b).
 _Avoid_: dano pelo leech (que pode ser só piso), dano reconstruído.
 
+**Autoria da XP**:
+Qual golpe ou charm do dono do log matou o mob de uma linha de XP. O log não a escreve: ela só
+existe quando a XP vem logo depois do golpe (ou do charm), sem nada no meio que quebre a
+ligação: uso de poção, dano recebido ou um proc em mob de outro nome. Sem autoria, o golpe não
+é overkill e o charm não matou.
+_Avoid_: dono da XP, "XP do mob X" (o valor da XP comparado com o bestiary é só pista).
+
 **Piso**:
 O menor dano real que um hit em overkill pode ter causado. Duas fontes dão piso, porque as
 duas só podem subestimar: o dano exibido, truncado pela vida que restava ao alvo, e o dano que

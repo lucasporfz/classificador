@@ -34,6 +34,24 @@ const sharedCountCheck = expected => turn => {
   }
   return null;
 };
+// D-011a/D-011c (fix-xp-attribution-across-mobs): contagem + a marca de overkill de golpes
+// nomeados por seq e, quando dado, o componente em que o golpe tem de estar.
+const seqOverkillCheck = (expected, seqs, labelPart = null) => turn => {
+  const count = sharedCountCheck(expected)(turn);
+  if (count) return count;
+  if (labelPart) {
+    const named = (turn.components || []).some(comp => String(comp.actionLabel || '').includes(labelPart));
+    if (!named) return `esperado ${labelPart}; got ${(turn.components || []).map(comp => comp.actionLabel || comp.comp).join(' + ')}`;
+  }
+  for (const { seq, comp, overkill = false } of seqs) {
+    const owner = (turn.components || []).find(c => (c.hits || []).some(h => h.seq === seq));
+    if (!owner) return `seq ${seq} fora dos componentes do turno`;
+    if (comp && owner.comp !== comp) return `seq ${seq} esperado em ${comp}; got ${owner.comp}`;
+    const hit = owner.hits.find(h => h.seq === seq);
+    if (hit.overkill !== overkill) return `seq ${seq} esperado overkill=${overkill}; got ${hit.overkill}`;
+  }
+  return null;
+};
 const beamNoAaCheck = (expectedSpellHits, labelPart) => turn => {
   const c = counts(turn);
   if (!(c.arrow === 0 && c.spell === expectedSpellHits && c.rune === 0 && c.grenade === 0)) {
@@ -1601,9 +1619,8 @@ export const CASES = [
         ? null
         : `esperado Executioner's Throw; got ${spell && spell.actionLabel || '-'}`;
     }),
-  // S-014e: A1 S4 com o virtual legítimo do skirmisher. A flag overkill=false do
-  // chastener 1260 (D-011a) é assertada em tests/unified-overkill-xp-continuity.test.mjs
-  // e pertence à change fix-xp-attribution-across-mobs (separada em 21/Set/2026).
+  // S-014e: A1 S4 com o virtual legítimo do skirmisher. O overpower que matou fica com a XP
+  // (D-011b), então o chastener 1260 não é overkill e não é promovido a amped (M-034).
   C('tom 2/13:04:16-overkill-other-mob', 'tom 2 server log.txt', 'tom 2 local chat.txt', '13:04:16',
     turn => {
       const c = counts(turn);
@@ -1611,6 +1628,8 @@ export const CASES = [
       const spell = turn.components.find(comp => comp.comp === 'spell');
       const hit = spell.hits.find(h => h.seq === 6103);
       if (!hit || hit.dmg !== 1260) return 'chastener 1260 na spell';
+      if (hit.overkill !== false) return 'chastener 1260 (seq 6103) com overkill=false';
+      if (hit.executionerBonusActive === true) return 'chastener 1260 (seq 6103) nao promovido a amped';
       const virtual = spell.hits.filter(h => h.virtual && h.mob === 'raubritter skirmisher' && h.dmg === 0);
       return virtual.length === 1 ? null : 'preservar um virtual legítimo do skirmisher na spell';
     }),
@@ -1986,8 +2005,12 @@ export const CASES = [
   // `nighthunter 993` e o dodge de :37 sao blast; o dodge e o `496 OK` de :38 sao eco).
   C('ms-devoted-echo-cross-mob/02:40:03', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '02:40:03',
     t => spellNoAaCheck(3, 'Death Echo')(t) || deathEchoStagesCheck(1, 2)(t), '20/Oct/2026'),
+  // 03:06:25: o `templar 1349` (seq 1832) chega a prova marcado overkill (a XP so cai em :26) e
+  // perde a marca depois dela, pelo eco `templar 674` na metade exata (D-011c); o rotulo 2/1 vem
+  // da prova.
   C('ms-devoted-echo-cross-mob/03:06:25', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '03:06:25',
-    t => spellNoAaCheck(3, 'Death Echo')(t) || deathEchoStagesCheck(2, 1)(t), '20/Oct/2026'),
+    t => spellNoAaCheck(3, 'Death Echo')(t) || deathEchoStagesCheck(2, 1)(t)
+      || seqOverkillCheck({}, [{ seq: 1832, comp: 'spell' }])(t), '20/Oct/2026'),
   C('kim-echo-cross-mob/16:17:37', 'kim server log.txt', 'kim local chat.txt', '16:17:37',
     t => spellNoAaCheck(6, 'Death Echo')(t) || deathEchoStagesCheck(3, 3)(t), '14/Jul/2026'),
   C('kim-echo-cross-mob/16:29:56', 'kim server log.txt', 'kim local chat.txt', '16:29:56',
@@ -1998,12 +2021,93 @@ export const CASES = [
     t => spellNoAaCheck(9, 'Death Echo')(t) || deathEchoStagesCheck(0, 0)(t), '02/Oct/2026'),
   // M-016d-1a, emenda de 20/Out/2026 (segundo compartilhado): no log, o eco do `exevo mort ora`
   // de 03:05:02 (8 hits em :04) vem antes do Hell's Core de 03:05:03, e o ultimo `templar 3041`
-  // (seq 786, marcado overkill pela XP de outro membro da party) vem depois dele, com o leech dos
-  // templars do Hell's Core. Pela contiguidade (D-012) e pelo piso do overkill ele nao e eco.
+  // (seq 786) vem depois dele, com o leech dos templars do Hell's Core. Pela contiguidade (D-012)
+  // ele nao e eco. A XP do inquisitor, de outro membro da party, vem depois de duas linhas de
+  // dano recebido, entao o 3041 nao e overkill (D-011a, emenda de 24/Out/2026).
   C('ms-devoted-echo-shared-second/03:05:02', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '03:05:02',
     t => spellNoAaCheck(15, 'Death Echo')(t) || deathEchoStagesCheck(7, 8)(t), '20/Oct/2026'),
   C('ms-devoted-echo-shared-second/03:05:04', 'ms devoted Server Log.txt', 'ms devoted Local Chat.txt', '03:05:04',
-    spellNoAaCheck(9, "Hell's Core"), '20/Oct/2026'),
+    t => spellNoAaCheck(9, "Hell's Core")(t) || seqOverkillCheck({}, [{ seq: 786, comp: 'spell' }])(t), '20/Oct/2026'),
+  // fix-xp-attribution-across-mobs, dano recebido (D-011a, emenda de 24/Out/2026): `You lose N
+  // hitpoints/mana`, com ou sem atacante, entre o golpe (ou o charm) e a XP quebra a autoria da
+  // XP. Em party e o kill de outro membro caindo depois de um golpe nosso. O golpe desmarcado
+  // volta para interseccao, magnitude e leech; o esperado vem do leech dele e do bloco
+  // (reports/fix-xp-attribution-fase2.md, secao 2.2), nao da saida do motor.
+  //   jaded S7 19:59:49 (caso 6 do apendice): `sopping corpus 208` (vida 21, mana 7), duas
+  //     linhas de dano recebido antes da XP; o leech e o dos AAs no mesmo mob.
+  //   jaded S7 20:00:11: `mycobiontic beetle 775` com o dano e o leech dos outros dez da Caldera.
+  //   jaded S8 20:59:00, 21:00:18 e 21:04:42: `oozing corpus 318` (seq 862 e 2388) e
+  //     `bloated man-maggot 363` (seq 6746) com a razao de leech dos AAs.
+  //   15 sept S3 04:52:31: `darklight matter 1290` no original fisico e no leech da Ethereal Barrage.
+  //   thunder arrow 18:58:19: `oozing corpus 649 EW`, tres linhas de dano recebido antes da XP,
+  //     identico ao AA anterior; o `mycobiontic beetle 1070` (seq 8211) tambem perde a marca.
+  ...[
+    ['jaded-19:59:49', 'jaded', '19:59:49', { arrow: 10, spell: 11, rune: 0, grenade: 0 }, [{ seq: 425, comp: 'arrow' }], '10/Jun/2026'],
+    ['jaded-20:00:11', 'jaded', '20:00:11', { arrow: 10, spell: 11, rune: 0, grenade: 10 }, [{ seq: 812, comp: 'spell' }], '10/Jun/2026'],
+    ['jaded-20:59:00', 'jaded', '20:59:00', { arrow: 3, spell: 5, rune: 0, grenade: 0 }, [{ seq: 862, comp: 'arrow' }], '10/Jun/2026'],
+    ['jaded-21:00:18', 'jaded', '21:00:18', { arrow: 9, spell: 9, rune: 0, grenade: 0 }, [{ seq: 2388, comp: 'arrow' }], '10/Jun/2026'],
+    ['jaded-21:04:42', 'jaded', '21:04:42', { arrow: 4, spell: 5, rune: 0, grenade: 0 }, [{ seq: 6746, comp: 'arrow' }], '10/Jun/2026'],
+    ['15sept-S3-04:52:31', '15 sept', '04:52:31', { arrow: 13, spell: 8, rune: 0, grenade: 9 }, [{ seq: 1097, comp: 'spell' }], '15/Sep/2026'],
+    ['thunder-arrow-18:58:19', 'thunder arrow', '18:58:19', { arrow: 7, spell: 9, rune: 0, grenade: 9 }, [{ seq: 8151, comp: 'arrow' }, { seq: 8211 }], '21/Jul/2026'],
+  ].map(([id, fixture, ts, expected, seqs, date]) => C(`xp-attribution-received-damage/${id}`,
+    `${fixture} Server Log.txt`, `${fixture} Local Chat.txt`, ts,
+    seqOverkillCheck(expected, seqs, fixture === '15 sept' ? 'Ethereal Barrage' : null), date)),
+  // hakka S15 22:17:35: o `rootthing bug tracker 639 (curse charm)` tem `You lose 338 mana` antes da
+  // XP, entao nao matou e nao cria auto ataque invisivel (S-014e/C-008): so a Great Fireball. O AA
+  // de dano zero da varinha imune e change propria.
+  C('xp-attribution-received-damage/hakka-22:17:35', 'Hakka Server Log.txt', 'Hakka Local Chat.txt', '22:17:35',
+    t => {
+      const count = seqOverkillCheck({ arrow: 0, spell: 0, rune: 14, grenade: 0 }, [], 'Great Fireball')(t);
+      if (count) return count;
+      const virtual = (t.components || []).flatMap(comp => comp.hits || []).filter(h => h.virtual).length;
+      return virtual ? `esperado nenhum hit virtual; got ${virtual}` : null;
+    }, '11/Jun/2026'),
+  // fix-xp-attribution-across-mobs, proc em mob de outro nome (D-011a/D-011b, emenda de 24/Out/2026):
+  // reflection ou field num mob de nome diferente entre o golpe e a XP quebra a autoria da XP.
+  //   picture 20:43:54 (party): `emerald tortoise 252` (vida 70, mana 45), reflection em `gore horn`,
+  //     duas linhas de dano recebido e XP; o leech dele declara N = 1 (H-005e): e o AA.
+  //   tom 3 09:49:06 e 09:56:32: `skirmisher 1741` (seq 673) e `skirmisher 1804` (seq 5295) com a
+  //     reflection no `chastener` antes da XP.
+  //   tom 12:26:25: `marksman 2681` (seq 895, vida 190, sem linha de mana) com reflection no
+  //     `skirmisher` e dano recebido antes da XP.
+  C('xp-attribution-other-mob/picture-20:43:54', 'picture server log.txt', 'picture local chat.txt', '20:43:54',
+    seqOverkillCheck({ arrow: 1, spell: 5, rune: 0, grenade: 0 }, [{ seq: 1037, comp: 'arrow' }])),
+  C('xp-attribution-other-mob/tom3-09:49:06', 'tom 3 server log.txt', 'tom 3 local chat.txt', '09:49:06',
+    seqOverkillCheck({ arrow: 0, spell: 8, rune: 0, grenade: 0 }, [{ seq: 673, comp: 'spell' }]), '09/Sep/2026'),
+  C('xp-attribution-other-mob/tom3-09:56:32', 'tom 3 server log.txt', 'tom 3 local chat.txt', '09:56:32',
+    seqOverkillCheck({ arrow: 1, spell: 7, rune: 0, grenade: 0 }, [{ seq: 5295 }]), '09/Sep/2026'),
+  //     Sem linha de mana, o tier vem do par do mesmo mob no mesmo cast (M-034c): os `marksman 809
+  //     OK` e `1524 OK` (vida 423, mana 128) tem dano real exato 2443-2446 a N = 4, o mesmo nivel
+  //     do 2681, que fica amped x2,25.
+  C('xp-attribution-other-mob/tom-12:26:25', 'tom server log.txt', 'tom local chat.txt', '12:26:25',
+    t => seqOverkillCheck({ arrow: 1, spell: 4, rune: 0, grenade: 0 }, [{ seq: 895, comp: 'spell' }], "Executioner's Throw")(t)
+      || (hit => hit.executionerBonusActive === true && hit.executionerBonusMultiplier === 2.25 ? null
+        : `seq 895 esperado amped x2,25; got ${hit.executionerBonusActive}/${hit.executionerBonusMultiplier}`)(
+        t.components.find(c => c.comp === 'spell').hits.find(h => h.seq === 895))),
+  // O golpe desmarcado entra na taxa de leech da sessao (C-006): `moonsilver` S0 e `gloompillar` S0
+  // mudam de mana (16% -> 16,25%). Conferidos no log pela vida sugada, que nao muda com a change e
+  // por isso e prova independente da taxa de mana (reports/fix-xp-attribution-fase3.md, pergunta 4):
+  //   moonsilver 05:18:59: AA sem critico com mana exata a 3 alvos; Barrage critico, holy
+  //     homogeneo (827-829), mana exata a 5.
+  //   moonsilver 05:25:14: AA 588 sem critico (mana 93, abaixo dos 96 de 1 alvo) e Barrage 1547
+  //     critico com mana exata (252).
+  //   moonsilver 05:21:11: o `mycobiontic beetle 294 OK` sugou 71/23, o nivel dos AAs; a vida do AA
+  //     fecha exata com 8 alvos.
+  //   moonsilver 05:24:59: a vida da Caldera fecha exata com 9 alvos (8 visiveis + o virtual do
+  //     charm que matou); com 8 fica 5% abaixo em todos.
+  //   gloompillar 08:36:36: a vida fecha exata com AA de 9 e Caldera de 8; com Caldera de 9 a
+  //     vida passa do esperado (47 contra 44).
+  // `moonsilver` 05:22:05 nao vira teste: depende da taxa de mana (pelo log, o `723 OK` e AA).
+  C('xp-attribution-setup/moonsilver-05:18:59', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:18:59',
+    seqOverkillCheck({ arrow: 3, spell: 5, rune: 0, grenade: 0 }, [], 'Divine Barrage'), '26/Aug/2026'),
+  C('xp-attribution-setup/moonsilver-05:25:14', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:25:14',
+    sharedCountCheck({ arrow: 1, spell: 1, rune: 0, grenade: 0 }), '26/Aug/2026'),
+  C('xp-attribution-setup/moonsilver-05:21:11', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:21:11',
+    sharedCountCheck({ arrow: 8, spell: 2, rune: 0, grenade: 0 }), '26/Aug/2026'),
+  C('xp-attribution-setup/moonsilver-05:24:59', 'moonsilver Server Log.txt', 'moonsilver Local Chat.txt', '05:24:59',
+    sharedCountCheck({ arrow: 8, spell: 9, rune: 0, grenade: 0 }), '26/Aug/2026'),
+  C('xp-attribution-setup/gloompillar-08:36:36', 'gloompillar Server Log.txt', 'gloompillar Local Chat.txt', '08:36:36',
+    sharedCountCheck({ arrow: 9, spell: 8, rune: 0, grenade: 0 }), '14/Jul/2026'),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

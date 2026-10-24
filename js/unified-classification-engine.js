@@ -2367,6 +2367,13 @@
     return high;
   }
 
+  // M-034b: "mesmo mob e estado" dos pares de Executioner's Throw (mob, critico, Expose Weakness,
+  // Bounty, prey).
+  function executionerHitKey(h) {
+    return [normalizeName(h.mob), h.realCrit || h.type === 'crit' ? 1 : 0,
+      /expose weakness/i.test(h.rawLine || '') ? 1 : 0, h.bountyTalisman ? 1 : 0, h.isPrey ? 1 : 0].join('|');
+  }
+
   // M-034 (fix-tom3-bounty-mana-and-aa-evidence, D5.1): tier `A` do Executioner's Throw pelo
   // LEECH. Num mesmo cast, um hit `base` (nao overkill: overkill => amped, M-034) e um `amped` do
   // mesmo mob e estado, ambos com dano real exato (vida e mana concordantes), tem razao 1/A.
@@ -2379,8 +2386,7 @@
         if (!isExecutionerThrowAction(comp.action)) continue;
         const hits = (comp.hits || []).filter(h => !h.virtual && h.dmg > 0);
         const exact = hits.map(h => ({ h, iv: exactLeechDamageTimesF(h, context) })).filter(x => x.iv);
-        const key = h => [normalizeName(h.mob), h.realCrit || h.type === 'crit' ? 1 : 0,
-          /expose weakness/i.test(h.rawLine || '') ? 1 : 0, h.bountyTalisman ? 1 : 0, h.isPrey ? 1 : 0].join('|');
+        const key = executionerHitKey;
         for (const base of exact) {
           if (base.h.overkill) continue;
           // O `base` precisa ser alvo do PROPRIO cast: pelo leech (H-005e) ele declara o N do bloco.
@@ -2401,7 +2407,7 @@
     return EXECUTIONER_BONUS_LEVELS.reduce((best, lv) => Math.abs(lv - raw) < Math.abs(best - raw) ? lv : best, EXECUTIONER_BONUS_LEVELS[0]);
   }
 
-  function detectExecutionerTiers(turns, leechTierA) {
+  function detectExecutionerTiers(turns, leechTierA, context) {
     const execComps = [];
     for (const turn of turns || []) {
       for (const comp of (turn.components || [])) {
@@ -2498,12 +2504,39 @@
 
     // Pass 3: multiplicador por hit + nÃ­vel no componente.
     for (const comp of execComps) {
+      const hits = comp.hits || [];
+      // M-034 (precedencia do overkill): hit observado que matou termina amped, mesmo com o
+      // leech capado pela vida faltante. Roda depois dos passes 1.5 e 2, entao nao alimenta a
+      // calibracao de mana nem a escolha de A. Virtual (overkill estrutural) fica de fora.
+      for (const h of hits) if (h.overkill && !h.virtual) h.executionerBonusActive = true;
+      // M-034c: hit sem overkill e sem linha de mana (mana cheia: o canal primario nao diz nada,
+      // e a vida e capada pela vida faltante) recebe o tier de outro hit do mesmo cast, do mesmo
+      // mob e estado, com dano real exato pelo leech e tier decidido. O dano real dele e o
+      // mostrado, sem o que fica fora da base de leech; razao abaixo de EXEC_LEECH_GAP nos dois
+      // sentidos vota o mesmo tier, a partir do gap vota o outro, e so o voto unanime muda o
+      // tier. Mesmo principio da precedencia: nao alimenta a calibracao nem a escolha de A.
+      // Caso-prova: `tom` 12:26:25, `marksman 2681` (vida 190, sem mana) contra os `marksman
+      // 809 OK`/`1524 OK` de dano real exato 2443-2446 a N = 4 => amped.
+      const F = areaFactor(hits.length);
+      for (const h of hits) {
+        if (h.overkill || h.virtual || !(h.dmg > 0) || (+h.manaLeech || 0) > 0) continue;
+        const own = leechDamageBasis(h, context) * F;
+        if (!(own > 0)) continue;
+        const votes = new Set();
+        for (const s of hits) {
+          if (s === h || s.virtual || s.executionerBonusActive == null || executionerHitKey(s) !== executionerHitKey(h)) continue;
+          const iv = exactLeechDamageTimesF(s, context);
+          if (!iv) continue;
+          const r = own / ((iv[0] + iv[1]) / 2);
+          if (r < EXEC_LEECH_GAP && r > 1 / EXEC_LEECH_GAP) votes.add(s.executionerBonusActive);
+          else if (r >= EXEC_LEECH_GAP && s.executionerBonusActive === false) votes.add(true);
+          else if (r <= 1 / EXEC_LEECH_GAP && s.executionerBonusActive === true) votes.add(false);
+          else votes.add(null);
+        }
+        if (votes.size === 1 && !votes.has(null)) h.executionerBonusActive = Array.from(votes)[0];
+      }
       let anyResolved = false;
-      for (const h of comp.hits || []) {
-        // M-034 (precedencia do overkill): hit observado que matou termina amped, mesmo com o
-        // leech capado pela vida faltante. Roda depois dos passes 1.5 e 2, entao nao alimenta a
-        // calibracao de mana nem a escolha de A. Virtual (overkill estrutural) fica de fora.
-        if (h.overkill && !h.virtual) h.executionerBonusActive = true;
+      for (const h of hits) {
         h.executionerBonusMultiplier = h.executionerBonusActive === true ? (A || null)
           : (h.executionerBonusActive === false ? 1 : null);
         if (h.executionerBonusActive != null) anyResolved = true;
@@ -2563,7 +2596,7 @@
         SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
         resolved = turns.map(t => resolveTurn(t, facts, context));
       }
-      detectExecutionerTiers(resolved, leechTierA);
+      detectExecutionerTiers(resolved, leechTierA, context);
       return resolved;
     };
     let weaponPhysicalPierceDetection = null;

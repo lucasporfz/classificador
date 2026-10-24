@@ -18,7 +18,7 @@ use `node tools/diag-turn.mjs "logs/barrage Server Log.txt" "logs/barrage local 
 | 3 | highwin | 08:47:16 | Granada (base holy ≈980) **+** AA; a runa (12 hits) cai no segundo seguinte | A8 S0 R12 G10 |
 | 4 | mk | 05:46:16 | **Runa-only** (great fireball) + AA de prefixo. A explosão real foi em 05:46:15 (holy ≈1000); os hits do g+4 em :16 são nível-AA (≈640) → ficam arrow, **sem granada falsa** | A5 S0 R8 G0 |
 | 5 | jaded | 19:59:47 | AA **+** Divine Caldera (exevo mas san, :47) **+** granada (:48) — Caldera e granada separadas por LEVEL de base holy, ambas crit | A9 S12 R0 G9 |
-| 6 | jaded | 19:59:49 | AA (espalhado, holy ≈290 = AA da sessão) fica **arrow** **+** Divine Caldera (:50). **Sem granada falsa** (cooldown-shadow rejeitado) | A9 S12 R0 G0 |
+| 6 | jaded | 19:59:49 | AA (espalhado, holy ≈290 = AA da sessão) fica **arrow** **+** Divine Caldera (:50). **Sem granada falsa** (cooldown-shadow rejeitado). O `sopping corpus 208` tem dano recebido antes da XP: não é overkill e é AA pelo leech (D-011a, 24/Out/2026) | A10 S11 R0 G0 |
 | 7 | darklight rp | 09:14:16 | AA (405, 501) **+** Strong Ethereal Spear (exori gran con) no último hit (1067). Fallback de chat single-target: só o último hit vira spell | A2 S1 R0 G0 |
 | 8 | Hakka | 21:56:25 | **Partial edge** — hit solitário 504 (explosão GFB cuja linha "Using…runes" está no bloco da sessão anterior). Visível mas **NÃO conta** como Auto ataque | A1 S0 R0 G0 (partialEdge) |
 | 9 | bastion | 15:20:27 | AA (517, posição-first) **+** Berserk (exori) nos 8 hits holy ≈900-960. O overkill de 15 dmg **não** pode ser usado na razão de leech p/ derrubar o AA | A1 S8 R0 G0 |

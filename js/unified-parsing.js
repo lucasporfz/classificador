@@ -86,8 +86,9 @@
     // D-011a: `seq` enumera somente fatos modelados e, portanto, não preserva
     // sozinho a continuidade causal hit/charm -> XP. Mantemos a ordem bruta em
     // um mapa interno, sem renumerar nem expor eventos. `barrierEpoch` avança
-    // quando outra ação explícita do jogador foi omitida de `events`; épocas
-    // diferentes provam que houve uma barreira entre os fatos.
+    // quando outra ação explícita do jogador foi omitida de `events` ou quando o
+    // dono do log recebeu dano; épocas diferentes provam que houve uma barreira
+    // entre os fatos.
     const rawOrderByEvent = new Map();
     let rawLineOrdinal = 0;
     let barrierEpoch = 0;
@@ -258,11 +259,15 @@
       if (loss) {
         if (loss[1].toLowerCase() === 'mana') manaLossEpoch++;
         else lifeLossEpoch++;
+        // D-011a (emenda de 24/Out/2026): dano recebido, com ou sem atacante, entre o
+        // hit (ou o charm) e a XP quebra a autoria da XP, em qualquer log. Em party é o
+        // kill de outro membro caindo depois de um hit nosso (`jaded` S7 19:59:49).
+        barrierEpoch++;
       }
-      // D-011a: notificações de estado do mundo e dano recebido podem ser
-      // intercalados pelo servidor e não são, sozinhos, nova autoria do XP.
-      // A barreira oculta canônica é a ação de poção tratada no início do loop;
-      // fatos modelados já bloqueiam pelo próprio "próximo evento relevante".
+      // D-011a: notificações de estado do mundo podem ser intercaladas pelo servidor e
+      // não são, sozinhas, nova autoria do XP. As barreiras ocultas são o uso de poção,
+      // tratado no início do loop, e o dano recebido acima; fatos modelados já bloqueiam
+      // pelo próprio "próximo evento relevante".
     }
 
     // M-038: dano de campo (`wall`/`bomb`/`field`, M-021) e proc anexo, da mesma familia de
@@ -292,6 +297,9 @@
       for (const ev of events) {
         if ((ev.seq || 0) <= cev.seq) continue;
         if (ev.ts - cev.ts > 1) break;
+        // D-011a/D-011b (emenda de 24/Out/2026): field em mob de OUTRO nome entre o charm e a
+        // XP quebra a autoria; o charm não matou. Com o mesmo nome, continua transparente.
+        if (ev.kind === 'field' && ev.mob !== cev.mob) break;
         if (ev.kind === 'field' || ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
         next = ev; break;
       }
@@ -312,6 +320,10 @@
         // ataque que o disparou; charm seguido de XP (killedTarget) matou e fica com a XP, com
         // qualquer nome de mob. Charm que não mata continua transparente.
         if (ev.kind === 'charm' && ev.killedTarget) { next = ev; break; }
+        // D-011a (emenda de 24/Out/2026): reflection ou field em mob de OUTRO nome entre o hit e a
+        // XP quebra a autoria, e o hit fica sem XP (`tom 3` 09:49:06, reflection no chastener
+        // depois do skirmisher 1741). Com o mesmo nome, transparente, sem inferir instância.
+        if ((ev.kind === 'reflect' || ev.kind === 'field') && ev.mob !== h.mob) break;
         if (ev.kind === 'charm' || ev.kind === 'reflect' || ev.kind === 'field' || ev.kind === 'lifeLeech' || ev.kind === 'manaLeech') continue;
         next = ev; break;
       }
@@ -523,6 +535,21 @@
         echoCandidates = [];
       }
       if (echoTs == null) continue;
+      // D-011c: golpe da janela do blast marcado overkill cujo segundo do eco (com hit
+      // não-overkill) traz, depois dele no log, um hit do MESMO mob e estado com a metade
+      // exata (±1) do dano mostrado sobreviveu ao blast: a XP que veio depois dele é de outro
+      // mob. O eco pode estar marcado e continua marcado. A marca sai AO FIM da prova deste
+      // cast (`unmarkHalfEchoBlast`), para que a prova e o rótulo blast/eco saiam das marcas de
+      // antes; `buildTurns` roda antes de toda inferência de setup, então o hit desmarcado entra
+      // na taxa (C-006). Caso-prova: `ms devoted` S1 03:06:25, `templar 1349` e o eco `674`.
+      const halfEchoBlast = echoCandidates.length
+        ? [cast.ts - 1, cast.ts].flatMap(ts => hitsByTs.get(ts) || [])
+          .filter(h => !delayedByHit.has(h.id) && !h.zeroDamageDodge && h.overkill
+            && echoBlock.some(e => !e.zeroDamageDodge && (e.seq || 0) > (h.seq || 0)
+              && normalizeName(e.mob) === normalizeName(h.mob) && elementalStateKey(e) === elementalStateKey(h)
+              && Math.abs(e.dmg - h.dmg / 2) <= 1))
+        : [];
+      const unmarkHalfEchoBlast = () => { for (const h of halfEchoBlast) h.overkill = false; };
       // T-002/M-016d-1a: o segundo do estágio atrasado pode conter, legitimamente, a
       // explosão de OUTRO cast concreto do dono — T-002 declara exatamente esse caso.
       // Quando ele existe, um hit que não fecha sob a fração é evidência DAQUELE cast,
@@ -776,7 +803,7 @@
         matchedEcho = [];
         otherCastHits = new Set();
       }
-      if (!winningTier) continue;
+      if (!winningTier) { unmarkHalfEchoBlast(); continue; }
       // Uma vez que pares comparáveis provam timing + potência, a explosão de
       // área inteira no mesmo timestamp é o estágio atrasado. Isso preserva hits
       // cujo original não é calculável e overkills, sem usá-los como prova.
@@ -856,6 +883,7 @@
         anchorHits: matchedPrimary.size ? Array.from(matchedPrimary) : primaryWindow.slice(),
         delayedHits: consolidatedEcho,
       });
+      unmarkHalfEchoBlast();
     }
     const turnEligible = sorted.filter(h => !delayedByHit.has(h.id));
     const blocks = [];
