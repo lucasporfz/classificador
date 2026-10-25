@@ -30,7 +30,21 @@ export const ENGINE_FILES = Object.freeze([
 // hit principal. Isso virou M-038 (22/Ago) e M-038a (23/Ago) — o resIduo de 216 ticks que
 // tinham absorvido o restauro da ultimate spirit potion caiu para 1 —, e a hunt voltou ao
 // corpus com zero quebras de invariante.
-export const CORPUS_EXCLUSIONS = Object.freeze([]);
+//
+// `radiant` S0 (24/Out/2026, decisao do usuario): o combate vai de 06:06:56 a 06:11:07 e o
+// unico Local Chat do dia comeca as 06:15:22. O pareamento por horario de save aceita esse
+// chat (48 min), mas nao ha fala nenhuma do combate, logo nao ha dono nem cast.
+export const CORPUS_EXCLUSIONS = Object.freeze([
+  Object.freeze({
+    id: 'radiant-session-2026-10-14-061109-no-local-chat',
+    server: 'Server Log radiant.txt',
+    year: 2026,
+    month: 10,
+    day: 14,
+    saveSec: (6 * 3600) + (11 * 60) + 9,
+    reason: 'Sessao sem Local Chat do combate (o chat do dia comeca depois dele); excluida a pedido do usuario.',
+  }),
+]);
 
 const MONTHS = Object.freeze({
   Jan: 1,

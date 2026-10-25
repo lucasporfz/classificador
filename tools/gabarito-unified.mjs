@@ -2108,6 +2108,39 @@ export const CASES = [
     sharedCountCheck({ arrow: 8, spell: 9, rune: 0, grenade: 0 }), '26/Aug/2026'),
   C('xp-attribution-setup/gloompillar-08:36:36', 'gloompillar Server Log.txt', 'gloompillar Local Chat.txt', '08:36:36',
     sharedCountCheck({ arrow: 9, spell: 8, rune: 0, grenade: 0 }), '14/Jul/2026'),
+  // M-036a (exclude-class-bonus-from-leech-basis): radiant (14/Out/2026, paladino `Mazzeriin`)
+  // tem +3% contra Human, e todo mob da caca e Human. Sem tirar o +3% da base de leech, o
+  // esperado fica 3% acima do observado em todo golpe e o corte certo morre por cardinalidade
+  // (06:51:26: `zealot 1800 CRIT`, mana 79 = CEIL(1800/1,03 x 0,16 x 0,28); sem o desconto, 81).
+  // O corte AA x Barrage e o da razao vida/mana de cada golpe (3,125 no AA, 3,75 no Barrage, que
+  // soma +10% de vida), que independe da base. 06:51:04 e 06:52:21 ganham o golpe virtual do
+  // charm que matou (enflame 1136 e wound 1920 seguidos de XP, S-014e); 06:54:23 perde os dois
+  // "AA", cuja razao vida/mana e a do Barrage.
+  ...[
+    ['06:51:04', 6, 6, 'Ethereal Barrage'], ['06:51:26', 6, 5, 'Ethereal Barrage'],
+    ['06:51:52', 5, 4, 'Ethereal Barrage'], ['06:52:01', 0, 5, 'Ethereal Barrage'],
+    ['06:52:21', 9, 9, 'Ethereal Barrage'], ['06:53:25', 2, 3, 'Ethereal Barrage'],
+    ['06:53:30', 4, 4, 'Ethereal Barrage'], ['06:53:45', 9, 10, 'Divine Caldera'],
+    ['06:54:15', 10, 9, 'Ethereal Barrage'], ['06:54:19', 6, 7, 'Ethereal Barrage'],
+    ['06:54:23', 0, 6, 'Ethereal Barrage'], ['06:54:41', 10, 10, 'Ethereal Barrage'],
+    ['06:55:08', 2, 5, 'Ethereal Barrage'], ['06:55:21', 11, 13, 'Ethereal Barrage'],
+    ['06:55:25', 6, 7, 'Ethereal Barrage'], ['06:56:20', 4, 5, 'Divine Caldera'],
+    ['06:56:39', 4, 1, 'Ethereal Barrage'], ['06:56:45', 7, 9, 'Divine Caldera'],
+    ['06:56:56', 7, 6, 'Ethereal Barrage'], ['06:57:11', 2, 1, 'Ethereal Barrage'],
+    ['06:57:22', 12, 14, 'Divine Caldera'], ['06:57:28', 8, 10, 'Ethereal Barrage'],
+    ['06:57:33', 6, 6, 'Ethereal Barrage'], ['06:57:35', 5, 5, 'Ethereal Barrage'],
+    ['06:58:28', 7, 7, 'Ethereal Barrage'], ['06:58:45', 5, 5, 'Divine Caldera'],
+    ['06:58:52', 5, 7, 'Ethereal Barrage'], ['06:59:05', 9, 6, 'Ethereal Barrage'],
+  ].map(([ts, aa, spell, label]) => C(`radiant-class-bonus-leech/${ts}`, 'Server Log radiant.txt', 'Local Chat radiant.txt', ts,
+    spellWithAaCheck(aa, spell, label), '14/Oct/2026')),
+  // A granada do `exevo tempo mas san` de cast-2 explode no turno do cast+2; antes ela so era
+  // oferecida ao turno de cast+4 (o de cast+2 nao resolvia) e a Caldera de la ficava com 1 golpe.
+  // 06:57:20: os 11 golpes de :20 tem original holy 1038-1041 em tres mobs; os 14 de 06:57:22,
+  // original ~904, sao a Caldera do cast de :22.
+  ...[
+    ['06:53:43', 7, 9, 9], ['06:56:43', 7, 10, 8], ['06:57:20', 10, 10, 11],
+  ].map(([ts, aa, spell, grenade]) => C(`radiant-class-bonus-leech/${ts}`, 'Server Log radiant.txt', 'Local Chat radiant.txt', ts,
+    grenadeWithAaSpellCheck(aa, spell, grenade, 'Ethereal Barrage', [parseClock(ts)], []), '14/Oct/2026')),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

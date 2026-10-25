@@ -14,6 +14,7 @@
 // evidence.physical (intervalo de O e escalares) e, se unresolved, as violações
 // de cada partição candidata rejeitada.
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import process from 'node:process';
+import { exclusionFor } from './unified-corpus.mjs';
 const ROOT = process.cwd(); const read = p => fs.readFileSync(p, 'utf8');
 const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
 const ctx = { console: silent, Math, JSON, Array, Object, Number, String, Map, Set, isFinite, isNaN, parseInt, parseFloat, Date, Float32Array, Int32Array };
@@ -78,13 +79,18 @@ function buildPairsByIndex(svAll, lcAll) {
   }
   return pairs;
 }
-// Sem filtro ad-hoc desde 23/Ago/2026: `CORPUS_EXCLUSIONS` ficou vazio
-// (`rescue-field-hits-with-impossible-leech`), então a indexação S0/S1/S2... daqui volta a
-// bater com a de tools/dump-unified.mjs sem replicar nada. Se alguma exclusão de corpus
-// voltar a existir, ela precisa ser refletida aqui de novo — de preferência importando
-// `CORPUS_EXCLUSIONS` em vez de reescrever a regra.
+// A indexação S0/S1/S2... daqui precisa bater com a de tools/dump-unified.mjs, que numera
+// as sessões DEPOIS de tirar as de `CORPUS_EXCLUSIONS` (desde 24/Out/2026, `radiant` S0).
+// Por isso a exclusão vem de `exclusionFor`, sem reescrever a regra. Os meses daqui são
+// 0-based e os de unified-corpus.mjs 1-based.
 function applyKnownFixtureExclusions(svPath, pairs) {
-  return pairs;
+  const serverName = path.basename(svPath);
+  return pairs.filter(pair => !exclusionFor(serverName, {
+    year: pair.sv.year,
+    month: pair.sv.month + 1,
+    day: pair.sv.day,
+    saveSec: pair.sv.saveSec,
+  }));
 }
 
 let svS = splitSessions(read(svP)), lcS = splitSessions(read(lcP));

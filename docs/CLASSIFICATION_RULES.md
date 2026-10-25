@@ -497,17 +497,25 @@
   detector é obrigado a escolher o menor candidato da grade em vez de concluir "sem
   bônus". Caso medido: `monk` S0, classe `extra dimensional`, uma linha só
   (`mitmah scout`, energy, n=4), observado `202` contra `200,19` sem bônus e `204,19` com
-  `2%` — o desvio de `+0,9%` está mais perto do zero (erro `1,81`) do que do `2%`
-  (erro `2,19`), e a tolerância `max(2; esperado×1,25%)≈2,5` aceita os dois. O `2%`
-  inferido ali é artefato da grade. Contraste na mesma família: `monk 2` S0, classe
-  `human`, três mobs e três elementos concordando em `+1,2%` a `+1,5%`
-  (`chastener` earth `547`, `skirmisher` fire `617`, `marksman` physical `595`), em que a
-  hipótese sem bônus seria rejeitada em duas das três linhas.
+  `2%`, e a tolerância `max(2; esperado×1,25%)≈2,5` aceita os dois.
+
+  **Correção de 25/Out/2026 — nos logs de `monk` e `monk 2` o `+2%` não existe.** A redação
+  anterior chamava o `2%` de `monk` S0 de artefato da grade e tratava o `+1,2%`–`+1,5%` de
+  `monk 2` S0 (`chastener` earth `547`, `skirmisher` fire `617`, `marksman` physical `595`)
+  como bônus real. Os dois logs não têm data e o motor os lê com a tabela pós-cutoff. Pela
+  cadeia de D-010a, com a mitigação da tabela **pré**-cutoff as quatro testemunhas fecham
+  exatas sem bônus nenhum: `mitmah scout` `197 → 207 → 202` (mitigação `2,02%`; com a pós,
+  `3,22%`, dá `200`), `chastener` `547`, `skirmisher` `617` e `marksman` `595` (com a pós,
+  `539`, `608` e `587`). A diferença que o detector lê como bônus de classe é a mitigação nova
+  da tabela pós (`reports/radiant-fase1-2026-10-24/monk-charm-pre-vs-post.mjs`). O achado é
+  desses dois logs; não foi medido em outra sessão sem data.
 
   Impacto medido: **nenhum turno** de `monk` ou `monk 2` depende desse bônus — com e sem
   ele os dois logs dão 10 violações de invariante e zero turno com diagnóstico diferente.
-  O efeito fica restrito ao dano base revertido (~2%). Por isso a decisão é registrar a
-  limitação, não corrigir a grade agora.
+  O efeito fica no dano base revertido (~2%) e, desde M-036a, na taxa de leech inferida
+  (`monk` vida `50%` → `51%`, mana `16%` → `16,25%`; `monk 2` vida `52%` → `53%`, mana `16%` →
+  `16,25%`), que sobe um degrau por causa do bônus falso. Aceito pelo usuário em 25/Out/2026
+  como pendência declarada; nem a grade nem a tabela desses logs foram mudadas.
 
   Caso-prova (bônus real): `logs/ingol ed Server Log.txt` / `logs/ingol ed Local Chat.txt`
   (`Fri Jul 17 2026`, druid, sem utevo grav san — a spell é exclusiva de paladin) — harpy
@@ -530,8 +538,9 @@
   pós-passe é inerte).
 
   - **M-036a — O bônus de classe infla o dano exibido, não o leech:**
-    `ESTADO: decidida em 20/Out/2026 (usuário) e NÃO implementada — `leechDamageBasis`
-    (`js/unified-setup-inference.js`) ainda não divide pelo multiplicador de classe.`
+    `ESTADO: decidida em 20/Out/2026 (usuário) e IMPLEMENTADA em 25/Out/2026 (change
+    `exclude-class-bonus-from-leech-basis`): `leechDamageBasis` (`js/unified-setup-inference.js`)
+    divide pelo multiplicador de classe, no mesmo divisor de prey, Bounty, grav san e Protector.`
 
     O leech é creditado sobre o dano **antes** do bônus de classe de bestiário, como prey,
     Bounty e `utevo grav san` (D-030), e ao contrário de omega (M-039). Logo a base de leech
@@ -545,8 +554,30 @@
     Sessão em que **todos** os mobs são da classe não discrimina: o bônus fica uniforme e se
     confunde com a taxa da grade de D-020. Caso: `ms devoted` (20/Out/2026, três
     `devoted radiant` Human, `+3%`) fecha igual com o bônus dentro da base e vida `25%` ou
-    fora dela e vida `25,75%`. Corrigir o motor muda a taxa inferida dessas sessões e o `N`
-    que a inversão do leech declara (H-005e) nos mobs da classe; o drift exige change própria.
+    fora dela e vida `25,75%`.
+
+    **Caso-prova que discrimina: `radiant` S0** (`14/Oct/2026 06:59:08`, paladino `Mazzeriin`,
+    Human `+3%`, todo mob da classe, vida `50%`, mana `16%`). Aqui a grade de D-020/D-020a não
+    tem `48,5%` nem `15,53%` para absorver o `3%`: com o bônus dentro da base, o esperado de
+    leech fica 3% acima do observado em todo golpe e a partição certa morre só por
+    cardinalidade (21 de 25 turnos), empata com cortes errados (1) ou a granada vai para o turno
+    de cast+4 (3). Com ele fora, a mana fecha
+    exata no N do bloco em ~90% dos golpes, e o corte AA × Ethereal Barrage é o da razão
+    vida/mana de cada golpe (`0,50/0,16 = 3,125` no AA, `0,60/0,16 = 3,75` no Barrage), que
+    independe da base. Ex.: `06:51:26`, `zealot 1800 CRIT` no Barrage de 5, mana `79` =
+    `CEIL((1800 / 1,03) × 0,16 × 0,28)` (com o bônus dentro, `81`) → `A6 + Ethereal Barrage 5`.
+    Medido no corpus inteiro: 31 turnos mudam, todos do `radiant` (28 → 3 sem classificação;
+    os 3 restantes começam por dano de fire bomb, M-038); nas 6 sessões com bônus de classe
+    detectado, nenhum outro turno muda de componente, `N` aceito ou marca de golpe. A taxa
+    inferida muda em `ms devoted` S0/S1 (vida `25%` → `25,75%`, mana `16%` → `16,5%`), `monk` S0
+    e `monk 2` S0 (ver o bônus falso desses dois logs, acima); `ingol ed` S0 (classes mistas) e
+    `radiant` S0 mantêm as taxas.
+
+    **Resíduo declarado:** com a divisão real (a mesma aritmética de prey e grav san), a mana sai
+    `1` acima do esperado em ~12% dos golpes do `radiant`, dentro da tolerância de D-024. Inverter
+    os `FLOOR` sucessivos de D-010g (dano inteiro antes do bônus) dá a mesma classificação e só
+    reduz o `+1` (23 → 12 golpes de AA); não adotado, porque valeria também para prey e grav san
+    (decisão do usuário, 25/Out/2026).
 
 - **M-037 — Decay de cadeia de Chained Penance (mecânica declarada, não reconstruída):**
   `Chained Penance (exori med pug)` de monk (holy, área) encadeia entre alvos e **perde
@@ -3128,9 +3159,13 @@ mudança respeitou as regras acima:
    já foram consolidados pelo motor como rollover da mesma granada. M-025 continua
    proibindo o mesmo cast em turnos distintos.
 3. `tools/dump-unified.mjs` registra todos os turnos de todas as sessões incluídas.
-   As exclusões autorizadas são explícitas e canônicas: o par completo
-   `Server Log drome.txt` e somente a sessão de `jaded Server Log.txt` salva em
-   `09/Jun/2026 09:30:47`.
+   As exclusões autorizadas são explícitas e canônicas (`CORPUS_EXCLUSIONS`,
+   `tools/unified-corpus.mjs`). Hoje há uma só: a sessão de `Server Log radiant.txt`
+   salva em `14/Oct/2026 06:11:09` (decisão do usuário, 24/Out/2026). O combate vai de
+   `06:06:56` a `06:11:07` e o único Local Chat do dia começa às `06:15:22`: o
+   pareamento por horário de save aceita esse chat, mas sem fala do combate não há dono
+   nem cast (R-002, M-011). Dos 113 turnos da sessão, 112 ficavam sem classificação (um
+   deles de borda, T-007) por falta dessa evidência.
 4. `--write-candidate` gera `dump-unified.txt`, `summary.json` e `manifest.json`
    sem alterar o último resultado aceito. `--promote-candidate` é uma operação
    separada, não classifica e só deve ocorrer depois da validação e da revisão do

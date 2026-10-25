@@ -38,6 +38,7 @@
     isMainHit,
     median,
     gravSanMultiplierAtTs,
+    bestiaryClassMultiplierForHit,
     knightStanceMultiplierAtTs,
     isKnightStanceKnownAt,
     normalizeName,
@@ -72,7 +73,8 @@
   }
   function leechDamageBasis(hit, context, preserveUnknownBounty) {
     // Leech é calculado sobre o dano real antes de multiplicadores finais que
-    // aumentam dano exibido sem aumentar leech: active prey/Bounty e utevo grav san.
+    // aumentam dano exibido sem aumentar leech: active prey/Bounty, utevo grav san, postura
+    // Protector e bonus de classe de bestiario.
     let dmg = +(hit && hit.dmg) || 0;
     if (!(dmg > 0)) return 0;
     let divisor = 1;
@@ -91,9 +93,13 @@
     // sob Protector e 1,1657 vezes a da postura neutra, contra 1/0,85 = 1,1765 previsto.
     // Blood Rage nao entra: o +25% vem da skill, logo o dano maior E o dano real.
     divisor *= knightStanceMultiplierAtTs(context, hit && hit.ts);
+    // M-036a: o bonus de classe de bestiario infla o dano exibido e nao o leech (medido em
+    // `ingol ed`: vida/dano dos mobs Bird 0,9532 contra os outros, 1/1,05 = 0,9524). Em
+    // `radiant` (Human +3%, todo mob da classe) a mana so fecha exata no N do bloco com ele fora.
+    divisor *= bestiaryClassMultiplierForHit(hit, context);
     // M-039: omega NAO entra neste divisor, DE PROPOSITO. O que sai daqui e so
     // multiplicador que infla o dano exibido SEM inflar o leech (prey, Bounty, grav san --
-    // ver D-030). Omega e o contrario: medido em `crypt` sobre pares a x1,060, a razao de
+    // ver D-030 --, Protector e classe de bestiario). Omega e o contrario: medido em `crypt` sobre pares a x1,060, a razao de
     // life leech e 1,0596 (n=2.884) e a de mana 1,0541 (n=2.908) -- o leech ACOMPANHA o
     // dano inflado, logo o dano inflado E a base. Dividir por 1,06 aqui cobraria do hit
     // uma taxa 6% menor que a real; medido, isso deixava o esperado ~6% abaixo do
