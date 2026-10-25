@@ -1867,7 +1867,9 @@ L=26 -> 12,75%
     faz ele **escapar** para um `N` maior inserindo hit virtual (S-014e), fabricando hits que
     não existem no log. Medição no escopo `bastion`/`essence`/`bakradrone`/`barrage`/
     `mazzerinbarrage`: **42 turnos ganharam hit virtual** contra 5 reclassificações reais, e o
-    caso normativo `barrage 18:59:58` quebrou (`A4 S5` → `A4 S6` virtual). Nem o gabarito nem
+    caso normativo `barrage 18:59:58` quebrou (`A4 S5` → `A4 S6` virtual; **corrigido em
+    25/Out/2026:** `A4 S6` é o correto, o `overpower charm` mata o `cyclursus` dentro da Caldera,
+    ver a emenda de S-014e). Nem o gabarito nem
     a varredura de invariantes detectaram 41 das 42 fabricações. A invalidação correta é a de
     D-012a, no ponto onde a fronteira é decidida (validação de partição), não onde a
     contradição é medida.
@@ -2441,6 +2443,43 @@ A escolha entre A e B usa vida e mana separadamente (D-022), reconstrução de d
   overflux mata darklight striker depois ⇒ `A1 virtual + R8` (7 visíveis + 1
   virtual pós-`Using`).
 
+  **Emenda de 25/Out/2026 — posse do charm-kill e ordem do desempate** (change
+  `own-charm-kill-virtual-by-position`, decisões do usuário de 06/Out/2026 e 25/Out/2026).
+  O teste de `N>k` "mesmo quando `N=k` já é consistente" (acima) só pode valer junto com
+  três cláusulas; sem elas o mesmo charm-kill vira hit virtual de dois componentes, o que
+  viola T-004 e M-025.
+  1. **Posse por posição.** Dentro do turno, um charm-kill só é elegível como hit virtual do
+     bloco cujos hits o cercam: o hit principal imediatamente anterior **ou** o imediatamente
+     seguinte a ele, em `seq`, pertence ao bloco. O charm entra no log antes do hit do ataque
+     que o disparou (D-011b), então charm cercado pelos dois lados por hits do mesmo bloco é
+     desse bloco. Fora da faixa de `seq` do turno vale a adjacência de sempre.
+  2. **Fronteira pelo leech.** Charm entre o último hit de um bloco e o primeiro do seguinte é
+     elegível para os dois. Cada atribuição é testada, com o outro bloco revalidado sem esse
+     charm, e vence a que não quebra o leech de nenhum dos dois; se as duas não quebram, a que
+     dá mais encaixes de leech e, depois, menos capped-low. Empate total deixa o charm sem
+     dono (D-006). Ex.: um turno `A4 S5` com charm-kill na fronteira vira `A5 S5` ou `A4 S6`,
+     conforme qual leitura mantém o leech dos dois blocos.
+  3. **Virtual não perde para capped-low.** Na escolha da partição, contar hits virtuais é
+     desempate **depois** da consistência de leech (critério 5 de "Escolha da partição"), nunca
+     antes: um bloco que fecha exato com o charm-kill real não pode perder para uma partição
+     que move um hit visível de nível de outro componente e deixa o leech todo capped-low.
+     Caso-prova: `highwin 2` S0 `08:25:12` — um `enflame charm` mata um `darklight striker`
+     entre dois hits do AA; `A4 + 1 virtual + Divine Caldera 7` fecha o leech exato nos dois
+     blocos, e `A5 + Caldera 6` (o `striker 830`, de original holy no nível da Caldera, no AA)
+     fica capped-low inteiro. Mesma forma: `mk` S2 `05:43:09` e `05:46:34`.
+
+  Casos-prova da emenda (o virtual conta na contagem do componente, como no caso
+  `mazzerinbarrage` `23:47:21`): `barrage` `18:59:58` → `A4 S6` (um `overpower charm` mata um
+  `cyclursus` dentro da Divine Caldera; era `A4 S5`, e a leitura antiga de D-012b, que chamava
+  esse virtual de fabricação, foi corrigida pelo usuário); `mazzerinbarrage` `22:09:57` →
+  `A3 S3` (`wound charm` mata um `darklight matter` dentro da Ethereal Barrage; o corte de S-020a
+  continua `[3,5]`); `thunder arrow` `18:56:46` → `A7 S12` e `18:52:46` → `A7 S12 G11` (o virtual
+  do `zap charm` de `seq 2118`, entre `seq 2115` e `2120` da Divine Barrage, sai do AA e vai para
+  ela); `crypt` `07:54:10` → `A8 S9`; e o caso que motivou a change, `diamond buckets` S10
+  `10:00:44`, em que `(DE ativo, N=5)` e `(DE inativo, N=6)` preveem o mesmo leech
+  (`0,28/0,25 = 1,12`) e só o teste do virtual nos dois modos de `utevo grav san` (V18) faz o
+  empate cair em DE inativo (`O ∈ [706,708]`).
+
 - **S-014f — Em turno integralmente de boss, a cardinalidade por leech é evidência não-discriminante e não veta:** quando todos os hits principais elegíveis do turno atingem criaturas reconhecidas como boss por `M-009a`, as regras `M-009`/`M-010`/`M-026`/`V-006` já determinam que **toda partição mecanicamente válida tem blocos de exatamente um hit**. Logo `N_leech = 1` em todos os blocos de todas as partições sobreviventes, `areaFactor(1) = 1` (o teto), e o leech esperado `CEIL(dano × taxa)` é **idêntico** entre elas. A evidência não separa hipótese alguma — ela só pode reprovar todas ao mesmo tempo. Nesse cenário o leech **não pode vetar partição**; permanece calculado, exposto no diagnóstico (`U-006`) e disponível como desempate (critérios 5 e 8 da "Escolha da partição"), na mesma posição que `S-016` reserva para evidência que não sobrepõe topologia e casts concretos.
 
   A regra retira o **veto**, não a observação: esses mesmos hits continuam sendo canal-ouro de `C-006` e `D-010h` para **inferir** o setup da sessão. `H-003` (bloco único com 3+ hits precisa provar `N_leech = k`) fica inerte aqui por construção, já que `M-009a` veta o bloco de 2+ hits antes.
@@ -2529,6 +2568,8 @@ Caso-prova obrigatório — mazzerinbarrage 22:09:57 (sessão salva 28/Jun/2026)
   Vida: 157 está mais perto de 147/163 que de 227/246 => vota ANTES
   Mana: 51 está mais perto de 48/58 que de 61/66 => vota ANTES
   Sem contradição entre canais => cuts=[3,5] vence (AA=3, Barrage=2)
+  Desde 25/Out/2026 (emenda de S-014e): A3 S3, o corte continua [3,5] e a Barrage
+  ganha o virtual do wound charm que mata o darklight matter dentro dela.
 ```
 
 - **S-020b — Só canal discriminante vota; canal sem poder de resolução se abstém:** a

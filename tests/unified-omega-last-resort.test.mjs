@@ -73,7 +73,9 @@ test('S-004c: os vizinhos que ja resolviam ficam identicos e sem a folga', () =>
     '07:53:57': 'arrow:Auto ataque:5 | spell:Divine Barrage (exori dir san):5',
     '07:54:06': 'arrow:Auto ataque:9 | spell:Divine Caldera (exevo mas san):11',
     '07:54:08': 'arrow:Auto ataque:7 | spell:Divine Barrage (exori dir san):7',
-    '07:54:10': 'arrow:Auto ataque:8 | spell:Divine Caldera (exevo mas san):8',
+    // 8 visiveis + 1 virtual: curse charm mata um roaming dread dentro da Caldera
+    // (S-014e, emenda de 25/Out/2026).
+    '07:54:10': 'arrow:Auto ataque:8 | spell:Divine Caldera (exevo mas san):9',
   };
   for (const [clock, sig] of Object.entries(expected)) {
     const turn = turnAt(clock);

@@ -347,10 +347,11 @@ export const CASES = [
   // por mana leech confirma N_leech=4 para o componente de spell.
   C('barrage/19:04:08', 'barrage Server Log.txt', 'barrage local chat.txt', '19:04:08',
     t => { const c = counts(t); return (c.arrow === 0 && c.spell === 4 && c.rune === 0 && c.grenade === 0) ? null : `esperado S4; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
-  // barrage: `exevo mas san` com AA no mesmo turno. O leech cap-aware confirma
-  // o bloco S5 e nao contradiz os 4 hits anteriores de AA.
+  // barrage: `exevo mas san` com AA no mesmo turno. 4 AA + Caldera de 5 hits
+  // visiveis + 1 virtual: o `overpower charm` (544 -> XP) mata um cyclursus dentro
+  // da Caldera (S-014e, emenda de 25/Out/2026; era A4 S5, corrigido pelo usuario).
   C('barrage/18:59:58', 'barrage Server Log.txt', 'barrage local chat.txt', '18:59:58',
-    t => { const c = counts(t); return (c.arrow === 4 && c.spell === 5 && c.rune === 0 && c.grenade === 0) ? null : `esperado A4 S5; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+    t => { const c = counts(t); return (c.arrow === 4 && c.spell === 6 && c.rune === 0 && c.grenade === 0) ? null : `esperado A4 S6(5+1 virtual); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // barrage: AA e Ethereal Barrage têm dano físico muito próximo; a fronteira
   // correta é confirmada pela cardinalidade por leech, A10 antes de S9.
   C('barrage/19:04:40', 'barrage Server Log.txt', 'barrage local chat.txt', '19:04:40',
@@ -519,11 +520,13 @@ export const CASES = [
   C('thunder-arrow-perfect-shot-state/18:56:35', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:56:35',
     spellWithAaCheck(3, 4, 'Divine Caldera'), '21/Jul/2026'),
   // Segundo rollover: G9 continua um único evento mecânico em :44/:45; o turno
-  // :46 perde apenas o prefixo da granada e fecha A7 S11 Divine Barrage, G0.
+  // :46 perde apenas o prefixo da granada e fecha A7 S12 Divine Barrage, G0: 11
+  // visiveis + 1 virtual de um oozing corpus morto por charm dentro da Barrage
+  // (S-014e, emenda de 25/Out/2026; era S11).
   C('thunder-arrow-perfect-shot-state/18:56:44', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:56:44',
     grenadeWithAaSpellCheck(6, 9, 9, 'Divine Caldera', [68204, 68205], [6483, 6487]), '21/Jul/2026'),
   C('thunder-arrow-perfect-shot-state/18:56:46', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:56:46',
-    spellWithAaCheck(7, 11, 'Divine Barrage'), '21/Jul/2026'),
+    spellWithAaCheck(7, 12, 'Divine Barrage'), '21/Jul/2026'),
   C('thunder-arrow-perfect-shot-state/18:57:33', 'thunder arrow Server Log.txt', 'thunder arrow Local Chat.txt', '18:57:33',
     spellWithAaCheck(5, 5, 'Divine Barrage'), '21/Jul/2026'),
   // D-030/D-011a: com Grav San global em 10%, a divisão aprovada é A8 S7 G7.
@@ -640,9 +643,11 @@ export const CASES = [
   // mazzerinbarrage 28/Jun/2026 22:09:57 (S-020a): ambiguous_equal_best_partitions
   // entre cuts=[2,5] e [3,5]. O hit em disputa (darklight source 772, life=157,
   // mana=51) fica no nucleo baixo de leech do prefixo (147/163 vida, 48/58 mana),
-  // nao no nucleo alto dos overkills finais (227/246 vida, 61/66 mana). Esperado A3 S2.
+  // nao no nucleo alto dos overkills finais (227/246 vida, 61/66 mana). O corte fica
+  // [3,5]; desde 25/Out/2026 (emenda de S-014e) a Barrage tem 2 visiveis + 1 virtual: o
+  // `wound charm` (134 -> XP) mata um darklight matter dentro dela. Esperado A3 S3.
   C('mazzerinbarrage/22:09:57', 'mazzerinbarrage server log.txt', 'mazzerinbarrage local chat.txt', '22:09:57',
-    t => { const c = counts(t); return (c.arrow === 3 && c.spell === 2 && c.rune === 0 && c.grenade === 0) ? null : `esperado A3 S2; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
+    t => { const c = counts(t); return (c.arrow === 3 && c.spell === 3 && c.rune === 0 && c.grenade === 0) ? null : `esperado A3 S3(2+1 virtual); got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`; }),
   // monk 11:55:23 (V-025, prova que a regra nao e especifica de paladin/Ethereal
   // Barrage): Greater Flurry of Blows (exori gran mas pug) e physical/area, mesmo gate.
   // 4 hits (830,712,830,830); corte antigo isolava o 712 como AA (n=1, leech previsto

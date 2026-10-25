@@ -5,6 +5,20 @@ invariantes, dump, drift, tempo) e das pendências que ela declarou. As falhas p
 ATUAIS ficam em `tools/known-failures.json`; isto aqui é só histórico, para comparar com uma
 medição antiga ou recuperar o porquê de uma decisão.
 
+**S-014e — posse do virtual de charm-kill (25/Out/2026, `own-charm-kill-virtual-by-position`,
+drift aprovado pelo usuário).** Baseline no HEAD `1e6d774`: **71/78** alvos, gabarito **448/455**,
+`FALHAS NOVAS: 0` (15 conhecidas), dump **23.059** turnos / **81** sem classificação. Depois:
+**72/79** (o alvo a mais é `tests/unified-charm-kill-virtual-ownership.test.mjs`), gabarito
+448/455, `FALHAS NOVAS: 0`, dump 23.059 / **83** (o mesmo turno em dois fixtures,
+`darklight e vemiath`/`mazzerinbarrage` S3 `23:31:39`, empate genuíno aceito). Drift em turnos
+únicos: 285 só ganham hit virtual, 10 trocam contagem (1 hit visível movido, `Crypt` `07:58:20`;
+9 virtuais mudando de dono pela posição), 1 vira `unresolved`. Charm com dois donos: zero no corpus.
+Gabarito corrigido por decisão do usuário: `barrage 18:59:58` A4 S6, `mazzerinbarrage 22:09:57`
+A3 S3, `thunder arrow` `18:56:46` e `18:52:46`, `crypt` `07:54:10`. Revisão em
+`reports/own-charm-kill-virtual-by-position/review.md`. **Pendência:** `diamond buckets` S2
+`09:02:05` (fora de `logs/`) depende da change `extend-alignment-degeneration-to-concurrent-grenade`,
+proposta e não implementada.
+
 **C7 + C8 (28/Set/2026, `classify-off-main-thread`, UI; nenhum `js/unified-*` tocado).**
 C7 e C8 do survey `reports/architecture-deepening-candidates.md`. **Mexer na UI foi autorizado
 explicitamente pelo usuário** (o `CLAUDE.md` proíbe por padrão). Não muda classificação: nenhum

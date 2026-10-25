@@ -4,7 +4,10 @@ export const SHARED_UNIFIED_GOLDEN_CASES = Object.freeze([
     server: 'thunder arrow Server Log.txt',
     local: 'thunder arrow Local Chat.txt',
     ts: '18:52:46',
-    expected: Object.freeze({ arrow: 8, spell: 11, rune: 0, grenade: 11 }),
+    // S-014e (emenda de 25/Out/2026): o virtual do zap charm de seq 2118 fica entre
+    // seq 2115 e 2120, ambos da Divine Barrage, e sai do AA (7 visiveis) para ela
+    // (11 visiveis + 1 virtual). Era arrow 8 / spell 11.
+    expected: Object.freeze({ arrow: 7, spell: 12, rune: 0, grenade: 11 }),
     regimeIndependent: true,
   }),
   Object.freeze({

@@ -1987,11 +1987,9 @@
     }
 
     const base = validateLeechBlockForN(block, context, k);
-    // Outside the A0-vs-A1 comparison, preserve conservative ownership: a
-    // passing visible block must not claim a charm-kill that may belong to
-    // another component in the same turn. The single-target-AA resolver opts
-    // into the larger-N test because its area action is the only possible owner.
-    if ((base.ok || !base.usable) && !allowScoredVirtual) return base;
+    // S-014e: o teste de N>k roda antes da escolha final mesmo quando N=k ja e
+    // consistente. A posse do charm-kill e por posicao (eligibleVirtualZeroCharmsForBlock).
+    if (!base.usable && !allowScoredVirtual) return base;
 
     // V12: componente de área pode ter hit principal invisível quando um charm/proc
     // entra antes do dano do hit que o ativou e mata o alvo. Nesse caso os hits
@@ -2242,6 +2240,7 @@
       + '|' + SessionContext.identityId(turn)
       + '|' + actionsFingerprint(turn && turn.actions)
       + '|' + (+context._omegaCrossStateTolerance || 0)
+      + '|' + [...(block.excludedVirtualCharmSeqs || [])].sort((a, b) => a - b).join(',')
       + '|' + hitKey;
   }
 
@@ -2499,6 +2498,7 @@
     const arrowBlocks = candidate.components.filter(b => b.comp === 'arrow');
     if (arrowBlocks.length > 1) violations.push({ rule: 'M-002/M-003', reason: 'two_arrow_components_same_turn' });
 
+    const elementByBlock = new Map();
     for (const block of candidate.components) {
       const crit = validateCritHomogeneity(block);
       if (!crit.ok) violations.push(Object.assign({ block }, crit));
@@ -2508,13 +2508,62 @@
       // M-043: spell de sorcerer reverte no elemento em que o dano saiu (estancia); fora disso, o perfil.
       if (block.comp === 'spell') element = action && action.profile ? sorcererSpellElement(action, block.hits, context) : 'unknown';
       if (block.comp === 'rune') element = action && action.profile ? action.profile.element : 'unknown';
+      elementByBlock.set(block, element);
 
       const modeResult = validateBlockDeterministicAndLeechWithGravModes(block, element, context, turn);
       // C1: uma chamada aplica o resultado no bloco — inclusive os efeitos por hit e as
       // copias de deterministic/leech que o motor muta a jusante.
-      const applied = applyBlockResult(block, modeResult);
-      const det = applied.det;
-      const leech = applied.leech;
+      applyBlockResult(block, modeResult);
+    }
+
+    // S-014e (fronteira): um charm-kill entre o ultimo hit de um bloco e o primeiro do
+    // seguinte e elegivel para os dois, mas vira hit virtual de UM so (T-004/M-025). Fica
+    // com o bloco cuja atribuicao nao quebra o leech de nenhum dos dois; se as duas nao
+    // quebram, com a que melhor encaixa o leech (mais fits, menos capped-low); empate
+    // total deixa o charm sem dono (D-006).
+    const claimants = new Map();
+    for (const block of candidate.components) {
+      for (const charm of (block.leech && block.leech.virtualZeroSourceCharms) || []) {
+        if (!charm || !Number.isFinite(+charm.seq)) continue;
+        if (!claimants.has(+charm.seq)) claimants.set(+charm.seq, []);
+        claimants.get(+charm.seq).push(block);
+      }
+    }
+    for (const [seq, owners] of claimants) {
+      if (owners.length < 2) continue;
+      const without = owners.map(block => {
+        const excluded = new Set(block.excludedVirtualCharmSeqs || []);
+        excluded.add(seq);
+        const probe = Object.assign({}, block, { hits: block.hits.filter(h => !h.virtual), excludedVirtualCharmSeqs: excluded });
+        delete probe.virtualZeroHits;
+        return { probe, result: validateBlockDeterministicAndLeechWithGravModes(probe, elementByBlock.get(block), context, turn) };
+      });
+      const leechOk = l => !l || !l.usable || l.ok;
+      const fit = l => (l && l.usable && l.consensus) ? [l.consensus.okCount || 0, l.consensus.cappedLowCount || 0] : [0, 0];
+      const options = owners.map((owner, i) => {
+        const leeches = owners.map((block, j) => (j === i ? block.leech : without[j].result.leech));
+        return {
+          index: i,
+          valid: leeches.every(leechOk),
+          ok: leeches.reduce((sum, l) => sum + fit(l)[0], 0),
+          capped: leeches.reduce((sum, l) => sum + fit(l)[1], 0),
+        };
+      });
+      const better = (a, b) => (a.valid !== b.valid ? (a.valid ? -1 : 1) : (b.ok - a.ok) || (a.capped - b.capped));
+      options.sort(better);
+      const winner = options.length > 1 && better(options[0], options[1]) === 0 ? null : options[0];
+      owners.forEach((block, j) => {
+        if (winner && winner.index === j) return;
+        block.hits = block.hits.filter(h => !h.virtual);
+        block.virtualZeroHits = undefined;
+        block.excludedVirtualCharmSeqs = without[j].probe.excludedVirtualCharmSeqs;
+        applyBlockResult(block, without[j].result);
+      });
+    }
+
+    for (const block of candidate.components) {
+      const det = block.deterministic;
+      const leech = block.leech;
       diagnostics.push({ kind: 'deterministic', block, result: det, gravSanActive: block.gravSanActive, gravSanTested: block.gravSanTested });
       if (!det.ok) violations.push(Object.assign({ block }, det));
       diagnostics.push({ kind: 'leech', block, result: leech, gravSanActive: block.gravSanActive, gravSanTested: block.gravSanTested });
@@ -2904,9 +2953,11 @@
       // distância ao centro é geometria, e esta é ordem causal.
       ['acausalHits', 1],
       ['actionRecencyPenalty', 1],
-      ['virtualZeroHits', 1],
       ['unknownHits', 1],
       ['cappedLowHits', 1],
+      // S-014e: virtual de charm-kill real so desempata depois da consistencia de
+      // leech (criterio 5), nunca contra ela.
+      ['virtualZeroHits', 1],
       ['components', 1],
       ['timing', demoted ? -1 : 0],
     ];
@@ -3153,9 +3204,25 @@
       .filter(ev => {
         if (!Number.isFinite(+ev.ts)) return false;
         const evSeq = Number.isFinite(+ev.seq) ? +ev.seq : null;
+        if (evSeq != null && block.excludedVirtualCharmSeqs && block.excludedVirtualCharmSeqs.has(evSeq)) return false;
         const sameTsAsBlock = ev.ts >= minTs && ev.ts <= maxTs;
         const sameTsNearBlock = ev.ts >= minTs - 1 && ev.ts <= maxTs + 1;
-        const seqInsideOrAdjacent = evSeq == null || (evSeq >= minSeq - 3 && evSeq <= maxSeq + 3) || (evSeq >= turnMinSeq && evSeq <= turnMaxSeq);
+        // S-014e (posse por posicao): dentro do turno, o charm-kill so e elegivel para o
+        // bloco cujos hits o cercam — o hit principal anterior OU o seguinte a ele
+        // pertence a este bloco. Fora do turno vale a adjacencia de sempre.
+        let seqInsideOrAdjacent;
+        if (evSeq == null) seqInsideOrAdjacent = true;
+        else if (evSeq >= turnMinSeq && evSeq <= turnMaxSeq) {
+          let prevSeq = null, nextSeq = null;
+          for (const h of turnMain) {
+            const s = +h.seq;
+            if (h.virtual || !Number.isFinite(s)) continue;
+            if (s < evSeq && (prevSeq == null || s > prevSeq)) prevSeq = s;
+            if (s > evSeq && (nextSeq == null || s < nextSeq)) nextSeq = s;
+          }
+          const inBlock = s => s != null && s >= minSeq && s <= maxSeq;
+          seqInsideOrAdjacent = inBlock(prevSeq) || inBlock(nextSeq);
+        } else seqInsideOrAdjacent = evSeq >= minSeq - 3 && evSeq <= maxSeq + 3;
         if (!sameTsNearBlock || !seqInsideOrAdjacent) return false;
         const mob = normalizeName(ev.mob);
         // Se o charm é imediatamente seguido por um dano principal visível no mesmo
