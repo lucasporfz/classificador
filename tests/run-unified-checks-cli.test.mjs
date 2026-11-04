@@ -21,6 +21,9 @@ for (const args of [
   ['--tests', '--match'],
   ['--tests', '--match', 'does-not-exist'],
   ['--unknown'],
+  ['--engine-dir'],
+  ['--engine-dir', '--tests'],
+  ['--engine-dir', 'pasta-que-nao-existe', '--tests'],
 ]) {
   const result = run(args);
   assert.equal(result.status, 2, `${args.join(' ')}\n${output(result)}`);

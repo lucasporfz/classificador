@@ -16,6 +16,7 @@
 //
 // Uso: node tools/audit-tolerance-residuals.mjs [--out reports/tolerance-audit]
 //        [--variants baseline,omega,...] [--pairs chave1,chave2] [--jobs 3] [--report-only]
+//        [--no-report]  (só as medições, para comparar com tools/compare-variant.mjs)
 import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -415,7 +416,8 @@ function runChild(variant, pairKey, outFile) {
       ms: Date.now() - started,
       error: error || (result && result.error) || null,
       setup: result ? Object.fromEntries(setupKeys.map(k => [k, hashOf(result[k])])) : null,
-      setupValues: result ? Object.fromEntries(setupKeys.map(k => [k, JSON.stringify(result[k] ?? null).slice(0, 400)])) : null,
+      // Os charms menores vêm na frente: o corte de 400 caracteres os escondia do compare-variant.
+      setupValues: result ? Object.fromEntries(setupKeys.map(k => [k, JSON.stringify((k === 'leechSetup' && result[k] ? { vampiricMob: result[k].vampiricMob ?? null, voidsMob: result[k].voidsMob ?? null, ...result[k] } : result[k]) ?? null).slice(0, 400)])) : null,
       turns: [],
     };
     const hitComponent = new Map();
@@ -736,5 +738,5 @@ if (argv[0] === '--child') {
   for (const [file, text] of sources) { const out = path.join(argv[2], file); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, text); }
 } else {
   if (!argv.includes('--report-only')) await runAll();
-  report();
+  if (!argv.includes('--no-report')) report();
 }

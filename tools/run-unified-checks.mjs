@@ -18,6 +18,9 @@
 //   node tools/run-unified-checks.mjs --invariants # so a varredura de invariantes
 //   node tools/run-unified-checks.mjs --tests      # so os tests/*.test.mjs
 //   node tools/run-unified-checks.mjs --gabarito --match barrage
+//   node tools/run-unified-checks.mjs --engine-dir <pasta> [outros flags]
+//     valida OUTRO motor sem tocar em js/: <pasta>/js sobrepõe o js/ numa cópia do repo em
+//     reports/engine-dir-root/ (ex.: pasta de `audit-tolerance-residuals.mjs --dump-sources`).
 //
 // No fim, cada falha e comparada com tools/known-failures.json por assinatura de caso
 // (ver tools/known-failures.mjs). Saida: 0 = nada falhou; 1 = so falhas conhecidas;
@@ -46,6 +49,12 @@ const GABARITO = {
   expect: 'gabarito-unified ok',
 };
 
+const RULE_INDEX = {
+  name: 'indice de regras',
+  args: ['tools/rule-index.mjs', '--check'],
+  expect: 'indice de regras em dia',
+};
+
 const INVARIANTS = {
   name: 'invariantes mecanicas (corpus completo, todos os regimes)',
   args: ['tools/unified-validation-workflow.mjs', '--invariants'],
@@ -60,6 +69,26 @@ function discoverTests() {
     .filter(f => f.endsWith('.test.mjs'))
     .sort()
     .map(f => ({ name: `tests/${f}`, args: [`tests/${f}`] }));
+}
+
+// Cópia do que os alvos leem, com o js/ da variante por cima. Fica dentro de reports/ para o
+// node ainda achar o node_modules do repo; é refeita a cada chamada, e o cache de
+// classificação não vem junto porque a chave depende do motor.
+const ENGINE_ROOT_ITEMS = ['app', 'css', 'docs', 'js', 'logs', 'scripts', 'tests', 'tools', 'index.html', 'package.json'];
+
+function runWithEngineDir(engineDir, forwarded) {
+  const source = path.resolve(engineDir, 'js');
+  if (!fs.existsSync(path.join(source, 'unified-classification-engine.js'))) {
+    console.error(`Uso invalido: ${source} nao tem o motor (unified-classification-engine.js).`);
+    process.exit(2);
+  }
+  const root = path.join(ROOT, 'reports', 'engine-dir-root');
+  fs.rmSync(root, { recursive: true, force: true });
+  for (const item of ENGINE_ROOT_ITEMS) fs.cpSync(path.join(ROOT, item), path.join(root, item), { recursive: true });
+  fs.cpSync(source, path.join(root, 'js'), { recursive: true });
+  console.log(`Motor de ${source}, em ${root}`);
+  const res = spawnSync(process.execPath, ['tools/run-unified-checks.mjs', ...forwarded], { cwd: root, stdio: 'inherit' });
+  process.exit(res.status ?? 3);
 }
 
 function run(target) {
@@ -78,6 +107,15 @@ function run(target) {
 }
 
 const args = process.argv.slice(2);
+const engineFlag = args.indexOf('--engine-dir');
+if (engineFlag >= 0) {
+  const [, engineDir] = args.splice(engineFlag, 2);
+  if (!engineDir || engineDir.startsWith('--')) {
+    console.error('Uso invalido: --engine-dir exige uma pasta.');
+    process.exit(2);
+  }
+  runWithEngineDir(engineDir, args);
+}
 const validModes = new Set(['--gabarito', '--invariants', '--tests']);
 const modes = new Set();
 let match = null;
@@ -116,7 +154,7 @@ if (all || (modes.has('gabarito') && modes.has('invariants'))) {
   targets.push(scoped(INVARIANTS));
 }
 if (all || modes.has('tests')) {
-  targets.push(...discoverTests().filter(target => match === null || target.name.includes(match)));
+  targets.push(...[RULE_INDEX, ...discoverTests()].filter(target => match === null || target.name.includes(match)));
 }
 
 if (!targets.length) {
