@@ -77,7 +77,7 @@ function elementalOriginalsWithPerfectShot(hit, element, ctx2) {
   const mit = F.mitigationMultiplier(mods, ctx2);
   const post = F.postMultiplier(hit, ctx2);
   const crit = F.criticalMultiplierForHit(hit, ctx2);
-  const ps = hit && hit.perfectShot ? F.PERFECT_SHOT_PREMIT_BONUS : 0;
+  const ps = hit && hit.perfectShot ? F.PERFECT_SHOT_BONUS : 0;
   // Mesma estrutura de elementalOriginalCandidates: exato primeiro, e só se
   // vazio relaxa ELEMENTAL_INTERMEDIATE_TOLERANCE nas duas pontas (aa e ee).
   const collect = (tol) => {

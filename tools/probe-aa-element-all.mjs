@@ -81,7 +81,7 @@ function inferForSession(ctx, svText, lcText) {
     const mit = F.mitigationMultiplier(mods, context);
     const post = F.postMultiplier(hit, context);
     const crit = F.criticalMultiplierForHit(hit, context);
-    const ps = hit && hit.perfectShot ? F.PERFECT_SHOT_PREMIT_BONUS : 0;
+    const ps = hit && hit.perfectShot ? F.PERFECT_SHOT_BONUS : 0;
     const collect = (tol) => {
       const t = Math.max(0, tol || 0); const out = new Set();
       for (const aIv of F.inversePostMultiplierIntervals(+hit.dmg, post))

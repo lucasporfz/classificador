@@ -88,7 +88,9 @@ test('S-004c: os vizinhos que ja resolviam ficam identicos e sem a folga', () =>
 test('S-004c: a folga so aparece em turno que a avaliacao estrita nao resolvia', () => {
   const used = (crypt().turns || []).filter(t => t.omegaCrossStateToleranceUsed);
   // 117 sob CEIL no passo do mod, 140 sob ROUND com o omega pos-mitigacao, 33 com o omega antes
-  // da resistencia (M-039 e S-004c, emenda de 14/Out/2026).
-  assert.equal(used.length, 33, '33 turnos de crypt passam pela folga');
+  // da resistencia (M-039 e S-004c, emenda de 14/Out/2026). 38 com a fila de bonus finais so com
+  // FLOOR: 07:32:15, 07:36:20, 07:52:28, 07:53:02 e 07:54:53 (janela de grav san) mantem a particao,
+  // mas o par com e sem omega fica a 1 ponto (aprovado pelo dono do log em 03/Nov/2026).
+  assert.equal(used.length, 38, '38 turnos de crypt passam pela folga');
   for (const turn of used) assert.equal(turn.status, 'resolved', 'a folga so e adotada quando resolve');
 });

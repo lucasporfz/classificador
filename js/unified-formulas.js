@@ -508,11 +508,9 @@
     return hit ? hit.ts : null;
   }
 
-  // V19: Perfect Shot adiciona +20 de dano no valor prÃ©-mitigaÃ§Ã£o do AA.
-  // Modelagem atual: aplica depois do crÃ­tico e antes da mitigaÃ§Ã£o; se logs
-  // futuros mostrarem que o crÃ­tico tambÃ©m multiplica o +20, este ponto fica
-  // isolado para ajuste.
-  const PERFECT_SHOT_PREMIT_BONUS = 20;
+  // D-010f: Perfect Shot soma +20 no fim de tudo: depois do critico, da mitigation e da
+  // fila de bonus finais (D-010i). A inversao subtrai o +20 antes de qualquer outro passo.
+  const PERFECT_SHOT_BONUS = 20;
 
   // V20: tolerÃ¢ncias pequenas para absorver erro de inferÃªncia/amostragem.
   // Leech pode ficar 1-3 pontos fora por base inferida ligeiramente alta/baixa
@@ -910,6 +908,57 @@
     return omegaActiveForHit(hit, context) ? OMEGA_MULTIPLIER : 1;
   }
 
+  // D-010i: fila de bonus finais, na ordem do jogo, cada passo com FLOOR em inteiros.
+  function finalBonusFactors(hit, context) {
+    const factors = [];
+    const add = m => { if (m !== 1) factors.push(m); };
+    if (hit.isPrey) add(1.25);
+    add(bestiaryClassMultiplierForHit(hit, context));
+    if (hit.bountyTalisman) {
+      const damage = context && context.bountyTalismanSetup && context.bountyTalismanSetup.damage;
+      if (damage && damage.multiplier > 1) add(damage.multiplier);
+    }
+    add(gravSanMultiplierAtTs(context, hit.ts, hit));
+    add(knightStanceMultiplierAtTs(context, hit.ts));
+    return factors;
+  }
+
+  function finalBonusStep(value, factor) {
+    return Math.floor(value * Math.round(factor * 1e6) / 1e6);
+  }
+
+  // D-010f + D-010i: tira o +20 do Perfect Shot e percorre a fila de tras para a frente.
+  // Cada passo e monotono, entao a pre-imagem de um intervalo e um intervalo.
+  function inverseFinalBonusIntervals(displayDamage, hit, context) {
+    const bonus = hit.perfectShot ? PERFECT_SHOT_BONUS : 0;
+    let lo = displayDamage - bonus;
+    let hi = lo;
+    if (hi < 1) return [];
+    const factors = finalBonusFactors(hit, context);
+    for (let i = factors.length - 1; i >= 0; i--) {
+      const q = factors[i];
+      let a = Math.max(0, Math.floor(lo / q) - 2);
+      let b = Math.ceil((hi + 1) / q) + 2;
+      while (a <= b && finalBonusStep(a, q) < lo) a++;
+      while (b >= a && finalBonusStep(b, q) > hi) b--;
+      if (a > b) {
+        // Valor que a fila nao alcanca: vale a mesma folga de 1 ponto da inversao intermediaria.
+        lo -= ELEMENTAL_INTERMEDIATE_TOLERANCE;
+        hi += ELEMENTAL_INTERMEDIATE_TOLERANCE;
+        a = Math.max(0, Math.floor(lo / q) - 2);
+        b = Math.ceil((hi + 1) / q) + 2;
+        while (a <= b && finalBonusStep(a, q) < lo) a++;
+        while (b >= a && finalBonusStep(b, q) > hi) b--;
+        if (a > b) return [];
+      }
+      lo = a;
+      hi = b;
+    }
+    return [[lo, hi]];
+  }
+
+  // Produto unico, FLOOR ou CEIL: fora da reversao de hit (D-010i). Restam so os usos sem hit
+  // (comparacao de dois niveis de charm em teste e ferramentas de sonda).
   function inversePostMultiplierIntervals(displayDamage, post) {
     const out = [];
     const add = iv => {
@@ -1271,12 +1320,8 @@
     if (post == null) return { known: false, originals: [], reason: 'bounty_talisman_damage_level_unknown' };
     const terraBurstBonusMultiplier = options && options.terraBurstBonusMultiplier > 1 ? +options.terraBurstBonusMultiplier : 1;
     const crit = criticalMultiplierForHit(hit, context);
-    // D-010f: Perfect Shot e bonus ADITIVO em dano, somado depois do critico e antes
-    // da mitigation -- a mesma posicao usada por physicalOriginalInterval. Enquanto
-    // todo AA de RP foi fisico isto nunca importou aqui (perfect shot so marca AA, e
-    // o AA nunca passava pelo eixo elemental, S-007); com municao de area elemental,
-    // omitir o termo desloca o hit marcado ~3% e cria fronteira falsa (S-004a).
-    const perfectShotBonus = hit && hit.perfectShot ? PERFECT_SHOT_PREMIT_BONUS : 0;
+    // D-010f: o +20 sai em inverseFinalBonusIntervals, antes de qualquer outra inversao.
+    const perfectShotBonus = hit && hit.perfectShot ? PERFECT_SHOT_BONUS : 0;
     // MemoizaÃ§Ã£o (sÃ³-desempenho): a reversÃ£o de um hit depende apenas destes
     // escalares resolvidos â€” mod/mit/post/crit jÃ¡ dobram gravSan/crit/pierce/BM/mob â€”
     // e NÃƒO da partiÃ§Ã£o candidata. O mesmo hit Ã© revertido em centenas de partiÃ§Ãµes;
@@ -1288,9 +1333,9 @@
     // M-039: fator de omega do hit (1 sem omega). Ele saiu de `post`, entao entra na chave.
     const omega = omegaMultiplierForHit(hit, context);
     const revCache = context && (context._revCache || (context._revCache = new Map()));
-    const cacheKey = revCache && ('E|' + element + '|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + terraBurstBonusMultiplier + '|' + perfectShotBonus + '|' + omega);
+    const cacheKey = revCache && ('E|' + element + '|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + finalBonusFactors(hit, context).join('*') + '|' + crit + '|' + terraBurstBonusMultiplier + '|' + perfectShotBonus + '|' + omega);
     if (revCache && revCache.has(cacheKey)) return revCache.get(cacheKey);
-    const postIntervals = inversePostMultiplierIntervals(+hit.dmg, post);
+    const postIntervals = inverseFinalBonusIntervals(+hit.dmg, hit, context);
     if (!postIntervals.length) { const r = { known: true, originals: [], reason: 'invalid_post_multiplier' }; if (revCache) rememberReversal(revCache, cacheKey, r); return r; }
 
     const collectOriginals = (intermediateTolerance) => {
@@ -1302,13 +1347,7 @@
             const eIv = invFloor(aa, mit);
             if (!eIv) continue;
             for (let c0 = eIv[0]; c0 <= eIv[1]; c0++) {
-              // D-010f: subtrai o bonus de Perfect Shot aqui -- logo apos desfazer a
-              // mitigation e antes de desfazer o critico -- exatamente onde
-              // physicalOriginalInterval faz (`prePerfect = c - perfectShotBonus`).
-              // Terra Burst tambem e pre-mitigation, mas a ordem relativa entre os dois
-              // e inerte: Terra Burst so existe em `exevo ulus tera` (druid) e Perfect
-              // Shot so marca AA de distancia; nenhum hit carrega os dois.
-              const c = c0 - perfectShotBonus;
+              const c = c0;
               if (c < 1) continue;
               const terraIntervals = inverseTerraBurstBonusIntervals(c, terraBurstBonusMultiplier);
               for (const terraIv of terraIntervals) {
@@ -1351,7 +1390,7 @@
       if (originals.size) intermediateToleranceUsed = ELEMENTAL_INTERMEDIATE_TOLERANCE;
     }
 
-    const result = { known: true, originals: Array.from(originals).sort((a, b) => a - b), mod, mitigation: mit, post, postIntervals, postInverse: 'floor_or_ceil', terraBurstBonusMultiplier, terraBurstBonusActive: terraBurstBonusMultiplier > 1, crit, critSetup: context && context.critSetup, intermediateToleranceUsed };
+    const result = { known: true, originals: Array.from(originals).sort((a, b) => a - b), mod, mitigation: mit, post, postIntervals, postInverse: 'sequential_floor', terraBurstBonusMultiplier, terraBurstBonusActive: terraBurstBonusMultiplier > 1, crit, critSetup: context && context.critSetup, intermediateToleranceUsed };
     if (revCache) rememberReversal(revCache, cacheKey, result);
     return result;
   }
@@ -1368,14 +1407,14 @@
     const armorLow = Math.max(Math.floor(armorEff / 2), 0);
     const armorHigh = Math.max(Math.floor(armorEff / 2) * 2 - 1, 0);
     const crit = criticalMultiplierForHit(hit, context);
-    const perfectShotBonus = hit && hit.perfectShot ? PERFECT_SHOT_PREMIT_BONUS : 0;
+    const perfectShotBonus = hit && hit.perfectShot ? PERFECT_SHOT_BONUS : 0;
     // MemoizaÃ§Ã£o (sÃ³-desempenho): mesma justificativa de elementalOriginalCandidates â€”
     // a reversÃ£o fÃ­sica depende sÃ³ destes escalares resolvidos, nÃ£o da partiÃ§Ã£o.
     const omega = omegaMultiplierForHit(hit, context);
     const revCache = context && (context._revCache || (context._revCache = new Map()));
-    const cacheKey = revCache && ('P|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + crit + '|' + perfectShotBonus + '|' + armorLow + '|' + armorHigh + '|' + omega);
+    const cacheKey = revCache && ('P|' + (+hit.dmg) + '|' + mod + '|' + mit + '|' + post + '|' + finalBonusFactors(hit, context).join('*') + '|' + crit + '|' + perfectShotBonus + '|' + armorLow + '|' + armorHigh + '|' + omega);
     if (revCache && revCache.has(cacheKey)) return revCache.get(cacheKey);
-    const postIntervals = inversePostMultiplierIntervals(+hit.dmg, post);
+    const postIntervals = inverseFinalBonusIntervals(+hit.dmg, hit, context);
     if (!postIntervals.length) { const r = { known: true, interval: null, reason: 'invalid_post_multiplier' }; if (revCache) rememberReversal(revCache, cacheKey, r); return r; }
     // Onslaught soma +0.6 a um crÃ­tico jÃ¡ INFERIDO (mean/mean, nÃ£o exato). Nesse
     // multiplicador combinado, um dano especÃ­fico pode cair num "buraco" do
@@ -1390,9 +1429,7 @@
           const cIv = invFloor(b, mit);
           if (!cIv) continue;
           for (let c = cIv[0]; c <= cIv[1]; c++) {
-            // Perfect Shot entra como +20 prÃ©-mitigaÃ§Ã£o. Para reconstruir o
-            // original fÃ­sico, removemos esse bÃ´nus antes de desfazer o crÃ­tico.
-            const prePerfect = c - perfectShotBonus;
+            const prePerfect = c;
             if (prePerfect < 0) continue;
             const t = Math.max(0, tolerance || 0);
             for (let pp = Math.max(0, prePerfect - t); pp <= prePerfect + t; pp++) {
@@ -1421,7 +1458,7 @@
     // M-039: o omega entra antes do mod (O' = ROUND(O × 1,06)) e sai depois dele.
     const [oMin, oMax] = omega === 1 ? [preMin, preMax] : invRoundRange(preMin, preMax, omega);
     const interval = oMax >= oMin ? [oMin, oMax] : null;
-    const result = { known: true, interval, mod, mitigation: mit, post, postIntervals, postInverse: 'floor_or_ceil', crit, critSetup: context && context.critSetup, perfectShotBonus, armorEff, armorLow, armorHigh };
+    const result = { known: true, interval, mod, mitigation: mit, post, postIntervals, postInverse: 'sequential_floor', crit, critSetup: context && context.critSetup, perfectShotBonus, armorEff, armorLow, armorHigh };
     if (revCache) rememberReversal(revCache, cacheKey, result);
     return result;
   }
@@ -1761,7 +1798,7 @@
     ONSLAUGHT_DAMAGE_MULTIPLIER,
     isTranscendenceActiveAt,
     transcendenceTsForHit,
-    PERFECT_SHOT_PREMIT_BONUS,
+    PERFECT_SHOT_BONUS,
     LEECH_VALUE_TOLERANCE_SMALL_BLOCK,
     LEECH_VALUE_TOLERANCE_LARGE_BLOCK,
     LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX,

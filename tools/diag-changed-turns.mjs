@@ -16,16 +16,19 @@
 //   node tools/dump-unified.mjs > after.txt              # depois da mudança
 //   diff baseline.txt after.txt > diff.txt
 //   node tools/diag-changed-turns.mjs --diff diff.txt > depois-detalhado.txt
-//   git stash                                            # volta pro código antes
-//   node tools/diag-changed-turns.mjs --diff diff.txt > antes-detalhado.txt
-//   git stash pop                                        # restaura a mudança
+//   node tools/diag-changed-turns.mjs --diff diff.txt --engine-root <copia-do-antes> > antes-detalhado.txt
 //
-// O script sempre roda contra o código ATUALMENTE no disco — por isso o antes/depois
-// exige rodar duas vezes (uma antes de editar ou com git stash), igual ao próprio
-// dump-unified.mjs já exige para o diff compacto.
+// Por padrão o script roda contra o código ATUALMENTE no disco. Para o "antes" sem
+// git stash, aponte o motor para uma cópia: `--engine-root <dir>` carrega `<dir>/js/...`
+// (os logs continuam os deste repositório).
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import process from 'node:process';
 import { UnifiedCorpus } from './unified-corpus.mjs';
-const ROOT = process.cwd(); const read = p => fs.readFileSync(p, 'utf8');
+const engineRootIndex = process.argv.indexOf('--engine-root');
+const ROOT = engineRootIndex >= 0 ? path.resolve(process.argv[engineRootIndex + 1] || '') : process.cwd();
+if (!fs.existsSync(path.join(ROOT, 'js', 'unified-classification-engine.js'))) {
+  console.error(`--engine-root: ${ROOT} nao contem js/unified-classification-engine.js`); process.exit(1);
+}
+const read = p => fs.readFileSync(p, 'utf8');
 const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
 function freshCtx() {
   const ctx = { console: silent, Math, JSON, Array, Object, Number, String, Map, Set, isFinite, isNaN, parseInt, parseFloat, Date, Float32Array, Int32Array };

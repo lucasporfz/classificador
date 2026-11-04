@@ -366,6 +366,31 @@ function actionReuseViolations(turns) {
   return violations;
 }
 
+// T-004/M-025 (emenda de S-014e, 25/Out/2026): um charm-kill vira hit virtual de UM so
+// componente do turno. O `seq` do charm esta no id do virtual
+// (`virtual_zero_charm_<seq>_<turno>`).
+function virtualCharmOwnershipViolations(turn) {
+  const owners = new Map();
+  for (const component of turn.components || []) {
+    for (const hit of component.hits || []) {
+      const match = hit.virtual && /^virtual_zero_charm_([^_]+)_/.exec(String(hit.id || ''));
+      if (!match) continue;
+      if (!owners.has(match[1])) owners.set(match[1], new Set());
+      owners.get(match[1]).add(component.id);
+    }
+  }
+  const violations = [];
+  for (const [seq, components] of owners) {
+    if (components.size < 2) continue;
+    violations.push({
+      ts: turn.ts,
+      rule: 'T-004/M-025',
+      msg: `charm-kill seq ${seq} virou hit virtual de ${components.size} componentes (${[...components].join(', ')})`,
+    });
+  }
+  return violations;
+}
+
 function setupViolations(result) {
   const setup = result?.leechSetup;
   if (!setup) return [];
@@ -423,7 +448,10 @@ export function checkUnifiedInvariants(result) {
     ...setupViolations(result),
     ...regimeViolations(result),
   ];
-  for (const turn of turns) violations.push(...turnInvariantViolations(turn, result));
+  for (const turn of turns) {
+    violations.push(...turnInvariantViolations(turn, result));
+    violations.push(...virtualCharmOwnershipViolations(turn));
+  }
   return violations.sort((a, b) => a.ts - b.ts || a.rule.localeCompare(b.rule));
 }
 

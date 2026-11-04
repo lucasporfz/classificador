@@ -10,7 +10,7 @@
 //
 // Desde 26/Set/2026 (change infer-sorcerer-stance-before-resolution, aceito pelo usuario), os Death
 // Echo de S0 convertidos para energy fecham entre mobs e viram observacao-ouro: S0 fecha a vida
-// em 0,27 com observacoes PROPRIAS. O mecanismo de abstencao continua coberto pelas 11 observacoes
+// em 0,2775 com observacoes PROPRIAS (0,27 antes do perk de M-036b). O mecanismo de abstencao continua coberto pelas 11 observacoes
 // de S0 de antes da conversao, congeladas em
 // tests/fixtures/aquatic-s0-gold-observations-before-stance-conversion.json (dado real, nao
 // inventado) e reprocessadas pela inferencia atual.
@@ -113,20 +113,20 @@ test('C-006b: abstencao explicita com as observacoes-ouro de S0 de antes da conv
 test('M-043: aquatic S0 fecha a vida pela propria sessao desde a conversao', () => {
   const s0 = setups[0];
   assert.equal(s0.lifeBaseKnown, true);
-  assert.equal(s0.lifeBase, 0.27);
+  assert.equal(s0.lifeBase, 0.2775, 'M-036b: perk de +2,5% fora da base de leech; vida declarada pelo dono do log');
   assert.equal(s0.lifeBaseAbstention, null);
 });
 
 test('C-006b: o canal de mana da mesma sessao fecha normalmente', () => {
   const s0 = setups[0];
   assert.equal(s0.manaBaseKnown, true);
-  assert.equal(s0.manaBase, 0.175);
+  assert.equal(s0.manaBase, 0.18);
   assert.equal(s0.manaBaseAbstention, null);
 });
 
 test('C-006b: canal com evidencia suficiente e marcado como conhecido', () => {
   assert.equal(setups[1].lifeBaseKnown, true);
-  assert.equal(setups[1].lifeBase, 0.27);
+  assert.equal(setups[1].lifeBase, 0.2775);
   assert.equal(setups[1].lifeBaseAbstention, null);
   assert.equal(setups[2].lifeBaseKnown, true);
   assert.equal(setups[2].lifeBase, 0.2725);

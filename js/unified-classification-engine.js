@@ -72,7 +72,7 @@
     ONSLAUGHT_DAMAGE_MULTIPLIER,
     isTranscendenceActiveAt,
     transcendenceTsForHit,
-    PERFECT_SHOT_PREMIT_BONUS,
+    PERFECT_SHOT_BONUS,
     LEECH_VALUE_TOLERANCE_SMALL_BLOCK,
     LEECH_VALUE_TOLERANCE_LARGE_BLOCK,
     LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX,
@@ -1954,6 +1954,54 @@
     return { active: false, multiplier: 1, source: 'charm_witness_without_omega_level', rows, anchoredRows: anchored.length };
   }
 
+  // M-036b: bonus de classe pelos hits com prey, so quando o charm nao decidiu nada. Usa o dano
+  // bruto, sem particao: FLOOR(x * 1,25) nunca deixa resto 4 mod 5, entao um hit com prey e resto 4
+  // prova um multiplicador depois do prey, e o candidato tem de alcancar todos os valores.
+  const PREY_RESIDUE_BONUS_CANDIDATES = [...new Set([
+    ...BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES,
+    0.005, 0.0075, 0.01, 0.015, 0.0175, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.10, 0.25,
+    0.009, 0.011, 0.013, 0.017, 0.019, 0.021, 0.023,
+  ])];
+  const PREY_RESIDUE_MIN_DAMAGE = 20;
+  const PREY_RESIDUE_MIN_CHANCE_MISSES = 3;
+
+  function preyResidueSurvivors(values) {
+    const max = Math.max(...values);
+    return PREY_RESIDUE_BONUS_CANDIDATES.filter(bonus => {
+      const q = Math.round((1 + bonus) * 1e6) / 1e6;
+      const reach = new Set();
+      for (let x = 1; x * 1.25 * q <= max + 3; x++) reach.add(Math.floor(Math.floor(x * 1.25) * q));
+      if (!values.every(v => reach.has(v))) return false;
+      let reachable = 0;
+      for (let y = 1; y <= max; y++) if (reach.has(y)) reachable++;
+      return (1 - reachable / max) * values.length >= PREY_RESIDUE_MIN_CHANCE_MISSES;
+    });
+  }
+
+  function inferBestiaryClassBonusFromPreyResidue(serverFacts, context) {
+    const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
+    const byClass = new Map();
+    for (const ev of (serverFacts && serverFacts.events) || []) {
+      if (!ev || ev.kind !== 'hit' || !ev.isPrey || ev.realCrit || ev.overkill || ev.perfectShot || ev.bountyTalisman || ev.onslaught) continue;
+      if (!(ev.dmg >= PREY_RESIDUE_MIN_DAMAGE) || isWithinAnyWindow(ev.ts, windows)) continue;
+      const mods = getMobMods(ev.mob, context);
+      if (!mods || !mods.bestiaryClass) continue;
+      const cls = normalizeName(mods.bestiaryClass);
+      if (!byClass.has(cls)) byClass.set(cls, new Set());
+      byClass.get(cls).add(ev.dmg);
+    }
+    const perClass = [];
+    for (const [cls, set] of byClass) {
+      const values = [...set];
+      if (!values.some(v => v % 5 === 4)) continue;
+      perClass.push({ class: cls, values: values.length, survivors: preyResidueSurvivors(values) });
+    }
+    const decided = perClass.filter(c => c.survivors.length === 1);
+    if (decided.length !== 1) return null;
+    const bonus = decided[0].survivors[0];
+    return { bonus, multiplier: 1 + bonus, class: decided[0].class, source: 'confirmed_by_prey_residue', perClass };
+  }
+
   function inferBestiaryClassDamageBonus(serverFacts, context) {
     const ladder = context && context.combatMasteryLadder;
     const windows = (context && context.gravSanSetup && context.gravSanSetup.windows) || [];
@@ -2300,6 +2348,9 @@
     // governa — bonus de classe, omega e o atalho de BM por charm.
     context.combatMasteryLadder = inferCombatMasteryLadder(serverFacts, context);
     context.bestiaryClassBonus = inferBestiaryClassDamageBonus(serverFacts, context);
+    if (/^no_/.test(context.bestiaryClassBonus.source || '')) {
+      context.bestiaryClassBonus = inferBestiaryClassBonusFromPreyResidue(serverFacts, context) || context.bestiaryClassBonus;
+    }
     // D-010g: depois do bonus de classe, que decide se a ancora de HP pode votar. Sem
     // circularidade: o detector de classe ja exclui os procs marcados por Bounty.
     if (!explicitBountyTalismanSetup) {

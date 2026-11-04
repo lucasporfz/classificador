@@ -7,7 +7,13 @@
 // (classificador legado + só tabela pré-cutoff) para explicar o que a UI mostra.
 //
 // Uso: node tools/diag-unified-turn.mjs "logs/sv.txt" "logs/lc.txt" HH:MM:SS[,HH:MM:SS...] [DD/Mon/YYYY]
-//      [--session N] [--mob-armor "bloodjaw=122"]
+//      [--session N] [--mob-armor "bloodjaw=122"] [--modes] [--virtuals] [--scores]
+//      [--engine-root <dir>]
+//   --modes:    por bloco, os modos de `utevo grav san` testados, com det.ok, original
+//               comum e leech de cada um, e o vencedor.
+//   --virtuals: cada hit virtual de charm-kill, com o componente dono e o seq do charm.
+//   --scores:   placar das partições válidas do turno, na ordem final do motor, com as
+//               chaves de compareValidated na ordem em que ela compara.
 //   - Sem data: usa a sessão única (ou o 1º par sv↔lc por horário de save).
 //   - Com data: restringe às sessões daquele dia (par sv↔lc de save mais próximo).
 // Saída por turno alvo: status final, componentes/hits (com crit/overkill/EW/prey),
@@ -15,13 +21,41 @@
 // de cada partição candidata rejeitada.
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import process from 'node:process';
 import { exclusionFor } from './unified-corpus.mjs';
-const ROOT = process.cwd(); const read = p => fs.readFileSync(p, 'utf8');
+// --engine-root <dir>: carrega o motor de `<dir>/js/...` (cópia para antes/depois sem
+// git stash); os logs continuam vindo dos caminhos passados.
+const engineRootIndex = process.argv.indexOf('--engine-root');
+const ROOT = engineRootIndex >= 0 ? path.resolve(process.argv[engineRootIndex + 1] || '') : process.cwd();
+if (!fs.existsSync(path.join(ROOT, 'js', 'unified-classification-engine.js'))) {
+  console.error(`--engine-root: ${ROOT} nao contem js/unified-classification-engine.js`); process.exit(1);
+}
+const read = p => fs.readFileSync(p, 'utf8');
 const silent = { log(){}, warn(){}, error(){}, info(){}, debug(){} };
 const ctx = { console: silent, Math, JSON, Array, Object, Number, String, Map, Set, isFinite, isNaN, parseInt, parseFloat, Date, Float32Array, Int32Array };
 ctx.globalThis = ctx; ctx.window = ctx;
 vm.createContext(ctx);
-for (const f of ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/mob-element-mods-post-2026-08-25.js', 'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js'])
+const WANT_MODES = process.argv.includes('--modes');
+const WANT_VIRTUALS = process.argv.includes('--virtuals');
+const WANT_SCORES = process.argv.includes('--scores');
+// --scores: o motor só devolve o placar do vencedor (`turn.chosen`). As partições válidas
+// que perderam ficam no array local de resolveTurn, que é ordenado por compareValidated e
+// em seguida passado a promotePhysicalAxisSingleBlockByLeech. A ferramenta embrulha essa
+// função em UnifiedValidation ANTES de carregar unified-turn-resolution.js (que a
+// desestrutura na carga) e copia o array já na ordem final. O embrulho chama a original
+// com o mesmo argumento e não toca em nada, então o resultado não muda. A cópia é indexada
+// pelo primeiro hit do turno, o mesmo objeto que volta em `u.turns[].hits`.
+const scoreCaptures = new Map();
+for (const f of ['js/stats.js', 'js/mob-element-mods.js', 'js/mob-element-mods-post-2026-06-16.js', 'js/mob-element-mods-post-2026-08-25.js', 'js/unified-session-context.js', 'js/unified-formulas.js', 'js/unified-parsing.js', 'js/unified-setup-inference.js', 'js/unified-validation.js', 'js/unified-turn-resolution.js', 'js/unified-classification-engine.js']) {
   vm.runInContext(read(path.join(ROOT, f)), ctx, { filename: f });
+  if (WANT_SCORES && f === 'js/unified-validation.js') {
+    const original = ctx.UnifiedValidation.promotePhysicalAxisSingleBlockByLeech;
+    ctx.UnifiedValidation.promotePhysicalAxisSingleBlockByLeech = candidates => {
+      const result = original(candidates);
+      const firstHit = candidates[0] && candidates[0].candidate.components[0].hits[0];
+      if (firstHit) scoreCaptures.set(firstHit, candidates.slice());
+      return result;
+    };
+  }
+}
 
 const HEADER_RE = /^Channel .+ saved \w+ (\w+) +(\d+) (\d+:\d+:\d+) (\d{4})/;
 const MONTHS = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11,Sept:8 };
@@ -52,8 +86,8 @@ function splitSessions(text) {
 const argv = process.argv.slice(2);
 const sessionArgIndex = argv.indexOf('--session');
 const sessionIdx = sessionArgIndex >= 0 ? +argv[sessionArgIndex + 1] : null;
-const FLAGS_WITH_VALUE = new Set(['--session', '--mob-armor']);
-const positional = argv.filter((a, i) => !FLAGS_WITH_VALUE.has(a) && !FLAGS_WITH_VALUE.has(argv[i - 1]));
+const FLAGS_WITH_VALUE = new Set(['--session', '--mob-armor', '--engine-root']);
+const positional = argv.filter((a, i) => !a.startsWith('--') && !FLAGS_WITH_VALUE.has(argv[i - 1]));
 const [svP, lcP, tsArg, dateArg] = positional;
 if (!svP || !lcP || !tsArg) {
   console.error('Uso: node tools/diag-unified-turn.mjs "logs/sv.txt" "logs/lc.txt" HH:MM:SS[,...] [DD/Mon/YYYY] [--session N]');
@@ -191,4 +225,69 @@ for (const t of (u.turns || [])) {
       console.log(`    ${shape} [${cuts}] -> ${viols}`);
     }
   }
+  if (WANT_MODES) printModes(t);
+  if (WANT_VIRTUALS) printVirtuals(t);
+  if (WANT_SCORES) printScores(t);
+}
+
+function fmtOriginals(det) {
+  const inter = det.intersection;
+  if (!inter || !inter.length) return '-';
+  // Físico devolve intervalo [lo,hi]; elemental (com `element`) devolve a lista de originais comuns.
+  if (!det.element && inter.length === 2) return `[${inter[0]},${inter[1]}]`;
+  const shown = inter.slice(0, 8).join(',');
+  return inter.length > 8 ? `${shown},…(${inter.length})` : shown;
+}
+
+function printModes(t) {
+  console.log('  --modes (utevo grav san por bloco):');
+  for (const c of (t.components || [])) {
+    const modes = c.gravSanModeCandidates;
+    if (!modes || !modes.length) { console.log(`    comp=${c.id} label=${c.actionLabel || '-'}: sem modos testados`); continue; }
+    console.log(`    comp=${c.id} label=${c.actionLabel || '-'} vencedor=${c.gravSanActive}`);
+    for (const m of modes) {
+      const d = m.deterministic || {}; const l = m.leech || {}; const cs = l.consensus || {};
+      const det = `det.ok=${!!d.ok}${d.ok ? '' : ` (${d.reason || '?'})`} original=${fmtOriginals(d)}`;
+      const leech = l.usable ? `leech ok=${!!l.ok} okCount=${cs.okCount || 0} failed=${cs.failedCount || 0} cappedLow=${cs.cappedLowCount || 0}` : 'leech não usável';
+      console.log(`      active=${m.active} ${det} | ${leech}`);
+    }
+  }
+}
+
+function printVirtuals(t) {
+  const rows = [];
+  for (const c of (t.components || [])) for (const h of (c.hits || [])) {
+    if (!h.virtual) continue;
+    const m = /^virtual_zero_charm_([^_]+)_/.exec(String(h.id || ''));
+    rows.push(`    comp=${c.id} label=${c.actionLabel || '-'} charm seq=${m ? m[1] : '?'} mob=${h.mob} charm=${h.sourceCharmType || '-'} dmg=${h.sourceCharmDamage ?? '-'} id=${h.id}`);
+  }
+  console.log(`  --virtuals: ${rows.length ? '' : 'nenhum'}`);
+  rows.forEach(r => console.log(r));
+}
+
+// Espelho da ordem de compareValidated (js/unified-validation.js). Antes destas chaves
+// a função aplica compareTimestampLeechBoundary, regra par-a-par (arrow>spell com cortes
+// vizinhos e a mesma spell de área); com `timingDemoted`, `timing` sai da 2ª posição e vira
+// o último desempate. Depois das chaves: shapeKey e cutKey.
+function scoreKeys(demoted) {
+  return ['mechanicalOrder', ...(demoted ? [] : ['timing']), 'deterministicHits', 'leechFits',
+    'timestampSplitPenalty', 'leechContradictions', 'grenadeRolloverPenalty', 'acausalHits',
+    'actionRecencyPenalty', 'unknownHits', 'cappedLowHits', 'virtualZeroHits', 'components',
+    ...(demoted ? ['timing'] : [])];
+}
+
+function printScores(t) {
+  const list = scoreCaptures.get((t.hits || [])[0]);
+  if (!list) { console.log('  --scores: nenhuma comparação de partições neste turno (resolvedor sem placar ou candidato único)'); return; }
+  const demoted = list.some(v => v.score.timingDemoted);
+  const keys = scoreKeys(demoted);
+  console.log(`  --scores: ${list.length} partições válidas, ordem final do motor (1ª = vencedora); boundaryLeech par-a-par antes das chaves${demoted ? '; timing rebaixado' : ''}`);
+  console.log(`    ordem: ${keys.join(' > ')} > shapeKey > cutKey`);
+  list.forEach((v, i) => {
+    const s = v.score;
+    console.log(`    #${i + 1} ${s.shapeKey} [${s.cutKey}] ${keys.map(k => `${k}=${s[k]}`).join(' ')}`);
+  });
+  const chosen = t.chosen;
+  if (chosen && (chosen.shapeKey !== list[0].score.shapeKey || chosen.cutKey !== list[0].score.cutKey))
+    console.log(`    (atenção: vencedor final ${chosen.shapeKey} [${chosen.cutKey}] difere do 1º capturado — desempate pós-ordenação)`);
 }
