@@ -123,6 +123,13 @@ const VARIANTS = {
   ladderKeep: { label: 'escada, folga mantida', report: false, edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff(), ladderEdit()] },
   ladder0nc: { label: 'escada, bloco elemental em 0 sem crítico', report: false, edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff(), ladderEdit(), ["js/unified-validation.js", "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "if (!(block && block.hits && block.hits.some(h => h.realCrit))) return 0; return (block && block.comp === 'rune' && block.action) ? 4 : 2;"]] },
   ladder0ncHoly: { label: 'escada + holy pierce de arma, bloco em 0 sem crítico', report: false, holyExtra: { 'moonsilver#0': 0.04, 'barrage#0': 0.04, 'darklight e vemiath#1': 0.04, 'mazzerinbarrage#1': 0.04 }, edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff(), ladderEdit(), ["js/unified-validation.js", "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "if (!(block && block.hits && block.hits.some(h => h.realCrit))) return 0; return (block && block.comp === 'rune' && block.action) ? 4 : 2;"], ["js/unified-formulas.js", "if (element === 'death' && hit && hit.dmg != null && context && context.weaponDeathPierce) {", "if (element === 'holy' && hit && hit.dmg != null && globalThis.__holyExtra) p += globalThis.__holyExtra;\n    if (element === 'death' && hit && hit.dmg != null && context && context.weaponDeathPierce) {"]] },
+  // Crítico: C = CEIL(E × k), k varrido por componente, sobre o motor de 7d10d60.
+  win: { label: 'janela de mitigação, folga mantida', report: false, edits: [mitigationWindowEdit()] },
+  critK: { label: 'crítico CEIL + k exato, folga mantida', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true }) },
+  critK0c: { label: 'crítico CEIL + k exato, bloco com crítico em 0', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true, crit0: true }) },
+  critKS0c: { label: 'crítico CEIL + k exato + Savage +0,40, bloco com crítico em 0', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true, crit0: true, savage: 0.4 }) },
+  critKO0: { label: 'crítico CEIL + k exato, omega cross-state em 0 (a folga ainda é usada?)', report: false, edits: [...critExactEdits({ rounding: 'ceil', scan: true }), ['js/unified-formulas.js', 'const OMEGA_CROSS_STATE_TOLERANCE = 1;', 'const OMEGA_CROSS_STATE_TOLERANCE = 0;']] },
+  critRand0c: { label: 'controle: k aleatório por componente, bloco com crítico em 0', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true, crit0: true, random: true }) },
   psAfterMit: { label: 'perfect shot +20 entre a mitigação e o prey', probes: true, report: false,
     edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'mit'), ...psPremitOff()] },
   psBeforeCrit: { label: 'perfect shot +20 antes do crítico (pré-mitigação)', probes: true, report: false,
@@ -140,6 +147,162 @@ function psWindowEdits() { return [
   ...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff(),
   ['js/unified-formulas.js', 'const eIv = invFloor(aa, mit);', 'const eIv = rawMitigation > 0 ? [Math.ceil(aa / (1 - (rawMitigation - 0.005) / 100)), Math.ceil((aa + 1) / (1 - (rawMitigation + 0.005) / 100)) - 1] : invFloor(aa, mit);'],
 ]; }
+// Janela de mitigação sobre o motor de 7d10d60 (a fila de bônus finais já está em js/).
+function mitigationWindowEdit() {
+  return ['js/unified-formulas.js', 'const eIv = invFloor(aa, mit);', 'const eIv = rawMitigation > 0 ? [Math.ceil(aa / (1 - (rawMitigation - 0.005) / 100)), Math.ceil((aa + 1) / (1 - (rawMitigation + 0.005) / 100)) - 1] : invFloor(aa, mit);'];
+}
+function critExactEdits({ rounding, scan, crit0 = false, nc0 = false, shift = 0, random = false, fixKey = true, savage = 0 }) {
+  const edits = [mitigationWindowEdit()];
+  if (fixKey) {
+    edits.push(['js/unified-validation.js', '() => physicalOriginalInterval(hit, context));',
+      "() => SessionContext.withHitScopeField(context, '_activeCritKey', critKeyForBlock(block), () => physicalOriginalInterval(hit, context)));"]);
+    edits.push(['js/unified-validation.js', '() => elementalOriginalCandidates(hit, element, context));',
+      "() => SessionContext.withHitScopeField(context, '_activeCritKey', critKeyForBlock(block), () => elementalOriginalCandidates(hit, element, context)));"]);
+  }
+  if (savage) edits.push(['js/unified-formulas.js', 'if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);', `if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);\n    if (hit.savageBlow) mult += ${savage};`]);
+  const helper = `const __CRIT_ROUNDING = ${JSON.stringify(rounding)};
+  function __critFinal(context) { return !!(context && context.critSetup && context.critSetup.source === 'bucket_two_pass'); }
+  function __critInv(y, k) {
+    const q = Math.round(k * 1e6);
+    if (__CRIT_ROUNDING === 'ceil') return [Math.floor((y - 1) * 1e6 / q) + 1, Math.floor(y * 1e6 / q)];
+    return [Math.ceil(y * 1e6 / q), Math.ceil((y + 1) * 1e6 / q) - 1];
+  }
+  function __critInvScan(y, k) {
+    const q = Math.round(k * 1e6);
+    if (__CRIT_ROUNDING === 'floor') return [Math.ceil(y * 1e6 / q), Math.ceil((y + 1) * 1e6 / q) - 1];
+    return [Math.floor((y - 1) * 1e6 / q) + 1, Math.floor(y * 1e6 / q)];
+  }
+  function __scanExactCrit(turns, context, estimates) {
+    const SC = sessionContextApi();
+    const groups = new Map();
+    for (const t of turns || []) for (const comp of (t && t.components) || []) {
+      if (!comp || comp.comp === 'unresolved') continue;
+      const key = critKeyForBlock(comp);
+      const a = comp.action || {};
+      const el = (comp.deterministic && comp.deterministic.element) || (a.profile && a.profile.element);
+      if (!key || !el || el === 'physical' || !ELEMENT_KEYS[el]) continue;
+      const words = normalizeName(a.incantation || a.words || a.text || a.spell || a.name || '');
+      if (isChainedPenanceAction(a) || isExecutionerThrowAction(a) || isTerraBurstAction(a) || /^(exevo gran vis lux|exevo vis lux|exevo max mort)$/.test(words)) continue;
+      const stages = new Map();
+      for (const h of comp.hits || []) {
+        if (!isMainHit(h) || h.overkill || h.zeroDamageDodge || h.savageBlow || !(+h.dmg > 0)) continue;
+        const sk = h.multiStageStage ? h.multiStageStage + '@' + h.multiStageCastTs : '';
+        if (!stages.has(sk)) stages.set(sk, []);
+        stages.get(sk).push(h);
+      }
+      const next = comp.gravSanActive == null ? null : Object.assign({}, context.gravSanHitOverride || {});
+      if (next) for (const h of comp.hits || []) if (h && h.id != null && gravSanHitInWindow(context, h)) next[h.id] = !!comp.gravSanActive;
+      const readRows = () => {
+        const out = [];
+        for (const hits of stages.values()) {
+          if (!hits.some(h => h.realCrit)) continue;
+          const seen = new Set(), rows = [];
+          for (const h of hits) {
+            const mods = getMobMods(h.mob, context);
+            const raw = mods && +mods[ELEMENT_KEYS[el]];
+            if (!(raw > 0)) continue;
+            const mit = +(mods.mitigation) || 0;
+            const mod = effectiveMod(raw, pierceForElement(el, h, context));
+            const iv = inverseFinalBonusIntervals(+h.dmg, h, context);
+            if (!iv.length) continue;
+            const [aLo, aHi] = iv[0];
+            const cLo = mit > 0 ? Math.ceil(aLo / (1 - (mit - 0.005) / 100)) : aLo;
+            const cHi = mit > 0 ? Math.ceil((aHi + 1) / (1 - (mit + 0.005) / 100)) - 1 : aHi;
+            const omega = omegaActiveForHit(h, context);
+            const add = h.realCrit ? (isTranscendenceActiveAt(context, transcendenceTsForHit(h)) ? TRANSCENDENCE_CRIT_BONUS : 0) + (h.onslaught ? ONSLAUGHT_DAMAGE_MULTIPLIER - 1 : 0) : 0;
+            const sig = [h.mob, h.dmg, mod, omega, add, h.realCrit, h.perfectShot, cLo, cHi].join('|');
+            if (seen.has(sig)) continue;
+            seen.add(sig);
+            rows.push({ crit: !!h.realCrit, ons: !!h.onslaught, cLo, cHi, mod, omega, add });
+          }
+          if (rows.length >= 2) out.push(rows);
+        }
+        return out;
+      };
+      const blocks = next ? SC.withHitScopeField(context, 'gravSanHitOverride', next, readRows) : readRows();
+      if (!blocks.length) continue;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(...blocks);
+    }
+    const closes = (rows, k) => {
+      let lo = -Infinity, hi = Infinity;
+      for (const r of rows) {
+        let eLo = r.cLo, eHi = r.cHi;
+        const kk = r.crit ? k + r.add : (r.ons ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1);
+        if (kk > 1) { eLo = __critInvScan(r.cLo, kk)[0]; eHi = __critInvScan(r.cHi, kk)[1]; }
+        if (eHi < eLo) return false;
+        let [oLo, oHi] = invRoundRange(eLo, eHi, r.mod);
+        if (oHi < oLo) return false;
+        if (r.omega) { [oLo, oHi] = invRoundRange(oLo, oHi, OMEGA_MULTIPLIER); if (oHi < oLo) return false; }
+        if (oLo > lo) lo = oLo;
+        if (oHi < hi) hi = oHi;
+        if (hi < lo) return false;
+      }
+      return true;
+    };
+    const found = new Map();
+    for (const [key, blocks] of groups) {
+      let best = 0, ks = [];
+      for (let g = 1300; g <= 2600; g += 5) {
+        const k = g / 1000;
+        let n = 0;
+        for (const rows of blocks) if (closes(rows, k)) n++;
+        if (n > best) { best = n; ks = [k]; } else if (n === best && n > 0) ks.push(k);
+      }
+      if (best > 0) found.set(key, { best, ks, n: blocks.length });
+    }
+    const strong = new Set();
+    for (const v of found.values()) if (v.best >= 3 && v.ks.length <= 3) for (const k of v.ks) strong.add(k);
+    const out = {};
+    for (const [key, v] of found) {
+      const est = estimates && estimates[key] > 1 ? estimates[key] : (context.critSetup && context.critSetup.fallback) || 1.6;
+      const pool = v.ks.filter(k => strong.has(k));
+      out[key] = (pool.length ? pool : v.ks).slice().sort((a, b) => Math.abs(a - est) - Math.abs(b - est))[0];
+    }
+    return { out, found };
+  }
+  function isMainHit(hit) {`;
+  edits.push(['js/unified-formulas.js', 'function isMainHit(hit) {', helper]);
+  edits.push(['js/unified-formulas.js', 'root.UnifiedFormulas = API;', 'API.__scanExactCrit = __scanExactCrit; root.UnifiedFormulas = API;']);
+  if (rounding !== 'both') {
+    edits.push(['js/unified-formulas.js', 'const preCritIntervals = inverseCriticalMultiplierIntervals(tb, crit);',
+      'const preCritIntervals = crit > 1 && __critFinal(context) ? [__critInv(tb, crit)] : inverseCriticalMultiplierIntervals(tb, crit);']);
+  }
+  if (scan) {
+    const post = random
+      ? 'for (const k of Object.keys(__exact.out)) { let s = 0; for (const c of k) s = (s * 31 + c.charCodeAt(0)) >>> 0; est.byComponent[k] = 1.5 + (s % 21) * 0.03; }'
+      : `for (const k of Object.keys(__exact.out)) est.byComponent[k] = Math.round((__exact.out[k] + ${shift}) * 1000) / 1000;`;
+    edits.push(['js/unified-classification-engine.js', 'const est = inferCritByComponent(labeledHitsFromTurns(pass1), null, context);',
+      'const est = inferCritByComponent(labeledHitsFromTurns(pass1), null, context);\n      const __raw = Object.assign({}, est.byComponent);\n      const __exact = globalThis.UnifiedFormulas.__scanExactCrit(pass1, context, __raw);\n      for (const k of Object.keys(__exact.out)) if (!est.byComponent[k]) est.byComponent[k] = __exact.out[k];']);
+    edits.push(['js/unified-classification-engine.js', 'if (est.byComponent.physical > CRIT_BOOTSTRAP_MAX) est.byComponent.physical = CRIT_BOOTSTRAP_MAX;',
+      `if (est.byComponent.physical > CRIT_BOOTSTRAP_MAX) est.byComponent.physical = CRIT_BOOTSTRAP_MAX;\n        ${post}`]);
+    // O eixo do AA (S-007) só é conhecido depois do refino: as passadas até ali seguem com a
+    // inversão e a folga de hoje; uma varredura final com o eixo do AA fixa o k, e só a
+    // passada seguinte, a última, usa a conta exata.
+    edits.push(['js/unified-classification-engine.js', "source: 'bucket_two_pass',", "source: 'bucket_scan_prelim',"]);
+    const finalPost = random
+      ? 'let s = 0; for (const c of k) s = (s * 31 + c.charCodeAt(0)) >>> 0; const __v = 1.5 + (s % 21) * 0.03;'
+      : `const __v = Math.round((__ex.out[k] + ${shift}) * 1000) / 1000;`;
+    edits.push(['js/unified-classification-engine.js', 'resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));',
+      `resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
+      if (context.critSetup && context.critSetup.source === 'bucket_scan_prelim') {
+        const __ex = globalThis.UnifiedFormulas.__scanExactCrit(resolvedTurns, context, context.critSetup.byComponent);
+        const __by = Object.assign({}, context.critSetup.byComponent);
+        for (const k of Object.keys(__ex.out)) { ${finalPost} __by[k] = __v; }
+        SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent: __by, source: 'bucket_two_pass' }) });
+        SessionContext.invalidateReversalCache(context);
+        SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
+        resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
+      }`, 2]);
+  }
+  if (crit0 || nc0) {
+    edits.push(['js/unified-validation.js', 'function elementalBlockTolerance(block) {', 'function elementalBlockTolerance(block, context) {']);
+    edits.push(['js/unified-validation.js', 'const tolerance = elementalBlockTolerance(block);', 'const tolerance = elementalBlockTolerance(block, context);', 2]);
+    edits.push(['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;",
+      `const __hasCrit = !!(block && block.hits && block.hits.some(h => h.realCrit));\n    const __boot = !(context && context.critSetup && context.critSetup.source === 'bucket_two_pass');\n    if (__hasCrit ? (${crit0} && !__boot) : ${nc0}) return 0;\n    return (block && block.comp === 'rune' && block.action) ? 4 : 2;`]);
+  }
+  return edits;
+}
 // Desliga a subtração pré-mitigação do +20 (D-010f) nos dois eixos.
 function psPremitOff() { return [
   ['js/unified-formulas.js', 'const c = c0 - perfectShotBonus;', 'const c = c0;'],

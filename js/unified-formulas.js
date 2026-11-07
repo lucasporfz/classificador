@@ -1344,7 +1344,8 @@
         for (let a = aIv[0]; a <= aIv[1]; a++) {
           const t = Math.max(0, intermediateTolerance || 0);
           for (let aa = Math.max(1, a - t); aa <= a + t; aa++) {
-            const eIv = invFloor(aa, mit);
+            // D-010a: a mitigação da tabela tem 2 casas; o valor real está em ±0,005 ponto.
+            const eIv = rawMitigation > 0 ? [Math.ceil(aa / (1 - (rawMitigation - 0.005) / 100)), Math.ceil((aa + 1) / (1 - (rawMitigation + 0.005) / 100)) - 1] : invFloor(aa, mit);
             if (!eIv) continue;
             for (let c0 = eIv[0]; c0 <= eIv[1]; c0++) {
               const c = c0;
@@ -1352,7 +1353,7 @@
               const terraIntervals = inverseTerraBurstBonusIntervals(c, terraBurstBonusMultiplier);
               for (const terraIv of terraIntervals) {
                 for (let tb = terraIv[0]; tb <= terraIv[1]; tb++) {
-                  const preCritIntervals = inverseCriticalMultiplierIntervals(tb, crit);
+                  const preCritIntervals = crit > 1 && exactCriticalPassActive(context) ? [invCeilCritical(tb, crit)] : inverseCriticalMultiplierIntervals(tb, crit);
                   for (const preCritIv of preCritIntervals) {
                     for (let e = preCritIv[0]; e <= preCritIv[1]; e++) {
                       // V-caso mazzerinbarrage 03:42:26: a tolerÃ¢ncia intermediÃ¡ria tambÃ©m
@@ -1463,6 +1464,106 @@
     return result;
   }
 
+  // D-010j: na passada final o crítico elemental é C = CEIL(E × k), com k por componente.
+  function exactCriticalPassActive(context) {
+    return !!(context && context.critSetup && context.critSetup.source === 'bucket_two_pass');
+  }
+  // invCeil em inteiros (k × 10^6): o C = CEIL(E × k) tem E em [FLOOR((C−1)/k)+1, FLOOR(C/k)].
+  function invCeilCritical(y, k) {
+    const q = Math.round(k * 1e6);
+    return [Math.floor((y - 1) * 1e6 / q) + 1, Math.floor(y * 1e6 / q)];
+  }
+  // D-010j: varre k em [1,300; 2,600], passo 0,005, por chave de crítico; vence o k com que
+  // mais blocos críticos (por estágio, 2+ hits distintos) fecham sem folga.
+  function scanExactCriticalMultipliers(turns, context, estimates) {
+    const SC = sessionContextApi();
+    const groups = new Map();
+    for (const t of turns || []) for (const comp of (t && t.components) || []) {
+      if (!comp || comp.comp === 'unresolved') continue;
+      const key = critKeyForBlock(comp);
+      const a = comp.action || {};
+      const el = (comp.deterministic && comp.deterministic.element) || (a.profile && a.profile.element);
+      if (!key || !el || el === 'physical' || !ELEMENT_KEYS[el]) continue;
+      const words = normalizeName(a.incantation || a.words || a.text || a.spell || a.name || '');
+      if (isChainedPenanceAction(a) || isExecutionerThrowAction(a) || isTerraBurstAction(a) || /^(exevo gran vis lux|exevo vis lux|exevo max mort)$/.test(words)) continue;
+      const stages = new Map();
+      for (const h of comp.hits || []) {
+        if (!isMainHit(h) || h.overkill || h.zeroDamageDodge || h.savageBlow || !(+h.dmg > 0)) continue;
+        const sk = h.multiStageStage ? h.multiStageStage + '@' + h.multiStageCastTs : '';
+        if (!stages.has(sk)) stages.set(sk, []);
+        stages.get(sk).push(h);
+      }
+      const next = comp.gravSanActive == null ? null : Object.assign({}, context.gravSanHitOverride || {});
+      if (next) for (const h of comp.hits || []) if (h && h.id != null && gravSanHitInWindow(context, h)) next[h.id] = !!comp.gravSanActive;
+      const readRows = () => {
+        const out = [];
+        for (const hits of stages.values()) {
+          if (!hits.some(h => h.realCrit)) continue;
+          const seen = new Set(), rows = [];
+          for (const h of hits) {
+            const mods = getMobMods(h.mob, context);
+            const raw = mods && +mods[ELEMENT_KEYS[el]];
+            if (!(raw > 0)) continue;
+            const mit = +(mods.mitigation) || 0;
+            const mod = effectiveMod(raw, pierceForElement(el, h, context));
+            const iv = inverseFinalBonusIntervals(+h.dmg, h, context);
+            if (!iv.length) continue;
+            const [aLo, aHi] = iv[0];
+            const cLo = mit > 0 ? Math.ceil(aLo / (1 - (mit - 0.005) / 100)) : aLo;
+            const cHi = mit > 0 ? Math.ceil((aHi + 1) / (1 - (mit + 0.005) / 100)) - 1 : aHi;
+            const omega = omegaActiveForHit(h, context);
+            const add = h.realCrit ? (isTranscendenceActiveAt(context, transcendenceTsForHit(h)) ? TRANSCENDENCE_CRIT_BONUS : 0) + (h.onslaught ? ONSLAUGHT_DAMAGE_MULTIPLIER - 1 : 0) : 0;
+            const sig = [h.mob, h.dmg, mod, omega, add, h.realCrit, h.perfectShot, cLo, cHi].join('|');
+            if (seen.has(sig)) continue;
+            seen.add(sig);
+            rows.push({ crit: !!h.realCrit, ons: !!h.onslaught, cLo, cHi, mod, omega, add });
+          }
+          if (rows.length >= 2) out.push(rows);
+        }
+        return out;
+      };
+      const blocks = next ? SC.withHitScopeField(context, 'gravSanHitOverride', next, readRows) : readRows();
+      if (!blocks.length) continue;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(...blocks);
+    }
+    const closes = (rows, k) => {
+      let lo = -Infinity, hi = Infinity;
+      for (const r of rows) {
+        let eLo = r.cLo, eHi = r.cHi;
+        const kk = r.crit ? k + r.add : (r.ons ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1);
+        if (kk > 1) { eLo = invCeilCritical(r.cLo, kk)[0]; eHi = invCeilCritical(r.cHi, kk)[1]; }
+        if (eHi < eLo) return false;
+        let [oLo, oHi] = invRoundRange(eLo, eHi, r.mod);
+        if (oHi < oLo) return false;
+        if (r.omega) { [oLo, oHi] = invRoundRange(oLo, oHi, OMEGA_MULTIPLIER); if (oHi < oLo) return false; }
+        if (oLo > lo) lo = oLo;
+        if (oHi < hi) hi = oHi;
+        if (hi < lo) return false;
+      }
+      return true;
+    };
+    const found = new Map();
+    for (const [key, blocks] of groups) {
+      let best = 0, ks = [];
+      for (let g = 1300; g <= 2600; g += 5) {
+        const k = g / 1000;
+        let n = 0;
+        for (const rows of blocks) if (closes(rows, k)) n++;
+        if (n > best) { best = n; ks = [k]; } else if (n === best && n > 0) ks.push(k);
+      }
+      if (best > 0) found.set(key, { best, ks, n: blocks.length });
+    }
+    const strong = new Set();
+    for (const v of found.values()) if (v.best >= 3 && v.ks.length <= 3) for (const k of v.ks) strong.add(k);
+    const out = {};
+    for (const [key, v] of found) {
+      const est = estimates && estimates[key] > 1 ? estimates[key] : (context.critSetup && context.critSetup.fallback) || 1.6;
+      const pool = v.ks.filter(k => strong.has(k));
+      out[key] = (pool.length ? pool : v.ks).slice().sort((a, b) => Math.abs(a - est) - Math.abs(b - est))[0];
+    }
+    return { out, found };
+  }
   function isMainHit(hit) {
     if (!hit) return false;
     if (hit.damageReflection || hit.woundCharm || hit.overpowerCharm) return false;
@@ -1861,6 +1962,6 @@
     isMainHit,
   };
 
-  root.UnifiedFormulas = API;
+  API.scanExactCriticalMultipliers = scanExactCriticalMultipliers; root.UnifiedFormulas = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof globalThis !== 'undefined' ? globalThis : window);

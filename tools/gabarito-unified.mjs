@@ -1956,7 +1956,9 @@ export const CASES = [
   // 147` (vida 74, N=1) e o AA. Blast 5 (o `34 OK` nao recebe o rotulo, M-016d-1a item 3); eco 12.
   C('italian-omega-by-state/18:50:55', 'italian Server Log.txt', 'italian Local Chat.txt', '18:50:55',
     t => spellWithAaCheck(1, 18, 'Death Echo')(t) || arrowSeqCheck([2138])(t)
-      || deathEchoStagesCheck(5, 12, [2142, 2151, 2154, 2173, 2182, 2185, 2194])(t), '02/Oct/2026'),
+      // 04/Nov/2026 (D-010j, decisao do usuario): com k = 2,085 o blast tem nivel comum 780, e o
+      // crypt mage 858/429 (827/413) so cabe nele com omega: 9 marcados, mesma particao.
+      || deathEchoStagesCheck(5, 12, [2142, 2148, 2151, 2154, 2173, 2176, 2182, 2185, 2194])(t), '02/Oct/2026'),
   // M-016d-1a item 6: o eco herda Transcendence do cast (blast :52 na janela, eco :53 fora).
   C('italian-echo-transcendence/18:51:52', 'italian Server Log.txt', 'italian Local Chat.txt', '18:51:52',
     t => spellWithAaCheck(1, 11, 'Death Echo')(t) || deathEchoStagesCheck(2, 3)(t), '02/Oct/2026'),

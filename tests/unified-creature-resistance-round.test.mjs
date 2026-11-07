@@ -72,7 +72,8 @@ const damage = result.bountyTalismanSetup.damage;
 assert.equal(damage.source, 'frozen_deterministic_component_original');
 assert.equal(damage.level, 25);
 assert.equal(damage.contradictions, 0);
-assert.equal(damage.evidenceCount, 36, 'nivel 25 com 36 encaixes sob ROUND e sem componentes criticos');
+// 40 com a janela de mitigacao e o critico de D-010j (04/Nov/2026, aprovado pelo usuario).
+assert.equal(damage.evidenceCount, 40, 'nivel 25 com 40 encaixes sob ROUND e sem componentes criticos');
 for (const row of damage.ranked) {
   for (const example of row.examples || []) {
     assert.ok(!(example.turn === '18:34:05'), 'o componente critico de 18:34:05 nao pode votar');

@@ -751,7 +751,7 @@
       const slot = marked ? 1 : 0;
       if (pair[slot] !== undefined) return pair[slot];
       const ev = withOmegaAssignment(context, new Set([hit]), marked ? new Set([hit]) : EMPTY_OMEGA_SET,
-        () => physicalOriginalInterval(hit, context));
+        () => SessionContext.withHitScopeField(context, '_activeCritKey', critKeyForBlock(block), () => physicalOriginalInterval(hit, context)));
       pair[slot] = ev && ev.known && ev.interval ? ev.interval : null;
       return pair[slot];
     };
@@ -1688,7 +1688,7 @@
     if (hits.length < 2) return base;
     const originalsOf = (hit, marked) => {
       const ev = withOmegaAssignment(context, new Set([hit]), marked ? new Set([hit]) : EMPTY_OMEGA_SET,
-        () => elementalOriginalCandidates(hit, element, context));
+        () => SessionContext.withHitScopeField(context, '_activeCritKey', critKeyForBlock(block), () => elementalOriginalCandidates(hit, element, context)));
       return ev && ev.known && ev.originals && ev.originals.length ? ev.originals : null;
     };
     // Mesma tolerancia que o proprio bloco usaria na intersecao: ela existe so para o

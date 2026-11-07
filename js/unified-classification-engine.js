@@ -108,6 +108,7 @@
     intersectSets,
     mitigationMultiplier,
     critKeyForBlock,
+    scanExactCriticalMultipliers,
     criticalMultiplierForHit,
     inverseCriticalMultiplierIntervals,
     postMultiplier,
@@ -2664,6 +2665,10 @@
     // passada `resolvedWithoutLeech` como pass-1 de crit para nÃ£o pagar uma varredura extra.
     const refineCritByComponent = pass1 => {
       const est = inferCritByComponent(labeledHitsFromTurns(pass1), null, context);
+      // D-010j: o k varrido entra nos componentes que a estimativa por razão não tem e, depois
+      // do teto físico, substitui a estimativa; a passada final é a da conta exata.
+      const exactCrit = scanExactCriticalMultipliers(pass1, context, Object.assign({}, est.byComponent));
+      for (const k of Object.keys(exactCrit.out)) if (!est.byComponent[k]) est.byComponent[k] = exactCrit.out[k];
       if (est && est.byComponent && Object.keys(est.byComponent).length) {
         // Etapa 2: o multiplicador por-componente estimado pela etapa 1 (buckets
         // mean(crit)/mean(noncrit), inalterada) Ã© ajustado ("snap") para o candidato
@@ -2675,13 +2680,14 @@
         // fÃ­sicos reais ficam â‰¤ ~1.9; um valor acima disso quebra a reversÃ£o do bloco AA
         // (physical_no_candidate). SÃ³ o fÃ­sico Ã© limitado â€” holy/runa/granada chegam a ~1.99.
         if (est.byComponent.physical > CRIT_BOOTSTRAP_MAX) est.byComponent.physical = CRIT_BOOTSTRAP_MAX;
+        for (const k of Object.keys(exactCrit.out)) est.byComponent[k] = Math.round(exactCrit.out[k] * 1000) / 1000;
         // C2: substituicao, nao mutacao em-lugar — o SessionSetup e congelado e cada
         // troca incrementa `epoch`. Os tres campos entram num unico bump.
         SessionContext.replaceSetup(context, {
           critSetup: Object.assign({}, context.critSetup, {
             byComponent: est.byComponent,
             evidence: est.evidence,
-            source: 'bucket_two_pass',
+            source: 'bucket_scan_prelim',
           }),
         });
       }
@@ -2767,6 +2773,16 @@
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
       resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
+      if (context.critSetup && context.critSetup.source === 'bucket_scan_prelim') {
+        // D-010j: varredura final com o eixo do AA já refinado; só a passada seguinte usa CEIL.
+        const finalCrit = scanExactCriticalMultipliers(resolvedTurns, context, context.critSetup.byComponent);
+        const byComponent = Object.assign({}, context.critSetup.byComponent);
+        for (const k of Object.keys(finalCrit.out)) byComponent[k] = Math.round(finalCrit.out[k] * 1000) / 1000;
+        SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass' }) });
+        SessionContext.invalidateReversalCache(context);
+        SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
+        resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
+      }
     } else {
       SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
       const pass1 = turns.map(t => resolveTurn(t, facts, context));
@@ -2790,6 +2806,16 @@
       reconsolidateMultiStageWithLeech(turns, local.spellCasts, context);
       SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
       resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
+      if (context.critSetup && context.critSetup.source === 'bucket_scan_prelim') {
+        // D-010j: varredura final com o eixo do AA já refinado; só a passada seguinte usa CEIL.
+        const finalCrit = scanExactCriticalMultipliers(resolvedTurns, context, context.critSetup.byComponent);
+        const byComponent = Object.assign({}, context.critSetup.byComponent);
+        for (const k of Object.keys(finalCrit.out)) byComponent[k] = Math.round(finalCrit.out[k] * 1000) / 1000;
+        SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass' }) });
+        SessionContext.invalidateReversalCache(context);
+        SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
+        resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
+      }
     }
     const result = {
       version: VERSION,
