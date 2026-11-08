@@ -721,7 +721,9 @@
   // discreto (arredondamento de mitigacao/prey/mods pos-cutoff) entre mobs ou entre estados;
   // dentro do mesmo (mob, estado) a comparacao e exata (S-004a). Runa com `Using` explicito
   // ganha um pouco mais de folga porque a linha de execucao e sinal primario (M-017/M-018a).
-  function elementalBlockTolerance(block) {
+  function elementalBlockTolerance(block, context) {
+    // D-010j: na passada final, bloco com hit crítico não tem folga entre mobs.
+    if (block && block.hits && block.hits.some(h => h.realCrit) && context && context.critSetup && context.critSetup.source === 'bucket_two_pass') return 0;
     return (block && block.comp === 'rune' && block.action) ? 4 : 2;
   }
 
@@ -1694,7 +1696,7 @@
     // Mesma tolerancia que o proprio bloco usaria na intersecao: ela existe so para o
     // residuo discreto entre mobs (quantizacao da mitigation), nunca para colar dois
     // niveis de verdade — o passo de omega e ~6%, ordens de grandeza acima dela.
-    const tolerance = elementalBlockTolerance(block);
+    const tolerance = elementalBlockTolerance(block, context);
     const search = (group, allowUnmarked) => findOmegaAssignmentByLevel(
       group,
       originalsOf,
@@ -1888,7 +1890,7 @@
     // com Using explícito (M-017/M-018a), a linha de execução é sinal primário e
     // aceitamos uma tolerância um pouco maior no original para absorver diferenças
     // discretas entre mobs/mitigação sem transformar quantidade de hits em critério.
-    const tolerance = elementalBlockTolerance(block);
+    const tolerance = elementalBlockTolerance(block, context);
     const inter = intersectSets(sets, tolerance);
     if (sets.length && inter.length) return { ok: true, known, unknown, intersection: inter, element, tolerance };
 

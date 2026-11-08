@@ -2778,7 +2778,7 @@
         const finalCrit = scanExactCriticalMultipliers(resolvedTurns, context, context.critSetup.byComponent);
         const byComponent = Object.assign({}, context.critSetup.byComponent);
         for (const k of Object.keys(finalCrit.out)) byComponent[k] = Math.round(finalCrit.out[k] * 1000) / 1000;
-        SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass' }) });
+        SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass', savageBonus: finalCrit.savageBonus, savageVotes: finalCrit.savageVotes }) });
         SessionContext.invalidateReversalCache(context);
         SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
         resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
@@ -2811,7 +2811,7 @@
         const finalCrit = scanExactCriticalMultipliers(resolvedTurns, context, context.critSetup.byComponent);
         const byComponent = Object.assign({}, context.critSetup.byComponent);
         for (const k of Object.keys(finalCrit.out)) byComponent[k] = Math.round(finalCrit.out[k] * 1000) / 1000;
-        SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass' }) });
+        SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass', savageBonus: finalCrit.savageBonus, savageVotes: finalCrit.savageVotes }) });
         SessionContext.invalidateReversalCache(context);
         SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
         resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));

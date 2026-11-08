@@ -130,6 +130,15 @@ const VARIANTS = {
   critKS0c: { label: 'crítico CEIL + k exato + Savage +0,40, bloco com crítico em 0', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true, crit0: true, savage: 0.4 }) },
   critKO0: { label: 'crítico CEIL + k exato, omega cross-state em 0 (a folga ainda é usada?)', report: false, edits: [...critExactEdits({ rounding: 'ceil', scan: true }), ['js/unified-formulas.js', 'const OMEGA_CROSS_STATE_TOLERANCE = 1;', 'const OMEGA_CROSS_STATE_TOLERANCE = 0;']] },
   critRand0c: { label: 'controle: k aleatório por componente, bloco com crítico em 0', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true, crit0: true, random: true }) },
+  // Sobre o motor de 3c3fa69 (D-010j já em js/): Savage Blow somado ao k, folga zero no bloco
+  // crítico, folga de omega em 0 e o controle de k aleatório.
+  sav40: { label: 'Savage +0,40, folga mantida', report: false, edits: currentCritEdits({ savage: 0.4 }) },
+  sav40O0: { label: 'Savage +0,40, omega cross-state em 0', report: false, edits: currentCritEdits({ savage: 0.4, omega0: true }) },
+  cur0c: { label: 'bloco com crítico em 0', report: false, edits: currentCritEdits({ crit0: true }) },
+  sav40c0: { label: 'Savage +0,40, bloco com crítico em 0', report: false, edits: currentCritEdits({ savage: 0.4, crit0: true }) },
+  sav40c0O0: { label: 'Savage +0,40, bloco com crítico em 0, omega em 0', report: false, edits: currentCritEdits({ savage: 0.4, crit0: true, omega0: true }) },
+  savVote: { label: 'Savage por nível votado na sessão (D-008b), bloco crítico e omega em 0', report: false, edits: savageVoteEdits() },
+  curRand0c: { label: 'controle: k aleatório por componente, bloco com crítico em 0', report: false, edits: currentCritEdits({ crit0: true, random: true }) },
   psAfterMit: { label: 'perfect shot +20 entre a mitigação e o prey', probes: true, report: false,
     edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'mit'), ...psPremitOff()] },
   psBeforeCrit: { label: 'perfect shot +20 antes do crítico (pré-mitigação)', probes: true, report: false,
@@ -301,6 +310,116 @@ function critExactEdits({ rounding, scan, crit0 = false, nc0 = false, shift = 0,
     edits.push(['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;",
       `const __hasCrit = !!(block && block.hits && block.hits.some(h => h.realCrit));\n    const __boot = !(context && context.critSetup && context.critSetup.source === 'bucket_two_pass');\n    if (__hasCrit ? (${crit0} && !__boot) : ${nc0}) return 0;\n    return (block && block.comp === 'rune' && block.action) ? 4 : 2;`]);
   }
+  return edits;
+}
+// D-008b: nível do Savage Blow votado por sessão na varredura final de k (texto final, pronto
+// para portar), com o bloco crítico e a folga de omega em 0.
+function savageVoteEdits() {
+  return [
+    ['js/unified-formulas.js', `    if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);
+    return mult;`, `    if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);
+    // D-008b: Savage Blow soma o bônus do nível do charm, quando a sessão o conhece.
+    if (hit.savageBlow && setup.savageBonus > 0) mult += setup.savageBonus;
+    return mult;`],
+    ['js/unified-formulas.js', `      const stages = new Map();
+      for (const h of comp.hits || []) {
+        if (!isMainHit(h) || h.overkill || h.zeroDamageDodge || h.savageBlow || !(+h.dmg > 0)) continue;
+        const sk = h.multiStageStage ? h.multiStageStage + '@' + h.multiStageCastTs : '';
+        if (!stages.has(sk)) stages.set(sk, []);
+        stages.get(sk).push(h);
+      }`, `      const stages = new Map(), allStages = new Map();
+      for (const h of comp.hits || []) {
+        if (!isMainHit(h) || h.overkill || h.zeroDamageDodge || !(+h.dmg > 0)) continue;
+        const sk = h.multiStageStage ? h.multiStageStage + '@' + h.multiStageCastTs : '';
+        // D-008b: o estágio com hit crítico de Savage Blow e hit crítico sem ele vota o nível.
+        if (!allStages.has(sk)) allStages.set(sk, []);
+        allStages.get(sk).push(h);
+        if (h.savageBlow) continue;
+        if (!stages.has(sk)) stages.set(sk, []);
+        stages.get(sk).push(h);
+      }
+      const hasSavage = (comp.hits || []).some(h => h && h.savageBlow && h.realCrit);`],
+    ['js/unified-formulas.js', `      const readRows = () => {
+        const out = [];
+        for (const hits of stages.values()) {
+          if (!hits.some(h => h.realCrit)) continue;`, `      const readRows = (src, savage) => {
+        const out = [];
+        for (const hits of src.values()) {
+          if (!hits.some(h => h.realCrit)) continue;
+          if (savage && !(hits.some(h => h.realCrit && h.savageBlow) && hits.some(h => h.realCrit && !h.savageBlow))) continue;`],
+    ['js/unified-formulas.js', `            const sig = [h.mob, h.dmg, mod, omega, add, h.realCrit, h.perfectShot, cLo, cHi].join('|');
+            if (seen.has(sig)) continue;
+            seen.add(sig);
+            rows.push({ crit: !!h.realCrit, ons: !!h.onslaught, cLo, cHi, mod, omega, add });`, `            const sb = !!(h.savageBlow && h.realCrit);
+            const sig = [h.mob, h.dmg, mod, omega, add, h.realCrit, h.perfectShot, cLo, cHi, sb].join('|');
+            if (seen.has(sig)) continue;
+            seen.add(sig);
+            rows.push({ crit: !!h.realCrit, ons: !!h.onslaught, cLo, cHi, mod, omega, add, sb });`],
+    ['js/unified-formulas.js', `      const blocks = next ? SC.withHitScopeField(context, 'gravSanHitOverride', next, readRows) : readRows();
+      if (!blocks.length) continue;`, `      const read = () => ({ blocks: readRows(stages, false), savage: hasSavage ? readRows(allStages, true) : [] });
+      const got = next ? SC.withHitScopeField(context, 'gravSanHitOverride', next, read) : read();
+      if (got.savage.length) {
+        if (!savageGroups.has(key)) savageGroups.set(key, []);
+        savageGroups.get(key).push(...got.savage);
+      }
+      const blocks = got.blocks;
+      if (!blocks.length) continue;`],
+    ['js/unified-formulas.js', `    const SC = sessionContextApi();
+    const groups = new Map();
+    for (const t of turns || []) for (const comp of (t && t.components) || []) {`, `    const SC = sessionContextApi();
+    const groups = new Map(), savageGroups = new Map();
+    for (const t of turns || []) for (const comp of (t && t.components) || []) {`],
+    ['js/unified-formulas.js', `    const closes = (rows, k) => {
+      let lo = -Infinity, hi = Infinity;
+      for (const r of rows) {
+        let eLo = r.cLo, eHi = r.cHi;
+        const kk = r.crit ? k + r.add : (r.ons ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1);`, `    const closes = (rows, k, savage = 0) => {
+      let lo = -Infinity, hi = Infinity;
+      for (const r of rows) {
+        let eLo = r.cLo, eHi = r.cHi;
+        const kk = r.crit ? k + r.add + (r.sb ? savage : 0) : (r.ons ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1);`],
+    ['js/unified-formulas.js', `      out[key] = (pool.length ? pool : v.ks).slice().sort((a, b) => Math.abs(a - est) - Math.abs(b - est))[0];
+    }
+    return { out, found };`, `      out[key] = (pool.length ? pool : v.ks).slice().sort((a, b) => Math.abs(a - est) - Math.abs(b - est))[0];
+    }
+    // D-008b: cada nível do Savage Blow é testado sem folga com o k do componente; vence o que
+    // fecha mais estágios, e empate ou nenhum deixa o nível desconhecido.
+    const savageVotes = new Map();
+    for (const [key, blocks] of savageGroups) {
+      const k = key in out ? Math.round(out[key] * 1000) / 1000 : (estimates && estimates[key] > 1 ? estimates[key] : null);
+      if (!k) continue;
+      for (const rows of blocks) for (const s of SAVAGE_BLOW_LEVELS) if (closes(rows, k, s)) savageVotes.set(s, (savageVotes.get(s) || 0) + 1);
+    }
+    let savageBonus = null, savageBest = 0, savageTie = false;
+    for (const [s, n] of savageVotes) {
+      if (n > savageBest) { savageBest = n; savageBonus = s; savageTie = false; } else if (n === savageBest) savageTie = true;
+    }
+    if (savageTie) savageBonus = null;
+    return { out, found, savageBonus, savageVotes: Object.fromEntries(savageVotes) };`],
+    ['js/unified-formulas.js', `  const TRANSCENDENCE_CRIT_BONUS = 0.15;`, `  const TRANSCENDENCE_CRIT_BONUS = 0.15;
+  // D-008b: bônus do Savage Blow no multiplicador crítico, por nível do charm.
+  const SAVAGE_BLOW_LEVELS = [0.20, 0.40, 0.44];`],
+    ['js/unified-classification-engine.js', `SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass' }) });`,
+      `SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass', savageBonus: finalCrit.savageBonus, savageVotes: finalCrit.savageVotes }) });`, 2],
+    ['js/unified-formulas.js', 'const OMEGA_CROSS_STATE_TOLERANCE = 1;', 'const OMEGA_CROSS_STATE_TOLERANCE = 0;'],
+    ['js/unified-validation.js', 'function elementalBlockTolerance(block) {', 'function elementalBlockTolerance(block, context) {'],
+    ['js/unified-validation.js', 'const tolerance = elementalBlockTolerance(block);', 'const tolerance = elementalBlockTolerance(block, context);', 2],
+    ['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;",
+      "// D-010j: na passada final, bloco com hit crítico não tem folga entre mobs.\n    if (block && block.hits && block.hits.some(h => h.realCrit) && context && context.critSetup && context.critSetup.source === 'bucket_two_pass') return 0;\n    return (block && block.comp === 'rune' && block.action) ? 4 : 2;"],
+  ];
+}
+function currentCritEdits({ savage = 0, crit0 = false, omega0 = false, random = false }) {
+  const edits = [];
+  if (savage) edits.push(['js/unified-formulas.js', 'if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);', `if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);\n    if (hit.savageBlow) mult += ${savage};`]);
+  if (omega0) edits.push(['js/unified-formulas.js', 'const OMEGA_CROSS_STATE_TOLERANCE = 1;', 'const OMEGA_CROSS_STATE_TOLERANCE = 0;']);
+  if (crit0) {
+    edits.push(['js/unified-validation.js', 'function elementalBlockTolerance(block) {', 'function elementalBlockTolerance(block, context) {']);
+    edits.push(['js/unified-validation.js', 'const tolerance = elementalBlockTolerance(block);', 'const tolerance = elementalBlockTolerance(block, context);', 2]);
+    edits.push(['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;",
+      "if (block && block.hits && block.hits.some(h => h.realCrit) && context && context.critSetup && context.critSetup.source === 'bucket_two_pass') return 0;\n    return (block && block.comp === 'rune' && block.action) ? 4 : 2;"]);
+  }
+  if (random) edits.push(['js/unified-classification-engine.js', 'for (const k of Object.keys(finalCrit.out)) byComponent[k] = Math.round(finalCrit.out[k] * 1000) / 1000;',
+    'for (const k of Object.keys(finalCrit.out)) { let s = 0; for (const c of k) s = (s * 31 + c.charCodeAt(0)) >>> 0; byComponent[k] = 1.5 + (s % 21) * 0.03; }', 2]);
   return edits;
 }
 // Desliga a subtração pré-mitigação do +20 (D-010f) nos dois eixos.

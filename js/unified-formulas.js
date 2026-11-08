@@ -451,7 +451,7 @@
   // holy). Ela e menor que a tolerancia generica do bloco (2) de proposito: 1 ponto em
   // O ~ 730 e 0,14%, contra >= 3,2% entre dois niveis holy realmente distintos da sessao.
   // Ver S-004c-nota para por que o modelo de omega nao e exato.
-  const OMEGA_CROSS_STATE_TOLERANCE = 1;
+  const OMEGA_CROSS_STATE_TOLERANCE = 0;
 
   // O crÃ­tico Ã© inferido POR-COMPONENTE por buckets crit/nÃ£o-crit (mean/mean), nÃ£o por
   // uma grade de candidatos global. `criticalMultiplierForHit` aplica o crit do componente
@@ -486,6 +486,8 @@
   // multiplicativo â€” 2.00 vira 2.15, nÃ£o 2.00Ã—1.15.
   const TRANSCENDENCE_WINDOW_SECONDS = 7;
   const TRANSCENDENCE_CRIT_BONUS = 0.15;
+  // D-008b: bônus do Savage Blow no multiplicador crítico, por nível do charm.
+  const SAVAGE_BLOW_LEVELS = [0.20, 0.40, 0.44];
 
   // Onslaught: +60% fixo sobre o dano, ADITIVO com o crÃ­tico (nÃ£o multiplicativo).
   // Num hit SEM crÃ­tico o bÃ´nus vira um fator conhecido (Ã·1.6 recupera a base); num hit
@@ -845,6 +847,8 @@
     // multiplicativo) para hits crÃ­ticos dentro da janela [T, T+7] do gatilho.
     let mult = isTranscendenceActiveAt(context, transcendenceTsForHit(hit)) ? base + TRANSCENDENCE_CRIT_BONUS : base;
     if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);
+    // D-008b: Savage Blow soma o bônus do nível do charm, quando a sessão o conhece.
+    if (hit.savageBlow && setup.savageBonus > 0) mult += setup.savageBonus;
     return mult;
   }
 
@@ -1477,7 +1481,7 @@
   // mais blocos críticos (por estágio, 2+ hits distintos) fecham sem folga.
   function scanExactCriticalMultipliers(turns, context, estimates) {
     const SC = sessionContextApi();
-    const groups = new Map();
+    const groups = new Map(), savageGroups = new Map();
     for (const t of turns || []) for (const comp of (t && t.components) || []) {
       if (!comp || comp.comp === 'unresolved') continue;
       const key = critKeyForBlock(comp);
@@ -1486,19 +1490,25 @@
       if (!key || !el || el === 'physical' || !ELEMENT_KEYS[el]) continue;
       const words = normalizeName(a.incantation || a.words || a.text || a.spell || a.name || '');
       if (isChainedPenanceAction(a) || isExecutionerThrowAction(a) || isTerraBurstAction(a) || /^(exevo gran vis lux|exevo vis lux|exevo max mort)$/.test(words)) continue;
-      const stages = new Map();
+      const stages = new Map(), allStages = new Map();
       for (const h of comp.hits || []) {
-        if (!isMainHit(h) || h.overkill || h.zeroDamageDodge || h.savageBlow || !(+h.dmg > 0)) continue;
+        if (!isMainHit(h) || h.overkill || h.zeroDamageDodge || !(+h.dmg > 0)) continue;
         const sk = h.multiStageStage ? h.multiStageStage + '@' + h.multiStageCastTs : '';
+        // D-008b: o estágio com hit crítico de Savage Blow e hit crítico sem ele vota o nível.
+        if (!allStages.has(sk)) allStages.set(sk, []);
+        allStages.get(sk).push(h);
+        if (h.savageBlow) continue;
         if (!stages.has(sk)) stages.set(sk, []);
         stages.get(sk).push(h);
       }
+      const hasSavage = (comp.hits || []).some(h => h && h.savageBlow && h.realCrit);
       const next = comp.gravSanActive == null ? null : Object.assign({}, context.gravSanHitOverride || {});
       if (next) for (const h of comp.hits || []) if (h && h.id != null && gravSanHitInWindow(context, h)) next[h.id] = !!comp.gravSanActive;
-      const readRows = () => {
+      const readRows = (src, savage) => {
         const out = [];
-        for (const hits of stages.values()) {
+        for (const hits of src.values()) {
           if (!hits.some(h => h.realCrit)) continue;
+          if (savage && !(hits.some(h => h.realCrit && h.savageBlow) && hits.some(h => h.realCrit && !h.savageBlow))) continue;
           const seen = new Set(), rows = [];
           for (const h of hits) {
             const mods = getMobMods(h.mob, context);
@@ -1513,25 +1523,32 @@
             const cHi = mit > 0 ? Math.ceil((aHi + 1) / (1 - (mit + 0.005) / 100)) - 1 : aHi;
             const omega = omegaActiveForHit(h, context);
             const add = h.realCrit ? (isTranscendenceActiveAt(context, transcendenceTsForHit(h)) ? TRANSCENDENCE_CRIT_BONUS : 0) + (h.onslaught ? ONSLAUGHT_DAMAGE_MULTIPLIER - 1 : 0) : 0;
-            const sig = [h.mob, h.dmg, mod, omega, add, h.realCrit, h.perfectShot, cLo, cHi].join('|');
+            const sb = !!(h.savageBlow && h.realCrit);
+            const sig = [h.mob, h.dmg, mod, omega, add, h.realCrit, h.perfectShot, cLo, cHi, sb].join('|');
             if (seen.has(sig)) continue;
             seen.add(sig);
-            rows.push({ crit: !!h.realCrit, ons: !!h.onslaught, cLo, cHi, mod, omega, add });
+            rows.push({ crit: !!h.realCrit, ons: !!h.onslaught, cLo, cHi, mod, omega, add, sb });
           }
           if (rows.length >= 2) out.push(rows);
         }
         return out;
       };
-      const blocks = next ? SC.withHitScopeField(context, 'gravSanHitOverride', next, readRows) : readRows();
+      const read = () => ({ blocks: readRows(stages, false), savage: hasSavage ? readRows(allStages, true) : [] });
+      const got = next ? SC.withHitScopeField(context, 'gravSanHitOverride', next, read) : read();
+      if (got.savage.length) {
+        if (!savageGroups.has(key)) savageGroups.set(key, []);
+        savageGroups.get(key).push(...got.savage);
+      }
+      const blocks = got.blocks;
       if (!blocks.length) continue;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(...blocks);
     }
-    const closes = (rows, k) => {
+    const closes = (rows, k, savage = 0) => {
       let lo = -Infinity, hi = Infinity;
       for (const r of rows) {
         let eLo = r.cLo, eHi = r.cHi;
-        const kk = r.crit ? k + r.add : (r.ons ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1);
+        const kk = r.crit ? k + r.add + (r.sb ? savage : 0) : (r.ons ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1);
         if (kk > 1) { eLo = invCeilCritical(r.cLo, kk)[0]; eHi = invCeilCritical(r.cHi, kk)[1]; }
         if (eHi < eLo) return false;
         let [oLo, oHi] = invRoundRange(eLo, eHi, r.mod);
@@ -1562,7 +1579,20 @@
       const pool = v.ks.filter(k => strong.has(k));
       out[key] = (pool.length ? pool : v.ks).slice().sort((a, b) => Math.abs(a - est) - Math.abs(b - est))[0];
     }
-    return { out, found };
+    // D-008b: cada nível do Savage Blow é testado sem folga com o k do componente; vence o que
+    // fecha mais estágios, e empate ou nenhum deixa o nível desconhecido.
+    const savageVotes = new Map();
+    for (const [key, blocks] of savageGroups) {
+      const k = key in out ? Math.round(out[key] * 1000) / 1000 : (estimates && estimates[key] > 1 ? estimates[key] : null);
+      if (!k) continue;
+      for (const rows of blocks) for (const s of SAVAGE_BLOW_LEVELS) if (closes(rows, k, s)) savageVotes.set(s, (savageVotes.get(s) || 0) + 1);
+    }
+    let savageBonus = null, savageBest = 0, savageTie = false;
+    for (const [s, n] of savageVotes) {
+      if (n > savageBest) { savageBest = n; savageBonus = s; savageTie = false; } else if (n === savageBest) savageTie = true;
+    }
+    if (savageTie) savageBonus = null;
+    return { out, found, savageBonus, savageVotes: Object.fromEntries(savageVotes) };
   }
   function isMainHit(hit) {
     if (!hit) return false;
