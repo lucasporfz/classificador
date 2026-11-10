@@ -1431,7 +1431,8 @@
       let lo = Infinity, hi = -Infinity;
       for (const bIv of postIntervals) {
         for (let b = bIv[0]; b <= bIv[1]; b++) {
-          const cIv = invFloor(b, mit);
+          const __m = +(mods.mitigation) || 0;
+          const cIv = __m > 0 ? [Math.ceil(b / (1 - (__m - 0.005) / 100)), Math.ceil((b + 1) / (1 - (__m + 0.005) / 100)) - 1] : invFloor(b, mit);
           if (!cIv) continue;
           for (let c = cIv[0]; c <= cIv[1]; c++) {
             const prePerfect = c;

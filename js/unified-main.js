@@ -44,6 +44,9 @@
     let dmg = +hit.dmg || 0;
     if (hit.isPrey) dmg /= 1.25;
     if (gravSanActive !== false && gravSanInWindow(gravSanSetup, hit.ts)) dmg /= (1 + gravSanSetup.bonus);
+    // M-042c/A-006: degrau de Combat Mastery do hit, lido do leech pelo motor (média dos
+    // fatores quando mais de um degrau fecha).
+    if (hit.combatMasteryStep && hit.combatMasteryStep.factor > 1) dmg /= hit.combatMasteryStep.factor;
     return dmg;
   }
 
@@ -477,6 +480,7 @@
             dmg,
             base: noCritDamage(h, gravSanSetup, component.gravSanActive),
             isPrey: !!h.isPrey,
+            combatMasteryStep: h.combatMasteryStep || null,
             comp: lineComp,
             component: normComp,
             correctedComponent: normComp,

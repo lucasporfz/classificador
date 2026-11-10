@@ -9,283 +9,285 @@ aparece uma vez. Linha = linha da definição neste arquivo. `M-031` tem duas de
 
 | ID | Tema | Seção | Linha |
 |---|---|---|---|
-| R-001 | Dados observados | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 293 |
-| R-002 | Fontes | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 294 |
-| R-003 | Fatos e inferências | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 295 |
-| R-004 | Regra normativa | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 296 |
-| R-005 | Vocabulário | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 297 |
-| M-001 | Duração | [Ciclo de ataque](#ciclo-de-ataque) | 303 |
-| M-002 | Um AA por ciclo | [Ciclo de ataque](#ciclo-de-ataque) | 304 |
-| M-003 | Cooldown | [Ciclo de ataque](#ciclo-de-ataque) | 305 |
-| M-004 | Ordem | [Ciclo de ataque](#ciclo-de-ataque) | 306 |
-| M-005 | Timestamp | [Ciclo de ataque](#ciclo-de-ataque) | 307 |
-| M-006 | Single-target | [Topologia das ações](#topologia-das-ações) | 311 |
-| M-007 | Área | [Topologia das ações](#topologia-das-ações) | 312 |
-| M-008 | Área unitária | [Topologia das ações](#topologia-das-ações) | 313 |
-| M-009 | Boss único | [Topologia das ações](#topologia-das-ações) | 314 |
-| M-009a | Detecção de boss por-mob via ausência de artigo | [Topologia das ações](#topologia-das-ações) | 315 |
-| M-010 | Cardinalidade | [Topologia das ações](#topologia-das-ações) | 335 |
-| M-011 | Cast concreto | [Spells](#spells) | 339 |
-| M-012 | Momento do impacto | [Spells](#spells) | 340 |
-| M-013 | Janela | [Spells](#spells) | 341 |
-| M-013a | A ação é escolhida sobre os hits DO COMPONENTE | [Spells](#spells) | 342 |
-| M-013b | Desempate entre partições quando a ação é posterior a TODOS os seus hits | [Spells](#spells) | 343 |
-| M-013c | Falsificado: a folga de +1 s NÃO pode restringir a escolha da ação. | [Spells](#spells) | 344 |
-| M-014 | Empate | [Spells](#spells) | 345 |
-| M-015 | Um cast, um componente | [Spells](#spells) | 346 |
-| M-016 | Cura e suporte | [Spells](#spells) | 347 |
-| M-016a | Shared Conservation e dono do log | [Spells](#spells) | 348 |
-| M-016b | Cura de poção não é evidência de cast | [Spells](#spells) | 349 |
-| M-016c | Incantações `adori` ignoradas | [Spells](#spells) | 350 |
-| M-016d | Spells multiestágio (mecanismo geral) | [Spells](#spells) | 351 |
-| M-016d-1 | Death Echo | [Spells](#spells) | 353 |
-| M-016d-1a | Contradição × evidência ausente na confirmação do estágio | [Spells](#spells) | 357 |
-| M-016d-1b | A via elemental pertence a quem declara confirmação elemental | [Spells](#spells) | 501 |
-| M-016d-1c | Segundo candidato só de overkill | [Spells](#spells) | 355 |
-| M-016e | Spiritual Outburst multiestágio | [Spells](#spells) | 503 |
-| M-016e-gate | Isenção do veto same-mob para estágio ainda não atribuído | [Spells](#spells) | 515 |
-| M-017 | Sinal de execução | [Runas](#runas) | 1713 |
-| M-018 | Dano confirmado | [Runas](#runas) | 1714 |
-| M-018a | Precedência do `Using` | [Runas](#runas) | 1715 |
-| M-019 | Conflito com spell | [Runas](#runas) | 1716 |
-| M-020 | Tentativa sem dano | [Runas](#runas) | 1717 |
-| M-021 | Runas ignoradas | [Runas](#runas) | 1718 |
-| M-022 | Runa desconhecida | [Runas](#runas) | 1727 |
-| M-023 | Janela de explosão | [Divine Grenade](#divine-grenade) | 1742 |
-| M-024 | Um impacto | [Divine Grenade](#divine-grenade) | 1743 |
-| M-025 | Uma atribuição | [Divine Grenade](#divine-grenade) | 1744 |
-| M-026 | Boss | [Divine Grenade](#divine-grenade) | 1745 |
-| M-027 | Cast sem dano | [Divine Grenade](#divine-grenade) | 1746 |
-| M-028 | Chat prioritário | [Divine Grenade](#divine-grenade) | 1747 |
-| M-029 | Turno do cast | [Divine Grenade](#divine-grenade) | 1748 |
-| M-030 | Bloco contíguo | [Divine Grenade](#divine-grenade) | 1749 |
-| M-031 | Granada distinta do spell (mesmo original = mesmo componente) / Topologia do AA por vocação | [Divine Grenade](#divine-grenade) / [Cardinalidade por vocação e por turno](#cardinalidade-por-vocação-e-por-turno) | 1750, 1756 |
-| M-032 | Cardinalidade de AA por turno | [Cardinalidade por vocação e por turno](#cardinalidade-por-vocação-e-por-turno) | 1757 |
-| M-033 | Runa single-target por turno | [Cardinalidade por vocação e por turno](#cardinalidade-por-vocação-e-por-turno) | 1758 |
-| M-034 | Tiers de bônus do Executioner's Throw | [Spells](#spells) | 534 |
-| M-034a | O tier de mastery do Executioner's Throw é cravado pelo TETO DE ALVOS do cast | [Spells](#spells) | 542 |
-| M-034b | Tier pelo leech, teto de alvos como veto e o turno todo overkill (21/Set/2026, decisão … | [Spells](#spells) | 562 |
-| M-034c |  | [Spells](#spells) | 582 |
-| M-035 | Sub-linhas central/side de beams de sorcerer | [Spells](#spells) | 612 |
-| M-035a | A isenção de beam vale só dentro da fração declarada | [Spells](#spells) | 628 |
-| M-035b | O dano real de overkill provado pelo leech põe o overkill no nível da sua sub-linha | [Spells](#spells) | 634 |
-| M-036 | Bônus de dano do player contra classe de bestiário | [Spells](#spells) | 740 |
-| M-036a | O bônus de classe infla o dano exibido, não o leech | [Spells](#spells) | 830 |
-| M-036b | Bônus de classe pelos hits com prey | [Spells](#spells) | 872 |
-| M-037 | Decay de cadeia de Chained Penance (mecânica declarada, não reconstruída) | [Spells](#spells) | 907 |
-| M-038 | Dano de field/DoT não é hit principal | [Runas](#runas) | 1719 |
-| M-038a | Leech maior que o próprio dano não é evidência de hit real | [Runas](#runas) | 1726 |
-| M-039 | Perk omega (bônus de dano por vida baixa do alvo) | [Spells](#spells) | 937 |
-| M-039a |  | [Spells](#spells) | 1083 |
-| M-039b |  | [Spells](#spells) | 1119 |
-| M-039c |  | [Spells](#spells) | 1157 |
-| M-040 | Perk de pierce físico da arma (invisível ao dano de charm) | [Spells](#spells) | 1195 |
-| M-040-nota | O eixo holy fica fora, e por quê. | [Spells](#spells) | 1279 |
-| M-040a | Perk de death pierce da arma (invisível ao dano de charm) | [Spells](#spells) | 1290 |
-| M-041 | Postura de knight: três estados de dano, dirigidos por cast | [Spells](#spells) | 1324 |
-| M-041-nota | Pendências declaradas. | [Spells](#spells) | 1423 |
-| M-042 | Combat Mastery: escada de dano por vida faltante do alvo (declarada, não revertida) | [Spells](#spells) | 1437 |
-| M-042a |  | [Spells](#spells) | 1519 |
-| M-042b | Sob escada, o perk omega só é provável acima do TETO SUPERIOR. | [Spells](#spells) | 1561 |
-| M-043 | Estância elemental de sorcerer e conversão do próximo cast | [Spells](#spells) | 1592 |
-| M-043a | Estância inferida pelo dano, sem herança | [Spells](#spells) | 1673 |
-| D-001 | Dano efetivo | [Glossário de leech](#glossário-de-leech) | 1770 |
-| D-002 | Dano original | [Glossário de leech](#glossário-de-leech) | 1771 |
-| D-003 | Elemental | [Glossário de leech](#glossário-de-leech) | 1772 |
-| D-004 | Físico | [Glossário de leech](#glossário-de-leech) | 1773 |
-| D-005 | Comparabilidade | [Glossário de leech](#glossário-de-leech) | 1774 |
-| D-006 | Evidência ausente | [Glossário de leech](#glossário-de-leech) | 1775 |
-| D-007 | Crit-state | [Glossário de leech](#glossário-de-leech) | 1776 |
-| D-008 | Low Blow | [Glossário de leech](#glossário-de-leech) | 1777 |
-| D-008a | Savage Blow | [Glossário de leech](#glossário-de-leech) | 1778 |
-| D-008b | Bônus do Savage Blow no crítico | [Glossário de leech](#glossário-de-leech) | 1779 |
-| D-009 | Onslaught | [Glossário de leech](#glossário-de-leech) | 1784 |
-| D-009a | Reversão de Onslaught | [Glossário de leech](#glossário-de-leech) | 1785 |
-| D-010 | Modificadores | [Glossário de leech](#glossário-de-leech) | 1786 |
-| D-010a | Pipeline discreto de dano elemental | [Glossário de leech](#glossário-de-leech) | 1788 |
-| D-010b | Pipeline discreto de dano físico | [Glossário de leech](#glossário-de-leech) | 1829 |
-| D-010c | Modificador efetivo por pierce/Expose Weakness | [Glossário de leech](#glossário-de-leech) | 1871 |
-| D-010c-nota | Limitação conhecida e aceita: `active elemental amplification` bugada no jogo (pierce 0%). | [Glossário de leech](#glossário-de-leech) | 1890 |
-| D-010d | Originais pós-crítico e dano base normalizado | [Glossário de leech](#glossário-de-leech) | 1892 |
-| D-010e | Proibição de média física para hit individual | [Glossário de leech](#glossário-de-leech) | 1894 |
-| D-010f | Reversão de Perfect Shot (vale nos DOIS eixos) | [Glossário de leech](#glossário-de-leech) | 1896 |
-| D-010g | Bounty Talisman: fato, grade e bônus de dano pós-mitigation | [Glossário de leech](#glossário-de-leech) | 1904 |
-| D-010g-1 | Teto de mana e ramo de Mana Leech do fallback (emenda de 21/Set/2026, change … | [Glossário de leech](#glossário-de-leech) | 2042 |
-| D-010h | Crítico de AA single-target é rolagem alta, não multiplicador (21/Set/2026, fato de … | [Glossário de leech](#glossário-de-leech) | 2064 |
-| D-010i | Multiplicadores finais em sequência | [Glossário de leech](#glossário-de-leech) | 2072 |
-| D-010j | Passo do crítico no eixo elemental: CEIL com multiplicador por componente | [Glossário de leech](#glossário-de-leech) | 2095 |
-| D-011 | Overkill | [Glossário de leech](#glossário-de-leech) | 2139 |
-| D-011a | Atribuição de XP exige continuidade causal | [Glossário de leech](#glossário-de-leech) | 2140 |
-| D-011b | Charm que mata fica com a XP (emenda de D-011a, 21/Set/2026, decisão do usuário) | [Glossário de leech](#glossário-de-leech) | 2215 |
-| D-011c |  | [Glossário de leech](#glossário-de-leech) | 2228 |
-| D-012 | Herança de overkill | [Glossário de leech](#glossário-de-leech) | 2255 |
-| D-012a | Turno 100% overkill não admite fronteira sem evidência independente | [Glossário de leech](#glossário-de-leech) | 2256 |
-| D-012b | Nota de implementação: por que a invalidação NÃO vai no teste de leech. | [Glossário de leech](#glossário-de-leech) | 2266 |
-| D-013 | Leech | [Glossário de leech](#glossário-de-leech) | 2282 |
-| D-014 | Leech secundário | [Glossário de leech](#glossário-de-leech) | 2283 |
-| D-015 | Associação | [Glossário de leech](#glossário-de-leech) | 2284 |
-| D-016 | Regime temporal de modificadores | [Glossário de leech](#glossário-de-leech) | 2285 |
-| D-017 | Escopo transitório de revisão (CONDIÇÃO EXPIRADA em 09/Ago/2026) | [Glossário de leech](#glossário-de-leech) | 2286 |
-| D-017a | D-017 nunca foi gate de invariante mecânico | [Glossário de leech](#glossário-de-leech) | 2290 |
-| D-017b | D-016 é auditada nos dois sentidos | [Glossário de leech](#glossário-de-leech) | 2294 |
-| D-018 | Desempate entre AA single-target e spell | [Glossário de leech](#glossário-de-leech) | 2295 |
-| D-019 | Leech absoluto sob overkill | [Glossário de leech](#glossário-de-leech) | 2296 |
-| D-020 | Fontes conhecidas de leech do personagem | [Glossário de leech](#glossário-de-leech) | 2298 |
-| D-020a | Grade de imbuement restrita a Powerful (premissa de personagem, não regra de jogo) | [Glossário de leech](#glossário-de-leech) | 2304 |
-| D-021 | Minor charms de leech por mob | [Glossário de leech](#glossário-de-leech) | 2306 |
-| D-021a | Detecção de mob candidato a minor charm por evidência turn-local | [Glossário de leech](#glossário-de-leech) | 2308 |
-| D-022 | Leech efetivo por hit | [Glossário de leech](#glossário-de-leech) | 2343 |
-| D-022a | Perk pré-cutoff de Mana Leech em hits com Expose Weakness | [Glossário de leech](#glossário-de-leech) | 2356 |
-| D-022b | Bounty Talisman: multiplicador de Life Leech por hit | [Glossário de leech](#glossário-de-leech) | 2423 |
-| D-023 | Fórmula de diluição do leech por quantidade de hits | [Glossário de leech](#glossário-de-leech) | 2485 |
-| D-024 | Candidato de cardinalidade por leech | [Glossário de leech](#glossário-de-leech) | 2506 |
-| D-024a | Proibição de N por mob distinto | [Glossário de leech](#glossário-de-leech) | 2522 |
-| D-025 | Reconstrução de dano real por leech | [Glossário de leech](#glossário-de-leech) | 2524 |
-| D-026 | Proibição de razão sob overkill | [Glossário de leech](#glossário-de-leech) | 2560 |
-| D-027 | Associação de leech ao hit ofensivo | [Glossário de leech](#glossário-de-leech) | 2562 |
-| D-028 | Independência entre leech e mitigação física | [Glossário de leech](#glossário-de-leech) | 2564 |
-| D-029 | Leech por cardinalidade é independente do tipo de componente | [Glossário de leech](#glossário-de-leech) | 2566 |
-| D-030 | Fallback global de `utevo grav san` por dano/leech | [Glossário de leech](#glossário-de-leech) | 2568 |
-| T-001 | Ordem | [4. Formação dos turnos](#4-formação-dos-turnos) | 2618 |
-| T-001a |  | [4. Formação dos turnos](#4-formação-dos-turnos) | 2619 |
-| T-002 | Janela mecânica | [4. Formação dos turnos](#4-formação-dos-turnos) | 2639 |
-| T-003 | Preservar linhas | [4. Formação dos turnos](#4-formação-dos-turnos) | 2640 |
-| T-004 | Um componente por hit | [4. Formação dos turnos](#4-formação-dos-turnos) | 2641 |
-| T-005 | Combinações permitidas | [4. Formação dos turnos](#4-formação-dos-turnos) | 2642 |
-| T-006 | Combinação proibida | [4. Formação dos turnos](#4-formação-dos-turnos) | 2651 |
-| T-007 | Turno parcial | [4. Formação dos turnos](#4-formação-dos-turnos) | 2652 |
-| S-001 | Objetivo | [Fase 1 — Segmentar](#fase-1--segmentar) | 2658 |
-| S-002 | Independência | [Fase 1 — Segmentar](#fase-1--segmentar) | 2659 |
-| S-003 | Todos os cortes | [Fase 1 — Segmentar](#fase-1--segmentar) | 2660 |
-| S-004 | Interseção | [Fase 1 — Segmentar](#fase-1--segmentar) | 2661 |
-| S-004a | Exatidão same-mob/same-estado | [Fase 1 — Segmentar](#fase-1--segmentar) | 2662 |
-| S-004b | Classes de diagnóstico determinístico (contradição × evidência ausente) | [Fase 1 — Segmentar](#fase-1--segmentar) | 2663 |
-| S-004c | Omega é estado do hit no gate de exatidão same-mob, e a folga é último recurso | [Fase 1 — Segmentar](#fase-1--segmentar) | 2664 |
-| S-004c-nota | Limitação conhecida e aceita: o modelo de omega não é exato. | [Fase 1 — Segmentar](#fase-1--segmentar) | 2665 |
-| S-005 | Fronteira obrigatória | [Fase 1 — Segmentar](#fase-1--segmentar) | 2666 |
-| S-006 | Blocos unitários | [Fase 1 — Segmentar](#fase-1--segmentar) | 2667 |
-| S-007 | Físico | [Fase 1 — Segmentar](#fase-1--segmentar) | 2668 |
-| S-007a | Tolerância cross-hit na interseção física | [Fase 1 — Segmentar](#fase-1--segmentar) | 2685 |
-| S-007b | Eixo do bloco de AA é inferido por sessão (munição de área elemental) | [Fase 1 — Segmentar](#fase-1--segmentar) | 2670 |
-| S-008 | Crit-state misto | [Fase 1 — Segmentar](#fase-1--segmentar) | 2719 |
-| S-009 | Cardinalidade | [Fase 1 — Segmentar](#fase-1--segmentar) | 2720 |
-| S-010 | Cooldown | [Fase 1 — Segmentar](#fase-1--segmentar) | 2721 |
-| S-011 | Resultado | [Fase 1 — Segmentar](#fase-1--segmentar) | 2722 |
-| S-012 | Sem pontuação somada | [Escolha da partição](#escolha-da-partição) | 2769 |
-| S-013 | Sem fallback legado | [Escolha da partição](#escolha-da-partição) | 2770 |
-| S-014 | Cardinalidade por leech | [Escolha da partição](#escolha-da-partição) | 2771 |
-| S-014a | Proibição de N por mob distinto na segmentação | [Escolha da partição](#escolha-da-partição) | 2783 |
-| S-014b | Topologia não redefine N_leech | [Escolha da partição](#escolha-da-partição) | 2785 |
-| S-014c | Cardinalidade por leech não tem gate de tamanho mínimo | [Escolha da partição](#escolha-da-partição) | 2787 |
-| S-014d | Anomalia de leech deve ser demonstrada mecanicamente | [Escolha da partição](#escolha-da-partição) | 2796 |
-| S-014e | N_leech é o maior N sem contradição; virtual-zero só até lá e só com kill real | [Escolha da partição](#escolha-da-partição) | 2798 |
-| S-014f | Em turno integralmente de boss, a cardinalidade por leech é evidência … | [Escolha da partição](#escolha-da-partição) | 2889 |
-| S-015 | Dano parecido com cardinalidade distinta | [Escolha da partição](#escolha-da-partição) | 2909 |
-| S-016 | Limite do leech | [Escolha da partição](#escolha-da-partição) | 2911 |
-| S-017 | Cardinalidade por leech quando originais físicos estão indisponíveis | [Escolha da partição](#escolha-da-partição) | 2917 |
-| S-018 | Fronteira geral por leech em todos os resolvedores | [Escolha da partição](#escolha-da-partição) | 2929 |
-| S-019 | Ausência de originais não desativa leech | [Escolha da partição](#escolha-da-partição) | 2943 |
-| S-020 | Bracketing same-mob por leech absoluto, último desempate antes de declarar ambíguo | [Escolha da partição](#escolha-da-partição) | 2945 |
-| S-020a | Fallback por núcleo estável de leech absoluto quando falta âncora same-mob | [Escolha da partição](#escolha-da-partição) | 2960 |
-| S-020b | Só canal discriminante vota; canal sem poder de resolução se abstém | [Escolha da partição](#escolha-da-partição) | 2981 |
-| H-001 | Homogeneidade determinística de componentes elementais não-overkill | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3012 |
-| H-002 | Cast concreto não vence contra contradição mecânica | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3014 |
-| H-003 | Invariante de bloco único grande | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3016 |
-| H-004 | Homogeneidade e leech são globais | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3018 |
-| H-005 | A ordem AA→spell desempata, não cria AA fantasma (converso de H-001/H-002) | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3036 |
-| H-005-nota |  | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3067 |
-| H-005a | alínea de H-005: separação de timing | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3036 |
-| H-005b | alínea de H-005: crit-state distinto | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3036 |
-| H-005c | alínea de H-005: dano original distinto | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3036 |
-| H-005d | alínea de H-005: salto de razão de leech | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3036 |
-| H-005e | O leech observado declara em quantos alvos o hit bateu (inversão de D-023) | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3079 |
-| H-005e-nota | Canal que não fala não anula o hit (21/Set/2026) | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3174 |
-| H-005f |  | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3181 |
-| H-005g | Low Blow misto no MESMO mob é fronteira de componente (último recurso) | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3273 |
-| N-001 | Segmentação imutável | [Fase 2 — Nomear](#fase-2--nomear) | 3364 |
-| N-002 | AA | [Fase 2 — Nomear](#fase-2--nomear) | 3365 |
-| N-003 | Spell | [Fase 2 — Nomear](#fase-2--nomear) | 3366 |
-| N-004 | Granada | [Fase 2 — Nomear](#fase-2--nomear) | 3367 |
-| N-005 | Runa | [Fase 2 — Nomear](#fase-2--nomear) | 3368 |
-| N-006 | Não resolvido | [Fase 2 — Nomear](#fase-2--nomear) | 3369 |
-| N-007 | Uma ação por componente | [Fase 2 — Nomear](#fase-2--nomear) | 3370 |
-| N-008 | Um componente por ação | [Fase 2 — Nomear](#fase-2--nomear) | 3371 |
-| N-008a | A exclusividade é cross-turno e vale para as três naturezas de ação | [Fase 2 — Nomear](#fase-2--nomear) | 3372 |
-| N-009 | Nome concreto | [Fase 2 — Nomear](#fase-2--nomear) | 3373 |
-| N-010 | Token genérico | [Fase 2 — Nomear](#fase-2--nomear) | 3374 |
-| N-011 | Exclusividade | [Fase 2 — Nomear](#fase-2--nomear) | 3375 |
-| V-001 | usar originais físicos para AA e Ethereal Barrage e originais holy/elementais para … | [RP em pack](#rp-em-pack) | 3384 |
-| V-002 | variação física de AA entre mobs não cria novos componentes quando os intervalos ainda … | [RP em pack](#rp-em-pack) | 3385 |
-| V-003 | spell ou runa podem coexistir com granada no mesmo turno, mas runa e spell não podem … | [RP em pack](#rp-em-pack) | 3386 |
-| V-004 | all-arrow com cast próximo não vira automaticamente all-spell. | [RP em pack](#rp-em-pack) | 3387 |
-| V-005 | prefixo fisicamente coerente permanece AA mesmo quando o sufixo é spell. | [RP em pack](#rp-em-pack) | 3388 |
-| V-006 | cada ação concreta produz no máximo um hit no boss. | [Boss e alvo único](#boss-e-alvo-único) | 3392 |
-| V-007 | dois hits no mesmo timestamp podem ser AA → spell, nunca dois hits da mesma ação … | [Boss e alvo único](#boss-e-alvo-único) | 3393 |
-| V-008 | um terceiro hit compatível com granada pode formar AA → spell → granada. | [Boss e alvo único](#boss-e-alvo-único) | 3394 |
-| V-009 | cooldown pode produzir turnos sem AA, como granada → spell. | [Boss e alvo único](#boss-e-alvo-único) | 3395 |
-| V-010 | hit posterior não pode virar segundo AA por falta de outra ação conhecida. | [Boss e alvo único](#boss-e-alvo-único) | 3396 |
-| V-011 | posição do primeiro hit é evidência primária de AA. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3418 |
-| V-012 | fronteira de crit-state é confirmação forte. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3419 |
-| V-013 | leech é confirmação ou contradição secundária. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3420 |
-| V-014 | overkill nunca cria contradição de leech. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3421 |
-| V-015 | evidência inconclusiva gera diagnóstico; não apaga silenciosamente o AA posicional. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3422 |
-| V-015a | Cardinalidade de leech como fronteira sob overkill | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3423 |
-| V-015b | O bloco de spell não é validado por origem física/elemental comum | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3424 |
-| V-015c | `exori mas amp pug` (Monk) | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3425 |
-| V-015d | O bloco de runa também não é validado por origem física/elemental comum (extensão de … | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3426 |
-| V-016 | AA de varinha pode ser intermitente e single-target. | [Mage/druid](#magedruid) | 3430 |
-| V-017 | magnitude baixa isolada só indica AA quando também for física e temporalmente coerente. | [Mage/druid](#magedruid) | 3431 |
-| V-018 | não é obrigatório haver AA em todo turno de área. | [Mage/druid](#magedruid) | 3432 |
-| V-018a | AA mage/druid exige evidência positiva quando há ação concreta de área | [Mage/druid](#magedruid) | 3433 |
-| V-019 | AA e Ethereal Barrage são componentes físicos distintos. | [Ethereal Barrage](#ethereal-barrage) | 3449 |
-| V-020 | separar os blocos por timestamp, crit-state, intervalos físicos e leech, nessa ordem. | [Ethereal Barrage](#ethereal-barrage) | 3450 |
-| V-021 | intervalos físicos disjuntos criam fronteira mesmo quando as médias são próximas. | [Ethereal Barrage](#ethereal-barrage) | 3451 |
-| V-022 | leech só desempata quando os intervalos se sobrepõem. | [Ethereal Barrage](#ethereal-barrage) | 3452 |
-| V-023 | falso candidato a granada não pode quebrar um bloco físico coerente. | [Ethereal Barrage](#ethereal-barrage) | 3453 |
-| V-024 | o sinal de alinhamento cast↔turno (proximidade entre o timestamp do | [Ethereal Barrage](#ethereal-barrage) | 3454 |
-| V-025 |  | [Ethereal Barrage](#ethereal-barrage) | 3473 |
-| A-001 | Resolvidos | [7. Agregação e métricas](#7-agregação-e-métricas) | 3520 |
-| A-002 | Não resolvidos | [7. Agregação e métricas](#7-agregação-e-métricas) | 3521 |
-| A-003 | Turno misto | [7. Agregação e métricas](#7-agregação-e-métricas) | 3522 |
-| A-004 | Execução sem dano | [7. Agregação e métricas](#7-agregação-e-métricas) | 3523 |
-| A-005 | Dano observado | [7. Agregação e métricas](#7-agregação-e-métricas) | 3524 |
-| A-006 | Dano base | [7. Agregação e métricas](#7-agregação-e-métricas) | 3525 |
-| A-007 | Dano efetivo | [7. Agregação e métricas](#7-agregação-e-métricas) | 3526 |
-| A-008 | Overkill | [7. Agregação e métricas](#7-agregação-e-métricas) | 3527 |
-| A-009 | Turno parcial | [7. Agregação e métricas](#7-agregação-e-métricas) | 3528 |
-| A-010 | Linha por ação | [7. Agregação e métricas](#7-agregação-e-métricas) | 3529 |
-| U-001 | Rotação | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3533 |
-| U-002 | Rótulos | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3534 |
-| U-003 | Sem rótulo cru | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3535 |
-| U-004 | Spells por turno | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3536 |
-| U-005 | Não resolvido | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3537 |
-| U-006 | Diagnóstico | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3538 |
-| U-007 | Gráficos | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3539 |
-| U-008 | Componentes ausentes | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3540 |
-| U-009 | Drill-down | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3541 |
-| U-010 | Histograma | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3542 |
-| U-011 | Low Blow | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3543 |
-| U-011a | Savage Blow | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3544 |
-| U-012 | Onslaught puro | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3545 |
-| U-013 | Combinação | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3546 |
-| U-014 | Overkill | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3547 |
-| U-015 | Diagnóstico obrigatório | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3548 |
-| C-001 | Documentos auxiliares não são fonte paralela | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3760 |
-| C-002 | Comparação não substitui regra | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3761 |
-| C-003 | Parser não classifica | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3762 |
-| C-004 | Spell ofensiva por tabela | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3763 |
-| C-005 | Bônus de ação não é ajuste livre | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3764 |
-| C-006 | Inferência global antes de turno local | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3765 |
-| C-006a | Setup de leech por fase da sessão | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3783 |
-| C-006b | Abstenção de canal de leech não é taxa zero | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3910 |
-| C-007 | Ausência de evidência não é contradição | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3973 |
-| C-008 | Procs não são hits principais | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3981 |
-| C-008-nota | Overpower como testemunha (21/Set/2026, decisão do usuário) | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3974 |
-| C-009 | Runa confirmada preserva fronteira, não turno novo | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3982 |
-| C-010 | Cluster genérico é fallback | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3983 |
-| C-011 | UI e comparação usam Unified auditável | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3984 |
-| C-012 | Inferência de BM usa evidência cross-mob holy E física, combinada | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3985 |
-| C-012a | Testemunha de charm decide o BM sem classificar (caminho primário quando existe) | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3987 |
+| R-001 | Dados observados | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 295 |
+| R-002 | Fontes | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 296 |
+| R-003 | Fatos e inferências | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 297 |
+| R-004 | Regra normativa | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 298 |
+| R-005 | Vocabulário | [1. Finalidade do classificador](#1-finalidade-do-classificador) | 299 |
+| M-001 | Duração | [Ciclo de ataque](#ciclo-de-ataque) | 305 |
+| M-002 | Um AA por ciclo | [Ciclo de ataque](#ciclo-de-ataque) | 306 |
+| M-003 | Cooldown | [Ciclo de ataque](#ciclo-de-ataque) | 307 |
+| M-004 | Ordem | [Ciclo de ataque](#ciclo-de-ataque) | 308 |
+| M-005 | Timestamp | [Ciclo de ataque](#ciclo-de-ataque) | 309 |
+| M-006 | Single-target | [Topologia das ações](#topologia-das-ações) | 313 |
+| M-007 | Área | [Topologia das ações](#topologia-das-ações) | 314 |
+| M-008 | Área unitária | [Topologia das ações](#topologia-das-ações) | 315 |
+| M-009 | Boss único | [Topologia das ações](#topologia-das-ações) | 316 |
+| M-009a | Detecção de boss por-mob via ausência de artigo | [Topologia das ações](#topologia-das-ações) | 317 |
+| M-010 | Cardinalidade | [Topologia das ações](#topologia-das-ações) | 337 |
+| M-011 | Cast concreto | [Spells](#spells) | 341 |
+| M-012 | Momento do impacto | [Spells](#spells) | 342 |
+| M-013 | Janela | [Spells](#spells) | 343 |
+| M-013a | A ação é escolhida sobre os hits DO COMPONENTE | [Spells](#spells) | 344 |
+| M-013b | Desempate entre partições quando a ação é posterior a TODOS os seus hits | [Spells](#spells) | 345 |
+| M-013c | Falsificado: a folga de +1 s NÃO pode restringir a escolha da ação. | [Spells](#spells) | 346 |
+| M-014 | Empate | [Spells](#spells) | 347 |
+| M-015 | Um cast, um componente | [Spells](#spells) | 348 |
+| M-016 | Cura e suporte | [Spells](#spells) | 349 |
+| M-016a | Shared Conservation e dono do log | [Spells](#spells) | 350 |
+| M-016b | Cura de poção não é evidência de cast | [Spells](#spells) | 351 |
+| M-016c | Incantações `adori` ignoradas | [Spells](#spells) | 352 |
+| M-016d | Spells multiestágio (mecanismo geral) | [Spells](#spells) | 353 |
+| M-016d-1 | Death Echo | [Spells](#spells) | 355 |
+| M-016d-1a | Contradição × evidência ausente na confirmação do estágio | [Spells](#spells) | 359 |
+| M-016d-1b | A via elemental pertence a quem declara confirmação elemental | [Spells](#spells) | 503 |
+| M-016d-1c | Segundo candidato só de overkill | [Spells](#spells) | 357 |
+| M-016e | Spiritual Outburst multiestágio | [Spells](#spells) | 505 |
+| M-016e-gate | Isenção do veto same-mob para estágio ainda não atribuído | [Spells](#spells) | 517 |
+| M-017 | Sinal de execução | [Runas](#runas) | 1774 |
+| M-018 | Dano confirmado | [Runas](#runas) | 1775 |
+| M-018a | Precedência do `Using` | [Runas](#runas) | 1776 |
+| M-019 | Conflito com spell | [Runas](#runas) | 1777 |
+| M-020 | Tentativa sem dano | [Runas](#runas) | 1778 |
+| M-021 | Runas ignoradas | [Runas](#runas) | 1779 |
+| M-022 | Runa desconhecida | [Runas](#runas) | 1788 |
+| M-023 | Janela de explosão | [Divine Grenade](#divine-grenade) | 1803 |
+| M-024 | Um impacto | [Divine Grenade](#divine-grenade) | 1804 |
+| M-025 | Uma atribuição | [Divine Grenade](#divine-grenade) | 1805 |
+| M-026 | Boss | [Divine Grenade](#divine-grenade) | 1806 |
+| M-027 | Cast sem dano | [Divine Grenade](#divine-grenade) | 1807 |
+| M-028 | Chat prioritário | [Divine Grenade](#divine-grenade) | 1808 |
+| M-029 | Turno do cast | [Divine Grenade](#divine-grenade) | 1809 |
+| M-030 | Bloco contíguo | [Divine Grenade](#divine-grenade) | 1810 |
+| M-031 | Granada distinta do spell (mesmo original = mesmo componente) / Topologia do AA por vocação | [Divine Grenade](#divine-grenade) / [Cardinalidade por vocação e por turno](#cardinalidade-por-vocação-e-por-turno) | 1811, 1817 |
+| M-032 | Cardinalidade de AA por turno | [Cardinalidade por vocação e por turno](#cardinalidade-por-vocação-e-por-turno) | 1818 |
+| M-033 | Runa single-target por turno | [Cardinalidade por vocação e por turno](#cardinalidade-por-vocação-e-por-turno) | 1819 |
+| M-034 | Tiers de bônus do Executioner's Throw | [Spells](#spells) | 536 |
+| M-034a | O tier de mastery do Executioner's Throw é cravado pelo TETO DE ALVOS do cast | [Spells](#spells) | 544 |
+| M-034b | Tier pelo leech, teto de alvos como veto e o turno todo overkill (21/Set/2026, decisão … | [Spells](#spells) | 564 |
+| M-034c |  | [Spells](#spells) | 584 |
+| M-035 | Sub-linhas central/side de beams de sorcerer | [Spells](#spells) | 614 |
+| M-035a | A isenção de beam vale só dentro da fração declarada | [Spells](#spells) | 630 |
+| M-035b | O dano real de overkill provado pelo leech põe o overkill no nível da sua sub-linha | [Spells](#spells) | 636 |
+| M-036 | Bônus de dano do player contra classe de bestiário | [Spells](#spells) | 742 |
+| M-036a | O bônus de classe infla o dano exibido, não o leech | [Spells](#spells) | 845 |
+| M-036b | Bônus de classe pelos hits com prey | [Spells](#spells) | 887 |
+| M-037 | Decay de cadeia de Chained Penance (mecânica declarada, não reconstruída) | [Spells](#spells) | 922 |
+| M-038 | Dano de field/DoT não é hit principal | [Runas](#runas) | 1780 |
+| M-038a | Leech maior que o próprio dano não é evidência de hit real | [Runas](#runas) | 1787 |
+| M-039 | Perk omega (bônus de dano por vida baixa do alvo) | [Spells](#spells) | 952 |
+| M-039a |  | [Spells](#spells) | 1098 |
+| M-039b |  | [Spells](#spells) | 1133 |
+| M-039c |  | [Spells](#spells) | 1171 |
+| M-040 | Perk de pierce físico da arma (invisível ao dano de charm) | [Spells](#spells) | 1209 |
+| M-040-nota | O eixo holy fica fora, e por quê. | [Spells](#spells) | 1293 |
+| M-040a | Perk de death pierce da arma (invisível ao dano de charm) | [Spells](#spells) | 1304 |
+| M-041 | Postura de knight: três estados de dano, dirigidos por cast | [Spells](#spells) | 1338 |
+| M-041-nota | Pendências declaradas. | [Spells](#spells) | 1437 |
+| M-042 | Combat Mastery: escada de dano por vida faltante do alvo (declarada, não revertida) | [Spells](#spells) | 1451 |
+| M-042a |  | [Spells](#spells) | 1540 |
+| M-042b | Sob escada, o perk omega só é provável acima do TETO SUPERIOR. | [Spells](#spells) | 1582 |
+| M-042c | Combat Mastery fica fora da base do leech; o leech diz o degrau de cada hit. | [Spells](#spells) | 1613 |
+| M-043 | Estância elemental de sorcerer e conversão do próximo cast | [Spells](#spells) | 1653 |
+| M-043a | Estância inferida pelo dano, sem herança | [Spells](#spells) | 1734 |
+| D-001 | Dano efetivo | [Glossário de leech](#glossário-de-leech) | 1831 |
+| D-002 | Dano original | [Glossário de leech](#glossário-de-leech) | 1832 |
+| D-003 | Elemental | [Glossário de leech](#glossário-de-leech) | 1833 |
+| D-004 | Físico | [Glossário de leech](#glossário-de-leech) | 1834 |
+| D-005 | Comparabilidade | [Glossário de leech](#glossário-de-leech) | 1835 |
+| D-006 | Evidência ausente | [Glossário de leech](#glossário-de-leech) | 1836 |
+| D-007 | Crit-state | [Glossário de leech](#glossário-de-leech) | 1837 |
+| D-008 | Low Blow | [Glossário de leech](#glossário-de-leech) | 1838 |
+| D-008a | Savage Blow | [Glossário de leech](#glossário-de-leech) | 1839 |
+| D-008b | Bônus do Savage Blow no crítico | [Glossário de leech](#glossário-de-leech) | 1840 |
+| D-009 | Onslaught | [Glossário de leech](#glossário-de-leech) | 1845 |
+| D-009a | Reversão de Onslaught | [Glossário de leech](#glossário-de-leech) | 1846 |
+| D-010 | Modificadores | [Glossário de leech](#glossário-de-leech) | 1847 |
+| D-010a | Pipeline discreto de dano elemental | [Glossário de leech](#glossário-de-leech) | 1849 |
+| D-010b | Pipeline discreto de dano físico | [Glossário de leech](#glossário-de-leech) | 1890 |
+| D-010c | Modificador efetivo por pierce/Expose Weakness | [Glossário de leech](#glossário-de-leech) | 1932 |
+| D-010c-nota | Limitação conhecida e aceita: `active elemental amplification` bugada no jogo (pierce 0%). | [Glossário de leech](#glossário-de-leech) | 1951 |
+| D-010d | Originais pós-crítico e dano base normalizado | [Glossário de leech](#glossário-de-leech) | 1953 |
+| D-010e | Proibição de média física para hit individual | [Glossário de leech](#glossário-de-leech) | 1955 |
+| D-010f | Reversão de Perfect Shot (vale nos DOIS eixos) | [Glossário de leech](#glossário-de-leech) | 1957 |
+| D-010g | Bounty Talisman: fato, grade e bônus de dano pós-mitigation | [Glossário de leech](#glossário-de-leech) | 1965 |
+| D-010g-1 | Teto de mana e ramo de Mana Leech do fallback (emenda de 21/Set/2026, change … | [Glossário de leech](#glossário-de-leech) | 2103 |
+| D-010h | Crítico de AA single-target é rolagem alta, não multiplicador (21/Set/2026, fato de … | [Glossário de leech](#glossário-de-leech) | 2125 |
+| D-010i | Multiplicadores finais em sequência | [Glossário de leech](#glossário-de-leech) | 2133 |
+| D-010j | Passo do crítico no eixo elemental: CEIL com multiplicador por componente | [Glossário de leech](#glossário-de-leech) | 2156 |
+| D-011 | Overkill | [Glossário de leech](#glossário-de-leech) | 2212 |
+| D-011a | Atribuição de XP exige continuidade causal | [Glossário de leech](#glossário-de-leech) | 2213 |
+| D-011b | Charm que mata fica com a XP (emenda de D-011a, 21/Set/2026, decisão do usuário) | [Glossário de leech](#glossário-de-leech) | 2288 |
+| D-011c |  | [Glossário de leech](#glossário-de-leech) | 2301 |
+| D-012 | Herança de overkill | [Glossário de leech](#glossário-de-leech) | 2330 |
+| D-012a | Turno 100% overkill não admite fronteira sem evidência independente | [Glossário de leech](#glossário-de-leech) | 2331 |
+| D-012b | Nota de implementação: por que a invalidação NÃO vai no teste de leech. | [Glossário de leech](#glossário-de-leech) | 2341 |
+| D-013 | Leech | [Glossário de leech](#glossário-de-leech) | 2357 |
+| D-014 | Leech secundário | [Glossário de leech](#glossário-de-leech) | 2358 |
+| D-015 | Associação | [Glossário de leech](#glossário-de-leech) | 2359 |
+| D-016 | Regime temporal de modificadores | [Glossário de leech](#glossário-de-leech) | 2360 |
+| D-017 | Escopo transitório de revisão (CONDIÇÃO EXPIRADA em 09/Ago/2026) | [Glossário de leech](#glossário-de-leech) | 2361 |
+| D-017a | D-017 nunca foi gate de invariante mecânico | [Glossário de leech](#glossário-de-leech) | 2365 |
+| D-017b | D-016 é auditada nos dois sentidos | [Glossário de leech](#glossário-de-leech) | 2369 |
+| D-018 | Desempate entre AA single-target e spell | [Glossário de leech](#glossário-de-leech) | 2370 |
+| D-019 | Leech absoluto sob overkill | [Glossário de leech](#glossário-de-leech) | 2371 |
+| D-020 | Fontes conhecidas de leech do personagem | [Glossário de leech](#glossário-de-leech) | 2373 |
+| D-020a | Grade de imbuement restrita a Powerful (premissa de personagem, não regra de jogo) | [Glossário de leech](#glossário-de-leech) | 2379 |
+| D-021 | Minor charms de leech por mob | [Glossário de leech](#glossário-de-leech) | 2381 |
+| D-021a | Detecção de mob candidato a minor charm por evidência turn-local | [Glossário de leech](#glossário-de-leech) | 2383 |
+| D-022 | Leech efetivo por hit | [Glossário de leech](#glossário-de-leech) | 2418 |
+| D-022a | Perk pré-cutoff de Mana Leech em hits com Expose Weakness | [Glossário de leech](#glossário-de-leech) | 2431 |
+| D-022b | Bounty Talisman: multiplicador de Life Leech por hit | [Glossário de leech](#glossário-de-leech) | 2499 |
+| D-023 | Fórmula de diluição do leech por quantidade de hits | [Glossário de leech](#glossário-de-leech) | 2564 |
+| D-024 | Candidato de cardinalidade por leech | [Glossário de leech](#glossário-de-leech) | 2603 |
+| D-024a | Proibição de N por mob distinto | [Glossário de leech](#glossário-de-leech) | 2619 |
+| D-025 | Reconstrução de dano real por leech | [Glossário de leech](#glossário-de-leech) | 2621 |
+| D-026 | Proibição de razão sob overkill | [Glossário de leech](#glossário-de-leech) | 2657 |
+| D-027 | Associação de leech ao hit ofensivo | [Glossário de leech](#glossário-de-leech) | 2659 |
+| D-028 | Independência entre leech e mitigação física | [Glossário de leech](#glossário-de-leech) | 2661 |
+| D-029 | Leech por cardinalidade é independente do tipo de componente | [Glossário de leech](#glossário-de-leech) | 2663 |
+| D-030 | Fallback global de `utevo grav san` por dano/leech | [Glossário de leech](#glossário-de-leech) | 2665 |
+| T-001 | Ordem | [4. Formação dos turnos](#4-formação-dos-turnos) | 2715 |
+| T-001a |  | [4. Formação dos turnos](#4-formação-dos-turnos) | 2716 |
+| T-002 | Janela mecânica | [4. Formação dos turnos](#4-formação-dos-turnos) | 2736 |
+| T-003 | Preservar linhas | [4. Formação dos turnos](#4-formação-dos-turnos) | 2737 |
+| T-004 | Um componente por hit | [4. Formação dos turnos](#4-formação-dos-turnos) | 2738 |
+| T-005 | Combinações permitidas | [4. Formação dos turnos](#4-formação-dos-turnos) | 2739 |
+| T-006 | Combinação proibida | [4. Formação dos turnos](#4-formação-dos-turnos) | 2748 |
+| T-007 | Turno parcial | [4. Formação dos turnos](#4-formação-dos-turnos) | 2749 |
+| S-001 | Objetivo | [Fase 1 — Segmentar](#fase-1--segmentar) | 2755 |
+| S-002 | Independência | [Fase 1 — Segmentar](#fase-1--segmentar) | 2756 |
+| S-003 | Todos os cortes | [Fase 1 — Segmentar](#fase-1--segmentar) | 2757 |
+| S-004 | Interseção | [Fase 1 — Segmentar](#fase-1--segmentar) | 2758 |
+| S-004a | Exatidão same-mob/same-estado | [Fase 1 — Segmentar](#fase-1--segmentar) | 2759 |
+| S-004b | Classes de diagnóstico determinístico (contradição × evidência ausente) | [Fase 1 — Segmentar](#fase-1--segmentar) | 2760 |
+| S-004c | Omega é estado do hit no gate de exatidão same-mob, e a folga é último recurso | [Fase 1 — Segmentar](#fase-1--segmentar) | 2761 |
+| S-004c-nota | Limitação conhecida e aceita: o modelo de omega não é exato. | [Fase 1 — Segmentar](#fase-1--segmentar) | 2762 |
+| S-005 | Fronteira obrigatória | [Fase 1 — Segmentar](#fase-1--segmentar) | 2763 |
+| S-006 | Blocos unitários | [Fase 1 — Segmentar](#fase-1--segmentar) | 2764 |
+| S-007 | Físico | [Fase 1 — Segmentar](#fase-1--segmentar) | 2765 |
+| S-007a | Tolerância cross-hit na interseção física | [Fase 1 — Segmentar](#fase-1--segmentar) | 2782 |
+| S-007b | Eixo do bloco de AA é inferido por sessão (munição de área elemental) | [Fase 1 — Segmentar](#fase-1--segmentar) | 2767 |
+| S-008 | Crit-state misto | [Fase 1 — Segmentar](#fase-1--segmentar) | 2816 |
+| S-009 | Cardinalidade | [Fase 1 — Segmentar](#fase-1--segmentar) | 2817 |
+| S-010 | Cooldown | [Fase 1 — Segmentar](#fase-1--segmentar) | 2818 |
+| S-011 | Resultado | [Fase 1 — Segmentar](#fase-1--segmentar) | 2819 |
+| S-012 | Sem pontuação somada | [Escolha da partição](#escolha-da-partição) | 2866 |
+| S-013 | Sem fallback legado | [Escolha da partição](#escolha-da-partição) | 2867 |
+| S-014 | Cardinalidade por leech | [Escolha da partição](#escolha-da-partição) | 2868 |
+| S-014a | Proibição de N por mob distinto na segmentação | [Escolha da partição](#escolha-da-partição) | 2880 |
+| S-014b | Topologia não redefine N_leech | [Escolha da partição](#escolha-da-partição) | 2882 |
+| S-014c | Cardinalidade por leech não tem gate de tamanho mínimo | [Escolha da partição](#escolha-da-partição) | 2884 |
+| S-014d | Anomalia de leech deve ser demonstrada mecanicamente | [Escolha da partição](#escolha-da-partição) | 2893 |
+| S-014e | N_leech é o maior N sem contradição; virtual-zero só até lá e só com kill real | [Escolha da partição](#escolha-da-partição) | 2895 |
+| S-014f | Em turno integralmente de boss, a cardinalidade por leech é evidência … | [Escolha da partição](#escolha-da-partição) | 2986 |
+| S-015 | Dano parecido com cardinalidade distinta | [Escolha da partição](#escolha-da-partição) | 3006 |
+| S-016 | Limite do leech | [Escolha da partição](#escolha-da-partição) | 3008 |
+| S-017 | Cardinalidade por leech quando originais físicos estão indisponíveis | [Escolha da partição](#escolha-da-partição) | 3014 |
+| S-018 | Fronteira geral por leech em todos os resolvedores | [Escolha da partição](#escolha-da-partição) | 3026 |
+| S-019 | Ausência de originais não desativa leech | [Escolha da partição](#escolha-da-partição) | 3040 |
+| S-020 | Bracketing same-mob por leech absoluto, último desempate antes de declarar ambíguo | [Escolha da partição](#escolha-da-partição) | 3042 |
+| S-020a | Fallback por núcleo estável de leech absoluto quando falta âncora same-mob | [Escolha da partição](#escolha-da-partição) | 3057 |
+| S-020b | Só canal discriminante vota; canal sem poder de resolução se abstém | [Escolha da partição](#escolha-da-partição) | 3078 |
+| H-001 | Homogeneidade determinística de componentes elementais não-overkill | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3109 |
+| H-002 | Cast concreto não vence contra contradição mecânica | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3111 |
+| H-003 | Invariante de bloco único grande | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3113 |
+| H-004 | Homogeneidade e leech são globais | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3115 |
+| H-005 | A ordem AA→spell desempata, não cria AA fantasma (converso de H-001/H-002) | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3133 |
+| H-005-nota |  | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3164 |
+| H-005a | alínea de H-005: separação de timing | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3133 |
+| H-005b | alínea de H-005: crit-state distinto | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3133 |
+| H-005c | alínea de H-005: dano original distinto | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3133 |
+| H-005d | alínea de H-005: salto de razão de leech | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3133 |
+| H-005e | O leech observado declara em quantos alvos o hit bateu (inversão de D-023) | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3176 |
+| H-005e-nota | Canal que não fala não anula o hit (21/Set/2026) | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3271 |
+| H-005f |  | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3278 |
+| H-005g | Low Blow misto no MESMO mob é fronteira de componente (último recurso) | [Homogeneidade determinística de componentes](#homogeneidade-determinística-de-componentes) | 3370 |
+| N-001 | Segmentação imutável | [Fase 2 — Nomear](#fase-2--nomear) | 3461 |
+| N-002 | AA | [Fase 2 — Nomear](#fase-2--nomear) | 3462 |
+| N-003 | Spell | [Fase 2 — Nomear](#fase-2--nomear) | 3463 |
+| N-004 | Granada | [Fase 2 — Nomear](#fase-2--nomear) | 3464 |
+| N-005 | Runa | [Fase 2 — Nomear](#fase-2--nomear) | 3465 |
+| N-006 | Não resolvido | [Fase 2 — Nomear](#fase-2--nomear) | 3466 |
+| N-007 | Uma ação por componente | [Fase 2 — Nomear](#fase-2--nomear) | 3467 |
+| N-008 | Um componente por ação | [Fase 2 — Nomear](#fase-2--nomear) | 3468 |
+| N-008a | A exclusividade é cross-turno e vale para as três naturezas de ação | [Fase 2 — Nomear](#fase-2--nomear) | 3469 |
+| N-009 | Nome concreto | [Fase 2 — Nomear](#fase-2--nomear) | 3470 |
+| N-010 | Token genérico | [Fase 2 — Nomear](#fase-2--nomear) | 3471 |
+| N-011 | Exclusividade | [Fase 2 — Nomear](#fase-2--nomear) | 3472 |
+| V-001 | usar originais físicos para AA e Ethereal Barrage e originais holy/elementais para … | [RP em pack](#rp-em-pack) | 3481 |
+| V-002 | variação física de AA entre mobs não cria novos componentes quando os intervalos ainda … | [RP em pack](#rp-em-pack) | 3482 |
+| V-003 | spell ou runa podem coexistir com granada no mesmo turno, mas runa e spell não podem … | [RP em pack](#rp-em-pack) | 3483 |
+| V-004 | all-arrow com cast próximo não vira automaticamente all-spell. | [RP em pack](#rp-em-pack) | 3484 |
+| V-005 | prefixo fisicamente coerente permanece AA mesmo quando o sufixo é spell. | [RP em pack](#rp-em-pack) | 3485 |
+| V-006 | cada ação concreta produz no máximo um hit no boss. | [Boss e alvo único](#boss-e-alvo-único) | 3489 |
+| V-007 | dois hits no mesmo timestamp podem ser AA → spell, nunca dois hits da mesma ação … | [Boss e alvo único](#boss-e-alvo-único) | 3490 |
+| V-008 | um terceiro hit compatível com granada pode formar AA → spell → granada. | [Boss e alvo único](#boss-e-alvo-único) | 3491 |
+| V-009 | cooldown pode produzir turnos sem AA, como granada → spell. | [Boss e alvo único](#boss-e-alvo-único) | 3492 |
+| V-010 | hit posterior não pode virar segundo AA por falta de outra ação conhecida. | [Boss e alvo único](#boss-e-alvo-único) | 3493 |
+| V-011 | posição do primeiro hit é evidência primária de AA. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3515 |
+| V-012 | fronteira de crit-state é confirmação forte. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3516 |
+| V-013 | leech é confirmação ou contradição secundária. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3517 |
+| V-014 | overkill nunca cria contradição de leech. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3518 |
+| V-015 | evidência inconclusiva gera diagnóstico; não apaga silenciosamente o AA posicional. | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3519 |
+| V-015a | Cardinalidade de leech como fronteira sob overkill | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3520 |
+| V-015b | O bloco de spell não é validado por origem física/elemental comum | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3521 |
+| V-015c | `exori mas amp pug` (Monk) | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3522 |
+| V-015d | O bloco de runa também não é validado por origem física/elemental comum (extensão de … | [Knight, sorcerer, druid e monk — AA por posição + cardinalidade de leech](#knight-sorcerer-druid-e-monk--aa-por-posição--cardinalidade-de-leech) | 3523 |
+| V-016 | AA de varinha pode ser intermitente e single-target. | [Mage/druid](#magedruid) | 3527 |
+| V-017 | magnitude baixa isolada só indica AA quando também for física e temporalmente coerente. | [Mage/druid](#magedruid) | 3528 |
+| V-018 | não é obrigatório haver AA em todo turno de área. | [Mage/druid](#magedruid) | 3529 |
+| V-018a | AA mage/druid exige evidência positiva quando há ação concreta de área | [Mage/druid](#magedruid) | 3530 |
+| V-019 | AA e Ethereal Barrage são componentes físicos distintos. | [Ethereal Barrage](#ethereal-barrage) | 3546 |
+| V-020 | separar os blocos por timestamp, crit-state, intervalos físicos e leech, nessa ordem. | [Ethereal Barrage](#ethereal-barrage) | 3547 |
+| V-021 | intervalos físicos disjuntos criam fronteira mesmo quando as médias são próximas. | [Ethereal Barrage](#ethereal-barrage) | 3548 |
+| V-022 | leech só desempata quando os intervalos se sobrepõem. | [Ethereal Barrage](#ethereal-barrage) | 3549 |
+| V-023 | falso candidato a granada não pode quebrar um bloco físico coerente. | [Ethereal Barrage](#ethereal-barrage) | 3550 |
+| V-024 | o sinal de alinhamento cast↔turno (proximidade entre o timestamp do | [Ethereal Barrage](#ethereal-barrage) | 3551 |
+| V-025 |  | [Ethereal Barrage](#ethereal-barrage) | 3570 |
+| A-001 | Resolvidos | [7. Agregação e métricas](#7-agregação-e-métricas) | 3617 |
+| A-002 | Não resolvidos | [7. Agregação e métricas](#7-agregação-e-métricas) | 3618 |
+| A-003 | Turno misto | [7. Agregação e métricas](#7-agregação-e-métricas) | 3619 |
+| A-004 | Execução sem dano | [7. Agregação e métricas](#7-agregação-e-métricas) | 3620 |
+| A-005 | Dano observado | [7. Agregação e métricas](#7-agregação-e-métricas) | 3621 |
+| A-006 | Dano base | [7. Agregação e métricas](#7-agregação-e-métricas) | 3622 |
+| A-007 | Dano efetivo | [7. Agregação e métricas](#7-agregação-e-métricas) | 3623 |
+| A-008 | Overkill | [7. Agregação e métricas](#7-agregação-e-métricas) | 3624 |
+| A-009 | Turno parcial | [7. Agregação e métricas](#7-agregação-e-métricas) | 3625 |
+| A-010 | Linha por ação | [7. Agregação e métricas](#7-agregação-e-métricas) | 3626 |
+| U-001 | Rotação | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3630 |
+| U-002 | Rótulos | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3631 |
+| U-003 | Sem rótulo cru | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3632 |
+| U-004 | Spells por turno | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3633 |
+| U-005 | Não resolvido | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3634 |
+| U-006 | Diagnóstico | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3635 |
+| U-007 | Gráficos | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3636 |
+| U-008 | Componentes ausentes | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3637 |
+| U-009 | Drill-down | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3638 |
+| U-010 | Histograma | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3639 |
+| U-011 | Low Blow | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3640 |
+| U-011a | Savage Blow | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3641 |
+| U-012 | Onslaught puro | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3642 |
+| U-013 | Combinação | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3643 |
+| U-014 | Overkill | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3644 |
+| U-015 | Diagnóstico obrigatório | [8. Apresentação no classificador](#8-apresentação-no-classificador) | 3645 |
+| C-001 | Documentos auxiliares não são fonte paralela | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3857 |
+| C-002 | Comparação não substitui regra | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3858 |
+| C-003 | Parser não classifica | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3859 |
+| C-004 | Spell ofensiva por tabela | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3860 |
+| C-005 | Bônus de ação não é ajuste livre | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3861 |
+| C-006 | Inferência global antes de turno local | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3862 |
+| C-006a | Setup de leech por fase da sessão | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 3895 |
+| C-006b | Abstenção de canal de leech não é taxa zero | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4035 |
+| C-007 | Ausência de evidência não é contradição | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4098 |
+| C-008 | Procs não são hits principais | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4106 |
+| C-008-nota | Overpower como testemunha (21/Set/2026, decisão do usuário) | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4099 |
+| C-009 | Runa confirmada preserva fronteira, não turno novo | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4107 |
+| C-010 | Cluster genérico é fallback | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4108 |
+| C-011 | UI e comparação usam Unified auditável | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4109 |
+| C-012 | Inferência de BM usa evidência cross-mob holy E física, combinada | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4110 |
+| C-012a | Testemunha de charm decide o BM sem classificar (caminho primário quando existe) | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4112 |
+| C-012b | Sem testemunha de charm, o BM é decidido primeiro pelos blocos holy exatos | [Regras consolidadas a partir do histórico Unified](#regras-consolidadas-a-partir-do-histórico-unified) | 4122 |
 <!-- rule-index:end -->
 
 ## 1. Finalidade do classificador
@@ -767,6 +769,19 @@ aparece uma vez. Linha = linha da definição neste arquivo. `M-031` tem duas de
   arredondada para um "bônus de 6% da classe `slime`" inexistente, que virava
   `postMultiplier` e derrubava o original da runa de `751` para `709` (valores sob o passo `CEIL` anterior; com `ROUND`, D-010a, o original comum do bloco é `752`).
 
+  **Conta exata do charm (09/Nov/2026, aprovada pelo usuário).** O dano de charm ofensivo segue a
+  cadeia discreta de D-010a: `O = ROUND(hitpoints × 0,05)`; com omega, `O' = ROUND(O × 1,06)`
+  (D-010b, antes da resistência); `E = ROUND(O × m)`, `m = effectiveMod(mod do elemento, pierce da
+  linha)`; `A = FLOOR(E × M)`, `M` = mitigação da tabela. Sobre `A` incidem, um a um com `FLOOR`,
+  os multiplicadores finais da linha (classe de bestiário, Bounty, postura). Uma linha de
+  testemunha **bate** quando o valor observado é **igual** ao resultado; não há tolerância. O bônus
+  de classe usado na conta é o candidato da grade mais próximo da mediana medida. Na razão entre
+  dois níveis observados (omega sem âncora, M-039), o nível alto confirma omega quando está em
+  `[FLOOR(base × 1,06); (base + 1) × 1,06)`. Protector (postura `×0,85`) fica sem conta exata: o
+  valor fracionário continua candidato. Até 08/Nov/2026 valia a tolerância
+  `max(2; esperado × 1,25%)`. Medição (09/Nov/2026, corpus inteiro): nenhum turno muda; `monk` e
+  `monk 2` perdem o `+2%` falso (vida `51→50`/`53→52`, mana `16,25→16`).
+
   Procs dentro de uma janela de utevo grav san são excluídos (grav san
   também infla dano de charm, M-016/`inferGravSanSetup`). "due to active charm upgrade" no
   sufixo NÃO afeta dano (é só chance de ativação do charm) e é ignorado. Vota por CLASSE
@@ -787,7 +802,7 @@ aparece uma vez. Linha = linha da definição neste arquivo. `M-031` tem duas de
   detector é obrigado a escolher o menor candidato da grade em vez de concluir "sem
   bônus". Caso medido: `monk` S0, classe `extra dimensional`, uma linha só
   (`mitmah scout`, energy, n=4), observado `202` contra `200,19` sem bônus e `204,19` com
-  `2%`, e a tolerância `max(2; esperado×1,25%)≈2,5` aceita os dois.
+  `2%`, e a tolerância `max(2; esperado×1,25%)≈2,5` (até 08/Nov/2026; hoje vale a conta exata acima) aceita os dois.
 
   **Correção de 25/Out/2026 — nos logs de `monk` e `monk 2` o `+2%` não existe.** A redação
   anterior chamava o `2%` de `monk` S0 de artefato da grade e tratava o `+1,2%`–`+1,5%` de
@@ -986,7 +1001,7 @@ aparece uma vez. Linha = linha da definição neste arquivo. `M-031` tem duas de
   por `(mob, charm, elemento, estado de pierce)`, com o mesmo piso de `≥3` procs de M-036 e
   a mesma exclusão de procs dentro de janela de `utevo grav san`, uma sessão só é marcada
   com omega quando, na mesma linha de testemunha, existirem **os dois** níveis: um nível
-  **ancorado** (bate com o previsto pela fórmula dentro da tolerância de M-036) e **outro**
+  **ancorado** (bate exatamente com a conta exata do charm de M-036) e **outro**
   nível a `×1,06` do nível ancorado. A âncora é obrigatória porque sem ela o "nível
   previsto" seria só calculado, e um erro de tabela de ~6% se disfarçaria de omega; a razão
   é medida entre dois níveis **observados**, então qualquer multiplicador uniforme da
@@ -1097,8 +1112,7 @@ aparece uma vez. Linha = linha da definição neste arquivo. `M-031` tem duas de
     de valor idêntico. **Proc que mata o alvo (`killedTarget`) não vota**: o dano exibido é
     truncado pela vida restante (D-010g). A **base** é o **menor** nível da linha, porque omega
     só soma. Sem escada (M-042), a linha confirma omega quando outro nível está a `×1,06` da base
-    dentro da mesma tolerância que M-039 já usa para o nível de omega (`max(2; esperado ×
-    1,25%)`); sob escada vale M-042b, com a base no lugar do nível ancorado. Os hits principais
+    pelo intervalo exato `[FLOOR(base × 1,06); (base + 1) × 1,06)` (conta exata do charm, M-036); sob escada vale M-042b, com a base no lugar do nível ancorado. Os hits principais
     continuam proibidos como testemunha.
 
     A mesma linha de razão alimenta a detecção de escada de M-042 (que já se declara por razão
@@ -1482,6 +1496,13 @@ aparece uma vez. Linha = linha da definição neste arquivo. `M-031` tem duas de
   níveis; `3` é o mínimo que distingue um perk graduado de um binário. Com piso `2`, toda
   testemunha de omega viraria "escada".
 
+  **Encaixe exato na grade (09/Nov/2026, aprovado pelo usuário; revoga a tolerância de 1 ponto
+  aprovada em 07/Set/2026).** Um nível `v` cai no degrau `n` quando
+  `v ∈ [FLOOR(b × f); (b + 1) × f)`, `f = 1 + s·n`, `b` = menor nível da linha: é o intervalo exato
+  de `FLOOR` sobre uma base inteira. O mesmo vale para o encaixe do nível com omega sob escada
+  (M-042b) e para o teto de classe (`FLOOR(esperado) ≤ menor nível`). Medição (09/Nov/2026,
+  corpus inteiro): nenhum turno nem setup muda. Registro do texto revogado:
+
   **A tolerância de `1` ponto é constante nova, derivada de medição** — não é a folga de
   `S-004c`, que mede outra coisa (o resíduo do modelo de omega sobre originais revertidos).
   Dano de charm é determinístico e o modelo bate a `≤1` ponto nas linhas ancoradas: resíduos de
@@ -1527,7 +1548,7 @@ aparece uma vez. Linha = linha da definição neste arquivo. `M-031` tem duas de
     não-discriminante e **abstém** (`D-006`), com o motivo registrado (`U-006`).
 
     A tolerância de `1` ponto é a mesma do encaixe na grade (constante nova, derivada de
-    medição — ver acima). A tolerância larga de `M-036` (`max(2; previsto × 1,25%)`) **não**
+    medição — ver acima). A tolerância larga que `M-036` usava até 08/Nov/2026 (`max(2; previsto × 1,25%)`) **não**
     serve aqui: num dano de `≈1000` ela vale `12,5` pontos, **mais** que o degrau de `1%`, e faz
     candidatos vizinhos sobreviverem juntos — o mesmo defeito que `C-006a`(2) já documentou para
     encaixe.
@@ -1588,6 +1609,46 @@ aparece uma vez. Linha = linha da definição neste arquivo. `M-031` tem duas de
   Com `M-042`, a sessão fica **sem omega**. **O que a regra preserva:** `crypt` S0 continua com
   omega ativo por `cyclursus | zap charm` (`659 ×124` e `699 ×35`, razão `1,0607`, dois níveis).
   (D-006, M-036, M-037, M-039, M-041, S-004a, S-004c, C-012a, A-006, U-006)
+
+  - **M-042c — Combat Mastery fica fora da base do leech; o leech diz o degrau de cada hit.**
+    `ESTADO: decidida em 10/Nov/2026 (fato do usuário: o perk veio com o rebalanceamento de 16/Jun/2026).`
+
+    O bônus de Combat Mastery aumenta o dano exibido mas **não** o leech, como Protector
+    (`M-041`) e classe de bestiário (`M-036a`). Em sessão com escada detectada (`M-042`: passo
+    `s`, teto `1 + s·nMax`), a base de leech de um hit é
+    `CEIL(dano exibido ÷ (P × (1 + s·n)))`, com `P` de `D-023` e `n` inteiro em `[0; nMax]`.
+    O degrau é do **hit** (a vida do alvo muda durante a luta) e o log não o mostra.
+
+    **Encaixe.** O hit aceita `N_leech` quando **algum** `n` fecha a conta exata de `D-023` em
+    todos os canais utilizáveis **com o mesmo `n`**: vida e mana não podem usar degraus
+    diferentes. O degrau `0` continua com o encaixe de `D-024`/`C-006`; os degraus `n ≥ 1` só
+    encaixam exatos, sem a folga de valor do leech. O degrau do hit é o conjunto dos `n` que
+    fecham com o `N_leech` do componente final.
+
+    **Dano base (`A-006`).** Hit com degrau único tem o dano dividido por `1 + s·n`. Hit com mais
+    de um degrau usa a **média** dos fatores `1 + s·n` dos degraus que fecham (decisão do usuário
+    em 10/Nov/2026: erra no máximo meio degrau). Hit sem leech utilizável (overkill, vida e mana
+    cheias, sem leech) fica sem correção.
+
+    **Não muda.** A reversão de dano nos eixos físico e elemental continua sem o degrau (`M-042`:
+    declarado, não revertido). O voto da taxa de leech (`C-006`) não procura degrau: o hit com
+    degrau acima de `0` segue *capped-low*, neutro. Sessão sem escada fica idêntica.
+
+    **Medido (10/Nov/2026, `reports/tolerance-fronts-2026-11-03/scripts-sessao/cm-leech-steps.mjs`,
+    `N_leech` do motor).** Controles sem escada fecham sem degrau: `crypt` (paladino) `1.268` de
+    `1.273`; `bastion` `537` de `546` e `night harpy` `794` de `808`, o mesmo personagem de `tom`
+    (`Kikaro`) em 13/Jun/2026, antes do rebalanceamento. Com escada, a maior parte dos hits só
+    fecha com degrau: `tom 3` `650` de `831`, `tom` `1.073` de `1.408`, `tom 2` `894` de `1.183`,
+    `picture` `358` de `439`. Com passo de `1%`, os degraus de `tom`, `tom 2` e `tom 3` são quase só
+    pares (`0` a `12`), logo o passo real é `2%`, degraus `0` a `6`; `picture` fecha com `1%`,
+    degraus `0` a `6`. Nos quatro, o passo bate com o da escada de charm de `M-042`, que não usa
+    leech. Começo do box (0–3 s depois de 6 s sem hit, `tom 3`): degrau `0` em `13` de `21` hits; o
+    degrau sobe ao longo da luta. Degrau único: `tom 3` `802` de `831`, `tom` `1.356` de `1.408`,
+    `tom 2` `1.140` de `1.183`, `picture` `291` de `439` (os `138` ambíguos quase todos entre dois
+    degraus vizinhos). Caso-prova: `tom 3` `09:48:47`, Berserk com `7` hits: skirmisher `767`
+    (vida `83`, mana `27`) e `772` (vida `82`, mana `27`) fecham com `N = 7` nos degraus `3` e `4`;
+    sem degrau, a mana pedia `N = 8` e a vida não fechava com nenhum `N`.
+    (D-023, D-024, C-006, M-036a, M-041, M-042, A-006)
 
 - **M-043 — Estância elemental de sorcerer e conversão do próximo cast:** o update de
   **16/Jun/2026** (a mesma data do cutoff de regime de `D-016`) deu ao sorcerer três estâncias:
@@ -1822,7 +1883,7 @@ O_candidates = união de invRound(E, m) para cada E em E_candidates
 
 No hit crítico, cada `C` de `invFloor(A, M)` passa por `invCeil(C, k)` antes de `invRound` (D-010j).
 
-**Janela de mitigação (04/Nov/2026, decisão do usuário):** a tabela dá a mitigação com 2 casas, e o valor real pode estar a ±0,005 ponto dele. Em todo hit elemental com mitigação maior que 0, a inversão de `A` vai de `CEIL(A / (1 − (mit − 0,005)/100))` a `CEIL((A + 1) / (1 − (mit + 0,005)/100)) − 1`, com `mit` em pontos percentuais, no lugar de `invFloor(A, M)`. Sem mitigação, vale `invFloor`. O eixo físico não muda.
+**Janela de mitigação (04/Nov/2026, decisão do usuário):** a tabela dá a mitigação com 2 casas, e o valor real pode estar a ±0,005 ponto dele. Em todo hit com mitigação maior que 0, elemental ou físico, a inversão de `A` vai de `CEIL(A / (1 − (mit − 0,005)/100))` a `CEIL((A + 1) / (1 − (mit + 0,005)/100)) − 1`, com `mit` em pontos percentuais, no lugar de `invFloor(A, M)`. Sem mitigação, vale `invFloor`. No eixo físico, `A` é o valor depois de desfeitos os bônus finais, e a janela vale antes da armadura (08/Nov/2026, decisão do usuário: a janela vale para todos os hits). Medido sobre o motor com C-012b: 0 perdidos, 0 ganhos, 1 trocado só de omega (`15 sept` S1 03:33:10).
 
 O resultado elemental é um conjunto discreto de originais possíveis. Se `m`, `M` ou `P` forem desconhecidos, a evidência de original desse eixo é desconhecida, não contradição (D-006).
 
@@ -2136,6 +2197,18 @@ L=26 -> 12,75%
   omega no `crypt mage 1967` e no `roaming dread 2136`, como a conta exata prevê). Controle, `k`
   aleatório com o bloco crítico em 0: 29 perdidos.
 
+  **Bloco sem crítico sem folga (08/Nov/2026, decisão do usuário).** Em todas as passadas, a
+  interseção de originais (S-004) de um bloco elemental sem nenhum hit crítico também não tem folga
+  entre mobs: tolerância `0`, no lugar de `2` (`4` na runa). O cluster elemental continua valendo:
+  bloco com ação concreta que não fecha exato ainda pode ser aceito por ele. Medido sobre o motor
+  com C-012b e a janela no físico: 0 perdidos, 0 ganhos, 0 trocados. A folga não some, muda de
+  lugar: os componentes sem crítico que passam pelo cluster sobem de 434 para 1.827. Tirar o cluster
+  desses blocos perde 261 turnos (`moonsilver` S0 96, `mazzerinbarrage` S1 52, `darklight e vemiath`
+  S1 52, `italian` S0 49, `mazzerinbarrage` S13 12). A sobra no cluster tem cara de erro de tabela
+  por mob (ex.: `walking pillar` e `darklight source` −3 no fogo; `bloodjaw` +1/+2), em
+  investigação. Antes do C-012b, a folga zero perdia `barrage` S0 19:03:39 e 19:05:08 e `jaded` S7
+  20:01:19 e 20:06:10.
+
 - **D-011 — Overkill:** não participa de interseções, médias, magnitude ou comparação de leech. A proibição de leech aqui se refere à *razão* leech/dano; o leech **absoluto** permanece válido em overkill conforme D-019.
 - **D-011a — Atribuição de XP exige continuidade causal:** uma linha de XP só
   prova overkill do hit anterior quando a relação permanece contínua na ordem
@@ -2229,8 +2302,10 @@ L=26 -> 12,75%
   `fix-xp-attribution-across-mobs`, decisão do usuário):** na prova de estágio do Death Echo
   (M-016d-1), um hit da janela do blast marcado overkill perde a marca quando o primeiro segundo
   candidato do eco que tem hit não-overkill traz, depois dele na ordem do log, um hit do **mesmo**
-  mob normalizado e do mesmo estado elemental cujo dano mostrado é a metade do dano mostrado do
-  blast, com diferença de no máximo 1. O eco prova que aquele monstro sobreviveu ao blast: a XP que
+  mob normalizado e do mesmo estado elemental cujo original revertido é `FLOOR` ou `CEIL` da metade
+  do original revertido do golpe do blast (o golpe e o eco são revertidos mesmo marcados overkill, no elemento
+  previsto do cast). Até 08/Nov/2026 a comparação era pelo dano mostrado, com diferença de no
+  máximo 1 (conta exata aprovada pelo usuário em 09/Nov/2026; medição: nenhum turno muda). O eco prova que aquele monstro sobreviveu ao blast: a XP que
   veio logo depois do golpe é de outro mob. O eco pode estar marcado overkill e continua marcado.
   "A XP caiu entre o blast e o eco" sozinho não desmarca nada (`alumnishocks 2` `18:21:52`,
   `wardragon 68`, sem eco na metade exata, continua overkill).
@@ -2363,7 +2438,8 @@ se bonusVoidsCall(mob) > 0:
 
   **O perk é opcional, então sua presença é INFERIDA por sessão**, junto com a
   base e o minor charm, na mesma busca conjunta e com o mesmo comparador
-  (`ok` decrescente, depois `exact`) — nunca por data, vocação, fixture ou limiar
+  (o voto de C-006: mais exatos entre as hipóteses sem mais contradições que a
+  vencedora por encaixe dentro da tolerância) — nunca por data, vocação, fixture ou limiar
   próprio. As duas hipóteses (`com perk` e `sem perk`) são pontuadas contra as
   observações-ouro da sessão e a melhor vence. A **hipótese neutra é `sem perk`**:
   leech observado pode ser truncado para baixo, nunca para cima, portanto só
@@ -2464,10 +2540,13 @@ lifeLeechEfetivo(hit sem marca) =
   Empate, evidência apenas capped-low/overkill ou ausência de intervalo finito
   deixam o nível `unknown`. Nesse estado o Bounty não pode ser usado como veto
   duro de cardinalidade. Caso-prova: depois de fixar Damage nível 26,
-  `uhax 3` S1 infere Life nível 15 (`+10%`) pelos quatro AAs unitários
+  `uhax 3` S1 infere Life nível 14 (`+9,5%`) pelos quatro AAs unitários
   `(dano, vida) = (155,47), (246,75), (136,42), (218,66)`;
-  níveis 14/15/16 preveem respectivamente
-  `(47,75,41,66)`, `(47,75,42,66)` e `(47,75,42,67)`.
+  com a base inteira de D-023 (`CEIL(dano / 1,1275)`), níveis 14/15/16 preveem
+  respectivamente `(47,75,42,66)`, `(48,75,42,67)` e `(48,75,42,67)`. (Até
+  08/Nov/2026 a base era fracionária e o caso cravava nível 15; a base inteira
+  nunca perde para a fracionária no corpus — 431 acertos só dela contra 0 — e o
+  ranking da sessão prefere 14 por 1.423 exatos contra 1.402.)
   O restante do setup permanece `lifeBase=31%`, `manaBase=17%`,
   `Void's Call +1,6%` em `darklight striker` e `Vampiric Embrace +3,2%` em
   `darklight matter`. O mob marcado por Bounty, `walking pillar`, **não** tem
@@ -2476,20 +2555,23 @@ lifeLeechEfetivo(hit sem marca) =
   `Vampiric Embrace` em `walking pillar`" e foi lida por engano como se S1 não
   tivesse o charm em mob nenhum; ver D-021a.) O AA
   marcado `13:36:13`, dano exibido 155, fecha
-  `CEIL((155/1,1275) × 0,31 × 1,10)=47` de vida. O hit possui EW, então a Mana
+  `CEIL(CEIL(155/1,1275) × 0,31 × 1,095)=CEIL(138 × 0,33945)=47` de vida. O hit possui EW, então a Mana
   efetiva é 19% se o perk de D-022a tiver sido inferido nessa sessão e 17% caso
   contrário; nos dois casos Mana 24 observado é capped-low
   (`CEIL((155/1,1275) × 0,19)=27` e `CEIL((155/1,1275) × 0,17)=24`), portanto
   compatível mas não discriminante de nível de Bounty.
 
-- **D-023 — Fórmula de diluição do leech por quantidade de hits:** para um componente que produziu `N_leech` hits principais elegíveis, o leech de cada hit deve ser calculado com o fator `areaFactor(N_leech) = (0,1 × N_leech + 0,9) / N_leech`, equivalente a `0,1 + 0,9 / N_leech`. O resultado de vida e mana é sempre arredondado para cima. Para `N_leech = 1`, o fator é `1`. `N_leech` é a quantidade de hits principais elegíveis do componente, independentemente de esses hits estarem em mobs diferentes ou no mesmo mob. É proibido interpretar `N_leech` como quantidade de mobs distintos.
+- **D-023 — Fórmula de diluição do leech por quantidade de hits:** para um componente que produziu `N_leech` hits principais elegíveis, o leech de cada hit deve ser calculado com o fator `areaFactor(N_leech) = (0,1 × N_leech + 0,9) / N_leech`, equivalente a `0,1 + 0,9 / N_leech`. O leech é arredondado para cima **duas vezes**: primeiro o leech cheio do hit (`CEIL(base × taxa)`), depois a diluição pela área (`CEIL(cheio × areaFactor(N_leech))`). A base é inteira: quando o dano exibido carrega multiplicadores finais que não entram no leech (prey, Bounty, `utevo grav san`, Protector, classe de bestiário), `base = CEIL(dano exibido ÷ produto desses multiplicadores)`; sem nenhum deles, a base é o próprio dano. Para `N_leech = 1`, o fator é `1`. `N_leech` é a quantidade de hits principais elegíveis do componente, independentemente de esses hits estarem em mobs diferentes ou no mesmo mob. É proibido interpretar `N_leech` como quantidade de mobs distintos.
 
 ```text
 areaFactor(N_leech) = (0.1 × N_leech + 0.9) / N_leech
 areaFactor(N_leech) = 0.1 + 0.9 / N_leech
 
-vidaObservada = CEIL(danoReal × lifeLeechEfetivo × areaFactor(N_leech))
-manaObservada = CEIL(danoReal × manaLeechEfetivo × areaFactor(N_leech))
+base = danoReal                         (sem multiplicador fora do leech)
+base = CEIL(danoReal / P)               (P = produto dos multiplicadores fora do leech)
+
+vidaObservada = CEIL(CEIL(base × lifeLeechEfetivo) × areaFactor(N_leech))
+manaObservada = CEIL(CEIL(base × manaLeechEfetivo) × areaFactor(N_leech))
 
 N_leech = 1  → 1.000000
 N_leech = 2  → 0.550000
@@ -2503,14 +2585,29 @@ N_leech = 9  → 0.200000
 N_leech = 10 → 0.190000
 ```
 
-- **D-024 — Candidato de cardinalidade por leech:** para cada hit com leech associado, o classificador deve testar candidatos inteiros de `N_leech`. Um hit aceita determinado `N_leech` quando o leech observado de vida e/ou mana é compatível com `CEIL(danoReal × leechEfetivo × areaFactor(N_leech))`. Quando não há overkill, `danoReal` pode ser o dano exibido no Server Log. Quando há overkill, o dano exibido não deve ser usado como limite superior; deve-se reconstruir o intervalo de dano real por D-025. `N_leech` nunca deve ser calculado por contagem de mobs distintos.
+  **Os dois arredondamentos são medidos (08/Nov/2026, decisão do usuário).** O TibiaWiki
+  (seção *Mana Leech* de *Formulae*) dá um arredondamento só,
+  `CEIL(dano × taxa × (0,1N + 0,9) / N)`; o fator de área e o arredondamento por criatura
+  coincidem com esta regra, falta o arredondamento do leech cheio. Exemplo: `15 sept` S0
+  `03:23:39`, `darklight source` 1218, vida 50,75%, Divine Caldera em 4 alvos: leech cheio
+  `618,135`; um arredondamento dá `CEIL(618,135 × 0,325) = 201`; dois dão
+  `CEIL(619 × 0,325) = 202`; o log mostra **202**. Contagem hit a hit nas sessões de
+  `16/Jun/2026` em diante sem mais de um setup (C-006a), `N ≥ 2`, sem overkill nem Bounty, só
+  onde as duas contas divergem: vida **2.216** acertos dos dois arredondamentos contra **0** do
+  arredondamento único; mana **3.194** contra **24**, com a taxa escolhida pelo voto de C-006.
+  A medição favorecia o arredondamento único (`N` e taxas vinham do motor que o usava). Com a
+  conta de dois passos, todo encaixe dentro da folga vira exato: `crypt` vida 51,5% 3.450 de
+  3.450 (antes 3.110) e mana 16,25% 3.528 de 3.562 (antes 3.253); `mazzerinbarrage` S13 vida
+  378 de 378 (antes 340) e mana 344 de 344 (antes 316).
+
+- **D-024 — Candidato de cardinalidade por leech:** para cada hit com leech associado, o classificador deve testar candidatos inteiros de `N_leech`. Um hit aceita determinado `N_leech` quando o leech observado de vida e/ou mana é compatível com a conta de D-023, `CEIL(CEIL(danoReal × leechEfetivo) × areaFactor(N_leech))`. Quando não há overkill, `danoReal` pode ser o dano exibido no Server Log. Quando há overkill, o dano exibido não deve ser usado como limite superior; deve-se reconstruir o intervalo de dano real por D-025. `N_leech` nunca deve ser calculado por contagem de mobs distintos.
 
 ```text
 para N_leech em 1..Nmax:
     F = 0.1 + 0.9 / N_leech
 
-    vidaEsperada = CEIL(dano × lifeLeechEfetivo × F)
-    manaEsperada = CEIL(dano × manaLeechEfetivo × F)
+    vidaEsperada = CEIL(CEIL(dano × lifeLeechEfetivo) × F)
+    manaEsperada = CEIL(CEIL(dano × manaLeechEfetivo) × F)
 
     se vidaEsperada == vidaObservada:
         hit aceita N_leech por vida
@@ -2529,14 +2626,14 @@ Dreal = dano real usado no cálculo
 L = leech efetivo
 F = areaFactor(N_leech)
 
-R = CEIL(Dreal × L × F)
+R = CEIL(Y × F),  Y = CEIL(Dreal × L)     (Y = leech cheio, inteiro; D-023)
 
-R - 1 < Dreal × L × F <= R
+Y_min = FLOOR((R - 1) / F) + 1
+Y_max = FLOOR(R / F)
+(sem Y inteiro em [Y_min, Y_max] ⇒ hipótese inválida)
 
-(R - 1) / (L × F) < Dreal <= R / (L × F)
-
-Dreal_min = FLOOR((R - 1) / (L × F)) + 1
-Dreal_max = FLOOR(R / (L × F))
+Dreal_min = FLOOR((Y_min - 1) / L) + 1
+Dreal_max = FLOOR(Y_max / L)
 ```
 
 Se houver vida e mana:
@@ -2981,7 +3078,7 @@ Caso-prova obrigatório — mazzerinbarrage 22:09:57 (sessão salva 28/Jun/2026)
 - **S-020b — Só canal discriminante vota; canal sem poder de resolução se abstém:** a
   exigência de unanimidade de S-020/S-020a vale entre os canais que são **evidência**, e um
   canal só é evidência quando consegue separar os dois lados. O leech observado é
-  `CEIL(danoReal × taxa × areaFactor)` (D-023), então diferenças da ordem do arredondamento
+  a conta arredondada de D-023, então diferenças da ordem do arredondamento
   não distinguem nada. Um canal só vota quando a **margem** entre as duas distâncias
   comparadas — `| |leech − âncoraAntes| − |leech − âncoraDepois| |` em S-020, ou a mesma
   quantidade contra os núcleos estáveis em S-020a — excede a tolerância de valor de leech já
@@ -3693,7 +3790,7 @@ Os casos abaixo são normativos. As contagens usam `A=arrow`, `S=spell`, `R=rune
 | 41 | mazzerinbarrage `23:21:27` (sessão salva `09/Jun/2026 00:00:54`) | `partial_edge_missing_evidence` (T-001a + T-007/A-009). Primeiro turno **do log** (`seq 1`) numa sessão que atravessa a meia-noite (`23:21:27` → `00:00:50`): 6 hits críticos de Royal Paladin, sem spell/runa/granada concreta no recorte, e a única hipótese `arrow[6]` cai por `physical_intersection_empty` (o `darklight striker` reverte `O∈[730,789]` contra o cluster `[607,619]`). Equivalente em RP do caso 34 (druid) — a vocação e a razão de rejeição mudam, a causa não. Confirmação independente de que a borda levou hits: o leech dos 6 visíveis fecha **exato** em `N_leech = 9` nos dois canais e nos quatro mobs (source `1042→106/34`, pillar `1047→107/35`, matter `1131→115/41` com Void's Call, striker `1133→123/37` com Vampiric Embrace); `N=10` é contradito. | Ordenar por segundos do dia e marcar `partialEdge` em `00:00:00` (o último turno cronológico); exigir vocação de AA single-target ou a razão `multiple_arrow_hits_not_allowed` para reconhecer perda de informação de borda; ou classificar os 6 hits inventando componente. |
 | 42 | mazzerinbarrage `01:21:04` (sessão salva `09/Jul/2026 01:26:16`) | `A8 + Ethereal Barrage 8 + Divine Grenade 9` (T-005/U-004 + T-003). Três blocos coerentes num turno de 2s: 8 hits não-crit em `:04` (AA, interseção física `[854,856]`), 8 críticos em `:04` (`exori dir moe`, interseção `[981,983]`) e 9 em `:05` com `O_holy` homogêneo `[1012,1013]` em **quatro mobs distintos** — a granada do cast `exevo tempo mas san` de `01:21:02`, explodindo em `cast+3` (M-023). O leech confirma os três: `N=8/8/9`, com **18 de 18** encaixes exatos no bloco de granada. `AA + spell + granada` é combinação permitida por T-005 e a única forma prevista por U-004 de duas ações com natureza de spell no mesmo turno. O cast era disputado com `01:21:06`; como este resolve sem ele (`A8 + Caldera 13`) e `01:21:04` não resolve de forma alguma, o cast pertence a `01:21:04`. | Descartar o cast por empate de desempate, deixando os 25 hits sem componente (T-003) e perdendo o cast até como execução (M-020/A-004); ou desempatar por contagem de hits do bloco de granada (aqui o vencedor tem 9 contra 12 do concorrente). |
 | 43 | mazzerinbarrage `16:24:10` (sessão salva `17/Jun/2026 16:35:46`) | `A0 S2` — `Ethereal Barrage (exori dir moe)` (D-011/D-012a). Os dois hits são overkill, no mesmo segundo e com o mesmo crit-state (`orclops bloodbreaker 284 OK`, `norcferatu nightweaver 702 OK`), então a fronteira `A1|S1` era criada exclusivamente entre hits de overkill — sem mudança de segundo, de crit-state, `Using` de runa ou janela de granada que a sustentasse. O leech corrobora dano real parecido apesar dos exibidos divergentes: vida `220`/`232`, mana `71`/`75`. | Cravar um corte AA×spell apoiado só na posição de hits cujo dano exibido está truncado (D-011), em vez de manter o componente único que a evidência sustenta. |
-| 44 | uhax 3 S1 `13:34:21` (sessão salva `03/Jul/2026 13:46:53`) | `A0 S0 R12 G0` — Great Fireball com 11 hits visíveis e um virtual comprovado. O setup global infere Bounty Damage nível 26 (`+12,75%`) pelos pares de Poison Charm `2089→2355` e `2161→2436`, confirmado pelo original comum 1290 do Terra Wave `13:39:15`; depois infere Bounty Life nível 15 (`+10%`) pelos AAs unitários independentes. No `walking pillar 939`, Life 50/Mana 25 fecham `N_leech=12`; `N=13` é contradito por vida. (D-010g/D-022b/D-023/D-024/S-014e/C-006) | Tratar Bounty como Prey fixo `1,25`, copiar o nível de dano para Life, usar uma partição criada pelo próprio candidato como evidência, inventar `Vampiric Embrace` no walking pillar ou reduzir a runa para 11 hits. |
+| 44 | uhax 3 S1 `13:34:21` (sessão salva `03/Jul/2026 13:46:53`) | `A0 S0 R12 G0` — Great Fireball com 11 hits visíveis e um virtual comprovado. O setup global infere Bounty Damage nível 26 (`+12,75%`) pelos pares de Poison Charm `2089→2355` e `2161→2436`, confirmado pelo original comum 1290 do Terra Wave `13:39:15`; depois infere Bounty Life nível 14 (`+9,5%`) pelos AAs unitários independentes, com a base inteira de D-023. No `walking pillar 939`, Life 50/Mana 25 fecham `N_leech=12`; `N=13` é contradito por vida. (D-010g/D-022b/D-023/D-024/S-014e/C-006) | Tratar Bounty como Prey fixo `1,25`, copiar o nível de dano para Life, usar uma partição criada pelo próprio candidato como evidência, inventar `Vampiric Embrace` no walking pillar ou reduzir a runa para 11 hits. |
 
 ### Casos novos obrigatórios
 
@@ -3765,6 +3862,21 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
 - **C-006 — Inferência global antes de turno local:** leech base, minor charms, BM e efeitos globais devem ser inferidos a partir de evidência consistente no log ou no recorte analisado, preferencialmente fora do loop pesado de classificação por turno. A inferência não pode depender do rótulo que ela tenta provar. Quando o input contiver sessões/porções separáveis por cabeçalho de `Channel ... saved`, cada sessão deve inferir seu próprio setup de leech antes de classificar seus turnos; uma sessão não deve herdar leech base ou minor charm de outra sessão do mesmo arquivo concatenado.
   Quando houver dois caminhos de inferência dentro da mesma sessão, como voto geral multi-`N` e componentes confiáveis por `Using`, o caminho mais específico só deve substituir o fallback se sua cobertura de evidência for ao menos tão consistente quanto a do fallback no mesmo canal. Evidência parcial de runa não pode impor um leech base global que contradiz a maioria dos hits utilizáveis da própria porção.
   A votação do candidato de rate base do personagem (life/mana) deve seguir o mesmo princípio de D-025/S-014e: uma observação com `observado < esperado` (capped-low, leech truncado por cap de HP) é sempre consistente e **nunca** pode penalizar um candidato de rate na pontuação ou no desempate. Só `observado > esperado` além da tolerância é contradição real contra um candidato. Um candidato vencedor deve ser o que melhor explica o cluster majoritário de observações dentro da tolerância (D-024), nunca o que apenas minimiza quantas observações caem abaixo dele.
+  **Ordem do voto (08/Nov/2026, decisão do usuário).** Entre as taxas candidatas de um canal,
+  a ordenação por mais encaixes dentro da tolerância define uma **vencedora provisória**. A
+  escolha final é a taxa com **mais encaixes exatos** (D-023) entre as que não têm **mais
+  contradições** (`observado > esperado` além da tolerância) do que a vencedora provisória;
+  empate em exatos mantém a ordem provisória. A tolerância continua valendo só para declarar
+  contradição. Motivo: um ou dois hits capped-low a mais tiravam o encaixe da taxa certa e
+  faziam 2 a 3 encaixes vencerem centenas de exatos (mana 16% contra 16,25%, um stack de
+  Conviction: `crypt` 3.528 exatos contra 1.970; `mazzerinbarrage` S13 344 contra 179). A
+  trava de contradições impede que uma taxa com poucos exatos e muitas contradições vença:
+  sem ela, `bakra` S6 (`10/Jun/2026`) escolhia mana 3,5% com 3 exatos e 74 contradições contra
+  16% com 0. Casos-prova: `barrage` S0 `19:04:38`, `mazzerinbarrage` S13 `01:24:44` e
+  `15 sept` S2 `03:39:44` resolvem; `mazzerinbarrage` S8/S9 ficam em 16% (269 e 265 exatos
+  contra 107 e 133). Custo aceito pelo usuário: 4 turnos de antes do corte deixam de resolver
+  (`bakradrone` S0 `09:20:39`, `jaded` S8 `21:01:38`, `darklight e vemiath` S1 =
+  `mazzerinbarrage` S1 `22:22:18`).
   A rate base do personagem e o minor charm por-mob (D-021) devem ser resolvidos **conjuntamente**, nunca em duas etapas sequenciais onde a base é votada cega a mob e o charm só é testado depois, em cima da base já fixada. Um mob com minor charm real não pode distorcer a base votada para os demais mobs só porque domina o volume de observações da sessão, e um bônus de charm real não pode ser descartado só porque, testado sobre uma base ainda errada, parece piorar o ajuste — a busca deve avaliar a combinação `(base, bônus por mob)` que melhor explica a sessão inteira, sempre restrita à grade de D-020 e aos charms de D-021.
   Quando houver Bounty Talisman (D-010g/D-022b), o setup da sessão deve
   carregar dois candidatos independentes: nível de dano e nível de Life Leech.
@@ -3813,7 +3925,7 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   `C-012a` e `M-036`.
 
   **Instrumento (decisão de 12/Ago/2026).** "Explicar" o bloco significa **encaixe exato** de
-  `D-024` (`observado == CEIL(dano × taxa × areaFactor)`). A tolerância de `C-006`
+  `D-024` (`observado ==` a conta de `D-023`). A tolerância de `C-006`
   (`min(5, max(3, ⌈esperado × 1 %⌉))`) permanece válida **apenas** para declarar contradição
   (`observado > esperado + tolerância`), que é o falso-positivo contra o qual ela foi criada.
   Motivo: a grade de `D-020` anda de `0,25` pp (Conviction Perk), o que num hit de ~1000 de dano
@@ -3873,6 +3985,19 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
     — a fase adotada é a alta, então a anômala é capped-low e nunca foi contradição.
   - Caso-prova negativo (fatiamento indevido): `mazzerinbarrage` S0 (`04/Jun/2026`), 444
     contradições em 1.697 evidências e zero unresolved — **uma** fase.
+
+  **Varredura de 08/Nov/2026 (fato medido, sem causa)**
+  (`reports/tolerance-fronts-2026-11-03/scripts-sessao/leech-steps/`): hits de alvo único
+  (turno inteiro de boss ou componente aceito com `N = 1`), sem overkill, corte no tempo
+  contra 300 embaralhamentos da ordem dos hits. Além dos casos acima, degrau em:
+  `bakra`/`jaded` S5 (`10/Jun/2026`, vida ×0,51 às `09:22:33`, mesmo mob `ichgahal`);
+  `ms boss` S19 (`11/Jun/2026`, mana ×0,57 entre `18:10:33` e `18:10:38`, mesmos mobs
+  `roaming dread` e `crypt mage`); `bakra`/`drome`/`jaded` S4 (`09/Jun/2026`, mana ×1,80 entre
+  `09:23:23` e `09:23:30`, `mearidion` com 15 e 8 hits); `ek boss` S0 (vida ×1,79 e mana ×0,94
+  entre `19:41:24` e `19:41:28`, com troca total de mobs: tempo e mob não se separam). Só 92
+  pares sessão×canal tinham 30 hits de alvo único de cada lado; as demais sessões não foram
+  testadas. Decisão do usuário: sessões com mais de um setup ficam fora do julgamento de
+  mudanças de leech enquanto esta regra não estiver implementada.
 
   **Limitação registrada — hipótese medida, não mecânica declarada.** Nenhuma das duas escolhas
   abaixo tem hipótese nula testável no corpus atual, e as duas ficam escritas como o que são
@@ -3993,3 +4118,14 @@ Este apêndice registra as fontes usadas para atualizar este arquivo como fonte 
   **Desacoplamento de M-036 (circularidade):** o bônus de classe de bestiário também multiplica o dano de charm, e sua detecção depende do `bmPierce`. A circularidade é quebrada pela assimetria dos dois efeitos — o BM afeta só `holy`/`physical`, o bônus de classe afeta **todos** os elementos daquela classe. Logo, os charms de elementos **imunes ao BM** (`fire`/`ice`/`death`/`earth`/`energy`) medem o bônus de classe sem contaminação, e só então as linhas `holy`/`physical` da mesma classe, corrigidas por ele, testemunham o BM. Uma linha cuja classe **não** tem testemunha imune é **não-discriminante** — é proibido assumir bônus de classe igual a 1 para poder usá-la (mesmo princípio conservador de C-006 para rate base × minor charm).
 
   Casos-prova (veredito por charm = `bmPierce` que C-012 já inferia, com **zero** classificações): `mazzerinbarrage` S8–S13 → `0,04` (ex.: sessão salva `28/Jun/2026`, `darklight matter`/wound+EW n=18 observado `1656` vs previsto `1656,7` com BM e `1628,1` sem; `darklight source`/divine wrath+EW n=8 observado `1587` vs `1585,9`/`1556,0`). Controle negativo real: `serverlog6`/`7`/`8`/`9` e `monk 2` → `0` (o detector conclui ausência do perk, não apenas "sem sinal"). Medido no corpus: 74 sessões, 11 com veredito, **0 divergências** contra C-012; ganho de ~52–62% do tempo nas sessões cobertas (`mazzerinbarrage` S11 `16,4s → 6,2s`).
+
+- **C-012b — Sem testemunha de charm, o BM é decidido primeiro pelos blocos holy exatos (08/Nov/2026, decisão do usuário):** antes do critério combinado de C-012, o canal holy de C-012 é reavaliado nas duas hipóteses (`pierce = 0` e `pierce = 0,04`) com a tolerância de S-004 do bloco em **0** (runa inclusive), e cada hipótese conta só os blocos que fecham por **interseção exata**: bloco aceito pelo cluster elemental não conta. Uma hipótese vence quando tem **2 blocos exatos a mais** que a outra e **não mais falhas**; aí ela decide o `bmPierce` da sessão, e o critério combinado de C-012 não roda. Sem vencedor (diferença menor que 2, ou nenhum bloco holy testável), C-012 decide como antes. A folga de S-004 e o cluster continuam valendo na classificação dos turnos; só a comparação das hipóteses é exata.
+
+  Por que: com a folga de 2 pontos, as duas hipóteses fecham os mesmos blocos, porque o BM muda o original holy em 1 a 2 pontos e a folga engole isso (`barrage` S0 e `jaded` S7: 40 de 40 nas duas). O cluster também resgata, na hipótese errada, o bloco que não fecha. O critério físico de intervalo mais estreito (C-012) favorece o BM de qualquer jeito, porque mais pierce estreita o intervalo; foi ele que pôs BM em `jaded` S7 e S8.
+
+  Medição (sonda só de leitura, motor de `ebdb17a`; scripts em `reports/tolerance-fronts-2026-11-03/scripts-sessao/bm-probe/`): o canal holy exato roda em 48 sessões de paladino. Nas 13 em que o charm prova o BM (C-012a: `15 sept` S0–S3, `mazzerinbarrage` S8–S13, `moonsilver` S0 e `radiant` S0 com BM; `thunder arrow` S0 sem), ele dá a mesma resposta nas 13. Contra C-012 ele discorda em 5, todas a favor de C-012b:
+  - `barrage` S0: 22 blocos exatos sem BM contra 37 com BM → `0,04` (era `0`).
+  - `mazzerinbarrage` S1 e `darklight e vemiath` S1 (mesma caçada): 22 contra 38 → `0,04` (era `0`).
+  - `jaded` S7: 40 contra 19 → `0` (era `0,04`); `jaded` S8: 39 contra 14 → `0` (era `0,04`).
+
+  Nas 5 sessões, o crítico de `exevo mas san` (D-010j) passa de `1,935`/`1,51`/`1,895`/`1,57` para `1,9`/`2`/`1,9`/`1,9`, valores que o resto do corpus já mede. Com a folga de S-004 de hoje, nenhum turno muda de partição nem de rótulo. Um critério só foi testado, com a margem de 2 escolhida antes da medição. (C-006, C-012, C-012a, S-004, D-010j)

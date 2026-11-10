@@ -30,48 +30,13 @@
     "reason": "Pre-existente: assert [1,2] contra [1]."
   },
   {
-    "target": "gabarito prioritario + invariantes mecanicas",
-    "signature": "FAIL mk/05:47:24:",
-    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
-  },
-  {
-    "target": "gabarito prioritario + invariantes mecanicas",
-    "signature": "FAIL barrage/19:04:38:",
-    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
-  },
-  {
-    "target": "gabarito prioritario + invariantes mecanicas",
-    "signature": "FAIL mazzerinbarrage/01:24:44:",
-    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
-  },
-  {
-    "target": "gabarito prioritario + invariantes mecanicas",
-    "signature": "FAIL mazzerinbarrage/23:30:02:",
-    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
-  },
-  {
-    "target": "gabarito prioritario + invariantes mecanicas",
-    "signature": "FAIL mazzerinbarrage-drain-body-legacy/22:22:18:",
-    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
-  },
-  {
-    "target": "gabarito prioritario + invariantes mecanicas",
-    "signature": "FAIL mazzerinbarrage-drain-body-legacy/22:22:20:",
-    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
-  },
-  {
-    "target": "gabarito prioritario + invariantes mecanicas",
-    "signature": "FAIL mazzerinbarrage/23:23:03:",
-    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
-  },
-  {
     "target": "tests/unified-leech-base-vote-exact-fit.test.mjs",
     "signature": "tests/unified-leech-base-vote-exact-fit.test.mjs ✖ ordem do voto: referencia por ok, admissivel por high, vencedor por exact",
     "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
   },
   {
-    "target": "tests/unified-leech-base-vote-exact-fit.test.mjs",
-    "signature": "tests/unified-leech-base-vote-exact-fit.test.mjs ✖ barrage S0: mana 0,1625 com Void",
-    "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL jaded/21:01:38:",
+    "reason": "Aceita pelo usuario em 08/Nov/2026: perda pre-cutoff (10/Jun/2026) da conta exata do leech (D-023/D-025) e do voto por exatos com trava de contradicao (C-006); o leech pre-cutoff fica fora do julgamento."
   }
 ]

@@ -99,7 +99,9 @@ for (const [mob, key, stance, observed] of [
 
 // 4) `M-036` e `C-012a` tambem agrupam por postura.
 {
-  const bestiary = engine.inferBestiaryClassDamageBonus(picture.facts, picture.context);
+  // A classificacao real passa a escada de Combat Mastery (M-042) ao detector; sem ela, a conta
+  // exata do charm (M-036, 09/Nov/2026) descarta as linhas espalhadas pela escada.
+  const bestiary = engine.inferBestiaryClassDamageBonus(picture.facts, Object.assign({}, picture.context, { combatMasteryLadder: engine.inferCombatMasteryLadder(picture.facts, picture.context) }));
   const rows = (bestiary && bestiary.rows) || [];
   check('picture: as linhas de M-036 carregam a postura', rows.length > 0 && rows.every(r => typeof r.stance === 'string'));
   check('picture: M-036 tem linha de gorerilla em Protector com previsto ~728,1',

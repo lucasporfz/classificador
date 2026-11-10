@@ -549,7 +549,9 @@
               && normalizeName(e.mob) === normalizeName(h.mob) && elementalStateKey(e) === elementalStateKey(h)
               && Math.abs(e.dmg - h.dmg / 2) <= 1))
         : [];
-      const unmarkHalfEchoBlast = () => { for (const h of halfEchoBlast) h.overkill = false; };
+      // D-011c: original do eco = FLOOR ou CEIL da metade do original do golpe; golpe e eco revertidos
+      // direto, com overkill (o eco pode estar marcado e continua marcado).
+      const unmarkHalfEchoBlast = () => { for (const h of halfEchoBlast) { const po = knownOriginals(elementalOriginalCandidates(h, stageElements[0], stageContext)); if (po && echoBlock.some(e => !e.zeroDamageDodge && (e.seq || 0) > (h.seq || 0) && normalizeName(e.mob) === normalizeName(h.mob) && elementalStateKey(e) === elementalStateKey(h) && (knownOriginals(elementalOriginalCandidates(Object.assign({}, e, { multiStageStage: delayed.id, multiStageCastTs: cast.ts }), stageElements[0], stageContext)) || []).some(eo => po.some(p => eo === Math.floor(p / 2) || eo === Math.ceil(p / 2))))) h.overkill = false; } };
       // T-002/M-016d-1a: o segundo do estágio atrasado pode conter, legitimamente, a
       // explosão de OUTRO cast concreto do dono — T-002 declara exatamente esse caso.
       // Quando ele existe, um hit que não fecha sob a fração é evidência DAQUELE cast,

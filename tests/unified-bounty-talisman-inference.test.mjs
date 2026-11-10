@@ -154,8 +154,8 @@ assert.equal(result1.bountyTalismanSetup.damage.source, 'comparable_charm_damage
     assert.equal(fallback.level, 26);
   }
 }
-assert.equal(result1.bountyTalismanSetup.life.level, 15);
-assert.equal(result1.bountyTalismanSetup.life.bonus, 0.1);
+assert.equal(result1.bountyTalismanSetup.life.level, 14);
+assert.equal(result1.bountyTalismanSetup.life.bonus, 0.095);
 
 const clock = ts => [
   Math.floor(ts / 3600) % 24,
@@ -200,12 +200,13 @@ const unitAaEvidence = [
   [136, 42],
   [218, 66],
 ];
+// D-023: base inteira CEIL(dano / 1,1275).
 const expectedBountyLife = (damage, level) => Math.ceil(
-  (damage / 1.1275) * 0.31 * (1 + formulas.bountyTalismanBonusForLevel(level)),
+  Math.ceil(damage / 1.1275 - 1e-9) * 0.31 * (1 + formulas.bountyTalismanBonusForLevel(level)),
 );
-assert.deepEqual(unitAaEvidence.map(([damage]) => expectedBountyLife(damage, 14)), [47, 75, 41, 66]);
-assert.deepEqual(unitAaEvidence.map(([damage]) => expectedBountyLife(damage, 15)), [47, 75, 42, 66]);
-assert.deepEqual(unitAaEvidence.map(([damage]) => expectedBountyLife(damage, 16)), [47, 75, 42, 67]);
+assert.deepEqual(unitAaEvidence.map(([damage]) => expectedBountyLife(damage, 14)), [47, 75, 42, 66]);
+assert.deepEqual(unitAaEvidence.map(([damage]) => expectedBountyLife(damage, 15)), [48, 75, 42, 67]);
+assert.deepEqual(unitAaEvidence.map(([damage]) => expectedBountyLife(damage, 16)), [48, 75, 42, 67]);
 assert.deepEqual(unitAaEvidence.map(([, observed]) => observed), [47, 75, 42, 66]);
 
 const ewAa = (result1.turns || []).find(turn => clock(turn.ts) === '13:36:13');

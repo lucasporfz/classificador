@@ -55,6 +55,15 @@ const RULE_INDEX = {
   expect: 'indice de regras em dia',
 };
 
+// Variantes da auditoria de folgas: as edições de cada uma precisam casar com o js atual
+// (sem medir); variante que apodreceu no porte falha aqui, não na hora de medir. Com
+// --engine-dir fica de fora: o js/ da cópia já é o de uma variante.
+const AUDIT_VARIANTS = {
+  name: 'variantes da auditoria de folgas',
+  args: ['tools/audit-tolerance-residuals.mjs', '--check-variants'],
+  expect: 'não casam 0',
+};
+
 const INVARIANTS = {
   name: 'invariantes mecanicas (corpus completo, todos os regimes)',
   args: ['tools/unified-validation-workflow.mjs', '--invariants'],
@@ -87,7 +96,7 @@ function runWithEngineDir(engineDir, forwarded) {
   for (const item of ENGINE_ROOT_ITEMS) fs.cpSync(path.join(ROOT, item), path.join(root, item), { recursive: true });
   fs.cpSync(source, path.join(root, 'js'), { recursive: true });
   console.log(`Motor de ${source}, em ${root}`);
-  const res = spawnSync(process.execPath, ['tools/run-unified-checks.mjs', ...forwarded], { cwd: root, stdio: 'inherit' });
+  const res = spawnSync(process.execPath, ['tools/run-unified-checks.mjs', ...forwarded], { cwd: root, stdio: 'inherit', env: { ...process.env, UNIFIED_CHECKS_ENGINE_DIR: '1' } });
   process.exit(res.status ?? 3);
 }
 
@@ -154,7 +163,7 @@ if (all || (modes.has('gabarito') && modes.has('invariants'))) {
   targets.push(scoped(INVARIANTS));
 }
 if (all || modes.has('tests')) {
-  targets.push(...[RULE_INDEX, ...discoverTests()].filter(target => match === null || target.name.includes(match)));
+  targets.push(...[RULE_INDEX, ...(process.env.UNIFIED_CHECKS_ENGINE_DIR ? [] : [AUDIT_VARIANTS]), ...discoverTests()].filter(target => match === null || target.name.includes(match)));
 }
 
 if (!targets.length) {

@@ -63,13 +63,15 @@ test('ancoras: a cadeia colapsa em F = ROUND(O x 1,06) neste mob sintetico', () 
   assert.deepEqual(originals(744, 1.06), [702], '744 com omega reverte para 702 — 2 pontos acima de 700');
 });
 
-test('S-004c: par misto de omega a 1 ponto nao e contradicao', () => {
+test('S-004c: par misto de omega a 1 ponto nao fecha (bloco sem critico sem folga, D-010j)', () => {
   const strict = V.validateElementalBlock(block(700, 743), 'holy', context(true));
   assert.equal(strict.ok, false, 'sem a folga (avaliacao estrita) o par continua vetado');
   assert.equal(strict.reason, 'same_mob_state_exact_original_mismatch');
 
+  // Assert trocado com aprovacao do usuario (08/Nov/2026): com o bloco sem critico em 0
+  // (D-010j), 700 e 701 nao se cruzam e a folga de omega nao cola o par.
   const withTolerance = V.validateElementalBlock(block(700, 743), 'holy', relaxed(true));
-  assert.equal(withTolerance.ok, true, 'com a folga de 1 ponto o bloco fecha');
+  assert.equal(withTolerance.ok, false, 'sem folga no bloco, a folga de omega nao fecha o par');
 });
 
 test('S-004c: par misto de omega ja exato continua fechando sem a folga', () => {

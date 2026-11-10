@@ -302,8 +302,12 @@ const procs = (dmg, count, marked, gravSanMultiplier = 1) =>
   assert.equal(damage.source, 'comparable_charm_damage');
   const life = result.bountyTalismanSetup.life;
   assert.equal(life.confidence, 'unknown', 'Life não é cravável com 3 hits sem marca: ' + JSON.stringify(Object.assign({}, life, { ranked: undefined })));
-  assert.equal(life.source, 'bounty_life_vampiric_confound');
-  assert.equal(life.confound.mob, 'converter');
+  // D-023 (08/Nov/2026): com a base inteira e os dois CEIL, o nível 52 refutado pelo dono
+  // empata com o 53 (362 exatos cada) e a Life fica unknown pelo empate, antes da cláusula
+  // do Vampiric Embrace em converter.
+  assert.equal(life.source, 'bounty_candidate_tie_or_insufficient_evidence');
+  assert.equal(life.level, null);
+  assert.equal(life.ranked[0].exact, life.ranked[1].exact, 'empate no topo do ranking de Life');
   const fallback = damage.fallbackConfirmation;
   if (fallback && fallback.confidence !== 'unknown') {
     assert.equal(fallback.contradictions, 0, 'fallback só confirma com unanimidade');

@@ -15,8 +15,9 @@
 // data (só CORPUS_EXCLUSIONS), um processo por par e por variante.
 //
 // Uso: node tools/audit-tolerance-residuals.mjs [--out reports/tolerance-audit]
-//        [--variants baseline,omega,...] [--pairs chave1,chave2] [--jobs 3] [--report-only]
+//        [--variants baseline,leech,...] [--pairs chave1,chave2] [--jobs 3] [--report-only]
 //        [--no-report]  (só as medições, para comparar com tools/compare-variant.mjs)
+//      node tools/audit-tolerance-residuals.mjs --check-variants  (só confere se as edições casam)
 import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -31,15 +32,10 @@ const OUT = path.resolve(valueOf('--out') || 'reports/tolerance-audit');
 const HEAP_MB = +(process.env.UNIFIED_CHECKS_HEAP_MB || 14336);
 
 // --- variantes: cada folga zerada pelo texto da definição --------------------------------
-const BM_OVERRIDE = { 'jaded#7': 0, 'jaded#8': 0, 'barrage#0': 0.04, 'darklight e vemiath#1': 0.04, 'mazzerinbarrage#1': 0.04, 'moonsilver#0': 0.08 };
 const VARIANTS = {
   baseline: { label: 'motor intacto + sondas', edits: [], probes: true },
   // Motor intacto SEM sondas: prova que as sondas não mudam nenhum turno.
   plain: { label: 'motor intacto sem sondas', edits: [] },
-  omega: {
-    label: 'omega cross-state ±1',
-    edits: [['js/unified-formulas.js', 'const OMEGA_CROSS_STATE_TOLERANCE = 1;', 'const OMEGA_CROSS_STATE_TOLERANCE = 0;']],
-  },
   leech: {
     label: 'valor de leech 3/1/5',
     edits: [
@@ -48,6 +44,16 @@ const VARIANTS = {
       ['js/unified-formulas.js', 'const LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX = 5;', 'const LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX = 0;'],
     ],
   },
+  // Fila 2 do prompt 6: folga de valor do leech zerada, com sondas (para onde a folga migra).
+  leechProbe: { label: 'valor de leech 3/1/5 zerado, com sondas', probes: true, report: false,
+    edits: [
+      ['js/unified-formulas.js', 'const LEECH_VALUE_TOLERANCE_SMALL_BLOCK = 3;', 'const LEECH_VALUE_TOLERANCE_SMALL_BLOCK = 0;'],
+      ['js/unified-formulas.js', 'const LEECH_VALUE_TOLERANCE_LARGE_BLOCK = 1;', 'const LEECH_VALUE_TOLERANCE_LARGE_BLOCK = 0;'],
+      ['js/unified-formulas.js', 'const LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX = 5;', 'const LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX = 0;'],
+    ],
+  },
+  // Encaixe exato (D-024), folga só para declarar contradição (C-006/C-006a); voto de taxa intacto.
+  leechFitExact: { label: 'leech: encaixe exato, folga só na contradição, com sondas', probes: true, report: false, edits: leechFitExactEdits() },
   physical: {
     label: 'interseção física 4',
     edits: [['js/unified-formulas.js', 'const PHYSICAL_INTERSECTION_TOLERANCE = 4;', 'const PHYSICAL_INTERSECTION_TOLERANCE = 0;']],
@@ -60,420 +66,41 @@ const VARIANTS = {
       ['js/unified-formulas.js', 'const ELEMENTAL_CLUSTER_RATIO = 0.004;', 'const ELEMENTAL_CLUSTER_RATIO = 0;'],
     ],
   },
-  charm: {
-    label: 'charm esperado 1,25% (o piso de 2 fica)',
-    edits: [['js/unified-classification-engine.js', 'const CHARM_EXPECTED_TOLERANCE_RATIO = 0.0125;', 'const CHARM_EXPECTED_TOLERANCE_RATIO = 0;']],
-  },
-  combatMastery: {
-    label: 'nível de Combat Mastery ±1 (só medir)',
-    edits: [['js/unified-formulas.js', 'const COMBAT_MASTERY_LEVEL_TOLERANCE = 1;', 'const COMBAT_MASTERY_LEVEL_TOLERANCE = 0;']],
-  },
   elementalBlock: {
     label: 'bloco elemental 2 (runa 4)',
     edits: [['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "return (block && block.comp === 'rune' && block.action) ? 0 : 0;"]],
-  },
-  leechRate: {
-    label: 'taxa de leech delta <= 1',
-    edits: [['js/unified-setup-inference.js', 'if (delta <= 1 && (!best || delta < best.delta', 'if (delta <= 0 && (!best || delta < best.delta']],
   },
   // Ticket "Multiplicadores finais um por um, cada um com FLOOR": hipóteses de ordem dos
   // multiplicadores finais. Medição com sondas; fora do relatório de folgas.
   postFloorOnly: { label: 'produto único, só FLOOR (sem CEIL)', probes: true, report: false,
     edits: [['js/unified-formulas.js', 'add(invCeil(displayDamage, post));', '']] },
-  ...Object.fromEntries(Object.entries({
-    seqPreyFirst: ['prey', 'bounty', 'grav', 'cls', 'stance'],
-    seqPreyLast: ['bounty', 'grav', 'prey', 'cls', 'stance'],
-    seqClsFirst: ['cls', 'prey', 'bounty', 'grav', 'stance'],
-    seqGravFirst: ['prey', 'grav', 'bounty', 'cls', 'stance'],
-  }).map(([name, order]) => [name, { label: 'em sequência com FLOOR: ' + order.join(' → '), probes: true, report: false, edits: sequentialPostEdits(order) }])),
-  // Mesma conta em inteiros (fator × 10^6): FLOOR(x × q) em ponto flutuante erra quando
-  // x × q cai logo abaixo de um inteiro (100 × 1,15 = 114,999…).
-  ...Object.fromEntries(Object.entries({
-    seqClsFirstExact: ['cls', 'prey', 'bounty', 'grav', 'stance'],
-    seqPreyClsExact: ['prey', 'cls', 'bounty', 'grav', 'stance'],
-  }).map(([name, order]) => [name, { label: 'em sequência com FLOOR inteiro: ' + order.join(' → '), probes: true, report: false, edits: sequentialPostEdits(order, true) }])),
-  // Mesma ordem, outro arredondamento por passo.
-  seqPreyClsRound: { label: 'em sequência com ROUND', probes: true, report: false, edits: sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'round') },
-  seqPreyClsCeil: { label: 'em sequência com CEIL', probes: true, report: false, edits: sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'ceil') },
-  // Ticket "Perfect shot: o +20 entra depois dos bônus finais?": posição do +20 por cima
-  // de seqPreyClsExact. A chave do cache de reversão continua com o bônus (sem colisão).
-  psAfterPost: { label: 'perfect shot +20 depois de todos os bônus finais', probes: true, report: false,
-    edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff()] },
-  // Ticket "Folga do bloco elemental": folga zerada por cima de psAfterPost (sem sondas).
-  psBlock0: { label: 'psAfterPost com o bloco elemental em 0', report: false,
-    edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff(),
-      ['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "return (block && block.comp === 'rune' && block.action) ? 0 : 0;"]] },
-  // Mitigação da tabela tem 2 casas: o valor real está em ±0,005 p.p. (janela na inversão elemental).
-  psWin: { label: 'psAfterPost com a janela de mitigação', report: false, edits: psWindowEdits() },
-  psWin0: { label: 'janela de mitigação, bloco elemental em 0', report: false,
-    edits: [...psWindowEdits(), ['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "return 0;"]] },
-  psWin0nc: { label: 'janela de mitigação, bloco elemental em 0 sem crítico', report: false,
-    edits: [...psWindowEdits(), ['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "if (!(block && block.hits && block.hits.some(h => h.realCrit))) return 0; return (block && block.comp === 'rune' && block.action) ? 4 : 2;"]] },
-  // Medição: pierce de sessão forçado onde o censo por bloco pede outro valor (só estes pares).
-  psWinBm: { label: 'janela + BM forçado, folga mantida', report: false, bmOverride: BM_OVERRIDE, edits: psWindowEdits() },
-  psWin0Bm: { label: 'janela + BM forçado, bloco em 0', report: false, bmOverride: BM_OVERRIDE,
-    edits: [...psWindowEdits(), ['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "return 0;"]] },
-  psWin0ncBm: { label: 'janela + BM forçado, bloco em 0 sem crítico', report: false, bmOverride: BM_OVERRIDE,
-    edits: [...psWindowEdits(), ['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "if (!(block && block.hits && block.hits.some(h => h.realCrit))) return 0; return (block && block.comp === 'rune' && block.action) ? 4 : 2;"]] },
-  // Medição: +4% de holy pierce (perk de M-040-nota) só em hit real, no lugar do BM forçado.
-  psWin0ncHoly: { label: 'janela + holy pierce de arma, bloco em 0 sem crítico', report: false, holyExtra: { 'moonsilver#0': 0.04, 'barrage#0': 0.04, 'darklight e vemiath#1': 0.04, 'mazzerinbarrage#1': 0.04 },
-    edits: [...psWindowEdits(), ['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "if (!(block && block.hits && block.hits.some(h => h.realCrit))) return 0; return (block && block.comp === 'rune' && block.action) ? 4 : 2;"],
-      ['js/unified-formulas.js', "if (element === 'death' && hit && hit.dmg != null && context && context.weaponDeathPierce) {", "if (element === 'holy' && hit && hit.dmg != null && globalThis.__holyExtra) p += globalThis.__holyExtra; if (element === 'death' && hit && hit.dmg != null && context && context.weaponDeathPierce) {"]] },
-  // Estudo da escada de mitigação: valor real no degrau inteiro, sem margem e sem float16.
-  ladderKeep: { label: 'escada, folga mantida', report: false, edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff(), ladderEdit()] },
-  ladder0nc: { label: 'escada, bloco elemental em 0 sem crítico', report: false, edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff(), ladderEdit(), ["js/unified-validation.js", "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "if (!(block && block.hits && block.hits.some(h => h.realCrit))) return 0; return (block && block.comp === 'rune' && block.action) ? 4 : 2;"]] },
-  ladder0ncHoly: { label: 'escada + holy pierce de arma, bloco em 0 sem crítico', report: false, holyExtra: { 'moonsilver#0': 0.04, 'barrage#0': 0.04, 'darklight e vemiath#1': 0.04, 'mazzerinbarrage#1': 0.04 }, edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff(), ladderEdit(), ["js/unified-validation.js", "return (block && block.comp === 'rune' && block.action) ? 4 : 2;", "if (!(block && block.hits && block.hits.some(h => h.realCrit))) return 0; return (block && block.comp === 'rune' && block.action) ? 4 : 2;"], ["js/unified-formulas.js", "if (element === 'death' && hit && hit.dmg != null && context && context.weaponDeathPierce) {", "if (element === 'holy' && hit && hit.dmg != null && globalThis.__holyExtra) p += globalThis.__holyExtra;\n    if (element === 'death' && hit && hit.dmg != null && context && context.weaponDeathPierce) {"]] },
-  // Crítico: C = CEIL(E × k), k varrido por componente, sobre o motor de 7d10d60.
-  win: { label: 'janela de mitigação, folga mantida', report: false, edits: [mitigationWindowEdit()] },
-  critK: { label: 'crítico CEIL + k exato, folga mantida', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true }) },
-  critK0c: { label: 'crítico CEIL + k exato, bloco com crítico em 0', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true, crit0: true }) },
-  critKS0c: { label: 'crítico CEIL + k exato + Savage +0,40, bloco com crítico em 0', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true, crit0: true, savage: 0.4 }) },
-  critKO0: { label: 'crítico CEIL + k exato, omega cross-state em 0 (a folga ainda é usada?)', report: false, edits: [...critExactEdits({ rounding: 'ceil', scan: true }), ['js/unified-formulas.js', 'const OMEGA_CROSS_STATE_TOLERANCE = 1;', 'const OMEGA_CROSS_STATE_TOLERANCE = 0;']] },
-  critRand0c: { label: 'controle: k aleatório por componente, bloco com crítico em 0', report: false, edits: critExactEdits({ rounding: 'ceil', scan: true, crit0: true, random: true }) },
-  // Sobre o motor de 3c3fa69 (D-010j já em js/): Savage Blow somado ao k, folga zero no bloco
-  // crítico, folga de omega em 0 e o controle de k aleatório.
-  sav40: { label: 'Savage +0,40, folga mantida', report: false, edits: currentCritEdits({ savage: 0.4 }) },
-  sav40O0: { label: 'Savage +0,40, omega cross-state em 0', report: false, edits: currentCritEdits({ savage: 0.4, omega0: true }) },
-  cur0c: { label: 'bloco com crítico em 0', report: false, edits: currentCritEdits({ crit0: true }) },
-  sav40c0: { label: 'Savage +0,40, bloco com crítico em 0', report: false, edits: currentCritEdits({ savage: 0.4, crit0: true }) },
-  sav40c0O0: { label: 'Savage +0,40, bloco com crítico em 0, omega em 0', report: false, edits: currentCritEdits({ savage: 0.4, crit0: true, omega0: true }) },
-  savVote: { label: 'Savage por nível votado na sessão (D-008b), bloco crítico e omega em 0', report: false, edits: savageVoteEdits() },
-  curRand0c: { label: 'controle: k aleatório por componente, bloco com crítico em 0', report: false, edits: currentCritEdits({ crit0: true, random: true }) },
-  psAfterMit: { label: 'perfect shot +20 entre a mitigação e o prey', probes: true, report: false,
-    edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'mit'), ...psPremitOff()] },
-  psBeforeCrit: { label: 'perfect shot +20 antes do crítico (pré-mitigação)', probes: true, report: false,
-    edits: [...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true), ...psPremitOff(),
-      ['js/unified-formulas.js', 'const oIv = invRound(ee, mod);', 'const oIv = ee - perfectShotBonus < 1 ? null : invRound(ee - perfectShotBonus, mod);'],
-      ['js/unified-formulas.js', 'lo = Math.min(lo, aIv[0]);', 'if (aIv[1] - perfectShotBonus < 0) continue; lo = Math.min(lo, Math.max(0, aIv[0] - perfectShotBonus));'],
-      ['js/unified-formulas.js', 'hi = Math.max(hi, aIv[1]);', 'hi = Math.max(hi, aIv[1] - perfectShotBonus);']] },
+  // Fila 2 do prompt 4: sem o cluster elemental no bloco sem crítico (janela no físico e
+  // folga zero sem crítico já estão no motor, D-010a/D-010j).
+  noCluNc: { label: 'sem cluster no bloco sem crítico', report: false, edits: noClusterNoCritEdits() },
+  noCluNcProbe: { label: 'sem cluster no bloco sem crítico, com sondas', probes: true, report: false, edits: noClusterNoCritEdits() },
 };
 
-// Inversão em sequência: y_i = FLOOR(y_{i-1} × f_i) na ordem dada, só FLOOR. Cada passo é
-// monótono, então a pré-imagem de um intervalo é um intervalo (aparada pela conta direta).
-function ladderEdit() { return ['js/unified-formulas.js', 'const x = opts && opts.useFloat16Mitigation === false ? mit : f16round(mit);',
-  `const __reg = opts && opts.mobModsPost && (opts.sessionDateKey == null || opts.sessionDateKey >= CUTOFF_KEY) ? 'post' : 'pre'; const __L = n => { const x = n / 100; return __reg === 'post' ? x * (3.5834597809667854 + 0.9241853565584408 * Math.log(x + 1.4)) : x * (2.3234588580865547 + 0.4840450910784542 * Math.log(x + 1.4)); }; let __n = 0, __e = 1e9; if (mit > 0) for (let n = 1; n <= 220; n++) { const d = Math.abs(__L(n) - mit * 100); if (d < __e) { __e = d; __n = n; } } const x = mit > 0 ? __L(__n) / 100 : 0;`]; }
-function psWindowEdits() { return [
-  ...sequentialPostEdits(['prey', 'cls', 'bounty', 'grav', 'stance'], true, 'floor', 'post'), ...psPremitOff(),
-  ['js/unified-formulas.js', 'const eIv = invFloor(aa, mit);', 'const eIv = rawMitigation > 0 ? [Math.ceil(aa / (1 - (rawMitigation - 0.005) / 100)), Math.ceil((aa + 1) / (1 - (rawMitigation + 0.005) / 100)) - 1] : invFloor(aa, mit);'],
-]; }
-// Janela de mitigação sobre o motor de 7d10d60 (a fila de bônus finais já está em js/).
-function mitigationWindowEdit() {
-  return ['js/unified-formulas.js', 'const eIv = invFloor(aa, mit);', 'const eIv = rawMitigation > 0 ? [Math.ceil(aa / (1 - (rawMitigation - 0.005) / 100)), Math.ceil((aa + 1) / (1 - (rawMitigation + 0.005) / 100)) - 1] : invFloor(aa, mit);'];
-}
-function critExactEdits({ rounding, scan, crit0 = false, nc0 = false, shift = 0, random = false, fixKey = true, savage = 0 }) {
-  const edits = [mitigationWindowEdit()];
-  if (fixKey) {
-    edits.push(['js/unified-validation.js', '() => physicalOriginalInterval(hit, context));',
-      "() => SessionContext.withHitScopeField(context, '_activeCritKey', critKeyForBlock(block), () => physicalOriginalInterval(hit, context)));"]);
-    edits.push(['js/unified-validation.js', '() => elementalOriginalCandidates(hit, element, context));',
-      "() => SessionContext.withHitScopeField(context, '_activeCritKey', critKeyForBlock(block), () => elementalOriginalCandidates(hit, element, context)));"]);
-  }
-  if (savage) edits.push(['js/unified-formulas.js', 'if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);', `if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);\n    if (hit.savageBlow) mult += ${savage};`]);
-  const helper = `const __CRIT_ROUNDING = ${JSON.stringify(rounding)};
-  function __critFinal(context) { return !!(context && context.critSetup && context.critSetup.source === 'bucket_two_pass'); }
-  function __critInv(y, k) {
-    const q = Math.round(k * 1e6);
-    if (__CRIT_ROUNDING === 'ceil') return [Math.floor((y - 1) * 1e6 / q) + 1, Math.floor(y * 1e6 / q)];
-    return [Math.ceil(y * 1e6 / q), Math.ceil((y + 1) * 1e6 / q) - 1];
-  }
-  function __critInvScan(y, k) {
-    const q = Math.round(k * 1e6);
-    if (__CRIT_ROUNDING === 'floor') return [Math.ceil(y * 1e6 / q), Math.ceil((y + 1) * 1e6 / q) - 1];
-    return [Math.floor((y - 1) * 1e6 / q) + 1, Math.floor(y * 1e6 / q)];
-  }
-  function __scanExactCrit(turns, context, estimates) {
-    const SC = sessionContextApi();
-    const groups = new Map();
-    for (const t of turns || []) for (const comp of (t && t.components) || []) {
-      if (!comp || comp.comp === 'unresolved') continue;
-      const key = critKeyForBlock(comp);
-      const a = comp.action || {};
-      const el = (comp.deterministic && comp.deterministic.element) || (a.profile && a.profile.element);
-      if (!key || !el || el === 'physical' || !ELEMENT_KEYS[el]) continue;
-      const words = normalizeName(a.incantation || a.words || a.text || a.spell || a.name || '');
-      if (isChainedPenanceAction(a) || isExecutionerThrowAction(a) || isTerraBurstAction(a) || /^(exevo gran vis lux|exevo vis lux|exevo max mort)$/.test(words)) continue;
-      const stages = new Map();
-      for (const h of comp.hits || []) {
-        if (!isMainHit(h) || h.overkill || h.zeroDamageDodge || h.savageBlow || !(+h.dmg > 0)) continue;
-        const sk = h.multiStageStage ? h.multiStageStage + '@' + h.multiStageCastTs : '';
-        if (!stages.has(sk)) stages.set(sk, []);
-        stages.get(sk).push(h);
-      }
-      const next = comp.gravSanActive == null ? null : Object.assign({}, context.gravSanHitOverride || {});
-      if (next) for (const h of comp.hits || []) if (h && h.id != null && gravSanHitInWindow(context, h)) next[h.id] = !!comp.gravSanActive;
-      const readRows = () => {
-        const out = [];
-        for (const hits of stages.values()) {
-          if (!hits.some(h => h.realCrit)) continue;
-          const seen = new Set(), rows = [];
-          for (const h of hits) {
-            const mods = getMobMods(h.mob, context);
-            const raw = mods && +mods[ELEMENT_KEYS[el]];
-            if (!(raw > 0)) continue;
-            const mit = +(mods.mitigation) || 0;
-            const mod = effectiveMod(raw, pierceForElement(el, h, context));
-            const iv = inverseFinalBonusIntervals(+h.dmg, h, context);
-            if (!iv.length) continue;
-            const [aLo, aHi] = iv[0];
-            const cLo = mit > 0 ? Math.ceil(aLo / (1 - (mit - 0.005) / 100)) : aLo;
-            const cHi = mit > 0 ? Math.ceil((aHi + 1) / (1 - (mit + 0.005) / 100)) - 1 : aHi;
-            const omega = omegaActiveForHit(h, context);
-            const add = h.realCrit ? (isTranscendenceActiveAt(context, transcendenceTsForHit(h)) ? TRANSCENDENCE_CRIT_BONUS : 0) + (h.onslaught ? ONSLAUGHT_DAMAGE_MULTIPLIER - 1 : 0) : 0;
-            const sig = [h.mob, h.dmg, mod, omega, add, h.realCrit, h.perfectShot, cLo, cHi].join('|');
-            if (seen.has(sig)) continue;
-            seen.add(sig);
-            rows.push({ crit: !!h.realCrit, ons: !!h.onslaught, cLo, cHi, mod, omega, add });
-          }
-          if (rows.length >= 2) out.push(rows);
-        }
-        return out;
-      };
-      const blocks = next ? SC.withHitScopeField(context, 'gravSanHitOverride', next, readRows) : readRows();
-      if (!blocks.length) continue;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(...blocks);
-    }
-    const closes = (rows, k) => {
-      let lo = -Infinity, hi = Infinity;
-      for (const r of rows) {
-        let eLo = r.cLo, eHi = r.cHi;
-        const kk = r.crit ? k + r.add : (r.ons ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1);
-        if (kk > 1) { eLo = __critInvScan(r.cLo, kk)[0]; eHi = __critInvScan(r.cHi, kk)[1]; }
-        if (eHi < eLo) return false;
-        let [oLo, oHi] = invRoundRange(eLo, eHi, r.mod);
-        if (oHi < oLo) return false;
-        if (r.omega) { [oLo, oHi] = invRoundRange(oLo, oHi, OMEGA_MULTIPLIER); if (oHi < oLo) return false; }
-        if (oLo > lo) lo = oLo;
-        if (oHi < hi) hi = oHi;
-        if (hi < lo) return false;
-      }
-      return true;
-    };
-    const found = new Map();
-    for (const [key, blocks] of groups) {
-      let best = 0, ks = [];
-      for (let g = 1300; g <= 2600; g += 5) {
-        const k = g / 1000;
-        let n = 0;
-        for (const rows of blocks) if (closes(rows, k)) n++;
-        if (n > best) { best = n; ks = [k]; } else if (n === best && n > 0) ks.push(k);
-      }
-      if (best > 0) found.set(key, { best, ks, n: blocks.length });
-    }
-    const strong = new Set();
-    for (const v of found.values()) if (v.best >= 3 && v.ks.length <= 3) for (const k of v.ks) strong.add(k);
-    const out = {};
-    for (const [key, v] of found) {
-      const est = estimates && estimates[key] > 1 ? estimates[key] : (context.critSetup && context.critSetup.fallback) || 1.6;
-      const pool = v.ks.filter(k => strong.has(k));
-      out[key] = (pool.length ? pool : v.ks).slice().sort((a, b) => Math.abs(a - est) - Math.abs(b - est))[0];
-    }
-    return { out, found };
-  }
-  function isMainHit(hit) {`;
-  edits.push(['js/unified-formulas.js', 'function isMainHit(hit) {', helper]);
-  edits.push(['js/unified-formulas.js', 'root.UnifiedFormulas = API;', 'API.__scanExactCrit = __scanExactCrit; root.UnifiedFormulas = API;']);
-  if (rounding !== 'both') {
-    edits.push(['js/unified-formulas.js', 'const preCritIntervals = inverseCriticalMultiplierIntervals(tb, crit);',
-      'const preCritIntervals = crit > 1 && __critFinal(context) ? [__critInv(tb, crit)] : inverseCriticalMultiplierIntervals(tb, crit);']);
-  }
-  if (scan) {
-    const post = random
-      ? 'for (const k of Object.keys(__exact.out)) { let s = 0; for (const c of k) s = (s * 31 + c.charCodeAt(0)) >>> 0; est.byComponent[k] = 1.5 + (s % 21) * 0.03; }'
-      : `for (const k of Object.keys(__exact.out)) est.byComponent[k] = Math.round((__exact.out[k] + ${shift}) * 1000) / 1000;`;
-    edits.push(['js/unified-classification-engine.js', 'const est = inferCritByComponent(labeledHitsFromTurns(pass1), null, context);',
-      'const est = inferCritByComponent(labeledHitsFromTurns(pass1), null, context);\n      const __raw = Object.assign({}, est.byComponent);\n      const __exact = globalThis.UnifiedFormulas.__scanExactCrit(pass1, context, __raw);\n      for (const k of Object.keys(__exact.out)) if (!est.byComponent[k]) est.byComponent[k] = __exact.out[k];']);
-    edits.push(['js/unified-classification-engine.js', 'if (est.byComponent.physical > CRIT_BOOTSTRAP_MAX) est.byComponent.physical = CRIT_BOOTSTRAP_MAX;',
-      `if (est.byComponent.physical > CRIT_BOOTSTRAP_MAX) est.byComponent.physical = CRIT_BOOTSTRAP_MAX;\n        ${post}`]);
-    // O eixo do AA (S-007) só é conhecido depois do refino: as passadas até ali seguem com a
-    // inversão e a folga de hoje; uma varredura final com o eixo do AA fixa o k, e só a
-    // passada seguinte, a última, usa a conta exata.
-    edits.push(['js/unified-classification-engine.js', "source: 'bucket_two_pass',", "source: 'bucket_scan_prelim',"]);
-    const finalPost = random
-      ? 'let s = 0; for (const c of k) s = (s * 31 + c.charCodeAt(0)) >>> 0; const __v = 1.5 + (s % 21) * 0.03;'
-      : `const __v = Math.round((__ex.out[k] + ${shift}) * 1000) / 1000;`;
-    edits.push(['js/unified-classification-engine.js', 'resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));',
-      `resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
-      if (context.critSetup && context.critSetup.source === 'bucket_scan_prelim') {
-        const __ex = globalThis.UnifiedFormulas.__scanExactCrit(resolvedTurns, context, context.critSetup.byComponent);
-        const __by = Object.assign({}, context.critSetup.byComponent);
-        for (const k of Object.keys(__ex.out)) { ${finalPost} __by[k] = __v; }
-        SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent: __by, source: 'bucket_two_pass' }) });
-        SessionContext.invalidateReversalCache(context);
-        SessionContext.beginResolutionPass(context, buildGrenadeCastAssignments(turns, facts, context));
-        resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
-      }`, 2]);
-  }
-  if (crit0 || nc0) {
-    edits.push(['js/unified-validation.js', 'function elementalBlockTolerance(block) {', 'function elementalBlockTolerance(block, context) {']);
-    edits.push(['js/unified-validation.js', 'const tolerance = elementalBlockTolerance(block);', 'const tolerance = elementalBlockTolerance(block, context);', 2]);
-    edits.push(['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;",
-      `const __hasCrit = !!(block && block.hits && block.hits.some(h => h.realCrit));\n    const __boot = !(context && context.critSetup && context.critSetup.source === 'bucket_two_pass');\n    if (__hasCrit ? (${crit0} && !__boot) : ${nc0}) return 0;\n    return (block && block.comp === 'rune' && block.action) ? 4 : 2;`]);
-  }
-  return edits;
-}
-// D-008b: nível do Savage Blow votado por sessão na varredura final de k (texto final, pronto
-// para portar), com o bloco crítico e a folga de omega em 0.
-function savageVoteEdits() {
-  return [
-    ['js/unified-formulas.js', `    if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);
-    return mult;`, `    if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);
-    // D-008b: Savage Blow soma o bônus do nível do charm, quando a sessão o conhece.
-    if (hit.savageBlow && setup.savageBonus > 0) mult += setup.savageBonus;
-    return mult;`],
-    ['js/unified-formulas.js', `      const stages = new Map();
-      for (const h of comp.hits || []) {
-        if (!isMainHit(h) || h.overkill || h.zeroDamageDodge || h.savageBlow || !(+h.dmg > 0)) continue;
-        const sk = h.multiStageStage ? h.multiStageStage + '@' + h.multiStageCastTs : '';
-        if (!stages.has(sk)) stages.set(sk, []);
-        stages.get(sk).push(h);
-      }`, `      const stages = new Map(), allStages = new Map();
-      for (const h of comp.hits || []) {
-        if (!isMainHit(h) || h.overkill || h.zeroDamageDodge || !(+h.dmg > 0)) continue;
-        const sk = h.multiStageStage ? h.multiStageStage + '@' + h.multiStageCastTs : '';
-        // D-008b: o estágio com hit crítico de Savage Blow e hit crítico sem ele vota o nível.
-        if (!allStages.has(sk)) allStages.set(sk, []);
-        allStages.get(sk).push(h);
-        if (h.savageBlow) continue;
-        if (!stages.has(sk)) stages.set(sk, []);
-        stages.get(sk).push(h);
-      }
-      const hasSavage = (comp.hits || []).some(h => h && h.savageBlow && h.realCrit);`],
-    ['js/unified-formulas.js', `      const readRows = () => {
-        const out = [];
-        for (const hits of stages.values()) {
-          if (!hits.some(h => h.realCrit)) continue;`, `      const readRows = (src, savage) => {
-        const out = [];
-        for (const hits of src.values()) {
-          if (!hits.some(h => h.realCrit)) continue;
-          if (savage && !(hits.some(h => h.realCrit && h.savageBlow) && hits.some(h => h.realCrit && !h.savageBlow))) continue;`],
-    ['js/unified-formulas.js', `            const sig = [h.mob, h.dmg, mod, omega, add, h.realCrit, h.perfectShot, cLo, cHi].join('|');
-            if (seen.has(sig)) continue;
-            seen.add(sig);
-            rows.push({ crit: !!h.realCrit, ons: !!h.onslaught, cLo, cHi, mod, omega, add });`, `            const sb = !!(h.savageBlow && h.realCrit);
-            const sig = [h.mob, h.dmg, mod, omega, add, h.realCrit, h.perfectShot, cLo, cHi, sb].join('|');
-            if (seen.has(sig)) continue;
-            seen.add(sig);
-            rows.push({ crit: !!h.realCrit, ons: !!h.onslaught, cLo, cHi, mod, omega, add, sb });`],
-    ['js/unified-formulas.js', `      const blocks = next ? SC.withHitScopeField(context, 'gravSanHitOverride', next, readRows) : readRows();
-      if (!blocks.length) continue;`, `      const read = () => ({ blocks: readRows(stages, false), savage: hasSavage ? readRows(allStages, true) : [] });
-      const got = next ? SC.withHitScopeField(context, 'gravSanHitOverride', next, read) : read();
-      if (got.savage.length) {
-        if (!savageGroups.has(key)) savageGroups.set(key, []);
-        savageGroups.get(key).push(...got.savage);
-      }
-      const blocks = got.blocks;
-      if (!blocks.length) continue;`],
-    ['js/unified-formulas.js', `    const SC = sessionContextApi();
-    const groups = new Map();
-    for (const t of turns || []) for (const comp of (t && t.components) || []) {`, `    const SC = sessionContextApi();
-    const groups = new Map(), savageGroups = new Map();
-    for (const t of turns || []) for (const comp of (t && t.components) || []) {`],
-    ['js/unified-formulas.js', `    const closes = (rows, k) => {
-      let lo = -Infinity, hi = Infinity;
-      for (const r of rows) {
-        let eLo = r.cLo, eHi = r.cHi;
-        const kk = r.crit ? k + r.add : (r.ons ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1);`, `    const closes = (rows, k, savage = 0) => {
-      let lo = -Infinity, hi = Infinity;
-      for (const r of rows) {
-        let eLo = r.cLo, eHi = r.cHi;
-        const kk = r.crit ? k + r.add + (r.sb ? savage : 0) : (r.ons ? ONSLAUGHT_DAMAGE_MULTIPLIER : 1);`],
-    ['js/unified-formulas.js', `      out[key] = (pool.length ? pool : v.ks).slice().sort((a, b) => Math.abs(a - est) - Math.abs(b - est))[0];
-    }
-    return { out, found };`, `      out[key] = (pool.length ? pool : v.ks).slice().sort((a, b) => Math.abs(a - est) - Math.abs(b - est))[0];
-    }
-    // D-008b: cada nível do Savage Blow é testado sem folga com o k do componente; vence o que
-    // fecha mais estágios, e empate ou nenhum deixa o nível desconhecido.
-    const savageVotes = new Map();
-    for (const [key, blocks] of savageGroups) {
-      const k = key in out ? Math.round(out[key] * 1000) / 1000 : (estimates && estimates[key] > 1 ? estimates[key] : null);
-      if (!k) continue;
-      for (const rows of blocks) for (const s of SAVAGE_BLOW_LEVELS) if (closes(rows, k, s)) savageVotes.set(s, (savageVotes.get(s) || 0) + 1);
-    }
-    let savageBonus = null, savageBest = 0, savageTie = false;
-    for (const [s, n] of savageVotes) {
-      if (n > savageBest) { savageBest = n; savageBonus = s; savageTie = false; } else if (n === savageBest) savageTie = true;
-    }
-    if (savageTie) savageBonus = null;
-    return { out, found, savageBonus, savageVotes: Object.fromEntries(savageVotes) };`],
-    ['js/unified-formulas.js', `  const TRANSCENDENCE_CRIT_BONUS = 0.15;`, `  const TRANSCENDENCE_CRIT_BONUS = 0.15;
-  // D-008b: bônus do Savage Blow no multiplicador crítico, por nível do charm.
-  const SAVAGE_BLOW_LEVELS = [0.20, 0.40, 0.44];`],
-    ['js/unified-classification-engine.js', `SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass' }) });`,
-      `SessionContext.replaceSetup(context, { critSetup: Object.assign({}, context.critSetup, { byComponent, source: 'bucket_two_pass', savageBonus: finalCrit.savageBonus, savageVotes: finalCrit.savageVotes }) });`, 2],
-    ['js/unified-formulas.js', 'const OMEGA_CROSS_STATE_TOLERANCE = 1;', 'const OMEGA_CROSS_STATE_TOLERANCE = 0;'],
-    ['js/unified-validation.js', 'function elementalBlockTolerance(block) {', 'function elementalBlockTolerance(block, context) {'],
-    ['js/unified-validation.js', 'const tolerance = elementalBlockTolerance(block);', 'const tolerance = elementalBlockTolerance(block, context);', 2],
-    ['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;",
-      "// D-010j: na passada final, bloco com hit crítico não tem folga entre mobs.\n    if (block && block.hits && block.hits.some(h => h.realCrit) && context && context.critSetup && context.critSetup.source === 'bucket_two_pass') return 0;\n    return (block && block.comp === 'rune' && block.action) ? 4 : 2;"],
-  ];
-}
-function currentCritEdits({ savage = 0, crit0 = false, omega0 = false, random = false }) {
-  const edits = [];
-  if (savage) edits.push(['js/unified-formulas.js', 'if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);', `if (hit.onslaught) mult += (ONSLAUGHT_DAMAGE_MULTIPLIER - 1);\n    if (hit.savageBlow) mult += ${savage};`]);
-  if (omega0) edits.push(['js/unified-formulas.js', 'const OMEGA_CROSS_STATE_TOLERANCE = 1;', 'const OMEGA_CROSS_STATE_TOLERANCE = 0;']);
-  if (crit0) {
-    edits.push(['js/unified-validation.js', 'function elementalBlockTolerance(block) {', 'function elementalBlockTolerance(block, context) {']);
-    edits.push(['js/unified-validation.js', 'const tolerance = elementalBlockTolerance(block);', 'const tolerance = elementalBlockTolerance(block, context);', 2]);
-    edits.push(['js/unified-validation.js', "return (block && block.comp === 'rune' && block.action) ? 4 : 2;",
-      "if (block && block.hits && block.hits.some(h => h.realCrit) && context && context.critSetup && context.critSetup.source === 'bucket_two_pass') return 0;\n    return (block && block.comp === 'rune' && block.action) ? 4 : 2;"]);
-  }
-  if (random) edits.push(['js/unified-classification-engine.js', 'for (const k of Object.keys(finalCrit.out)) byComponent[k] = Math.round(finalCrit.out[k] * 1000) / 1000;',
-    'for (const k of Object.keys(finalCrit.out)) { let s = 0; for (const c of k) s = (s * 31 + c.charCodeAt(0)) >>> 0; byComponent[k] = 1.5 + (s % 21) * 0.03; }', 2]);
-  return edits;
-}
-// Desliga a subtração pré-mitigação do +20 (D-010f) nos dois eixos.
-function psPremitOff() { return [
-  ['js/unified-formulas.js', 'const c = c0 - perfectShotBonus;', 'const c = c0;'],
-  ['js/unified-formulas.js', 'const prePerfect = c - perfectShotBonus;', 'const prePerfect = c;'],
-]; }
 
-// psAt: onde o +20 do perfect shot sai na inversão ('post' = antes de desfazer os bônus
-// finais, 'mit' = depois de desfazê-los, antes da mitigação); null = fora daqui.
-function sequentialPostEdits(order, exact = false, rounding = 'floor', psAt = null) {
-  const mul = exact ? `(x, q) => Math.${rounding}(x * Math.round(q * 1e6) / 1e6)` : `(x, q) => Math.${rounding}(x * q)`;
-  const helper = `const __POST_ORDER = ${JSON.stringify(order)};
-  function __postFactors(hit, context) {
-    const out = [];
-    if (!hit) return out;
-    for (const k of __POST_ORDER) {
-      let m = 1;
-      if (k === 'prey') m = hit.isPrey ? 1.25 : 1;
-      else if (k === 'bounty') {
-        const d = hit.bountyTalisman && context && context.bountyTalismanSetup && context.bountyTalismanSetup.damage;
-        m = d && d.multiplier > 1 ? d.multiplier : 1;
-      } else if (k === 'grav') m = gravSanMultiplierAtTs(context, hit.ts, hit);
-      else if (k === 'stance') m = knightStanceMultiplierAtTs(context, hit.ts);
-      else if (k === 'cls') m = bestiaryClassMultiplierForHit(hit, context);
-      if (m !== 1) out.push(m);
-    }
-    return out;
-  }
-  const __mul = ${mul};
-  function __postSig(hit, context) { return __postFactors(hit, context).join('*'); }
-  function inversePostMultiplierIntervals(displayDamage, post, hit, context) {
-    if (hit !== undefined) {
-      const factors = __postFactors(hit, context);
-      const __ps = hit && hit.perfectShot ? PERFECT_SHOT_PREMIT_BONUS : 0;
-      let lo = displayDamage, hi = displayDamage;
-      ${psAt === 'post' ? 'lo -= __ps; hi -= __ps; if (hi < 1) return [];' : ''}
-      for (let i = factors.length - 1; i >= 0; i--) {
-        const q = factors[i];
-        let a = Math.max(0, Math.floor(lo / q) - 2), b = Math.ceil((hi + 1) / q) + 2;
-        while (a <= b && __mul(a, q) < lo) a++;
-        while (b >= a && __mul(b, q) > hi) b--;
-        if (a > b) return [];
-        lo = a; hi = b;
-      }
-      ${psAt === 'mit' ? 'lo -= __ps; hi -= __ps; if (hi < 1) return [];' : ''}
-      return [[lo, hi]];
-    }`;
+function leechFitExactEdits() {
+  const V = 'js/unified-validation.js';
   return [
-    ['js/unified-formulas.js', 'function inversePostMultiplierIntervals(displayDamage, post) {', helper],
-    ['js/unified-formulas.js', 'inversePostMultiplierIntervals(+hit.dmg, post);', 'inversePostMultiplierIntervals(+hit.dmg, post, hit, context);', 2],
-    ['js/unified-formulas.js', "'|' + post + '|' + crit", "'|' + post + '|' + __postSig(hit, context) + '|' + crit", 2],
+    [V, 'ok: expected != null && Math.abs(expected - life) <= leechValueToleranceForN(n) };', 'ok: expected != null && expected === life };'],
+    [V, 'ok: expected != null && Math.abs(expected - mana) <= leechValueToleranceForN(n) };', 'ok: expected != null && expected === mana };'],
+    [V, '  // com N, somando a tolerancia de leech e todas as taxas oficiais candidatas do hit.\n', '  // com N, pela conta exata (sem folga) e todas as taxas oficiais candidatas do hit.\n'],
+    [V, 'const tolerance = leechValueToleranceForN(n, observed);\n    let low = Infinity;', 'const tolerance = 0;\n    let low = Infinity;'],
+    [V, 'if (expected != null && Math.abs(expected - observed) <= tolerance) matches.push(', 'if (expected != null && expected === observed) matches.push('],
+    [V, '      if (observed < minExpected - tolerance) {', '      if (observed < minExpected) {'],
+    [V, "      } else {\n        out.reason = channel + '_between_discrete_rate_candidates';\n      }",
+      "      } else {\n        // C-006a: sem encaixe exato e dentro da folga, o leech não confirma o N nem o contradiz.\n        out.cappedLow = true;\n        out.reason = channel + '_within_tolerance_neutral';\n      }"],
   ];
 }
+
+
+function noClusterNoCritEdits() {
+  return [['js/unified-validation.js', '    if (sets.length && concreteAction) {\n      const cluster = minimalCandidateCluster(sets);',
+    '    if (sets.length && concreteAction && block.hits.some(h => h.realCrit)) {\n      const cluster = minimalCandidateCluster(sets);']];
+}
+
 
 // --- sondas (só na baseline): gravam, não decidem ---------------------------------------
 const PROBES = [
@@ -498,18 +125,8 @@ const PROBES = [
 ];
 
 // Comparações de sessão (charm e Combat Mastery) viram chamada que devolve o MESMO booleano.
+// Vazia desde 09/Nov/2026: charm e Combat Mastery passaram a conta exata (M-036/M-042).
 const ENGINE_COMPARISONS = [
-  // charm: |a - b| <= max(2, c * RATIO) — a folga só compra o que passa de 2.
-  [/Math\.abs\(([^()]+?) - ([^()]+?)\) <=\s*Math\.max\(2, ([^()]+?) \* CHARM_EXPECTED_TOLERANCE_RATIO\)/g,
-    (m, a, b, c) => `globalThis.__auditCmp('charm', ${a}, ${b}, Math.max(2, ${c} * CHARM_EXPECTED_TOLERANCE_RATIO), 2)`, 5],
-  [/Math\.abs\(L\.value - expected\) <= anchorTolerance/g,
-    () => "globalThis.__auditCmp('charm', L.value, expected, anchorTolerance, 2)", 1],
-  [/Math\.abs\(L\.value - wanted\) <= omegaTolerance/g,
-    () => "globalThis.__auditCmp('charm', L.value, wanted, omegaTolerance, 2)", 1],
-  [/Math\.abs\(([^()]+?) - ([^()]+?(?:\([^()]*\))?)\) <= COMBAT_MASTERY_LEVEL_TOLERANCE/g,
-    (m, a, b) => `globalThis.__auditCmp('combatMastery', ${a}, ${b}, COMBAT_MASTERY_LEVEL_TOLERANCE, 0)`, 2],
-  [/([A-Za-z.()*+ 1]+?) <= r\.minLevel \+ COMBAT_MASTERY_LEVEL_TOLERANCE/g,
-    (m, a) => `globalThis.__auditLe('combatMastery', ${a.trim()}, r.minLevel, COMBAT_MASTERY_LEVEL_TOLERANCE)`, 3],
 ];
 
 function replaceOnce(text, find, repl, where, expected = 1) {
@@ -1018,6 +635,15 @@ if (argv[0] === '--child') {
   // Grava o motor da variante (sem sondas) numa pasta, para diagnosticar um turno com ele.
   const sources = engineSources(argv[1]);
   for (const [file, text] of sources) { const out = path.join(argv[2], file); fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, text); }
+} else if (argv[0] === '--check-variants') {
+  // Aplica as edições (e sondas) de cada variante no js atual, sem medir; lista as que não casam.
+  const broken = [];
+  for (const name of Object.keys(VARIANTS)) {
+    try { engineSources(name); } catch (e) { broken.push([name, e.message]); }
+  }
+  for (const [name, msg] of broken) console.log(`NÃO CASA ${name}: ${msg}`);
+  console.log(`variantes: ${Object.keys(VARIANTS).length}, casam ${Object.keys(VARIANTS).length - broken.length}, não casam ${broken.length}`);
+  process.exitCode = broken.length ? 1 : 0;
 } else {
   if (!argv.includes('--report-only')) await runAll();
   if (!argv.includes('--no-report')) report();

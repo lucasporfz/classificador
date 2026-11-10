@@ -62,16 +62,23 @@
   function areaFactor(n) { return n >= 1 ? 0.1 + 0.9 / n : 1; }
   function realDamageIntervalFromLeech(observed, effLeech, n) {
     if (!(observed > 0) || !(effLeech > 0) || !(n >= 1)) return null;
-    const lf = effLeech * areaFactor(n);
-    const min = Math.floor((observed - 1) / lf) + 1;
-    const max = Math.floor(observed / lf);
+    // D-025: inverte os dois CEIL de D-023 um de cada vez. Primeiro o leech cheio inteiro Y
+    // com CEIL(Y × F) = observado; depois o dano com CEIL(dano × taxa) em [Y_min, Y_max].
+    const f = areaFactor(n);
+    const yMin = Math.floor((observed - 1) / f + 1e-9) + 1;
+    const yMax = Math.floor(observed / f + 1e-9);
+    if (yMax < yMin) return null;
+    const min = Math.floor((yMin - 1) / effLeech + 1e-9) + 1;
+    const max = Math.floor(yMax / effLeech + 1e-9);
     return max >= min ? [min, max] : null;
   }
   function expectedLeech(damage, effLeech, n) {
     if (!(damage > 0) || !(effLeech > 0)) return null;
-    return Math.ceil(damage * effLeech * areaFactor(n));
+    // D-023: dois CEIL, o do leech cheio do hit e o da diluição pela área. O 1e-9 tira o
+    // resíduo de ponto flutuante de produtos exatos (1200 × 0,16 = 192,00000000000003).
+    return Math.ceil(Math.ceil(damage * effLeech - 1e-9) * areaFactor(n) - 1e-9);
   }
-  function leechDamageBasis(hit, context, preserveUnknownBounty) {
+  function leechDamageBasis(hit, context, preserveUnknownBounty, combatMasteryFactor) {
     // Leech é calculado sobre o dano real antes de multiplicadores finais que
     // aumentam dano exibido sem aumentar leech: active prey/Bounty, utevo grav san, postura
     // Protector e bonus de classe de bestiario.
@@ -97,6 +104,9 @@
     // `ingol ed`: vida/dano dos mobs Bird 0,9532 contra os outros, 1/1,05 = 0,9524). Em
     // `radiant` (Human +3%, todo mob da classe) a mana so fecha exata no N do bloco com ele fora.
     divisor *= bestiaryClassMultiplierForHit(hit, context);
+    // M-042c: Combat Mastery infla o dano exibido e nao o leech; o degrau do hit nao aparece
+    // no log, entao quem chama testa cada fator `1 + s·n` da escada de M-042.
+    if (combatMasteryFactor > 1) divisor *= combatMasteryFactor;
     // M-039: omega NAO entra neste divisor, DE PROPOSITO. O que sai daqui e so
     // multiplicador que infla o dano exibido SEM inflar o leech (prey, Bounty, grav san --
     // ver D-030 --, Protector e classe de bestiario). Omega e o contrario: medido em `crypt` sobre pares a x1,060, a razao de
@@ -107,7 +117,9 @@
     // 77 dividindo, 82 sem dividir), com os vizinhos sem omega batendo exato dos dois
     // jeitos. O vies sobrevivia encostado na tolerancia de D-024 (a mana salvava o hit
     // pelo "e/ou"), entao aparecia como dano base enviesado e nao como turno quebrado.
-    return divisor > 0 ? dmg / divisor : dmg;
+    // D-023: a base é inteira; com multiplicador fora do leech, CEIL(dano / produto).
+    if (!(divisor > 0) || divisor === 1) return dmg;
+    return Math.ceil(dmg / divisor - 1e-9);
   }
 
   function inferLeechSetup(input, context) {
@@ -712,6 +724,13 @@
     // Empate exato entre as duas hipóteses de perk mantém a neutra (sem perk).
     rows.sort((a, b) => compareGoldBaseScores(a, b)
       || (Number(!!a.exposeWeaknessManaPerk) - Number(!!b.exposeWeaknessManaPerk)));
+    // C-006 (ordem do voto): a ordem acima dá a vencedora provisória; a final é a de mais
+    // exatos entre as que não têm mais contradições que ela. A ordenação é estável, então
+    // empate em exatos mantém a ordem provisória (inclusive o desempate do perk de EW).
+    if (rows.length) {
+      const provisionalHigh = rows[0].high;
+      rows.sort((a, b) => (Number(a.high > provisionalHigh) - Number(b.high > provisionalHigh)) || (b.exact - a.exact));
+    }
     const best = rows[0] || null;
     if (!best || best.ok < GOLD_CHANNEL_MIN_OK) {
       // C-006b: ABSTENÇÃO, não taxa zero. Abaixo do piso de evidência o canal não tem
@@ -1757,7 +1776,7 @@
             const expected = expectedLeech(dmgBasis, rate, n);
             if (expected == null) continue;
             const delta = Math.abs(expected - observed);
-            if (delta <= 1 && (!best || delta < best.delta || (delta === best.delta && n < best.n))) {
+            if (delta === 0 && (!best || delta < best.delta || (delta === best.delta && n < best.n))) {
               best = { n, bonus: +bonus || 0, rate, expected, observed, delta, mob: normalizeName(h.mob), ts: h.ts, dmg: h.dmg, dmgBasis };
             }
           }
@@ -2045,7 +2064,10 @@
       return { probeBlockCount: probeBlocks.length, candidates: [], source: 'insufficient_holy_cross_mob_probe_blocks' };
     }
     const candidates = [0, 0.04].map(p => scoreBmPierceCandidate(probeBlocks, context, p));
-    return { probeBlockCount: probeBlocks.length, candidates };
+    context.__bmExactProbe = true;
+    let exact;
+    try { exact = [0, 0.04].map(p => scoreBmPierceCandidate(probeBlocks, context, p)); } finally { context.__bmExactProbe = false; }
+    return { probeBlockCount: probeBlocks.length, candidates, exact };
   }
 
   function emptyBmPierceScore(pierce) {
@@ -2072,6 +2094,15 @@
     const holy = collectHolyBmProbeData(baseResult, context, altResult);
     const physical = collectPhysicalBmProbeData(baseResult, context, altResult);
     const holyOk = holy.candidates.length === 2;
+    if (holyOk && holy.exact) {
+      const [e0, e4] = holy.exact;
+      const exactSummary = { base: { exactBlocks: e0.exactBlocks, failedBlocks: e0.failedBlocks }, bm: { exactBlocks: e4.exactBlocks, failedBlocks: e4.failedBlocks } };
+      const bmWins = e4.exactBlocks >= e0.exactBlocks + 2 && e4.failedBlocks <= e0.failedBlocks;
+      const baseWins = e0.exactBlocks >= e4.exactBlocks + 2 && e0.failedBlocks <= e4.failedBlocks;
+      if (bmWins || baseWins) {
+        return { pierce: bmWins ? 0.04 : 0, active: bmWins, source: 'decided_by_exact_holy_cross_mob_blocks', holyProbe: holy, holyExact: exactSummary };
+      }
+    }
     const physicalOk = physical.candidates.length === 2;
     if (!holyOk && !physicalOk) {
       return { pierce: 0, active: false, source: 'insufficient_cross_mob_probe_blocks', holyProbe: holy, physicalProbe: physical, candidates: [] };

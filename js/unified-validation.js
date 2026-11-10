@@ -722,8 +722,10 @@
   // dentro do mesmo (mob, estado) a comparacao e exata (S-004a). Runa com `Using` explicito
   // ganha um pouco mais de folga porque a linha de execucao e sinal primario (M-017/M-018a).
   function elementalBlockTolerance(block, context) {
+    if (context && context.__bmExactProbe) return 0;
     // D-010j: na passada final, bloco com hit crítico não tem folga entre mobs.
     if (block && block.hits && block.hits.some(h => h.realCrit) && context && context.critSetup && context.critSetup.source === 'bucket_two_pass') return 0;
+    if (block && block.hits && !block.hits.some(h => h.realCrit)) return 0;
     return (block && block.comp === 'rune' && block.action) ? 4 : 2;
   }
 
@@ -3489,6 +3491,42 @@
     return !!(declared && declared.n === n);
   }
 
+  // M-042c: com escada de Combat Mastery (M-042), o degrau do hit nao aparece no log. Devolve
+  // o passo e o maior degrau da escada, ou null sem escada.
+  function combatMasteryLeechSteps(context) {
+    const ladder = context && context.combatMasteryLadder;
+    if (!ladder || !ladder.active || !(ladder.step > 0) || !(ladder.ceiling > 1)) return null;
+    return { step: ladder.step, max: Math.round((ladder.ceiling - 1) / ladder.step) };
+  }
+
+  // M-042c: degraus de Combat Mastery que fecham o leech EXATO do hit (D-023) com o N do
+  // componente final, com o mesmo degrau em todos os canais utilizaveis. Canal sem nenhum
+  // degrau exato (vida/mana cheia) nao vota. null = sem escada ou sem leech utilizavel. O
+  // dano base (A-006) divide pela media dos fatores `1 + s·n` dos degraus que fecham.
+  function combatMasteryStepsForHit(hit, setup, n, block, context) {
+    const cm = combatMasteryLeechSteps(context);
+    if (!cm || !hit || !isMainHit(hit) || hit.overkill || !(hit.dmg > 0) || !(n >= 1)) return null;
+    if (bountyDamageBasisUnknown(hit, context)) return null;
+    let common = null;
+    for (const channel of ['life', 'mana']) {
+      const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
+      if (!(observed > 0)) continue;
+      if (channel === 'life' && bountyLifeLevelUnknown(hit, setup)) continue;
+      const rates = leechEffectiveRateCandidates(setup, channel, block, hit, context);
+      const steps = new Set();
+      for (let k = 0; k <= cm.max; k++) {
+        const basis = leechDamageBasis(hit, context, false, 1 + cm.step * k);
+        if (rates.some(cand => expectedLeech(basis, cand.rate, n) === observed)) steps.add(k);
+      }
+      if (!steps.size) continue;
+      common = common ? new Set([...common].filter(k => steps.has(k))) : steps;
+    }
+    if (!common || !common.size) return null;
+    const steps = [...common].sort((a, b) => a - b);
+    const factor = steps.reduce((s, k) => s + (1 + cm.step * k), 0) / steps.length;
+    return { steps, step: cm.step, factor };
+  }
+
   function observedLeechAcceptsN(hit, setup, n, channel, block, context) {
     if (!hit || !isMainHit(hit) || !(n >= 1)) return { usable: false, ok: true, reason: 'not_main_or_invalid_n' };
     const observed = channel === 'mana' ? (+hit.manaLeech || 0) : (+hit.lifeLeech || 0);
@@ -3514,6 +3552,17 @@
         const tolerance = leechValueToleranceForN(n, expected);
         if (expected != null) expectations.push(Object.assign({}, cand, { expected, observed, delta: observed - expected, tolerance }));
         if (expected != null && Math.abs(expected - observed) <= tolerance) matches.push(Object.assign({}, cand, { expected, observed, delta: observed - expected, tolerance }));
+      }
+    }
+
+    // M-042c: sem encaixe no degrau 0, os degraus n >= 1 da escada de Combat Mastery so encaixam exatos.
+    const cmSteps = !matches.length && !hit.overkill && hit.dmg > 0 ? combatMasteryLeechSteps(context) : null;
+    if (cmSteps) {
+      for (const cand of rates) {
+        for (let k = 1; k <= cmSteps.max; k++) {
+          const expected = expectedLeech(leechDamageBasis(hit, context, false, 1 + cmSteps.step * k), cand.rate, n);
+          if (expected === observed) matches.push(Object.assign({}, cand, { expected, observed, delta: 0, tolerance: 0, combatMasteryStep: k }));
+        }
       }
     }
 
@@ -3591,6 +3640,13 @@
     const cappedLowChannels = checks.filter(c => !c.ok && c.cappedLow);
     const contradictoryChannels = checks.filter(c => !c.ok && !c.cappedLow);
     const failedChannels = checks.filter(c => !c.ok);
+    // M-042c: dois canais que so encaixam por degrau de Combat Mastery precisam de um degrau comum.
+    if (okChannels.length > 1 && okChannels.every(c => c.matches && c.matches.length && c.matches.every(m => m.combatMasteryStep))) {
+      const [first, ...rest] = okChannels.map(c => new Set(c.matches.map(m => m.combatMasteryStep)));
+      if (![...first].some(k => rest.every(s => s.has(k)))) {
+        return { usable: true, ok: false, n, checks, okChannels: [], cappedLowChannels, contradictoryChannels: okChannels, failedChannels: checks, reason: 'combat_mastery_step_disagreement' };
+      }
+    }
     if (okChannels.length) {
       return {
         usable: true,
@@ -3944,6 +4000,7 @@
     leechDeclaresN,
     observedLeechAcceptsN,
     hitAcceptsLeechNAnyOfficialRate,
+    combatMasteryStepsForHit,
     hasSparseLeechConfirmationWithoutContradiction,
     shouldOverrideSparseLeechForConcreteDeterministicSpell,
     leechConsensusVerdictFromFits,

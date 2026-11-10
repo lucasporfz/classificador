@@ -139,7 +139,6 @@
     COMBAT_MASTERY_STEPS,
     COMBAT_MASTERY_MAX_STEPS,
     COMBAT_MASTERY_MIN_LEVELS,
-    COMBAT_MASTERY_LEVEL_TOLERANCE,
     combatMasteryCeiling,
     spellHitsCloseAcrossMobs,
   } = root.UnifiedFormulas;
@@ -278,6 +277,7 @@
     actionLabel,
     isBeamAction,
     elementalBlockTolerance,
+    combatMasteryStepsForHit,
   } = root.UnifiedValidation;
 
   // C2: os tres records com lifetime declarado (SessionSetup/ResolutionState/HitScope).
@@ -991,8 +991,7 @@
       matchCandidate: (row, candidate) => {
         const expected = row.controlDamage * candidate.multiplier;
         const delta = Math.abs(row.affectedDamage - expected);
-        const tolerance = Math.max(2, row.controlDamage * 0.0125);
-        const ok = delta <= tolerance;
+        const ok = row.affectedDamage === Math.floor(expected + 1e-9);
         return { ok, error: ok ? delta : 0, expected };
       },
     });
@@ -1329,9 +1328,35 @@
   // hipoteses de pierce (indeterminada); removendo-o, os indeterminados vao a zero.
   // (O mapeamento em CHARM_ELEMENT_MAP e usado por M-036 e fica para investigacao
   // propria -- este detector nao o altera, so nao usa overpower.)
+  // M-036 (conta exata do charm): A = FLOOR(ROUND(ROUND(hp × 0,05) × m) × M), depois FLOOR de cada
+  // multiplicador final; inFloorProductInterval testa v em [FLOOR(a × q); (a + 1) × q) (M-039/M-042).
+  function inFloorProductInterval(v, a, q) { return v >= Math.floor(a * q + 1e-9) && v < (a + 1) * q; }
+  function snapBestiaryClassMultiplier(x) { let best = 1; for (const b of [0, ...BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES]) if (Math.abs(1 + b - x) < Math.abs(best - x)) best = 1 + b; return best; }
+  function exactCharmDamageCandidates(mob, element, ew, amp, stance, context, extraPierce, classMult, pierceCtx, omega) {
+    const mods = getMobMods(mob, context);
+    if (!mods || !(mods.hitpoints > 0)) return [];
+    const key = ELEMENT_KEYS[element];
+    if (!key || !(mods[key] > 0)) return [];
+    const m = effectiveMod(+mods[key], pierceForElement(element, { exposeWeakness: ew, elementalAmplification: amp }, pierceCtx) + (extraPierce || 0));
+    let O = Math.round(mods.hitpoints * 0.05);
+    if (omega) O = Math.floor((O * 106 + 50) / 100);
+    const e = Math.floor((O * Math.round(m * 100) + 50) / 100);
+    const M = mitigationMultiplier(mods, context);
+    const lo = Math.floor(e * M + 1e-9);
+    const hi = lo;
+    const s = knightStanceMultiplierForStance(stance);
+    const out = [];
+    for (let a = lo; a <= hi; a++) {
+      let x = a;
+      if (classMult !== 1) x = Math.floor(x * classMult + 1e-9);
+      if (s !== 1) x = Math.floor(x * s + 1e-9);
+      out.push(x);
+    }
+    if (s !== 1) out.push(Math.floor(O * m * M * classMult * s + 1e-9));
+    return out;
+  }
   const BM_WITNESS_CHARMS = new Set(['wound', 'divine_wrath']);
   const BM_PIERCE_HYPOTHESIS = 0.04;
-  const CHARM_EXPECTED_TOLERANCE_RATIO = 0.0125; // mesma tolerancia de M-036
   const CHARM_WITNESS_MIN_PROCS = 3;             // mesmo piso de repeticao de M-036
 
   // Infere o pierce de BM SO pelo dano de charm, a partir de fatos de parsing -- sem
@@ -1409,7 +1434,7 @@
       if (!(expectedNoBm > 0)) continue;
       const levels = charmWitnessLevels(r.values);
       rows.push({
-        mob: r.mob, charm: r.sig, element: r.element, ew: r.ew, stance: r.stance, n: r.values.length,
+        mob: r.mob, charm: r.sig, element: r.element, ew: r.ew, amp: r.amp, stance: r.stance, n: r.values.length,
         cls: normalizeName(mods.bestiaryClass || ''), observed: median(r.values),
         expectedNoBm, expectedBm, bmSensitive: r.bmSensitive,
         levels, minLevel: levels.length ? levels[0] : null,
@@ -1443,7 +1468,7 @@
         witnesses.push(Object.assign({}, r, { vote: null, reason: 'class_without_bm_immune_witness' }));
         continue;
       }
-      const classMult = ladderActive ? Math.min(...immune) : median(immune);
+      const classMult = ladderActive ? Math.min(...immune) : snapBestiaryClassMultiplier(median(immune));
       const eNo = r.expectedNoBm * classMult, eBm = r.expectedBm * classMult;
       // M-042: sob escada, cada hipotese e testada como LIMITE contra o menor nivel; fora
       // dela, como igualdade contra a mediana. Linha sem nivel de >=3 procs nao vota.
@@ -1453,11 +1478,11 @@
           witnesses.push(Object.assign({}, r, { vote: null, reason: 'no_level_above_proc_floor', classMult }));
           continue;
         }
-        fitsNo = eNo <= r.minLevel + COMBAT_MASTERY_LEVEL_TOLERANCE;
-        fitsBm = eBm <= r.minLevel + COMBAT_MASTERY_LEVEL_TOLERANCE;
+        fitsNo = Math.floor(eNo + 1e-9) <= r.minLevel;
+        fitsBm = Math.floor(eBm + 1e-9) <= r.minLevel;
       } else {
-        fitsNo = Math.abs(r.observed - eNo) <= Math.max(2, eNo * CHARM_EXPECTED_TOLERANCE_RATIO);
-        fitsBm = Math.abs(r.observed - eBm) <= Math.max(2, eBm * CHARM_EXPECTED_TOLERANCE_RATIO);
+        fitsNo = exactCharmDamageCandidates(r.mob, r.element, r.ew, r.amp, r.stance, context, 0, classMult, null).includes(r.observed);
+        fitsBm = exactCharmDamageCandidates(r.mob, r.element, r.ew, r.amp, r.stance, context, BM_PIERCE_HYPOTHESIS, classMult, null).includes(r.observed);
       }
       let vote = null, reason = 'fits_neither_hypothesis';
       if (fitsNo && !fitsBm) { vote = 0; votesNoBm++; reason = 'fits_no_bm_only'; }
@@ -1794,7 +1819,7 @@
         if (value / base > ceiling) return false;
         const n = Math.round((value / base - 1) / step);
         if (n < 0 || n > COMBAT_MASTERY_MAX_STEPS) return false;
-        return Math.abs(value - base * (1 + step * n)) <= COMBAT_MASTERY_LEVEL_TOLERANCE;
+        return value >= Math.floor(base * (1 + step * n) + 1e-9) && value < (base + 1) * (1 + step * n);
       });
       if (onGrid.length < COMBAT_MASTERY_MIN_LEVELS) continue;
       if (!best || onGrid.length > best.onGrid.length) best = { step, ceiling, base, onGrid };
@@ -1906,8 +1931,7 @@
         const stanceMultiplier = knightStanceMultiplierForStance(r.stance);
         expected = mods.hitpoints * 0.05 * mit * effectiveMod(+mods[key], pierce) * classMultiplier * stanceMultiplier;
         if (!(expected > 0)) continue;
-        const anchorTolerance = Math.max(2, expected * CHARM_EXPECTED_TOLERANCE_RATIO);
-        anchor = levels.find(L => Math.abs(L.value - expected) <= anchorTolerance) || null;
+        anchor = levels.find(L => exactCharmDamageCandidates(r.mob, r.element, r.ew, r.amp, r.stance, context, 0, classMultiplier, context).includes(L.value)) || null;
       }
       const row = {
         mob: r.mob, charm: r.charm, element: r.element, ew: r.ew, amp: r.amp, stance: r.stance,
@@ -1928,15 +1952,14 @@
             if (ratio <= ladder.ceiling) return false;
             for (let n = 0; n <= COMBAT_MASTERY_MAX_STEPS; n++) {
               const wanted = anchor.value * (1 + ladder.step * n) * OMEGA_MULTIPLIER;
-              if (Math.abs(L.value - wanted) <= COMBAT_MASTERY_LEVEL_TOLERANCE) return true;
+              if (L.value >= Math.floor(wanted + 1e-9) && L.value < (anchor.value + 1) * (1 + ladder.step * n) * OMEGA_MULTIPLIER) return true;
             }
             return false;
           });
           if (omega) { row.omegaLevel = omega.value; row.ratio = omega.value / anchor.value; }
         } else {
           const wanted = anchor.value * OMEGA_MULTIPLIER;
-          const omegaTolerance = Math.max(2, wanted * CHARM_EXPECTED_TOLERANCE_RATIO);
-          const omega = levels.find(L => L.value !== anchor.value && Math.abs(L.value - wanted) <= omegaTolerance);
+          const omega = levels.find(L => L.value !== anchor.value && (r.ratio ? inFloorProductInterval(L.value, anchor.value, OMEGA_MULTIPLIER) : exactCharmDamageCandidates(r.mob, r.element, r.ew, r.amp, r.stance, context, 0, bestiaryClassMultiplierForHit({ mob: r.mob }, context), context, true).includes(L.value)));
           if (omega) { row.omegaLevel = omega.value; row.ratio = omega.value / anchor.value; }
         }
       }
@@ -2058,16 +2081,13 @@
         // M-036/M-039: a midpoint between observed base and Omega is not a
         // uniform reward. Reuse the anchored, repeated levels of the witness.
         const anchor = levels.find(level =>
-          Math.abs(level - expected) <= Math.max(2, expected * CHARM_EXPECTED_TOLERANCE_RATIO));
-        if (anchor != null && levels.some(level => level !== anchor &&
-          Math.abs(level - anchor * OMEGA_MULTIPLIER) <=
-            Math.max(2, anchor * OMEGA_MULTIPLIER * CHARM_EXPECTED_TOLERANCE_RATIO))) {
+          exactCharmDamageCandidates(mob, element, ew, amp, stance, context, 0, 1, context).includes(level));
+        if (anchor != null && levels.some(level => level !== anchor && inFloorProductInterval(level, anchor, OMEGA_MULTIPLIER))) {
           observed = anchor;
         }
         // D-006: three samples spread across states do not establish a third,
         // unobserved level. Apply the existing repetition floor to the witness.
-        if (values.filter(value => Math.abs(value - observed) <=
-          Math.max(2, expected * CHARM_EXPECTED_TOLERANCE_RATIO)).length < 3) continue;
+        if (values.filter(value => value === observed).length < 3) continue;
       }
       rows.push({ mob, element, ew, amp, stance, class: normalizeName(mods.bestiaryClass), observed, expected, ratio: observed / expected, n: values.length, levels, minLevel: levels.length ? levels[0] : null });
     }
@@ -2094,7 +2114,7 @@
         if (!voting.length) { perClass.push({ class: cls, verdict: 'no_voting_row', surviving: [] }); continue; }
         let surviving = BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES.slice();
         for (const r of voting) {
-          surviving = surviving.filter(b => (r.expected * (1 + b)) <= r.minLevel + COMBAT_MASTERY_LEVEL_TOLERANCE);
+          surviving = surviving.filter(b => Math.floor(r.expected * (1 + b) + 1e-9) <= r.minLevel);
         }
         perClass.push({
           class: cls,
@@ -2148,8 +2168,7 @@
         for (const cand of scores) {
           const expected = r.expected * cand.multiplier;
           const delta = Math.abs(r.observed - expected);
-          const tolerance = Math.max(2, expected * 0.0125);
-          if (delta <= tolerance) { cand.votes++; cand.error += delta; }
+          if (exactCharmDamageCandidates(r.mob, r.element, r.ew, r.amp, r.stance, context, 0, cand.multiplier, context).includes(r.observed)) { cand.votes++; cand.error += delta; }
         }
       }
       scores.sort((a, b) => b.votes - a.votes || a.error - b.error);
@@ -2817,6 +2836,8 @@
         resolvedTurns = resolveWithExecutionerTier(turns.map(t => resolveTurn(t, facts, context)));
       }
     }
+    // M-042c: degrau de Combat Mastery de cada hit, lido do leech com o N do componente final.
+    annotateCombatMasterySteps(resolvedTurns, context);
     const result = {
       version: VERSION,
       status: resolvedTurns.some(t => t.status === 'unresolved' && !t.partialEdgeMissingEvidence) ? 'partial' : 'resolved',
@@ -2873,6 +2894,28 @@
     result.sorcererStanceSetup = sealSorcererStanceConversions(context.sorcererStanceSetup, resolvedTurns, context);
     Object.defineProperty(result, '_context', { value: context, enumerable: false, configurable: true });
     return result;
+  }
+
+  // M-042c: marca em cada hit de turno resolvido os degraus de Combat Mastery que fecham o
+  // leech exato com o N do componente final (`hit.combatMasteryStep`); o dano base (A-006)
+  // divide pelo fator. Limpa marcas de uma classificacao anterior dos mesmos hits (o atalho de
+  // BM reclassifica os mesmos fatos).
+  function annotateCombatMasterySteps(turns, context) {
+    for (const turn of turns || []) for (const c of (turn && turn.components) || []) for (const h of c.hits || []) delete h.combatMasteryStep;
+    const ladder = context && context.combatMasteryLadder;
+    if (!ladder || !ladder.active) return;
+    for (const turn of turns || []) {
+      if (!turn || turn.status !== 'resolved') continue;
+      for (const c of turn.components || []) {
+        const fits = (c.leech && c.leech.fits) || [];
+        const n = fits.length && fits[0].fit ? fits[0].fit.n : null;
+        if (!n) continue;
+        for (const h of c.hits || []) {
+          const cm = combatMasteryStepsForHit(h, context.leechSetup, n, c, context);
+          if (cm) h.combatMasteryStep = cm;
+        }
+      }
+    }
   }
 
   function classifyUnified(serverLogText, localChatText, options) {

@@ -49,6 +49,15 @@ function readField(serialized, field) {
   return m[2] ? { value: m[1] } : { cut: true };
 }
 
+// Objeto (ex.: critSetup.byComponent) compara por valor: a ordem das chaves não decide nada.
+function sortedKeys(value) {
+  if (value == null || value[0] !== '{') return value;
+  try {
+    const obj = JSON.parse(value);
+    return JSON.stringify(Object.fromEntries(Object.keys(obj).sort().map(k => [k, obj[k]])));
+  } catch { return value; }
+}
+
 export function compareSetupKey(key, before, after) {
   const fields = SETUP_FIELDS[key];
   if (!fields) return { changes: before === after ? [] : [`${before} -> ${after}`], cut: [] };
@@ -58,7 +67,7 @@ export function compareSetupKey(key, before, after) {
     const a = readField(before, field);
     const b = readField(after, field);
     if (a.cut || b.cut) { cut.push(field); continue; }
-    if (a.value !== b.value) changes.push(`${field} ${a.value ?? '—'} -> ${b.value ?? '—'}`);
+    if (sortedKeys(a.value) !== sortedKeys(b.value)) changes.push(`${field} ${a.value ?? '—'} -> ${b.value ?? '—'}`);
   }
   return { changes, cut };
 }
