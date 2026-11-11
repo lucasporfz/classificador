@@ -193,7 +193,11 @@ const repeat = (n, f) => Array.from({ length: n }, (_, i) => f(i));
   const c = synthCtx();
   c.combatMasteryLadder = engine.inferCombatMasteryLadder({ events: evs }, c);
   const r = engine.inferOmegaPerk({ events: evs }, c);
-  check('sintetico: nivel acima do teto na grade estendida CONFIRMA omega', !!(r && r.active));
+  // M-039d (11/Nov/2026, aprovado pelo usuario): com o omega natural da arma em {2,5; 4; 6; 6,5; 9}%,
+  // o nivel acima do teto fecha em mais de um valor natural (degrau 6 x 6%, degrau 8 x 4%, ...).
+  // Sob escada de 1% a grade nao separa os valores, entao o motor abstem com o valor ambiguo.
+  check('sintetico: nivel acima do teto na grade estendida e achado, mas o valor fica ambiguo',
+    !!(r && !r.active && r.source === 'omega_value_ambiguous' && r.candidates.includes(0.06) && r.candidates.length > 1));
 }
 
 // 6) Nivel fora das duas grades (a forma do 1098 de `crypt`) nao confirma nada.
@@ -236,7 +240,10 @@ const repeat = (n, f) => Array.from({ length: n }, (_, i) => f(i));
   ];
   c.combatMasteryLadder = engine.inferCombatMasteryLadder({ events: evs }, c);
   const r = engine.inferOmegaPerk({ events: evs }, c);
-  check('sintetico: a contaminacao de uma linha nao impede a outra de confirmar omega', !!(r && r.active));
+  // M-039d: a linha 2 continua achando o nivel acima do teto; o valor fica ambiguo (ver caso 5).
+  const row2 = r && (r.rows || []).find(x => x.mob === 'other drone');
+  check('sintetico: a contaminacao de uma linha nao impede a outra de achar o nivel de omega',
+    !!(r && r.source === 'omega_value_ambiguous' && row2 && row2.fits.length > 0));
 }
 
 // 7) Bonus de classe sob escada. Com a grade antiga (2 a 30%) o teto em +2% deixava so o 2% vivo.

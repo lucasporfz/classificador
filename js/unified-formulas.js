@@ -443,6 +443,14 @@
   // por HP NÃO é normatizado (D5). A evidência dele está em
   // reports/crypt-omega-prototipo.md.
   const OMEGA_MULTIPLIER = 1.06;
+  // M-039d: o valor do omega e da arma (natural, soma dos perks de omega) mais ate dois
+  // reshapes. OMEGA_MULTIPLIER fica so como padrao de quem nao tem omegaSetup.multiplier.
+  const NATURAL_OMEGA_BONUS = Object.freeze([0.025, 0.04, 0.06, 0.065, 0.09]);
+  const OMEGA_BONUS_CANDIDATES = sumsWithTwoReshapes(NATURAL_OMEGA_BONUS);
+  function sessionOmegaMultiplier(context) {
+    const m = context && context.omegaSetup && +context.omegaSetup.multiplier;
+    return m > 1 ? m : OMEGA_MULTIPLIER;
+  }
 
   // Postura de knight — tres estados, dirigidos pelos casts do DONO do log:
   //   Protector  (`utamo tempo`): -15% de dano CAUSADO, multiplicador plano pos-mitigacao,
@@ -954,7 +962,7 @@
   }
 
   function omegaMultiplierForHit(hit, context) {
-    return omegaActiveForHit(hit, context) ? OMEGA_MULTIPLIER : 1;
+    return omegaActiveForHit(hit, context) ? sessionOmegaMultiplier(context) : 1;
   }
 
   // D-010i: fila de bonus finais, na ordem do jogo, cada passo com FLOOR em inteiros.
@@ -1599,7 +1607,7 @@
         if (eHi < eLo) return false;
         let [oLo, oHi] = invRoundRange(eLo, eHi, r.mod);
         if (oHi < oLo) return false;
-        if (r.omega) { [oLo, oHi] = invRoundRange(oLo, oHi, OMEGA_MULTIPLIER); if (oHi < oLo) return false; }
+        if (r.omega) { [oLo, oHi] = invRoundRange(oLo, oHi, sessionOmegaMultiplier(context)); if (oHi < oLo) return false; }
         if (oLo > lo) lo = oLo;
         if (oHi < hi) hi = oHi;
         if (hi < lo) return false;
@@ -1965,6 +1973,9 @@
     bestiaryClassBonusCandidates,
     bestiaryClassMultiplierForHit,
     OMEGA_MULTIPLIER,
+    NATURAL_OMEGA_BONUS,
+    OMEGA_BONUS_CANDIDATES,
+    sessionOmegaMultiplier,
     OMEGA_CROSS_STATE_TOLERANCE,
     omegaActiveForHit,
     omegaMultiplierForHit,

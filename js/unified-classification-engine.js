@@ -64,6 +64,8 @@
     bestiaryClassBonusCandidates,
     bestiaryClassMultiplierForHit,
     OMEGA_MULTIPLIER,
+    NATURAL_OMEGA_BONUS,
+    OMEGA_BONUS_CANDIDATES,
     CRIT_BUCKET_MIN_SAMPLES,
     CRIT_BOOTSTRAP_MAX,
     CRIT_MULTIPLIER_CANDIDATES,
@@ -1340,7 +1342,8 @@
     if (!key || !(mods[key] > 0)) return [];
     const m = effectiveMod(+mods[key], pierceForElement(element, { exposeWeakness: ew, elementalAmplification: amp }, pierceCtx) + (extraPierce || 0));
     let O = Math.round(mods.hitpoints * 0.05);
-    if (omega) O = Math.floor((O * 106 + 50) / 100);
+    // M-039d: `omega` e o multiplicador da hipotese (true = 1,06, o padrao antigo).
+    if (omega) { const W = Math.round((omega === true ? OMEGA_MULTIPLIER : omega) * 10000); O = Math.floor((O * W + 5000) / 10000); }
     const e = Math.floor((O * Math.round(m * 100) + 50) / 100);
     const M = mitigationMultiplier(mods, context);
     const lo = Math.floor(e * M + 1e-9);
@@ -1940,6 +1943,8 @@
         n: r.values.length, expected, levels,
         baseLevel: anchor ? anchor.value : null, omegaLevel: null,
       };
+      // M-039d: valores de omega que levam o nivel ancorado a outro nivel observado da linha.
+      row.fits = [];
       if (anchor) {
         if (ladder && ladder.active) {
           // M-042: sob escada, um nivel a x1,06 do ancorado NAO prova omega — o sexto
@@ -1947,30 +1952,61 @@
           // teto que a escada sozinha alcanca, e ainda assim sobre a grade estendida
           // `(1 + degrau x n) x 1,06`. Nivel fora das duas grades e contaminacao (D-006):
           // e a forma do `crypt mage 1098`, a x1,6511 do ancorado.
-          const omega = levels.find(L => {
-            if (L.value === anchor.value) return false;
-            const ratio = L.value / anchor.value;
-            if (ratio <= ladder.ceiling) return false;
-            for (let n = 0; n <= COMBAT_MASTERY_MAX_STEPS; n++) {
-              const wanted = anchor.value * (1 + ladder.step * n) * OMEGA_MULTIPLIER;
-              if (L.value >= Math.floor(wanted + 1e-9) && L.value < (anchor.value + 1) * (1 + ladder.step * n) * OMEGA_MULTIPLIER) return true;
-            }
-            return false;
-          });
-          if (omega) { row.omegaLevel = omega.value; row.ratio = omega.value / anchor.value; }
+          // M-039d: sob escada so os valores naturais sem reshape entram na grade.
+          for (const v of NATURAL_OMEGA_BONUS) {
+            const q = 1 + v;
+            const omega = levels.find(L => {
+              if (L.value === anchor.value) return false;
+              const ratio = L.value / anchor.value;
+              if (ratio <= ladder.ceiling) return false;
+              for (let n = 0; n <= COMBAT_MASTERY_MAX_STEPS; n++) {
+                const wanted = anchor.value * (1 + ladder.step * n) * q;
+                if (L.value >= Math.floor(wanted + 1e-9) && L.value < (anchor.value + 1) * (1 + ladder.step * n) * q) return true;
+              }
+              return false;
+            });
+            if (omega) row.fits.push({ v, level: omega.value });
+          }
         } else {
-          const wanted = anchor.value * OMEGA_MULTIPLIER;
-          const omega = levels.find(L => L.value !== anchor.value && (r.ratio ? inFloorProductInterval(L.value, anchor.value, OMEGA_MULTIPLIER) : exactCharmDamageCandidates(r.mob, r.element, r.ew, r.amp, r.stance, context, 0, bestiaryClassMultiplierForHit({ mob: r.mob }, context), context, true).includes(L.value)));
-          if (omega) { row.omegaLevel = omega.value; row.ratio = omega.value / anchor.value; }
+          const classMultiplier = bestiaryClassMultiplierForHit({ mob: r.mob }, context);
+          for (const v of OMEGA_BONUS_CANDIDATES) {
+            const q = 1 + v;
+            const exact = r.ratio ? null : exactCharmDamageCandidates(r.mob, r.element, r.ew, r.amp, r.stance, context, 0, classMultiplier, context, q);
+            const omega = levels.find(L => L.value !== anchor.value && (r.ratio ? inFloorProductInterval(L.value, anchor.value, q) : exact.includes(L.value)));
+            if (omega) row.fits.push({ v, level: omega.value });
+          }
         }
       }
       rows.push(row);
     }
 
     const anchored = rows.filter(r => r.witness === 'formula' && r.baseLevel != null);
+    // M-039d: o valor da sessao e a intersecao dos valores de cada linha que tem algum; com
+    // varios, decide o unico natural sem reshape; sem isso, sem omega (D-006).
+    const withFits = rows.filter(r => r.fits && r.fits.length);
+    let values = null;
+    for (const r of withFits) {
+      const own = r.fits.map(f => f.v);
+      values = values ? values.filter(v => own.includes(v)) : own;
+    }
+    let chosen = null;
+    if (values && values.length === 1) chosen = values[0];
+    else if (values && values.length > 1) {
+      const naturals = values.filter(v => NATURAL_OMEGA_BONUS.includes(v));
+      if (naturals.length === 1) chosen = naturals[0];
+    }
+    if (chosen != null) {
+      for (const r of withFits) {
+        const f = r.fits.find(x => x.v === chosen);
+        r.omegaLevel = f.level; r.ratio = f.level / r.baseLevel;
+      }
+    }
     const confirmed = rows.filter(r => r.omegaLevel != null);
     if (confirmed.length) {
-      return { active: true, multiplier: OMEGA_MULTIPLIER, source: 'confirmed_by_charm_damage', rows, confirmedRows: confirmed.length, anchoredRows: anchored.length };
+      return { active: true, multiplier: Math.round((1 + chosen) * 10000) / 10000, bonus: chosen, candidates: values, source: 'confirmed_by_charm_damage', rows, confirmedRows: confirmed.length, anchoredRows: anchored.length };
+    }
+    if (values && values.length) {
+      return { active: false, multiplier: 1, source: 'omega_value_ambiguous', candidates: values, rows, anchoredRows: anchored.length };
     }
     if (ladder && ladder.active) {
       return { active: false, multiplier: 1, source: 'combat_mastery_ladder_without_level_above_ceiling', rows, anchoredRows: anchored.length, ladderStep: ladder.step };
@@ -2079,7 +2115,7 @@
         // uniform reward. Reuse the anchored, repeated levels of the witness.
         const anchor = levels.find(level =>
           exactCharmDamageCandidates(mob, element, ew, amp, stance, context, 0, 1, context).includes(level));
-        if (anchor != null && levels.some(level => level !== anchor && inFloorProductInterval(level, anchor, OMEGA_MULTIPLIER))) {
+        if (anchor != null && levels.some(level => level !== anchor && NATURAL_OMEGA_BONUS.some(v => inFloorProductInterval(level, anchor, 1 + v)))) {
           observed = anchor;
         }
         // D-006: three samples spread across states do not establish a third,
