@@ -108,6 +108,18 @@ abre o stub da Microsoft Store e trava.
 - **Worktree limpo:** o `.gitignore` ignora `tests/` (só `validator-smoke`, `fixtures/` e
   `snapshots/` são rastreados). Copie `tests/*.test.mjs` para dentro, senão os testes falham
   por arquivo inexistente.
+- **Commit:** adicione por caminho só os arquivos que a mudança tocou (`tools/` e `logs/` têm
+  arquivos não rastreados de outros estudos); teste ou log já rastreado vai num
+  `git add -u <arquivo>` separado, teste novo fica fora (`tests/`, `openspec/`, `reports/` são
+  ignorados, logs novos por convenção). Nunca liste caminho ignorado num `git add`: ele aborta e
+  não adiciona nada.
+- **Índice de regras:** depois de editar `docs/CLASSIFICATION_RULES.md`, rode
+  `node tools/rule-index.mjs --write`. O hook `.githooks/pre-commit` e o CI conferem
+  (`git config core.hooksPath .githooks` ativa o hook num clone novo).
+- **Valores de perk de arma** (classe, omega, pierce): `node tools/weapon-perks.mjs --weapon
+  "<nome>"` ou `--totals`, sobre `docs/data/weapon-proficiencies-2026-08.json`.
+- **Medir detector de sessão:** `node tools/sweep-setup.mjs --pick <caminho no contexto>` roda o
+  setup de todas as sessões em segundos, sem resolver turno.
 - **Cobertura de invariantes não encolhe** (D-017a, travada por
   `tests/unified-invariants.test.mjs`). "N fixtures fora do escopo D-017" num relatório é bug
   de cobertura.
@@ -136,7 +148,7 @@ Rules:
 - For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- After modifying code, run `graphify update .` in the background, as its own command (it can pass 2 minutes; keep it out of commit/push commands).
 
 # Behavioral guidelines
 

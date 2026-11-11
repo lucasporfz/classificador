@@ -2747,6 +2747,13 @@
     const weaponElementPierceDetection = inferWeaponElementPierce(server, local, context);
     context.weaponElementPierce = weaponElementPierceDetection.pierce;
     SessionContext.invalidateReversalCache(context);
+    // Ferramentas (tools/sweep-setup.mjs): para aqui, com o setup da sessao inferido e nenhum
+    // turno resolvido. Sem efeito na UI, que nunca passa a opcao.
+    if (options && options.stopAfterSetup) {
+      const stopped = { version: VERSION, stoppedAfterSetup: true, bmPierce: context.bmPierce || 0, bmPierceDetection: bmDetection, weaponDeathPierceDetection, weaponElementPierceDetection };
+      Object.defineProperty(stopped, '_context', { value: context, enumerable: false, configurable: true });
+      return stopped;
+    }
     const turns = buildTurns(server.hits, local.spellCasts, context);
     const facts = { server, local };
     let resolvedTurns;
@@ -3100,7 +3107,8 @@
     const baseOptions = Object.assign({}, options || {}, { bmPierce: explicitBm == null ? 0 : explicitBm });
     const baseResult = classifyUnifiedParsed(server, local, baseOptions, explicitBm == null ? { pierce: 0, active: false, source: 'pending_auto_detection' } : { pierce: explicitBm, active: explicitBm > 0, source: 'option_bmPierce' });
 
-    if (!shouldAutoDetectBm) return baseResult;
+    // stopAfterSetup: sem turnos nao ha deteccao de BM por blocos; vale o BM do charm ou 0.
+    if (!shouldAutoDetectBm || (options && options.stopAfterSetup)) return baseResult;
 
     // Se a classificaÃ§Ã£o BM=0 tem turnos `unresolved`, a incoerÃªncia pode ser o prÃ³prio
     // BM ausente (casts holy mistos mobâ‰ 1.0 + mob 1.0). Classifica a hipÃ³tese BM=0.04 em
@@ -3147,6 +3155,10 @@
     inferBestiaryClassDamageBonus,
     inferCombatMasteryLadder,
     inferOmegaPerk,
+    // Tabelas de valores das armas, conferidas contra docs/data por tests/unified-weapon-perk-tables.test.mjs.
+    WEAPON_PHYSICAL_PIERCE_TIERS,
+    WEAPON_DEATH_PIERCE_TIERS,
+    WEAPON_ELEMENT_PIERCE_TIERS,
     buildBountyCharmRows,
     inferBountyTalismanDamageSetup,
     // Exportada para diagnóstico/validação. AINDA NÃO ligada ao fluxo de classificação:

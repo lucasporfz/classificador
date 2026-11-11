@@ -3,7 +3,9 @@
 // partição sem sair de resolved, e a sessão pode mudar de setup sem mudar nenhum turno.
 //
 // Uso:
-//   node tools/compare-variant.mjs <referência> <variante> [--list] [--max 60] [--pair texto]
+//   node tools/compare-variant.mjs <referência> <variante> [--list] [--max 60] [--pair texto] [--allow-partial]
+// Se um lado tem par que o outro não tem, aborta sem resumo (saída 2). --allow-partial compara
+// só os pares presentes nos dois lados.
 // Cada lado é uma pasta de JSON ou o nome de uma pasta em reports/tolerance-audit.
 //
 // Turno (a referência é o "antes"):
@@ -195,8 +197,10 @@ function main() {
   if (list) args.splice(args.indexOf('--list'), 1);
   const max = +(take('--max') || 60);
   const pairFilter = take('--pair');
+  const allowPartial = args.includes('--allow-partial');
+  if (allowPartial) args.splice(args.indexOf('--allow-partial'), 1);
   if (args.length !== 2 || args.some(a => a.startsWith('--'))) {
-    console.error('Uso: node tools/compare-variant.mjs <referência> <variante> [--list] [--max 60] [--pair texto]');
+    console.error('Uso: node tools/compare-variant.mjs <referência> <variante> [--list] [--max 60] [--pair texto] [--allow-partial]');
     return 2;
   }
   let ref;
@@ -210,6 +214,12 @@ function main() {
   if (pairFilter) {
     for (const map of [ref, other]) for (const key of [...map.keys()]) if (!key.includes(pairFilter)) map.delete(key);
   }
+  const onlyOne = [...new Set([...ref.keys(), ...other.keys()])].filter(k => !ref.has(k) || !other.has(k));
+  if (onlyOne.length && !allowPartial) {
+    console.error(`MEDIÇÃO INCOMPLETA: ${onlyOne.length} par(es) só num lado (${onlyOne.slice(0, 5).join(', ')}${onlyOne.length > 5 ? ', ...' : ''}). Nada comparado. Use --pair ou --allow-partial.`);
+    return 2;
+  }
+  for (const k of onlyOne) { ref.delete(k); other.delete(k); }
   const r = compareDumps(ref, other);
   const t = r.turnos;
   const swaps = t.particao.length + t.rotulo.length + t.so_omega.length;

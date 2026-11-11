@@ -208,4 +208,5 @@ Se `graphify-out/graph.json` existir e a CLI estiver disponível, use
 Use `graphify-out/wiki/index.md` para navegação ampla quando existir;
 `graphify-out/GRAPH_REPORT.md` fica para visão arquitetural ou contexto que as
 consultas não encontraram. Depois de mudanças de código, atualize com
-`graphify update .`. Sincronização apenas documental não exige regenerar o grafo.
+`graphify update .` em segundo plano, num comando separado (pode passar de 2 minutos; fora de
+comandos de commit/push). Sincronização apenas documental não exige regenerar o grafo.

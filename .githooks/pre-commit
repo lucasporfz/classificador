@@ -1,0 +1,9 @@
+#!/bin/sh
+# Ativado por `git config core.hooksPath .githooks` (ver CLAUDE.md, "Armadilhas operacionais").
+# Índice de regras: só quando o commit toca as regras. Leva < 1 s.
+if git diff --cached --name-only | grep -qx 'docs/CLASSIFICATION_RULES.md'; then
+  node tools/rule-index.mjs --check || {
+    echo "pre-commit: índice de regras desatualizado. Rode: node tools/rule-index.mjs --write" >&2
+    exit 1
+  }
+fi

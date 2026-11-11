@@ -15,3 +15,4 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run bench
+      - run: node tools/rule-index.mjs --check
