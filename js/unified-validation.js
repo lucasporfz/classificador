@@ -153,14 +153,14 @@
       if (hit.overkill) out.channels.life = { interval: realDamageIntervalFromLeech(life, lifeRate, n) };
       else {
         const expected = expectedLeech(hit.dmg, lifeRate, n);
-        out.channels.life = { expected, observed: life, ok: expected != null && Math.abs(expected - life) <= leechValueToleranceForN(n) };
+        out.channels.life = { expected, observed: life, ok: expected != null && expected === life };
       }
     }
     if (mana > 0 && manaRate > 0) {
       if (hit.overkill) out.channels.mana = { interval: realDamageIntervalFromLeech(mana, manaRate, n) };
       else {
         const expected = expectedLeech(hit.dmg, manaRate, n);
-        out.channels.mana = { expected, observed: mana, ok: expected != null && Math.abs(expected - mana) <= leechValueToleranceForN(n) };
+        out.channels.mana = { expected, observed: mana, ok: expected != null && expected === mana };
       }
     }
 
@@ -1281,11 +1281,11 @@
   }
 
   // D-024/D-025: faixa de dano real, em dano exibido, que o leech observado de um canal admite
-  // com N, somando a tolerancia de leech e todas as taxas oficiais candidatas do hit.
+  // com N, pela conta exata (sem folga) e todas as taxas oficiais candidatas do hit.
   function beamLeechRealDamageRange(hit, channel, observed, n, block, context) {
     const rates = leechEffectiveRateCandidates(context.leechSetup, channel, block, hit, context);
     if (!rates.length) return null;
-    const tolerance = leechValueToleranceForN(n, observed);
+    const tolerance = 0;
     let low = Infinity;
     let high = -Infinity;
     for (const cand of rates) {
@@ -3551,7 +3551,7 @@
         const expected = expectedLeech(leechDamageBasis(hit, context), rate, n);
         const tolerance = leechValueToleranceForN(n, expected);
         if (expected != null) expectations.push(Object.assign({}, cand, { expected, observed, delta: observed - expected, tolerance }));
-        if (expected != null && Math.abs(expected - observed) <= tolerance) matches.push(Object.assign({}, cand, { expected, observed, delta: observed - expected, tolerance }));
+        if (expected != null && expected === observed) matches.push(Object.assign({}, cand, { expected, observed, delta: observed - expected, tolerance }));
       }
     }
 
@@ -3608,7 +3608,7 @@
       const tolerance = Math.max.apply(null, expectedValues.map(v => leechValueToleranceForN(n, v)));
       out.minExpected = minExpected;
       out.maxExpected = maxExpected;
-      if (observed < minExpected - tolerance) {
+      if (observed < minExpected) {
         // V14: leech menor que todos os valores oficiais esperados é compatível com
         // cap/truncamento de vida/mana. Isso não confirma o N, mas também não deve
         // contar como contradição dura do bloco.
@@ -3618,7 +3618,9 @@
         out.tooHigh = true;
         out.reason = channel + '_above_expected_contradiction';
       } else {
-        out.reason = channel + '_between_discrete_rate_candidates';
+        // C-006a: sem encaixe exato e dentro da folga, o leech não confirma o N nem o contradiz.
+        out.cappedLow = true;
+        out.reason = channel + '_within_tolerance_neutral';
       }
     }
     return out;

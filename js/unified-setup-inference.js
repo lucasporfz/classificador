@@ -348,8 +348,9 @@
           }
           const life = cloneHitForGoldObservation(h, 'life', +h.lifeLeech || 0, gold.n, gold.source, context);
           const mana = cloneHitForGoldObservation(h, 'mana', +h.manaLeech || 0, gold.n, gold.source, context);
-          if (life) observations.push(life);
-          if (mana) observations.push(mana);
+          // C-006: a trava do voto conta contradicao por turno.
+          if (life) { life.turnKey = turn.clock || turn.ts; observations.push(life); }
+          if (mana) { mana.turnKey = turn.clock || turn.ts; observations.push(mana); }
         }
       }
     }
@@ -381,7 +382,7 @@
     const weaponCount = typeof candidate === 'number' ? 0 : (+candidate.weaponCount || 0);
     const weaponBonus = typeof candidate === 'number' ? 0 : (+candidate.weaponBonus || 0);
     let ok = 0, exact = 0, high = 0, low = 0;
-    const turns = new Set(), mobs = new Set(), highMobs = new Set(), lowMobs = new Set(), examples = [], contradictions = [];
+    const turns = new Set(), mobs = new Set(), highMobs = new Set(), lowMobs = new Set(), highTurns = new Set(), examples = [], contradictions = [];
     for (const o of observations || []) {
       if (!o || o.channel !== channel || !(o.observed > 0) || !(o.damage > 0) || !(o.n >= 1)) continue;
       const expected = expectedLeech(o.damage, base, o.n);
@@ -397,6 +398,7 @@
       } else if (delta > 0) {
         high++;
         if (o.mob) highMobs.add(o.mob);
+        highTurns.add(o.turnKey != null ? o.turnKey : o.ts);
         if (contradictions.length < 8) contradictions.push({ mob: o.mob, ts: o.ts, observed: o.observed, expected, n: o.n, damage: o.damage, delta });
       } else {
         // capped-low (observado < esperado): sempre consistente, nunca contradição
@@ -418,6 +420,7 @@
       high,
       low,
       highMobs: highMobs.size,
+      highTurns: highTurns.size,
       lowMobs: lowMobs.size,
       observed: (observations || []).filter(o => o && o.channel === channel).length,
       independentTurns: turns.size,
@@ -487,7 +490,7 @@
 
   function scoreGoldBaseWithMobException(observations, channel, base, bonusMob, bonusRate, options) {
     let ok = 0, exact = 0, high = 0, low = 0;
-    const turns = new Set(), mobs = new Set(), highMobs = new Set(), lowMobs = new Set(), examples = [], contradictions = [];
+    const turns = new Set(), mobs = new Set(), highMobs = new Set(), lowMobs = new Set(), highTurns = new Set(), examples = [], contradictions = [];
     for (const o of observations || []) {
       if (!o || o.channel !== channel || !(o.observed > 0) || !(o.damage > 0) || !(o.n >= 1)) continue;
       const damage = goldObservationDamage(o, options);
@@ -506,6 +509,7 @@
       } else if (delta > 0) {
         high++;
         if (o.mob) highMobs.add(o.mob);
+        highTurns.add(o.turnKey != null ? o.turnKey : o.ts);
         if (contradictions.length < 8) contradictions.push({ mob: o.mob, ts: o.ts, observed: o.observed, expected, n: o.n, damage, delta });
       } else {
         // capped-low: sempre consistente, nunca contradição (D-025/S-014e/C-006).
@@ -524,6 +528,7 @@
       high,
       low,
       highMobs: highMobs.size,
+      highTurns: highTurns.size,
       lowMobs: lowMobs.size,
       observed: (observations || []).filter(o => o && o.channel === channel).length,
       independentTurns: turns.size,
@@ -725,11 +730,12 @@
     rows.sort((a, b) => compareGoldBaseScores(a, b)
       || (Number(!!a.exposeWeaknessManaPerk) - Number(!!b.exposeWeaknessManaPerk)));
     // C-006 (ordem do voto): a ordem acima dá a vencedora provisória; a final é a de mais
-    // exatos entre as que não têm mais contradições que ela. A ordenação é estável, então
-    // empate em exatos mantém a ordem provisória (inclusive o desempate do perk de EW).
+    // exatos entre as que não têm mais contradições que ela, contadas em TURNOS distintos (um
+    // turno mal separado na fase do voto vira uma contradição por hit). A ordenação é estável,
+    // então empate em exatos mantém a ordem provisória (inclusive o desempate do perk de EW).
     if (rows.length) {
-      const provisionalHigh = rows[0].high;
-      rows.sort((a, b) => (Number(a.high > provisionalHigh) - Number(b.high > provisionalHigh)) || (b.exact - a.exact));
+      const provisionalHighTurns = rows[0].highTurns;
+      rows.sort((a, b) => (Number(a.highTurns > provisionalHighTurns) - Number(b.highTurns > provisionalHighTurns)) || (b.exact - a.exact));
     }
     const best = rows[0] || null;
     if (!best || best.ok < GOLD_CHANNEL_MIN_OK) {

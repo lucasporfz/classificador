@@ -52,8 +52,6 @@ const VARIANTS = {
       ['js/unified-formulas.js', 'const LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX = 5;', 'const LEECH_VALUE_TOLERANCE_SMALL_BLOCK_MAX = 0;'],
     ],
   },
-  // Encaixe exato (D-024), folga só para declarar contradição (C-006/C-006a); voto de taxa intacto.
-  leechFitExact: { label: 'leech: encaixe exato, folga só na contradição, com sondas', probes: true, report: false, edits: leechFitExactEdits() },
   physical: {
     label: 'interseção física 4',
     edits: [['js/unified-formulas.js', 'const PHYSICAL_INTERSECTION_TOLERANCE = 4;', 'const PHYSICAL_INTERSECTION_TOLERANCE = 0;']],
@@ -78,22 +76,103 @@ const VARIANTS = {
   // folga zero sem crítico já estão no motor, D-010a/D-010j).
   noCluNc: { label: 'sem cluster no bloco sem crítico', report: false, edits: noClusterNoCritEdits() },
   noCluNcProbe: { label: 'sem cluster no bloco sem crítico, com sondas', probes: true, report: false, edits: noClusterNoCritEdits() },
+  // Fila 2 do prompt 7: Executioner's Throw inverte o leech em dois passos (D-023/D-025).
+  // Medido 10/Nov/2026 contra tolerance-audit-cm/plain: 0/0/1, troca `tom 3` 10:01:24 (caso-prova
+  // de M-034b) de A1 + 2 para A0 S3. Usuário: fica com um arredondamento só (aproximação aceita).
+  invisibleTarget: { label: 'leech: encaixe exato + alvo invisível (N = hits + 1), com sondas', probes: true, report: false,
+    edits: invisibleTargetEdits() },
+  // Fila 5 do prompt 7: intermediária elemental de 1 ponto (inclui a prova do eco, que usa a mesma constante).
+  intermediate: { label: 'intermediária elemental 1 (e prova do eco)', report: false,
+    edits: [['js/unified-formulas.js', 'const ELEMENTAL_INTERMEDIATE_TOLERANCE = 1;', 'const ELEMENTAL_INTERMEDIATE_TOLERANCE = 0;']] },
+  execTwoStep: { label: "Executioner's Throw: inversão do leech em dois passos", report: false, edits: execTwoStepEdits() },
 };
 
-
-function leechFitExactEdits() {
+// Fila 3a do prompt 7: alvo invisível (criatura que não toma dano entra na diluição). Sobre o
+// encaixe exato: quando N = hits visíveis não fecha exato em algum hit e N = hits + 1 fecha exato
+// em todos, o bloco aceita N = hits + 1 sem hit virtual (o rótulo continua com os visíveis).
+// Só em bloco de área (o mesmo portão do virtual de charm-kill). Uma hipótese extra por bloco.
+// Medido 10/Nov/2026 sobre leechFitExact: 7 perdidos e 16 trocados no recorte; rejeitada na busca.
+// D-024b entrou no motor como marcação depois da escolha (annotateInvisibleTargets).
+function invisibleTargetEdits() {
   const V = 'js/unified-validation.js';
   return [
-    [V, 'ok: expected != null && Math.abs(expected - life) <= leechValueToleranceForN(n) };', 'ok: expected != null && expected === life };'],
-    [V, 'ok: expected != null && Math.abs(expected - mana) <= leechValueToleranceForN(n) };', 'ok: expected != null && expected === mana };'],
-    [V, '  // com N, somando a tolerancia de leech e todas as taxas oficiais candidatas do hit.\n', '  // com N, pela conta exata (sem folga) e todas as taxas oficiais candidatas do hit.\n'],
-    [V, 'const tolerance = leechValueToleranceForN(n, observed);\n    let low = Infinity;', 'const tolerance = 0;\n    let low = Infinity;'],
-    [V, 'if (expected != null && Math.abs(expected - observed) <= tolerance) matches.push(', 'if (expected != null && expected === observed) matches.push('],
-    [V, '      if (observed < minExpected - tolerance) {', '      if (observed < minExpected) {'],
-    [V, "      } else {\n        out.reason = channel + '_between_discrete_rate_candidates';\n      }",
-      "      } else {\n        // C-006a: sem encaixe exato e dentro da folga, o leech não confirma o N nem o contradiz.\n        out.cappedLow = true;\n        out.reason = channel + '_within_tolerance_neutral';\n      }"],
+    [V, '      if (winner) return winner;\n    }\n\n    return base;\n  }',
+      `      if (winner) return winner;
+    }
+
+    if (base.usable && canUseVirtualZeroForBlock(block)
+      && ((base.failed || []).length || (base.cappedLow || []).length)) {
+      const trial = validateLeechBlockForN(block, context, k + 1);
+      if (trial.usable && trial.ok && !(trial.failed || []).length && !(trial.cappedLow || []).length) {
+        trial.visibleMainHits = k;
+        trial.kVisible = k;
+        trial.kMechanical = k + 1;
+        trial.invisibleTargets = 1;
+        trial.reason = 'leech_invisible_target_dilution';
+        trial.rule = null;
+        if (globalThis.__audit && globalThis.__audit.session) globalThis.__audit.session('invisibleTarget', { k, clock: (main[0] || {}).clock, comp: block.comp, hits: main.map(h => [h.mob, h.dmg, h.lifeLeech || 0, h.manaLeech || 0]) });
+        return trial;
+      }
+    }
+
+    return base;
+  }`],
   ];
 }
+
+function execTwoStepEdits() {
+  const R = 'js/unified-turn-resolution.js';
+  const E = 'js/unified-classification-engine.js';
+  return [
+    [R, '    expectedLeech,\n    areaFactor,\n  } = root.UnifiedSetupInference;', '    expectedLeech,\n    realDamageIntervalFromLeech,\n  } = root.UnifiedSetupInference;'],
+    [R, `  // Dano real x F de um hit pelo leech absoluto (D-025). Exato so quando vida e mana concordam:
+  // os caps de vida e de mana sao independentes, e dois canais capados caindo no mesmo dano e o
+  // caso a ignorar. Canal zero, ausente ou disjunto => null (o hit so daria piso).
+  function exactLeechDamageTimesF(hit, context) {
+    const setup = context && context.leechSetup;
+    const life = +hit.lifeLeech || 0;
+    const mana = +hit.manaLeech || 0;
+    if (!setup || !(life > 0) || !(mana > 0)) return null;
+    const lifeRate = effectiveLifeLeech(hit, setup);
+    const manaRate = effectiveManaLeech(hit, setup);
+    if (!(lifeRate > 0) || !(manaRate > 0)) return null;
+    const lo = Math.max((life - 1) / lifeRate, (mana - 1) / manaRate);
+    const hi = Math.min(life / lifeRate, mana / manaRate);
+    return hi > lo ? [lo, hi] : null;
+  }`,
+    `  // Dano real (base de leech, inteira) de um hit pelo leech absoluto sob N alvos, invertendo os
+  // dois CEIL de D-023 (D-025). Exato so quando vida e mana concordam: os caps de vida e de mana
+  // sao independentes, e dois canais capados caindo no mesmo dano e o caso a ignorar. Canal zero,
+  // ausente ou disjunto => null (o hit so daria piso).
+  function exactLeechRealDamage(hit, context, n) {
+    const setup = context && context.leechSetup;
+    const life = +hit.lifeLeech || 0;
+    const mana = +hit.manaLeech || 0;
+    if (!setup || !(life > 0) || !(mana > 0)) return null;
+    const lifeIv = realDamageIntervalFromLeech(life, effectiveLifeLeech(hit, setup), n);
+    const manaIv = realDamageIntervalFromLeech(mana, effectiveManaLeech(hit, setup), n);
+    if (!lifeIv || !manaIv) return null;
+    const lo = Math.max(lifeIv[0], manaIv[0]);
+    const hi = Math.min(lifeIv[1], manaIv[1]);
+    return hi >= lo ? [lo, hi] : null;
+  }`],
+    [R, `    const F = areaFactor(hits.length);
+    const exact = hits.map(h => ({ h, iv: exactLeechDamageTimesF(h, context) })).filter(x => x.iv);`,
+    `    const exact = hits.map(h => ({ h, iv: exactLeechRealDamage(h, context, hits.length) })).filter(x => x.iv);`],
+    [R, '        const w = width * F;\n', '        const w = width;\n'],
+    [R, '    exactLeechDamageTimesF,\n', '    exactLeechRealDamage,\n'],
+    [E, '    exactLeechDamageTimesF,\n  } = root.UnifiedTurnResolution;', '    exactLeechRealDamage,\n  } = root.UnifiedTurnResolution;'],
+    [E, 'const exact = hits.map(h => ({ h, iv: exactLeechDamageTimesF(h, context) })).filter(x => x.iv);\n        const key = executionerHitKey;',
+      'const exact = hits.map(h => ({ h, iv: exactLeechRealDamage(h, context, (comp.hits || []).length) })).filter(x => x.iv);\n        const key = executionerHitKey;'],
+    [E, '      const F = areaFactor(hits.length);\n      for (const h of hits) {\n        if (h.overkill || h.virtual',
+      '      for (const h of hits) {\n        if (h.overkill || h.virtual'],
+    [E, '        const own = leechDamageBasis(h, context) * F;', '        const own = leechDamageBasis(h, context);'],
+    [E, '          const iv = exactLeechDamageTimesF(s, context);', '          const iv = exactLeechRealDamage(s, context, hits.length);'],
+  ];
+}
+
+
+// leechFitExact (encaixe exato do leech, folga só na contradição) foi portada para js/ em 11/Nov/2026.
 
 
 function noClusterNoCritEdits() {

@@ -2838,6 +2838,7 @@
     }
     // M-042c: degrau de Combat Mastery de cada hit, lido do leech com o N do componente final.
     annotateCombatMasterySteps(resolvedTurns, context);
+    annotateInvisibleTargets(resolvedTurns, context);
     const result = {
       version: VERSION,
       status: resolvedTurns.some(t => t.status === 'unresolved' && !t.partialEdgeMissingEvidence) ? 'partial' : 'resolved',
@@ -2914,6 +2915,37 @@
           const cm = combatMasteryStepsForHit(h, context.leechSetup, n, c, context);
           if (cm) h.combatMasteryStep = cm;
         }
+      }
+    }
+  }
+
+  // D-024b: alvo invisivel (criatura que nao toma dano) entra na diluicao do leech sem aparecer
+  // no log. So depois da escolha da particao: bloco de area cujos hits fecham vida e mana exatas
+  // com N = hits visiveis + 1, e nao com N = hits visiveis, e marcado. Nao muda particao, rotulo
+  // nem cardinalidade (na busca, N acima dos visiveis continua exigindo charm que matou, S-014e).
+  function blockLeechExactAtN(c, n, context) {
+    let used = 0;
+    for (const h of c.hits || []) {
+      if (!isMainHit(h) || h.virtual || h.overkill || !(h.dmg > 0)) continue;
+      const channels = ['life', 'mana'].map(ch => observedLeechAcceptsN(h, context.leechSetup, n, ch, c, context)).filter(x => x.usable);
+      if (!channels.length) continue;
+      used++;
+      if (!channels.every(x => (x.matches || []).some(m => m.delta === 0))) return { used, exact: false };
+    }
+    return { used, exact: used > 0 };
+  }
+  function annotateInvisibleTargets(turns, context) {
+    for (const turn of turns || []) for (const c of (turn && turn.components) || []) delete c.invisibleTarget;
+    if (!context || !context.leechSetup) return;
+    for (const turn of turns || []) {
+      if (!turn || turn.status !== 'resolved') continue;
+      for (const c of turn.components || []) {
+        if (!canUseVirtualZeroForBlock(c) || (c.hits || []).some(h => h.virtual)) continue;
+        const k = (c.hits || []).filter(isMainHit).length;
+        if (!k || blockLeechExactAtN(c, k, context).exact) continue;
+        if (!blockLeechExactAtN(c, k + 1, context).exact) continue;
+        c.invisibleTarget = { nLeech: k + 1 };
+        if (globalThis.__audit && globalThis.__audit.session) globalThis.__audit.session('invisibleTargetMark', { clock: turn.clock, comp: c.comp, k });
       }
     }
   }

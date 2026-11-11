@@ -35,8 +35,8 @@
     "reason": "Pre-existente no HEAD 1325fb2: reproduz identico com o motor do commit (20/Out/2026, change da tabela de mobs do ms devoted); causa nao investigada."
   },
   {
-    "target": "gabarito prioritario + invariantes mecanicas",
-    "signature": "FAIL jaded/21:01:38:",
-    "reason": "Aceita pelo usuario em 08/Nov/2026: perda pre-cutoff (10/Jun/2026) da conta exata do leech (D-023/D-025) e do voto por exatos com trava de contradicao (C-006); o leech pre-cutoff fica fora do julgamento."
+    "target": "tests/unified-weapon-physical-pierce-detection.test.mjs",
+    "signature": "FAIL moonsilver: nenhum turno sem classificacao — 1 de 192",
+    "reason": "Aceita pelo usuario em 11/Nov/2026: moonsilver S0 05:23:20 fica sem classificacao com o encaixe exato do leech (D-024/C-006a, folga so na contradicao); o bloco esta na janela de alvo invisivel (D-024b), que nao entra na busca."
   }
 ]
