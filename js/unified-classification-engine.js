@@ -61,6 +61,7 @@
     GRAV_SAN_DURATION_SECONDS,
     GRAV_SAN_BONUS_CANDIDATES,
     BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES,
+    bestiaryClassBonusCandidates,
     bestiaryClassMultiplierForHit,
     OMEGA_MULTIPLIER,
     CRIT_BUCKET_MIN_SAMPLES,
@@ -587,7 +588,7 @@
     if (cls && known && known.class && normalizeName(known.class) === cls && known.multiplier > 1) {
       return [known.multiplier - 1];
     }
-    return [0].concat(BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES);
+    return [0].concat(cls ? bestiaryClassBonusCandidates(cls) : BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES);
   }
 
   function bountyCharmModal(procs) {
@@ -1331,7 +1332,7 @@
   // M-036 (conta exata do charm): A = FLOOR(ROUND(ROUND(hp × 0,05) × m) × M), depois FLOOR de cada
   // multiplicador final; inFloorProductInterval testa v em [FLOOR(a × q); (a + 1) × q) (M-039/M-042).
   function inFloorProductInterval(v, a, q) { return v >= Math.floor(a * q + 1e-9) && v < (a + 1) * q; }
-  function snapBestiaryClassMultiplier(x) { let best = 1; for (const b of [0, ...BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES]) if (Math.abs(1 + b - x) < Math.abs(best - x)) best = 1 + b; return best; }
+  function snapBestiaryClassMultiplier(x, cls) { let best = 1; for (const b of [0, ...(cls ? bestiaryClassBonusCandidates(cls) : BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES)]) if (Math.abs(1 + b - x) < Math.abs(best - x)) best = 1 + b; return best; }
   function exactCharmDamageCandidates(mob, element, ew, amp, stance, context, extraPierce, classMult, pierceCtx, omega) {
     const mods = getMobMods(mob, context);
     if (!mods || !(mods.hitpoints > 0)) return [];
@@ -1468,7 +1469,7 @@
         witnesses.push(Object.assign({}, r, { vote: null, reason: 'class_without_bm_immune_witness' }));
         continue;
       }
-      const classMult = ladderActive ? Math.min(...immune) : snapBestiaryClassMultiplier(median(immune));
+      const classMult = ladderActive ? Math.min(...immune) : snapBestiaryClassMultiplier(median(immune), r.cls);
       const eNo = r.expectedNoBm * classMult, eBm = r.expectedBm * classMult;
       // M-042: sob escada, cada hipotese e testada como LIMITE contra o menor nivel; fora
       // dela, como igualdade contra a mediana. Linha sem nivel de >=3 procs nao vota.
@@ -1981,17 +1982,13 @@
   // M-036b: bonus de classe pelos hits com prey, so quando o charm nao decidiu nada. Usa o dano
   // bruto, sem particao: FLOOR(x * 1,25) nunca deixa resto 4 mod 5, entao um hit com prey e resto 4
   // prova um multiplicador depois do prey, e o candidato tem de alcancar todos os valores.
-  const PREY_RESIDUE_BONUS_CANDIDATES = [...new Set([
-    ...BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES,
-    0.005, 0.0075, 0.01, 0.015, 0.0175, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.10, 0.25,
-    0.009, 0.011, 0.013, 0.017, 0.019, 0.021, 0.023,
-  ])];
+  // M-036c: os candidatos sao os da classe (natural da arma + ate dois reshapes).
   const PREY_RESIDUE_MIN_DAMAGE = 20;
   const PREY_RESIDUE_MIN_CHANCE_MISSES = 3;
 
-  function preyResidueSurvivors(values) {
+  function preyResidueSurvivors(values, cls) {
     const max = Math.max(...values);
-    return PREY_RESIDUE_BONUS_CANDIDATES.filter(bonus => {
+    return bestiaryClassBonusCandidates(cls).filter(bonus => {
       const q = Math.round((1 + bonus) * 1e6) / 1e6;
       const reach = new Set();
       for (let x = 1; x * 1.25 * q <= max + 3; x++) reach.add(Math.floor(Math.floor(x * 1.25) * q));
@@ -2018,7 +2015,7 @@
     for (const [cls, set] of byClass) {
       const values = [...set];
       if (!values.some(v => v % 5 === 4)) continue;
-      perClass.push({ class: cls, values: values.length, survivors: preyResidueSurvivors(values) });
+      perClass.push({ class: cls, values: values.length, survivors: preyResidueSurvivors(values, cls) });
     }
     const decided = perClass.filter(c => c.survivors.length === 1);
     if (decided.length !== 1) return null;
@@ -2112,7 +2109,7 @@
       for (const [cls, clsRows] of allByClass) {
         const voting = clsRows.filter(r => r.minLevel != null);
         if (!voting.length) { perClass.push({ class: cls, verdict: 'no_voting_row', surviving: [] }); continue; }
-        let surviving = BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES.slice();
+        let surviving = bestiaryClassBonusCandidates(cls).slice();
         for (const r of voting) {
           surviving = surviving.filter(b => Math.floor(r.expected * (1 + b) + 1e-9) <= r.minLevel);
         }
@@ -2163,7 +2160,8 @@
 
     let best = null;
     for (const [cls, clsRows] of byClass) {
-      const scores = BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES.map(b => ({ bonus: b, multiplier: 1 + b, votes: 0, error: 0 }));
+      // M-036c: `0` vota junto (hipotese nula); se ele tambem for unanime, a classe fica sem bonus.
+      const scores = [0, ...bestiaryClassBonusCandidates(cls)].map(b => ({ bonus: b, multiplier: 1 + b, votes: 0, error: 0 }));
       for (const r of clsRows) {
         for (const cand of scores) {
           const expected = r.expected * cand.multiplier;
@@ -2171,6 +2169,7 @@
           if (exactCharmDamageCandidates(r.mob, r.element, r.ew, r.amp, r.stance, context, 0, cand.multiplier, context).includes(r.observed)) { cand.votes++; cand.error += delta; }
         }
       }
+      if (scores[0].votes === clsRows.length) continue;
       scores.sort((a, b) => b.votes - a.votes || a.error - b.error);
       const top = scores[0];
       // Unanime: toda linha (mob×estado de pierce) testemunha da classe tem que concordar

@@ -77,22 +77,28 @@ const procs = (dmg, count, marked, gravSanMultiplier = 1) =>
   same(uhax.excluded.map(p => p.dmg), [3891, 3891]);
 }
 
-// 3.2 âncora de HP sem nenhum controle sem marca: par único (classe 0, nível 25).
+// 3.2 âncora de HP sem nenhum controle sem marca. Com a grade antiga (2 a 30%) o par era único
+// (classe 0, nível 25). Com os candidatos de M-036c (natural + dois reshapes, passo de 0,5%), classe
+// e nível de Bounty se compensam e há vários pares: a âncora abstém, como manda a regra quando o par
+// não é único (aprovado pelo usuário em 11/Nov/2026). As sessões reais do drone são decididas pela
+// base comum com proc de controle, que não muda.
 {
   const classBonuses = [0].concat(Array.from(formulas.BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES));
   const plain = formulas.bountyCharmRowVerdict({
     procs: procs(1891, 8, true), hpBaseA0: [1681], classBonuses,
   }, levels(0, 80));
   assert.equal(plain.commonBaseDiscriminating, false, 'sem controle a base comum não discrimina');
-  same(plain.hpAnchorPairs, [{ classBonus: 0, level: 25 }]);
-  assert.equal(plain.hpAnchorVote, 'unique');
-  same(plain.allowedLevels, [25]);
+  assert.ok(plain.hpAnchorPairs.length > 1, JSON.stringify(plain.hpAnchorPairs));
+  assert.ok(plain.hpAnchorPairs.some(p => p.classBonus === 0 && p.level === 25), 'o par real continua admitido');
+  assert.equal(plain.hpAnchorVote, 'abstain');
+  assert.equal(plain.allowedLevels, null);
 
   const ew = formulas.bountyCharmRowVerdict({
     procs: procs(1954, 12, true), hpBaseA0: [1737, 1738], classBonuses,
   }, levels(0, 80));
-  same(ew.hpAnchorPairs, [{ classBonus: 0, level: 25 }]);
-  same(ew.allowedLevels, [25]);
+  assert.ok(ew.hpAnchorPairs.some(p => p.classBonus === 0 && p.level === 25), 'EW: o par real continua admitido');
+  assert.equal(ew.hpAnchorVote, 'abstain');
+  assert.equal(ew.allowedLevels, null);
 }
 
 // 3.3 confundimento classe × Bounty sem proc sem marca: a âncora abstém.

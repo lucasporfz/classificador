@@ -385,7 +385,52 @@
   // sessão (bmPierce) descontados via effectiveMod/pierceForElement — a mesma disciplina
   // do dano normal do player — e fora de qualquer janela de utevo grav san. Confirmado no
   // par logs/ingol ed (17/Jul/2026, ED): harpy/Bird = 0.05, fechado pelo freeze charm.
-  const BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES = [0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.12, 0.15, 0.20, 0.25, 0.30];
+  //
+  // M-036c: os candidatos vem das armas. Bonus = natural da arma + ate dois reshapes (podem ser
+  // iguais). Naturais por classe: campo `Value` dos perks Type 6 de
+  // https://tibiapal.com/data/proficiency/weapon-proficiencies.json (16/Ago/2026), total por arma.
+  const RESHAPE_PERK_LEVELS = Object.freeze([0.005, 0.009, 0.011, 0.013, 0.015, 0.017, 0.019, 0.021, 0.023, 0.025]);
+  const NATURAL_BESTIARY_CLASS_BONUS = Object.freeze({
+    'amphibic': [0.04],
+    'aquatic': [0.005, 0.01, 0.015, 0.02, 0.03],
+    'bird': [0.05, 0.06],
+    'construct': [0.01, 0.02, 0.03],
+    'demon': [0.005, 0.01, 0.015, 0.02, 0.03, 0.1],
+    'dragon': [0.02, 0.03, 0.05, 0.1],
+    'elemental': [0.015, 0.02, 0.03],
+    'extra dimensional': [0.01, 0.02, 0.04],
+    'fey': [0.02, 0.025],
+    'giant': [0.03, 0.04, 0.1],
+    'human': [0.02, 0.03, 0.04],
+    'humanoid': [0.02, 0.03],
+    'inkborn': [0.01, 0.02, 0.03],
+    'lycanthrope': [0.0075, 0.01, 0.0175, 0.02, 0.025, 0.03, 0.0325, 0.0425, 0.05],
+    'magical': [0.02, 0.025, 0.03],
+    'mammal': [0.01, 0.02, 0.03, 0.04, 0.05, 0.06],
+    'plant': [0.01, 0.015, 0.03],
+    'reptile': [0.01, 0.02, 0.03],
+    'slime': [0.03],
+    'undead': [0.01, 0.02, 0.025, 0.03, 0.06, 0.1],
+    'vermin': [0.01, 0.03, 0.1, 0.25, 0.35],
+  });
+  function sumsWithTwoReshapes(naturals) {
+    const out = new Set();
+    for (const n of [0, ...naturals]) for (const r1 of [0, ...RESHAPE_PERK_LEVELS]) for (const r2 of [0, ...RESHAPE_PERK_LEVELS]) {
+      const v = Math.round((n + r1 + r2) * 1e4) / 1e4;
+      if (v > 0) out.add(v);
+    }
+    return Object.freeze([...out].sort((a, b) => a - b));
+  }
+  const BESTIARY_CLASS_BONUS_CANDIDATES_BY_CLASS = new Map(
+    Object.entries(NATURAL_BESTIARY_CLASS_BONUS).map(([cls, naturals]) => [cls, sumsWithTwoReshapes(naturals)]));
+  const RESHAPE_ONLY_BONUS_CANDIDATES = sumsWithTwoReshapes([]);
+  // Classe fora da tabela (ou desconhecida no chamador) so tem reshape.
+  function bestiaryClassBonusCandidates(cls) {
+    return BESTIARY_CLASS_BONUS_CANDIDATES_BY_CLASS.get(String(cls || '').toLowerCase().trim()) || RESHAPE_ONLY_BONUS_CANDIDATES;
+  }
+  // Uniao de todas as classes: so para quem nao sabe a classe (snap sem classe).
+  const BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES = Object.freeze([...new Set(
+    [...BESTIARY_CLASS_BONUS_CANDIDATES_BY_CLASS.values()].flat())].sort((a, b) => a - b));
 
   // M-039 — perk "omega": bônus de dano condicional por vida baixa do alvo, fato do
   // PERSONAGEM. Multiplicador plano pós-mitigação, BINÁRIO por-hit, de valor único e
@@ -1916,6 +1961,8 @@
     GRAV_SAN_DURATION_SECONDS,
     GRAV_SAN_BONUS_CANDIDATES,
     BESTIARY_CLASS_DAMAGE_BONUS_CANDIDATES,
+    RESHAPE_PERK_LEVELS,
+    bestiaryClassBonusCandidates,
     bestiaryClassMultiplierForHit,
     OMEGA_MULTIPLIER,
     OMEGA_CROSS_STATE_TOLERANCE,

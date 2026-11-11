@@ -86,10 +86,18 @@ const picture = singleSession('logs/picture server log.txt', 'logs/picture local
   const b = picture.context.bestiaryClassBonus;
   check('picture: nenhum bonus de classe e inferido', !!(b && b.bonus === 0 && b.class == null));
   const perClass = (b && b.perClass) || [];
-  for (const cls of ['mammal', 'reptile', 'giant']) {
+  // `picture` nao tem perk de classe (usuario, 11/Nov/2026). Mammal e giant tem teto abaixo de
+  // 0,5% e provam a ausencia; reptile tem teto 1,0095, e os reshapes de 0,5% e 0,9% (M-036c)
+  // sobrevivem abaixo dele: a classe abstem e continua sem bonus (M-036c, consequencia a).
+  for (const cls of ['mammal', 'giant']) {
     const entry = perClass.find(p => p.class === cls);
     check(`picture: classe ${cls} fica sem bonus POR PROVA (teto abaixo da grade)`,
       !!entry && entry.verdict === 'no_bonus_proved');
+  }
+  {
+    const entry = perClass.find(p => p.class === 'reptile');
+    check('picture: classe reptile abstem (reshapes pequenos abaixo do teto) e fica sem bonus',
+      !!entry && entry.verdict === 'ambiguous');
   }
 
   // Nao-regressao dura: `bmPierce` diferente de 0 mudaria TODA reversao holy/fisica da
@@ -231,8 +239,10 @@ const repeat = (n, f) => Array.from({ length: n }, (_, i) => f(i));
   check('sintetico: a contaminacao de uma linha nao impede a outra de confirmar omega', !!(r && r.active));
 }
 
-// 7) Bonus de classe REAL sob escada continua detectavel: a linha que exibe o degrau zero
-//    poe o teto exatamente num ponto da grade e so ele sobrevive.
+// 7) Bonus de classe sob escada. Com a grade antiga (2 a 30%) o teto em +2% deixava so o 2% vivo.
+//    Com os candidatos de M-036c (reshapes a partir de 0,5%), o teto e so limite superior: varios
+//    candidatos sobrevivem abaixo dele e a classe abstem (M-036c, consequencia a; aprovado pelo
+//    usuario em 11/Nov/2026).
 {
   const base = synthLevel();
   const boosted = Math.round(base * 1.02);
@@ -245,7 +255,7 @@ const repeat = (n, f) => Array.from({ length: n }, (_, i) => f(i));
   c.combatMasteryLadder = engine.inferCombatMasteryLadder({ events: evs }, c);
   check('sintetico: a escada e detectada mesmo com bonus de classe por cima', !!(c.combatMasteryLadder && c.combatMasteryLadder.active));
   const b = engine.inferBestiaryClassDamageBonus({ events: evs }, c);
-  check('sintetico: bonus de classe de +2% e cravado pelo teto', b && b.bonus === 0.02);
+  check('sintetico: sob escada o teto de +2% nao crava valor e a classe fica sem bonus', b && b.bonus === 0 && b.class == null);
 }
 
 console.error(`\n${pass} ok, ${fail} FAIL`);
