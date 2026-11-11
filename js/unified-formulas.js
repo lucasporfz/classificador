@@ -1132,6 +1132,10 @@
     if (element === 'death' && hit && hit.dmg != null && context && context.weaponDeathPierce) {
       p += context.weaponDeathPierce;
     }
+    // M-040b - o mesmo perk em energy/fire (wand) e earth/ice (rod), por elemento.
+    if (hit && hit.dmg != null && context && context.weaponElementPierce && context.weaponElementPierce[element]) {
+      p += context.weaponElementPierce[element];
+    }
     return p;
   }
 

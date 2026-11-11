@@ -1632,6 +1632,64 @@
     return result(0, perk.contradictions === 0 && none.contradictions === 0 ? 'no_discriminating_evidence' : 'abstain_not_unique', tiers, witnesses.length);
   }
 
+  // M-040b - pierce elemental de wand (sorcerer) e rod (druid), com os valores das armas do
+  // jogo e a testemunha de M-040a elemento a elemento. Death continua em M-040a.
+  const WEAPON_ELEMENT_PIERCE_TIERS = Object.freeze({
+    sorcerer: Object.freeze({ energy: Object.freeze([0, 0.02, 0.04, 0.06]), fire: Object.freeze([0, 0.04]) }),
+    druid: Object.freeze({ earth: Object.freeze([0, 0.02, 0.04, 0.06]), ice: Object.freeze([0, 0.04]) }),
+  });
+
+  function inferWeaponElementPierce(serverFacts, localFacts, context) {
+    const byVocation = WEAPON_ELEMENT_PIERCE_TIERS[context && context.vocation] || null;
+    const out = { pierce: {}, elements: {}, source: byVocation ? 'tested' : 'vocation_without_element_pierce' };
+    if (!byVocation) return out;
+    const stance = context.sorcererStanceSetup;
+    const stanceCasts = (stance && stance.casts) || [];
+    const spellCasts = (localFacts && localFacts.spellCasts) || [];
+    const mainHits = ((serverFacts && serverFacts.hits) || []).filter(isMainHit);
+    for (const [element, candidates] of Object.entries(byVocation)) {
+      const key = ELEMENT_KEYS[element];
+      // Elemento efetivo pela estancia (M-043) quando o cast esta nela; senao, o perfil da spell.
+      const effectiveElement = c => { const st = stanceCasts.find(x => x.ts === c.ts && x.text === c.text); return (st && st.effectiveElement) || (c.profile && c.profile.element); };
+      const casts = spellCasts.filter(c => c.type === 'attack' && effectiveElement(c) === element);
+      if (!casts.length) { out.elements[element] = { pierce: 0, source: 'no_cast', candidates }; continue; }
+      const seen = new Set();
+      const witnesses = [];
+      for (const cast of casts) {
+        const win = mainHits.filter(h => h.ts >= cast.ts && h.ts <= cast.ts + 1)
+          .sort((a, b) => (a.seq || 0) - (b.seq || 0)).slice(1);
+        for (const h of win) {
+          if (seen.has(h.seq)) continue;
+          if (h.overkill || h.realCrit || h.onslaught || !(h.dmg > 0) || h.isPrey || h.bountyTalisman || h.perfectShot) continue;
+          const post = postMultiplier(h, context);
+          if (post == null || Math.abs(post - 1) > 1e-9) continue;
+          const mods = getMobMods(h.mob, context);
+          if (!mods || !(mods[key] > 0)) continue;
+          seen.add(h.seq);
+          witnesses.push({ hit: h, mods });
+        }
+      }
+      if (!witnesses.length) { out.elements[element] = { pierce: 0, source: 'no_witness', candidates }; continue; }
+      const tiers = candidates.map(tier => {
+        const bad = witnesses.filter(({ hit, mods }) => !deathDamageReachable(+hit.dmg,
+          effectiveMod(+mods[key], pierceForElement(element, hit, context) + tier),
+          mitigationMultiplier(mods, context)));
+        return { tier, contradictions: bad.length, mobs: new Set(bad.map(b => normalizeName(b.hit.mob))).size, seconds: new Set(bad.map(b => b.hit.ts)).size };
+      });
+      const none = tiers.find(t => t.tier === 0);
+      const clean = tiers.filter(t => t.tier > 0 && t.contradictions === 0);
+      const corroborated = none.contradictions >= WEAPON_DEATH_PIERCE_MIN_CONTRADICTIONS
+        && none.mobs >= WEAPON_DEATH_PIERCE_MIN_MOBS && none.seconds >= WEAPON_DEATH_PIERCE_MIN_SECONDS;
+      let pierce = 0, source;
+      if (corroborated && clean.length === 1) { pierce = clean[0].tier; source = 'exact_reachability'; }
+      else if (none.contradictions === 0) source = 'no_discriminating_evidence';
+      else source = 'abstain_not_unique';
+      if (pierce > 0) out.pierce[element] = pierce;
+      out.elements[element] = { pierce, source, candidates, tiers, witnesses: witnesses.length };
+    }
+    return out;
+  }
+
   function inferWeaponPhysicalPierce(turns, facts, context) {
     const inactive = source => ({ pierce: 0, active: false, source, tiers: WEAPON_PHYSICAL_PIERCE_TIERS, corroboration: null });
     // M-040: o perk e equipamento de ROYAL PALADIN, e so sessao de RP tem testemunha dele.
@@ -2685,6 +2743,9 @@
     // inferida com pierce 0 e nao e reinferida.
     const weaponDeathPierceDetection = inferWeaponDeathPierce(server, context);
     context.weaponDeathPierce = weaponDeathPierceDetection.pierce;
+    // M-040b: mesmo instante e mesma testemunha, nos outros elementos de wand/rod.
+    const weaponElementPierceDetection = inferWeaponElementPierce(server, local, context);
+    context.weaponElementPierce = weaponElementPierceDetection.pierce;
     SessionContext.invalidateReversalCache(context);
     const turns = buildTurns(server.hits, local.spellCasts, context);
     const facts = { server, local };
@@ -2904,6 +2965,8 @@
       weaponPhysicalPierceDetection: weaponPhysicalPierceDetection || { pierce: 0, active: false, source: 'not_run', tiers: WEAPON_PHYSICAL_PIERCE_TIERS, corroboration: null },
       weaponDeathPierce: context.weaponDeathPierce || 0,
       weaponDeathPierceDetection,
+      weaponElementPierce: context.weaponElementPierce || {},
+      weaponElementPierceDetection,
       bestiaryClassDamageBonus: context.bestiaryClassBonus,
       critSetup: context.critSetup,
       spellLeechBonusCandidates: SPELL_LEECH_BONUS_CANDIDATES,

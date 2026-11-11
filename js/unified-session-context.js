@@ -76,6 +76,8 @@
     'weaponPhysicalPierce',
     // M-040a: death pierce da arma, cravado antes de `buildTurns`.
     'weaponDeathPierce',
+    // M-040b: pierce elemental de wand/rod por elemento, cravado junto com o death.
+    'weaponElementPierce',
     'bmPierce',
   ]);
 
