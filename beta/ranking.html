@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ranking Beta</title>
+<style>
+  :root { --bg:#0f1419; --card:#18202a; --line:#2a3644; --text:#e6edf3; --mute:#8b98a8; --green:#3ddc84; --blue:#58a6ff; --warn:#f0b429; --bad:#ff6b6b;
+          --S:#ffd166; --A:#3ddc84; --B:#58a6ff; --C:#b392f0; --D:#8b98a8; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f5f7fa; --card:#fff; --line:#d8dee6; --text:#1b2430; --mute:#5b6878; --green:#12924a; --blue:#1565c0; --warn:#a86b00; --bad:#c62828;
+          --S:#b38600; --A:#12924a; --B:#1565c0; --C:#6f42c1; --D:#6b7785; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:16px; margin:0 0 10px; }
+  .mute { color:var(--mute); } .small { font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin:14px 0; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .row > * { flex:1 1 220px; }
+  label { display:block; font-size:13px; color:var(--mute); margin-bottom:4px; }
+  input[type=file], input[type=text], select { width:100%; padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--text); font:inherit; }
+  button { font:inherit; padding:9px 16px; border-radius:8px; border:1px solid var(--line); background:var(--blue); color:#fff; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--text); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .check { display:flex; gap:8px; align-items:flex-start; margin:8px 0; font-size:14px; color:var(--text); }
+  .check input { margin-top:4px; }
+  .kv { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .kv div { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+  .kv b { display:block; font-size:12px; color:var(--mute); font-weight:500; } .kv span { font-size:17px; font-weight:600; }
+  .status { margin:10px 0; min-height:20px; } .err { color:var(--bad); } .ok { color:var(--green); }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+  .tabs button { background:transparent; color:var(--text); } .tabs button.on { background:var(--blue); color:#fff; }
+  .hero { display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+  .score { font-size:44px; font-weight:700; line-height:1; }
+  .badge { display:inline-block; min-width:30px; text-align:center; padding:2px 8px; border-radius:6px; font-weight:700; border:2px solid currentColor; }
+  .badge.prov { border-style:dashed; }
+  .S{color:var(--S)} .A{color:var(--A)} .B{color:var(--B)} .C{color:var(--C)} .D{color:var(--D)}
+  table { width:100%; border-collapse:collapse; } th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); font-size:14px; }
+  th { color:var(--mute); font-weight:500; font-size:13px; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Ranking Beta</h1>
+  <p class="mute">Closed test. Upload your server log and local chat, see where you stand among the other testers. Your logs are analysed in your browser; nothing is sent until you tick the consent box and press Submit.</p>
+
+  <section class="card" id="stepLoad">
+    <h2>1. Load your logs</h2>
+    <div class="row">
+      <div><label for="svFile">Server log</label><input type="file" id="svFile" accept=".txt,text/plain"></div>
+      <div><label for="lcFile">Local chat</label><input type="file" id="lcFile" accept=".txt,text/plain"></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div id="pairBox" class="hidden"><label for="pairSel">Session</label><select id="pairSel"></select></div>
+      <div><button id="btnAnalyze" disabled>Analyse</button></div>
+    </div>
+    <div class="status small" id="status"></div>
+  </section>
+
+  <section class="card hidden" id="stepSummary">
+    <h2>2. Your session</h2>
+    <div class="kv" id="sumGrid"></div>
+    <div id="ineligible" class="status err hidden"></div>
+    <div id="submitBox">
+      <div class="check"><input type="checkbox" id="chkConsent"><label for="chkConsent" style="color:var(--text);margin:0">I agree to upload this session's summary <b>and the raw logs</b> to the test server. The raw local chat may contain other players' names. I understand this is a closed test and the data may be deleted at any time.</label></div>
+      <div class="check"><input type="checkbox" id="chkPublic"><label for="chkPublic" style="color:var(--text);margin:0">Show my character name in the ranking (otherwise I appear as anonymous).</label></div>
+      <div class="row"><div><button id="btnSubmit" disabled>Submit and see my ranking</button></div></div>
+    </div>
+    <div class="status small" id="submitStatus"></div>
+  </section>
+
+  <section class="card hidden" id="stepRank">
+    <h2>3. Your ranking</h2>
+    <div class="tabs" id="scopeTabs"></div>
+    <div class="tabs" id="modeTabs"></div>
+    <div class="hero" id="hero"></div>
+    <table style="margin-top:12px"><thead><tr><th>Metric</th><th class="num">Your value</th><th class="num">Rank</th><th class="num">Top %</th><th>Tier</th></tr></thead><tbody id="rankBody"></tbody></table>
+    <p class="mute small" id="rankNote"></p>
+    <div class="kv" id="infoGrid" style="margin-top:12px"></div>
+    <p class="mute small">Damage numbers are shown for reference only; they are not ranked and do not enter the score.</p>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="../js/ranking-session-summary.js"></script>
+<script>
+(function () {
+  'use strict';
+  const SUPABASE_URL = 'https://uufjudpimzfovzxblsni.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_oiO0_nZHSQzvAlEgma6cPw_UvAI4HA8';   // publishable (public) key
+  const CUTOFF_KEY = 20260616, MIN_TURNS = 50, MAX_UNRESOLVED = 20;
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const RS = window.RankingSessionSummary;
+  const $ = id => document.getElementById(id);
+
+  const state = { sv: null, lc: null, pairs: [], summary: null, text: null, sessionId: null, scope: 'hunt', best: false };
+
+  // ---- session splitting / pairing (same behaviour as the app's pairing, copied, not imported) ----
+  const MONTHS = { Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Sept:9,Oct:10,Nov:11,Dec:12 };
+  function headerInfo(header) {
+    const m = /saved \w+ (\w+) +(\d+) (\d{2}):(\d{2}):(\d{2}) (\d{4})/.exec(header || '');
+    if (!m) return null;
+    return { key: +m[6] * 10000 + (MONTHS[m[1]] || 0) * 100 + +m[2], saveSec: +m[3] * 3600 + +m[4] * 60 + +m[5],
+             iso: m[6] + '-' + String(MONTHS[m[1]] || 0).padStart(2, '0') + '-' + String(+m[2]).padStart(2, '0') };
+  }
+  function splitSessions(text) {
+    const lines = text.replace(/^﻿/, '').split(/\r?\n/), out = []; let cur = null;
+    for (const line of lines) {
+      if (/^Channel .+ saved /.test(line)) { if (cur) out.push(cur); cur = { header: line, lines: [line] }; }
+      else if (cur) cur.lines.push(line);
+    }
+    if (cur) out.push(cur);
+    if (!out.length) out.push({ header: '', lines: lines });
+    return out.map(s => Object.assign(s, { text: s.lines.join('\n'), info: headerInfo(s.header) }));
+  }
+  function buildPairs(svS, lcS) {
+    if (svS.length === 1 && lcS.length === 1) return [{ sv: svS[0], lc: lcS[0] }];
+    const pairs = [];
+    for (const sv of svS) {
+      if (!sv.info) continue;
+      let best = null, bestDiff = Infinity;
+      for (const lc of lcS) {
+        if (!lc.info || lc.info.key !== sv.info.key) continue;
+        const d = Math.abs(lc.info.saveSec - sv.info.saveSec);
+        if (d < bestDiff) { bestDiff = d; best = lc; }
+      }
+      if (best && bestDiff <= 3600) pairs.push({ sv, lc: best });
+    }
+    return pairs;
+  }
+
+  // ---- load ----
+  const readFile = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(f); });
+  async function onFile() {
+    const a = $('svFile').files[0], b = $('lcFile').files[0];
+    if (!a || !b) { $('btnAnalyze').disabled = true; return; }
+    $('status').textContent = 'Reading files…';
+    state.sv = splitSessions(await readFile(a)); state.lc = splitSessions(await readFile(b));
+    state.pairs = buildPairs(state.sv, state.lc);
+    if (!state.pairs.length) { $('status').innerHTML = '<span class="err">No matching sessions found. Check that both files are from the same hunt.</span>'; $('btnAnalyze').disabled = true; return; }
+    const sel = $('pairSel'); sel.innerHTML = '';
+    state.pairs.forEach((p, i) => { const o = document.createElement('option'); o.value = i; o.textContent = p.sv.info ? p.sv.info.iso + ' (saved ' + p.sv.header.replace(/^.*saved /, '') + ')' : 'Session ' + (i + 1); sel.appendChild(o); });
+    $('pairBox').classList.toggle('hidden', state.pairs.length < 2);
+    $('status').textContent = state.pairs.length + ' session(s) found.'; $('btnAnalyze').disabled = false;
+  }
+  $('svFile').addEventListener('change', onFile); $('lcFile').addEventListener('change', onFile);
+
+  // ---- analyse (engine runs in the same worker the app uses; the engine files are not modified) ----
+  let spawnsCache = null;
+  async function spawns() {
+    if (!spawnsCache) spawnsCache = (await (await fetch('../docs/data/tibiainfo-spawns-2026-11.json')).json()).spawns;
+    return spawnsCache;
+  }
+  function classifyInWorker(sv, lc, onTick) {
+    return new Promise((resolve, reject) => {
+      const w = new Worker('../js/unified-worker.js'), t0 = Date.now();
+      const timer = setInterval(() => onTick(Math.round((Date.now() - t0) / 1000)), 1000);
+      const done = fn => { clearInterval(timer); w.terminate(); fn(); };
+      w.onmessage = e => { const m = e.data || {}; if (m.type === 'done') done(() => resolve(m.result)); else if (m.type === 'error') done(() => reject(new Error(m.message))); };
+      w.onerror = e => done(() => reject(new Error(e.message || 'worker error')));
+      w.postMessage({ serverText: sv, localText: lc, opts: { trace: true } });
+    });
+  }
+  $('btnAnalyze').addEventListener('click', async () => {
+    const pair = state.pairs[+$('pairSel').value || 0];
+    $('btnAnalyze').disabled = true; $('stepSummary').classList.add('hidden'); $('stepRank').classList.add('hidden');
+    try {
+      const res = await classifyInWorker(pair.sv.text, pair.lc.text, s => { $('status').textContent = 'Classifying… ' + s + 's (large logs can take 30–60s)'; });
+      const speaker = res && res.unifiedSource && res.unifiedSource.selectedSpeaker;
+      const summary = RS.summaryFromUiResult(res, { level: RS.levelFromLocalChat(pair.lc.text, speaker), date: pair.sv.info ? pair.sv.info.iso : null, spawns: await spawns() });
+      if (summary.error) throw new Error(summary.error);
+      state.summary = summary; state.text = { sv: pair.sv.text, lc: pair.lc.text, key: pair.sv.info ? pair.sv.info.key : null };
+      $('status').innerHTML = '<span class="ok">Done.</span>';
+      showSummary(summary);
+    } catch (e) { $('status').innerHTML = '<span class="err">Error: ' + esc(e.message) + '</span>'; }
+    $('btnAnalyze').disabled = false;
+  });
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+  const fmt = n => Math.round(n).toLocaleString('en-US');
+  function eligibility(s, key) {
+    if (!key || key < CUTOFF_KEY) return 'Only sessions saved on or after 16 Jun 2026 can be ranked.';
+    if (!s.player || !s.vocation) return 'Could not identify the character or vocation in this session.';
+    if (s.level == null) return 'Could not find the character level in the local chat.';
+    if (s.totalTurns < MIN_TURNS) return 'Too few combat turns (' + s.totalTurns + '; need ' + MIN_TURNS + ').';
+    if (s.unresolvedPct > MAX_UNRESOLVED) return s.unresolvedPct.toFixed(1) + '% of turns could not be classified (limit ' + MAX_UNRESOLVED + '%).';
+    return null;
+  }
+  function showSummary(s) {
+    const cells = [['Character', s.player], ['Vocation', s.vocation], ['Level', s.level == null ? '?' : s.level], ['Date', s.date || '?'], ['Hunt', s.hunt || '?'],
+      ['Combat turns', fmt(s.totalTurns)], ['Unclassified', s.unresolvedPct.toFixed(1) + '%'], ['Spell & rune casts/h', fmt(s.spellRune.perHour)],
+      ['Auto-attacks/h', s.aa.pct >= 10 ? fmt(s.aa.perHour) : 'n/a']];
+    $('sumGrid').innerHTML = cells.map(c => '<div><b>' + esc(c[0]) + '</b><span>' + esc(c[1]) + '</span></div>').join('');
+    const why = eligibility(s, state.text.key);
+    $('ineligible').textContent = why || ''; $('ineligible').classList.toggle('hidden', !why);
+    $('submitBox').classList.toggle('hidden', !!why);
+    $('chkConsent').checked = false; $('btnSubmit').disabled = true; $('submitStatus').textContent = '';
+    $('stepSummary').classList.remove('hidden');
+  }
+  $('chkConsent').addEventListener('change', () => { $('btnSubmit').disabled = !$('chkConsent').checked; });
+
+  // ---- submit ----
+  async function sha256Hex(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  async function gzip(text) { return new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).blob(); }
+  function playerSecret() {
+    try { let s = localStorage.getItem('rankingBetaSecret'); if (!s) { s = crypto.randomUUID() + crypto.randomUUID(); localStorage.setItem('rankingBetaSecret', s); } return s; }
+    catch (_e) { return crypto.randomUUID() + crypto.randomUUID(); }
+  }
+  $('btnSubmit').addEventListener('click', async () => {
+    const st = $('submitStatus'); $('btnSubmit').disabled = true; st.textContent = 'Uploading…'; st.className = 'status small';
+    try {
+      const s = state.summary, logHash = await sha256Hex(state.text.sv + '\n---\n' + state.text.lc);
+      const existing = await sb.rpc('ranking_session_by_hash', { p_log_hash: logHash });
+      if (existing.error) throw existing.error;
+      if (existing.data) { state.sessionId = existing.data; st.innerHTML = '<span class="ok">This session was already submitted.</span>'; return showRank(); }
+      const folder = crypto.randomUUID();
+      for (const [name, text] of [['server.txt.gz', state.text.sv], ['local.txt.gz', state.text.lc]]) {
+        const up = await sb.storage.from('ranking-raw-logs').upload(folder + '/' + name, await gzip(text), { contentType: 'application/gzip', upsert: false });
+        if (up.error) throw up.error;
+      }
+      const pub = $('chkPublic').checked;
+      const r = await sb.rpc('ranking_submit_session', {
+        p_player_key_hash: await sha256Hex(playerSecret()), p_character_name: pub ? s.player : null, p_is_public: pub,
+        p_log_hash: logHash, p_raw_log_path: folder + '/', p_summary: s });
+      if (r.error) throw r.error;
+      state.sessionId = r.data; st.innerHTML = '<span class="ok">Submitted. Thank you!</span>';
+      showRank();
+    } catch (e) {
+      const msg = e && e.message || String(e);
+      st.innerHTML = '<span class="err">' + esc(/too_many_unclassified/.test(msg) ? 'Too many unclassified turns.' : /implausible/.test(msg) ? 'Damage values look implausible.' : msg) + '</span>';
+      $('btnSubmit').disabled = !$('chkConsent').checked;
+    }
+  });
+
+  // ---- ranking ----
+  const SCOPES = [['hunt', 'Hunt'], ['hunt_level', 'Hunt × level band'], ['vocation', 'Vocation overall']];
+  const MODES = [[false, 'All sessions'], [true, 'Best of each player']];
+  function tabs(el, items, current, onPick) {
+    el.innerHTML = '';
+    for (const [val, label] of items) { const b = document.createElement('button'); b.textContent = label; b.className = (val === current ? 'on' : ''); b.onclick = () => onPick(val); el.appendChild(b); }
+  }
+  function metricName(m) {
+    if (m.metric === 'aa') return 'Auto-attacks per hour';
+    if (m.metric === 'cast') return 'Spell & rune casts per hour';
+    if (m.metric === 'carpet') return 'Carpet uptime';
+    return 'Avg hits (carpet-adjusted): ' + m.label.split('|').slice(1).join('|');
+  }
+  const metricValue = m => m.metric === 'carpet' ? (+m.value * 100).toFixed(1) + '%' : m.metric === 'hits' ? (+m.value).toFixed(2) : fmt(+m.value);
+  function badge(tier, prov) { return tier ? '<span class="badge ' + tier + (prov ? ' prov' : '') + '" title="' + (prov ? 'Provisional: fewer than 30 players in this group' : '') + '">' + tier + '</span>' : '<span class="mute">–</span>'; }
+  async function showRank() {
+    $('stepRank').classList.remove('hidden');
+    tabs($('scopeTabs'), SCOPES, state.scope, v => { state.scope = v; showRank(); });
+    tabs($('modeTabs'), MODES, state.best, v => { state.best = v; showRank(); });
+    const args = { p_session: state.sessionId, p_scope: state.scope, p_best: state.best };
+    const [rows, score] = await Promise.all([sb.rpc('ranking_standing', args), sb.rpc('ranking_score', args)]);
+    if (rows.error || score.error) { $('rankNote').innerHTML = '<span class="err">' + esc((rows.error || score.error).message) + '</span>'; return; }
+    const sc = score.data && score.data[0], list = rows.data || [], s = state.summary;
+    const players = list.reduce((a, r) => Math.max(a, r.players), 0);
+    $('hero').innerHTML = '<div><div class="score">' + (sc && sc.score != null ? sc.score : '–') + '</div><div class="mute small">Overall score (0–100)' + (sc && sc.provisional ? ', provisional' : '') + '</div></div>' +
+      '<div><b>' + esc(s.player) + '</b> · ' + esc(s.vocation) + ' · level ' + s.level + '<br><span class="mute small">' + esc(s.hunt || '') + '</span></div>';
+    $('rankBody').innerHTML = list.map(m => '<tr><td>' + esc(metricName(m)) + '</td><td class="num">' + metricValue(m) + '</td><td class="num">' +
+      (m.rank != null ? '#' + m.rank + ' of ' + m.players : '<span class="mute">needs 3+ players</span>') + '</td><td class="num">' +
+      (m.top_pct != null ? (+m.top_pct).toFixed(1) + '%' : '–') + '</td><td>' + badge(m.tier, m.provisional) + '</td></tr>').join('') ||
+      '<tr><td colspan="5" class="mute">No comparable players in this group yet.</td></tr>';
+    $('rankNote').textContent = players < 30 ? 'Only ' + players + ' player(s) in this group. Tiers are provisional (dashed) until there are 30 or more.' : '';
+    $('infoGrid').innerHTML = [['Highest damage in a turn', s.maxTurnDamage], ['Highest single hit', s.maxSingleHit]].map(c => '<div><b>' + c[0] + '</b><span>' + fmt(c[1]) + '</span></div>').join('');
+  }
+})();
+</script>
+</body>
+</html>

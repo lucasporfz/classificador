@@ -1,0 +1,325 @@
+{
+ "source": "https://tibiainfo.com/global/spawn-data",
+ "fetchedAt": "2026-11-12",
+ "note": "Spawn (hunt) -> monstros, como listados pelo tibiainfo.com (nomes no plural, como no site). Cada spawn vem da página de detalhe /global/spawn-data/spawns/<nome>. Para casar com o log, singularize o nome do monstro.",
+ "spawnCount": 61,
+ "spawns": {
+  "Antrum Of The Fallen": [
+   "Blemished Spawns",
+   "Eyeless Devourers",
+   "Afflicted Striders"
+  ],
+  "Asura Palace": [
+   "Dawnfire Asuras",
+   "Frost Flower Asuras",
+   "Midnight Asuras"
+  ],
+  "Asura Vault": [
+   "True Dawnfire Asuras",
+   "True Frost Flower Asuras",
+   "True Midnight Asuras"
+  ],
+  "Azzilon Castle": [
+   "Sineater Inferniarches",
+   "Gorger Inferniarches",
+   "Broodrider Inferniarches"
+  ],
+  "Azzilon Catacombs": [
+   "Brinebrute Inferniarches",
+   "Hellhunter Inferniarches",
+   "Spellreaper Inferniarches"
+  ],
+  "Barren Drift": [
+   "Wandering Prospectors",
+   "Cursed Prospectors",
+   "Evil Prospectors"
+  ],
+  "Bloodfire Gorge": [
+   "Raubritter Chasteners",
+   "Raubritter Marksmen",
+   "Raubritter Skirmishers"
+  ],
+  "Book World Chapter 2": [
+   "Bramble Wyrmlings",
+   "Hawk Hoppers"
+  ],
+  "Book World Chapter 3": [
+   "Lion Hydras",
+   "Bluebeaks"
+  ],
+  "Book World Chapter 4": [
+   "Headwalkers",
+   "Crusaders"
+  ],
+  "Bounac": [
+   "Usurper Knights",
+   "Usurper Archers",
+   "Usurper Warlocks"
+  ],
+  "Claustrophobic Inferno": [
+   "Brachiodemons",
+   "Infernal Demons",
+   "Infernal Phantoms"
+  ],
+  "Cobra Bastion": [
+   "Cobra Assassins",
+   "Cobra Scouts",
+   "Cobra Viziers"
+  ],
+  "Court Of Summer": [
+   "Crazed Summer Rearguards",
+   "Crazed Summer Vanguards",
+   "Insane Sirens"
+  ],
+  "Court Of Winter": [
+   "Crazed Winter Rearguards",
+   "Crazed Winter Vanguards",
+   "Soul-Broken Harbingers"
+  ],
+  "Crystal Enigma": [
+   "Headpeckers",
+   "Mantosauruses",
+   "Mercurial Menaces",
+   "Noxious Ripptors",
+   "Shrieking Cry-Stals"
+  ],
+  "Darklight Core": [
+   "Walking Pillars",
+   "Darklight Sources",
+   "Darklight Strikers",
+   "Darklight Matters"
+  ],
+  "Devoted Radiant Ascendancy": [
+   "Devoted Radiant Templars",
+   "Devoted Radiant Inquisitors",
+   "Devoted Radiant Zealots"
+  ],
+  "Devoted Radiant Skyhold": [
+   "Devoted Radiant Wardens",
+   "Devoted Radiant Paragons",
+   "Devoted Radiant Acolytes"
+  ],
+  "Dwelling Of The Forgotten": [
+   "Cave Chimeras",
+   "Varnished Diremaws",
+   "Tremendous Tyrants"
+  ],
+  "Earth Library": [
+   "Cursed Books"
+  ],
+  "Ebb And Flow": [
+   "Bony Sea Devils",
+   "Capricious Phantoms",
+   "Hazardous Phantoms",
+   "Turbulent Elementals"
+  ],
+  "Edron Crumbling Caverns": [
+   "Shell Drakes",
+   "Cinder Wyrmlings"
+  ],
+  "Energy Library": [
+   "Energuardians Of Tales",
+   "Brain Squids",
+   "Energetic Books",
+   "Knowledge Elementals"
+  ],
+  "Feaster Of Souls": [
+   "Flimsy Lost Souls",
+   "Mean Lost Souls",
+   "Freakish Lost Souls"
+  ],
+  "Ferumbras&#39; Ascension": [
+   "Hellflayers",
+   "Grimeleeches",
+   "Vexclaws"
+  ],
+  "Fire Library": [
+   "Guardians Of Tales",
+   "Rage Squids",
+   "Burning Books"
+  ],
+  "Forsaken Crypt": [
+   "Crypt Mages",
+   "Cyclursuses",
+   "Roaming Dreads"
+  ],
+  "Furious Crater": [
+   "Cloaks Of Terror",
+   "Vibrant Phantoms",
+   "Courage Leeches"
+  ],
+  "Gloom Pillars": [
+   "Darklight Emitters",
+   "Darklight Constructs",
+   "Wandering Pillars",
+   "Converters"
+  ],
+  "Gold Tokens": [
+   "Sparkions",
+   "Breach Broods",
+   "Reality Reavers",
+   "Dread Intruders"
+  ],
+  "Grotto Of The Lost": [
+   "Lavafungi",
+   "Lavaworms",
+   "Streaked Devourers"
+  ],
+  "Hyaena Lairs": [
+   "Werehyaenas",
+   "Werehyaena Shamans"
+  ],
+  "Ice Library": [
+   "Animated Feathers",
+   "Squid Wardens",
+   "Icecold Books"
+  ],
+  "Ingol -3, -4, -5": [
+   "Carnivostriches",
+   "Liodiles",
+   "Boar Men"
+  ],
+  "Ingol Surface, -1, -2": [
+   "Harpies",
+   "Rhindeer",
+   "Crape Men"
+  ],
+  "Jaded Roots": [
+   "Sopping Corpuses",
+   "Bloated Man-Maggots",
+   "Mycobiontic Beetles",
+   "Oozing Corpuses"
+  ],
+  "Kilmaresh Steppes": [
+   "Young Goannas",
+   "Adult Goannas"
+  ],
+  "Lion Sanctum": [
+   "Werelions",
+   "Werelionesses",
+   "White Lions"
+  ],
+  "Mirrored Nightmare": [
+   "Many Faces",
+   "Distorted Phantoms",
+   "Mirror Images",
+   "Druid&#39;s Apparitions",
+   "Knight&#39;s Apparitions",
+   "Paladin&#39;s Apparitions",
+   "Sorcerer&#39;s Apparitions",
+   "Monk&#39;s Apparitions"
+  ],
+  "Monster Graveyard": [
+   "Sulphiders",
+   "Sulphur Spouters",
+   "Nighthunters",
+   "Stalking Stalks",
+   "Undertakers"
+  ],
+  "Nimmersatt Breeding Grounds": [
+   "Wardragons",
+   "Dragolisks",
+   "Mega Dragons"
+  ],
+  "Norcferatu Fortress": [
+   "Norcferatu Heartlesses",
+   "Norcferatu Nightweavers",
+   "Orclops Bloodbreakers",
+   "Vargs",
+   "Gloom Maws",
+   "Dworc Shadowstalkers"
+  ],
+  "Oskayaat Undercity": [
+   "Weretigers",
+   "Cunning Werepanthers",
+   "White Weretigers"
+  ],
+  "Outer Crypt": [
+   "Haunted Hunters",
+   "Walking Dreads"
+  ],
+  "Podzilla Bottom": [
+   "Quara Looters",
+   "Quara Plunderers",
+   "Quara Raiders"
+  ],
+  "Podzilla Stalk": [
+   "Rootthing Amber Shapers",
+   "Rootthing Bug Trackers",
+   "Rootthing Nutshells"
+  ],
+  "Putrefactory": [
+   "Oozing Carcasses",
+   "Sopping Carcasses",
+   "Rotten Man-Maggots",
+   "Meandering Mushrooms"
+  ],
+  "Radiant Ascendancy": [
+   "Radiant Templars",
+   "Radiant Inquisitors",
+   "Radiant Zealots"
+  ],
+  "Radiant Skyhold": [
+   "Radiant Wardens",
+   "Radiant Paragons",
+   "Radiant Acolytes"
+  ],
+  "Rotten Wasteland": [
+   "Branchy Crawlers",
+   "Rotten Golems",
+   "Mould Phantoms"
+  ],
+  "Sparkling Pools": [
+   "Emerald Tortoises",
+   "Gore Horns",
+   "Gorerillas",
+   "Hulking Prehemoths",
+   "Sabreteeth"
+  ],
+  "Temple Of The Moon Goddess": [
+   "Naga Warriors",
+   "Naga Archers"
+  ],
+  "Tibiadrome": [
+   "Domestikions",
+   "Hoodinions",
+   "Mearidions",
+   "Murmillions",
+   "Scissorions"
+  ],
+  "Unhallowed Crypt": [
+   "Creepy Crawlers",
+   "Crypt Fiends"
+  ],
+  "Warzone 1": [
+   "Hideous Fungi",
+   "Humongous Fungi",
+   "Stone Devourers",
+   "Armadiles"
+  ],
+  "Warzone 2": [
+   "Lost Berserkers",
+   "Magma Crawlers",
+   "Weepers",
+   "Lava Golems",
+   "Infected Weepers"
+  ],
+  "Warzone 3": [
+   "Cliff Striders",
+   "Orewalkers",
+   "Lost Berserkers",
+   "Ironblights"
+  ],
+  "Warzone 4": [
+   "Chasm Spawns"
+  ],
+  "Warzone 5": [
+   "Tunnel Tyrants",
+   "Cave Devourers"
+  ],
+  "Warzone 6": [
+   "Deepworms",
+   "Diremaw"
+  ]
+ }
+}
