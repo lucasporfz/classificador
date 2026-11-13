@@ -95,3 +95,8 @@
 .rk-actions button.ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
 .rk-actions button:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 640px) { #rankingSection .cls-metrics { grid-template-columns: minmax(0, 1fr); } #rankingSection .hero2 { padding: 14px; } #rankingSection .tier.xl { min-width: 48px; height: 48px; line-height: 46px; font-size: 26px; } }
+
+/* prévia: cartões travados (sem dado real, só barras decorativas) */
+#rankingSection .cls-metric.c2.locked { opacity: .75; border-style: dashed; }
+#rankingSection .cls-metric.c2.locked .cls-metric-label { color: var(--text-muted); }
+#rankingSection .lockbar { height: 26px; margin-top: 8px; border-radius: 6px; background: repeating-linear-gradient(90deg, var(--border) 0 14px, transparent 14px 22px); opacity: .6; }

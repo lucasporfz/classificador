@@ -27,7 +27,7 @@
   const PAL = ['#F59E0B', '#22C55E', '#4A90F7', '#F87171', '#A78BFA', '#FACC15', '#22D3EE', '#FB923C', '#E879F9'];
 
   // run = id crescente: um resultado atrasado de uma classificação antiga não sobrescreve a nova.
-  const S = { run: 0, phase: 'idle', summary: null, texts: null, key: null, reason: null, hash: null, sessionId: null, scope: 'hunt', best: false, busy: false, standing: null, icons: null };
+  const S = { run: 0, phase: 'idle', summary: null, texts: null, key: null, reason: null, hash: null, sessionId: null, scope: 'hunt', best: false, busy: false, standing: null, icons: null, preview: undefined };
 
   // ---------- cabeçalho do log ----------
   const MONTHS = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Sept: 9, Oct: 10, Nov: 11, Dec: 12 };
@@ -73,7 +73,7 @@
     classify(sv, lc, opts, handlers) {
       const run = orig.classify(sv, lc, opts, handlers);
       const id = ++S.run;
-      Object.assign(S, { phase: 'classifying', standing: null, sessionId: null }); render();
+      Object.assign(S, { phase: 'classifying', standing: null, sessionId: null, preview: undefined }); render();
       run.promise.then(res => onClassified(id, sv, lc, res), () => { if (id === S.run) { S.phase = 'idle'; render(); } });
       return run;
     },
@@ -90,7 +90,7 @@
       Object.assign(S, { phase: reason ? 'ineligible' : 'ready', summary, texts: { sv, lc }, key: info && info.key, reason, sessionId: null,
                          hash: await sha256Hex(sv.trim() + '\n---\n' + lc.trim()) });
       render();
-      if (!reason) await lookupExisting(id);
+      if (!reason) { await lookupExisting(id); if (id === S.run && S.phase === 'ready') loadPreview(id); }
     } catch (e) { if (id === S.run) { Object.assign(S, { phase: 'ineligible', reason: 'Ranking unavailable: ' + e.message }); render(); } }
   }
 
@@ -99,6 +99,15 @@
     const r = await sb.rpc('ranking_session_by_hash', { p_log_hash: S.hash });
     if (id !== S.run || r.error || !r.data) return;
     S.sessionId = r.data; S.phase = 'submitted'; render(); loadStanding();
+  }
+
+  // Prévia antes de entrar: só os números do resumo vão ao servidor (nada é gravado) e ele devolve
+  // apenas a melhor métrica e contagens. O resto fica travado até o envio.
+  async function loadPreview(id) {
+    const [r] = await Promise.all([sb.rpc('ranking_preview', { p_summary: S.summary }), loadIcons()]);
+    if (id !== S.run || S.phase !== 'ready') return;
+    S.preview = r.error ? null : (r.data && r.data[0]) || null;
+    render();
   }
 
   // ---------- helpers de dados ----------
@@ -164,19 +173,38 @@
   // ---------- render ----------
   function render() {
     const el = $('rankingBody'); if (!el) return;
-    if (S.phase === 'idle') { el.innerHTML = '<p class="rk-muted">Classify a session, then press <b>Ranking</b> to join. Your position among the other players appears here.</p>'; return; }
+    if (S.phase === 'idle') { el.innerHTML = '<p class="rk-muted">Classify a session to see how you compare with the other players. You can join the rank afterwards.</p>'; return; }
     if (S.phase === 'classifying') { el.innerHTML = '<p class="rk-muted">Classifying…</p>'; return; }
     if (S.phase === 'ineligible') { el.innerHTML = '<p class="rk-warn">This session can\'t be ranked: ' + esc(S.reason) + '</p>'; return; }
-    if (S.phase === 'ready') {
-      const s = S.summary;
-      el.innerHTML = '<div class="rk-box"><p class="rk-muted" style="margin:0 0 10px"><b>' + esc(s.player) + '</b> · ' + esc(cap(s.vocation)) + ' · level ' + s.level + ' · ' + esc(s.hunt || '') + ' · ' + fmtInt(s.totalTurns) + ' turns. Not in the ranking yet.</p>' +
-        '<div class="rk-actions" style="justify-content:flex-start;margin:0"><button id="rkJoin" class="btn-blue">Join the ranking</button></div></div>';
-      $('rkJoin').onclick = openModal; return;
-    }
+    if (S.phase === 'ready') { el.innerHTML = previewHtml(); const j = $('rkJoin'); if (j) j.onclick = openModal; return; }
     if (S.phase === 'submitted') {
       el.innerHTML = '<div id="rkStanding"><p class="rk-muted">Loading your ranking…</p></div>';
       if (S.standing) renderStanding();
     }
+  }
+
+  const LOCKS = ['Overall tier & score', 'Rank on every metric', 'Where the other players are', 'What it takes to move up', 'Compare by hunt and level band'];
+  function bestCard(p) {
+    const s = S.summary, m = p.metric, f = fmtFor(m);
+    let label, value, icon = '';
+    if (m === 'aa') { label = 'Auto-attacks per hour'; value = s.aa.perHour; }
+    else if (m === 'cast') { label = 'Spell & rune casts per hour'; value = s.spellRune.perHour; }
+    else if (m === 'carpet') { label = 'Carpet uptime'; value = s.gravSan.uptime; }
+    else { const row = s.rows.find(r => r.kind + '|' + r.label === p.label); if (!row) return ''; label = shortLabel(enLabel(row.label)); value = row.hitsAdj != null ? row.hitsAdj : row.hitsMean; icon = spellIcon(row); }
+    return card({ icon, label, value: f(+value), tier: tierBadge(p, 'bigtier'), rank: rankRow(p), sub: 'Your best metric in this group', first: p.rank === 1 });
+  }
+  function previewHtml() {
+    const s = S.summary, p = S.preview;
+    const who = '<p class="rk-muted" style="margin:0 0 10px"><b>' + esc(s.player) + '</b> · ' + esc(cap(s.vocation)) + ' · level ' + s.level + ' · ' + esc(s.hunt || '') + ' · ' + fmtInt(s.totalTurns) + ' turns</p>';
+    const join = '<div class="rk-actions" style="justify-content:flex-start;margin:14px 0 0"><button id="rkJoin" class="btn-blue">Join the rank</button></div>';
+    if (p === undefined) return '<div class="rk-box">' + who + '<p class="rk-muted" style="margin:0">Comparing with the other players…</p></div>';
+    if (p === null) return '<div class="rk-box">' + who + '<p class="rk-muted" style="margin:0">Not in the rank yet.</p>' + join + '</div>';
+    const n = p.group_players;
+    const head = '<p class="rk-muted" style="margin:0 0 10px">Preview · you are <b>not in the rank yet</b>. Nothing was saved. Compared with <b>' + n + '</b> other ' + esc(s.vocation) + ' player' + (n === 1 ? '' : 's') + ' in ' + esc(s.hunt || 'this hunt') + '.</p>';
+    const open = p.metric ? bestCard(p) : '<div class="cls-metric c2 off"><div class="cls-metric-label">Your position</div><div class="sub">Not enough players in this group to compare yet (3 needed). Join and be one of the first.</div></div>';
+    const locked = LOCKS.map((l, i) => '<div class="cls-metric c2 locked"><div class="cls-metric-label">🔒 ' + esc(l) + '</div><div class="lockbar"></div>' + (i === 1 && p.locked > 0 ? '<div class="sub">+' + p.locked + ' more metric' + (p.locked === 1 ? '' : 's') + ' ranked</div>' : '') + '</div>').join('');
+    return '<div class="rk-box">' + who + head + '<div class="cls-metrics">' + open + locked + '</div>' + join +
+      '<p class="rk-muted" style="margin:10px 0 0">Join to unlock the full ranking. Sends your session summary and logs, with your consent.</p></div>';
   }
 
   async function loadStanding() {
