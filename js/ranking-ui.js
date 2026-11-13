@@ -3,7 +3,8 @@
  *
  * Não altera js/app.js nem o motor: embrulha `ClassifyPort.classify` para receber cada resultado
  * completo (sessão inteira, nunca a fatia do gráfico) e cuida do resto: resumo, aceites, envio ao
- * Supabase e leitura da posição. A UI é em inglês de propósito (decisão do usuário).
+ * Supabase e leitura da posição. O layout é a porta do protótipo (ranking.proto.html, versão C).
+ * A UI é em inglês de propósito (decisão do usuário).
  */
 (function () {
   'use strict';
@@ -11,15 +12,22 @@
   const SUPABASE_KEY = 'sb_publishable_oiO0_nZHSQzvAlEgma6cPw_UvAI4HA8';   // chave publishable (pública)
   const CUTOFF_KEY = 20260616, MIN_TURNS = 50, MAX_UNRESOLVED = 20;
   const SPAWNS_URL = 'docs/data/tibiainfo-spawns-2026-11.json';
+  const ICONS_URL = 'docs/data/ranking-icons.json';   // opcional: sem o arquivo, cai no ícone genérico
 
   const RS = window.RankingSessionSummary;
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const fmt = n => Math.round(n).toLocaleString('en-US');
+  const fmtInt = n => Math.round(n).toLocaleString('en-US');
+  const fmt2 = n => (+n).toFixed(2);
+  const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fmtDate = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? (+p[2]) + ' ' + MON[+p[1] - 1] + ' ' + p[0] : 'no date'; };
+  const MIN_RANK = 3, MIN_CONFIRM = 30;
+  const PAL = ['#F59E0B', '#22C55E', '#4A90F7', '#F87171', '#A78BFA', '#FACC15', '#22D3EE', '#FB923C', '#E879F9'];
 
   // run = id crescente: um resultado atrasado de uma classificação antiga não sobrescreve a nova.
-  const S = { run: 0, phase: 'idle', summary: null, texts: null, key: null, reason: null, hash: null, sessionId: null, scope: 'hunt', best: false, busy: false };
+  const S = { run: 0, phase: 'idle', summary: null, texts: null, key: null, reason: null, hash: null, sessionId: null, scope: 'hunt', best: false, busy: false, standing: null, icons: null };
 
   // ---------- cabeçalho do log ----------
   const MONTHS = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Sept: 9, Oct: 10, Nov: 11, Dec: 12 };
@@ -53,6 +61,11 @@
   }
   let spawnsCache = null;
   async function spawns() { if (!spawnsCache) spawnsCache = (await (await fetch(SPAWNS_URL)).json()).spawns; return spawnsCache; }
+  async function loadIcons() {
+    if (S.icons) return S.icons;
+    try { const r = await fetch(ICONS_URL); S.icons = r.ok ? await r.json() : { spells: {}, aa: {} }; } catch (_e) { S.icons = { spells: {}, aa: {} }; }
+    return S.icons;
+  }
 
   // ---------- recebe cada classificação da UI ----------
   const orig = window.ClassifyPort;
@@ -60,7 +73,7 @@
     classify(sv, lc, opts, handlers) {
       const run = orig.classify(sv, lc, opts, handlers);
       const id = ++S.run;
-      S.phase = 'classifying'; render();
+      Object.assign(S, { phase: 'classifying', standing: null, sessionId: null }); render();
       run.promise.then(res => onClassified(id, sv, lc, res), () => { if (id === S.run) { S.phase = 'idle'; render(); } });
       return run;
     },
@@ -88,21 +101,76 @@
     S.sessionId = r.data; S.phase = 'submitted'; render(); loadStanding();
   }
 
-  // ---------- render ----------
+  // ---------- helpers de dados ----------
   const BAND = lvl => { const lo = Math.floor(lvl / 250) * 250; return lo + '–' + (lo + 250); };
-  const SCOPES = () => [['hunt', 'Hunt'], ['hunt_level', 'Hunt · level ' + (S.summary ? BAND(S.summary.level) : '')], ['vocation', 'All ' + (S.summary ? S.summary.vocation : '') + 's']];
+  const SCOPES = () => [['hunt', 'Hunt'], ['hunt_level', 'Hunt · level ' + BAND(S.summary.level)], ['vocation', 'All ' + S.summary.vocation + 's']];
   const MODES = [[false, 'All sessions'], [true, 'Best of each player']];
+  const scopeLabel = () => ({ hunt: S.summary.hunt || 'Hunt', hunt_level: (S.summary.hunt || 'Hunt') + ' · level ' + BAND(S.summary.level), vocation: 'All ' + S.summary.vocation + 's' }[S.scope]);
+  const shortLabel = l => l.replace(/\s*\([^)]*\)\s*$/, '');
+  const enLabel = l => l === 'Auto ataque' ? 'Auto attack' : l;
+  const keyOf = r => r.metric === 'hits' ? r.label : r.metric;   // hits: "kind|label"
+  const fmtFor = metric => metric === 'carpet' ? (v => (v * 100).toFixed(1) + '%') : metric === 'hits' ? fmt2 : fmtInt;
+  const fmtGap = (metric, d) => metric === 'carpet' ? (d * 100).toFixed(1) + ' pp' : metric === 'hits' ? fmt2(d) : fmtInt(d);
+  const tierOfTop = top => top <= 5 ? 'S' : top <= 10 ? 'A' : top <= 50 ? 'B' : top <= 90 ? 'C' : 'D';
+  const W = { S: 8, A: 5, B: 3, C: 2, D: 1 };
+  const ranked = r => r && r.rank != null && r.tier;
 
+  function tierBadge(r, cls) {
+    if (!ranked(r)) return '<span class="tier none ' + (cls || '') + '" title="A tier needs at least ' + MIN_RANK + ' players in the group">–</span>';
+    const prov = r.provisional;
+    return '<span class="tier ' + r.tier + (prov ? ' prov' : '') + ' ' + (cls || '') + '" title="' + (prov ? 'Provisional tier (only ' + r.players + ' players; ' + MIN_CONFIRM + ' confirm it): ' : '') + 'top ' + Math.max(1, +r.top_pct) + '%">' + r.tier + '</span>';
+  }
+  function rankRow(r) {
+    if (!ranked(r)) return '<div class="rk"><span class="r"><span class="rc"><span class="tier none">–</span><b class="nocmp">no comparison</b></span></span><span class="p"></span></div>';
+    const p = r.players >= MIN_CONFIRM ? 'p' + Math.round(r.percentile * 100) : '';
+    return '<div class="rk"><span class="r"><span class="rc">' + tierBadge(r) + '<b>#' + r.rank + '</b><i>/ ' + r.players + '</i></span></span><span class="p">' + p + '</span></div>';
+  }
+  // faixa de dispersão: pontos neutros, você em destaque; linha tracejada = mediana
+  function miniStrip(r) {
+    const others = (r && r.others_values || []).map(Number);
+    if (!others.length) return '<div class="strip empty">No other players to compare yet</div>';
+    const v = +r.value, Wd = 240, H = 28, L = 8, R = 8, Y = 14, all = others.concat([v]), lo = Math.min(...all), hi = Math.max(...all), pad = (hi - lo) * .08 || .5, a = lo - pad, b = hi + pad;
+    const X = x => L + (x - a) / (b - a) * (Wd - L - R), sorted = [...others].sort((p, q) => p - q), med = X(sorted[Math.floor(sorted.length / 2)]), placed = [];
+    const dots = others.map(x => { const px = X(x), k = placed.filter(p => Math.abs(p - px) < 8).length; placed.push(px);
+      const dy = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 5;
+      return '<circle cx="' + px + '" cy="' + (Y + dy) + '" r="3.5" fill="#7F9CC2" fill-opacity=".55" stroke="#7F9CC2"></circle>'; }).join('');
+    return '<div class="strip"><svg class="mini" viewBox="0 0 ' + Wd + ' ' + H + '" role="img" aria-label="You are #' + r.rank + ' of ' + r.players + '">' +
+      '<line x1="' + L + '" x2="' + (Wd - R) + '" y1="' + Y + '" y2="' + Y + '" stroke="#1d3350"/><line x1="' + med + '" x2="' + med + '" y1="3" y2="' + (H - 3) + '" stroke="#93AAC8" stroke-dasharray="2 2"/>' +
+      dots + '<circle cx="' + X(v) + '" cy="' + Y + '" r="6" fill="#00C49A" stroke="#E6EFF8" stroke-width="2"></circle></svg></div>';
+  }
+  // o que falta para subir (ou a folga de quem lidera)
+  function gapHint(r) {
+    if (!ranked(r)) return '';
+    const v = +r.value, others = (r.others_values || []).map(Number), f = x => fmtGap(r.metric, x);
+    const above = others.filter(x => x > v).sort((a, b) => a - b)[0];
+    if (above != null) return '<div class="gap">▲ ' + f(above - v) + ' to pass #' + (r.rank - 1) + '</div>';
+    const next = others.filter(x => x < v).reduce((m, x) => Math.max(m, x), -Infinity);
+    return Number.isFinite(next) ? '<div class="gap lead">★ leading by ' + f(v - next) + '</div>' : '';
+  }
+  const FALLBACK_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="9" fill="none" stroke="#7F9CC2" stroke-width="2"/></svg>');
+  function spellIcon(row) {
+    const ic = S.icons || { spells: {}, aa: {} };
+    let own = ic.spells[row.label];
+    if (!own && /^auto at/i.test(row.label)) own = ic.aa[S.summary.vocation];
+    return '<img class="sicon' + (own ? '' : ' generic') + '" src="' + (own || FALLBACK_ICON) + '" width="32" height="32" alt="" title="' + esc(enLabel(row.label)) + '">';
+  }
+  function card(o) {
+    return '<div class="cls-metric c2' + (o.first ? ' first' : '') + (o.off ? ' off' : '') + '"><div class="mtop"><div class="sp">' + (o.icon || '') +
+      '<div class="sptxt"><div class="cls-metric-label" title="' + esc(o.title || o.label) + '">' + esc(o.label) + '</div><div class="cls-metric-value">' + o.value + '</div></div></div>' + (o.tier || '') + '</div>' +
+      (o.sub ? '<div class="sub">' + o.sub + '</div>' : '') + (o.rank || '') + (o.strip || '') + (o.gap || '') + '</div>';
+  }
+  const rankedCard = (r, base) => card(Object.assign({ value: fmtFor(r.metric)(+r.value), tier: tierBadge(r, 'bigtier'), rank: rankRow(r), strip: miniStrip(r), gap: gapHint(r), first: ranked(r) && r.rank === 1 }, base));
+
+  // ---------- render ----------
   function render() {
     const el = $('rankingBody'); if (!el) return;
-    const btn = $('btnRanking');
     if (S.phase === 'idle') { el.innerHTML = '<p class="rk-muted">Classify a session, then press <b>Ranking</b> to join. Your position among the other players appears here.</p>'; return; }
     if (S.phase === 'classifying') { el.innerHTML = '<p class="rk-muted">Classifying…</p>'; return; }
     if (S.phase === 'ineligible') { el.innerHTML = '<p class="rk-warn">This session can\'t be ranked: ' + esc(S.reason) + '</p>'; return; }
     if (S.phase === 'ready') {
       const s = S.summary;
-      el.innerHTML = '<p class="rk-muted"><b>' + esc(s.player) + '</b> · ' + esc(s.vocation) + ' · level ' + s.level + ' · ' + esc(s.hunt || '') + ' · ' + fmt(s.totalTurns) + ' turns. Not in the ranking yet.</p>' +
-        '<div class="rk-actions" style="justify-content:flex-start"><button id="rkJoin" class="btn-blue">Join the ranking</button></div>';
+      el.innerHTML = '<div class="rk-box"><p class="rk-muted" style="margin:0 0 10px"><b>' + esc(s.player) + '</b> · ' + esc(cap(s.vocation)) + ' · level ' + s.level + ' · ' + esc(s.hunt || '') + ' · ' + fmtInt(s.totalTurns) + ' turns. Not in the ranking yet.</p>' +
+        '<div class="rk-actions" style="justify-content:flex-start;margin:0"><button id="rkJoin" class="btn-blue">Join the ranking</button></div></div>';
       $('rkJoin').onclick = openModal; return;
     }
     if (S.phase === 'submitted') {
@@ -113,51 +181,62 @@
 
   async function loadStanding() {
     const args = { p_session: S.sessionId, p_scope: S.scope, p_best: S.best };
-    const [rows, score] = await Promise.all([sb.rpc('ranking_standing', args), sb.rpc('ranking_score', args)]);
+    const [rows] = await Promise.all([sb.rpc('ranking_standing', args), loadIcons()]);
     const box = $('rkStanding'); if (!box) return;
-    if (rows.error || score.error) { box.innerHTML = '<p class="rk-err">' + esc((rows.error || score.error).message) + '</p>'; return; }
-    S.standing = { rows: rows.data || [], score: score.data && score.data[0] };
+    if (rows.error) { box.innerHTML = '<p class="rk-err">' + esc(rows.error.message) + '</p>'; return; }
+    S.standing = rows.data || [];
     renderStanding();
   }
 
-  function metricName(m) {
-    if (m.metric === 'aa') return 'Auto-attacks per hour';
-    if (m.metric === 'cast') return 'Spell & rune casts per hour';
-    if (m.metric === 'carpet') return 'Carpet uptime';
-    return m.label.split('|').slice(1).join('|') + ' — avg hits (carpet-adjusted)';
-  }
-  const fmtVal = (m, v) => m.metric === 'carpet' ? (v * 100).toFixed(1) + '%' : m.metric === 'hits' ? v.toFixed(2) : fmt(v);
-  const fmtDelta = (m, d) => m.metric === 'carpet' ? (d * 100).toFixed(1) + ' pp' : m.metric === 'hits' ? d.toFixed(2) : fmt(d);
-
-  function cardHtml(m) {
-    const v = +m.value, others = (m.others_values || []).map(Number);
-    const higher = others.filter(x => x > v), lower = others.filter(x => x < v);
-    let delta = '';
-    if (higher.length) delta = '<div class="rk-delta up">▲ ' + fmtDelta(m, Math.min(...higher) - v) + ' to pass #' + (m.rank != null ? m.rank - 1 : higher.length) + '</div>';
-    else if (lower.length) delta = '<div class="rk-delta lead">★ leading by ' + fmtDelta(m, v - Math.max(...lower)) + '</div>';
-    const all = others.concat([v]), lo = Math.min(...all), hi = Math.max(...all), pos = x => hi === lo ? 50 : (x - lo) / (hi - lo) * 100;
-    const strip = '<div class="rk-strip">' + others.map(x => '<i class="rk-dot" style="left:' + pos(x).toFixed(1) + '%"></i>').join('') + '<i class="rk-dot me" style="left:' + pos(v).toFixed(1) + '%"></i></div>';
-    const badge = m.tier ? '<span class="rk-badge rk-' + m.tier + (m.provisional ? ' prov' : '') + '" title="' + (m.provisional ? 'Provisional: fewer than 30 players in this group' : '') + '">' + m.tier + '</span>' : '';
-    const rank = m.rank != null ? '<b>#' + m.rank + '</b> of ' + m.players : 'needs 3+ players';
-    const top = m.top_pct != null ? ' · top <b>' + (+m.top_pct).toFixed(1) + '%</b>' : '';
-    return '<div class="rk-card"><div class="rk-card-top"><div class="rk-card-name">' + esc(metricName(m)) + '</div>' + badge + '</div>' +
-      '<div class="rk-card-val">' + fmtVal(m, v) + '</div><div class="rk-card-line">' + rank + top + '</div>' + delta + strip + '</div>';
+  // Score geral: média dos percentis ponderada pelo tier de cada métrica (só as com tier, isto é, 3+ jogadores).
+  function overall(rows) {
+    const parts = rows.filter(ranked).map(r => ({ r, pct: Math.round(r.percentile * 100), w: W[r.tier] }));
+    if (!parts.length) return null;
+    const score = Math.round(parts.reduce((a, p) => a + p.w * p.pct, 0) / parts.reduce((a, p) => a + p.w, 0)), top = 100 - score;
+    return { score, top, c: tierOfTop(top), prov: parts.some(p => p.r.provisional) };
   }
 
   function renderStanding() {
     const box = $('rkStanding'); if (!box || !S.standing) return;
-    const { rows, score } = S.standing, s = S.summary;
-    const players = rows.reduce((a, r) => Math.max(a, r.players), 1);
-    const tabs = (items, cur, key) => '<div class="rk-tabs">' + items.map(([val, label]) => '<button data-k="' + key + '" data-v="' + val + '" class="' + (val === cur ? 'on' : '') + '">' + esc(label) + '</button>').join('') + '</div>';
-    box.innerHTML = tabs(SCOPES(), S.scope, 'scope') + tabs(MODES, S.best, 'best') +
-      '<div class="rk-hero"><div class="rk-score">' + (score && score.score != null ? score.score : '–') + '<small>Overall score (0–100)' + (score && score.provisional ? ' · provisional' : '') + '</small></div>' +
-      '<div class="rk-id"><b>' + esc(s.player) + '</b><div>' + esc(s.vocation) + ' · level ' + s.level + '</div><div>' + esc(s.hunt || '') + ' · ' + players + ' player' + (players === 1 ? '' : 's') + ' in this group</div></div></div>' +
-      '<div class="rk-cards">' + (rows.length ? rows.map(cardHtml).join('') : '<p class="rk-muted">No comparable players in this group yet.</p>') + '</div>' +
-      (players < 30 ? '<p class="rk-muted">Tiers are provisional (dashed) until there are 30 or more players in the group.</p>' : '') +
-      '<div class="rk-info"><div class="cls-metric"><div class="cls-metric-label">Highest damage in a turn</div><div class="cls-metric-value">' + fmt(s.maxTurnDamage) + '</div></div>' +
-      '<div class="cls-metric"><div class="cls-metric-label">Highest single hit</div><div class="cls-metric-value">' + fmt(s.maxSingleHit) + '</div></div></div>' +
-      '<p class="rk-muted">Damage numbers are for reference only; they are not ranked and do not enter the score.</p>';
-    box.querySelectorAll('.rk-tabs button').forEach(b => b.onclick = () => {
+    const rows = S.standing, s = S.summary, by = new Map(rows.map(r => [keyOf(r), r]));
+    const seg = (items, cur, key) => '<div class="seg">' + items.map(([v, l]) => '<button type="button" data-k="' + key + '" data-v="' + v + '" class="' + (v === cur ? 'active' : '') + '">' + esc(l) + '</button>').join('') + '</div>';
+    const ov = overall(rows);
+    const ovHtml = ov
+      ? '<div class="ov"><span class="tier ' + ov.c + ' xl' + (ov.prov ? ' prov' : '') + '">' + ov.c + '</span><div><div class="ovl">Overall · ' + esc(scopeLabel()) + '</div><div class="ovs">Score ' + ov.score + ' <span class="ovt">· top ' + Math.max(1, ov.top) + '%' + (ov.prov ? ' · provisional' : '') + '</span></div></div></div>'
+      : '<div class="ov"><span class="tier none xl">–</span><div><div class="ovl">Overall · ' + esc(scopeLabel()) + '</div><div class="ovs"><span class="ovt">needs 3+ players in this group</span></div></div></div>';
+    const hero = '<div class="hero2">' + ovHtml + '<div class="who"><div class="name">' + esc(s.player) + '</div><div class="meta">' + esc(cap(s.vocation)) + ' · level ' + s.level + ' · ' + esc(s.hunt || '') + ' · ' + fmtDate(s.date) + ' · ' + fmtInt(s.totalTurns) + ' turns</div></div></div>';
+
+    // métricas da sessão (ranqueadas) + referências de dano (sem rank)
+    const sess = [];
+    const aaRow = by.get('aa');
+    if (aaRow) sess.push(rankedCard(aaRow, { label: 'Auto-attacks per hour' }));
+    else sess.push(card({ label: 'Auto-attacks per hour', value: '—', off: true, sub: 'Auto-attacks barely show in the log of this session (' + s.aa.pct.toFixed(1) + '% of turns), so it is not ranked.' }));
+    if (by.get('cast')) sess.push(rankedCard(by.get('cast'), { label: 'Spell & rune casts per hour' }));
+    if (by.get('carpet')) sess.push(rankedCard(by.get('carpet'), { label: 'Carpet uptime' }));
+    sess.push(card({ label: 'Highest damage in a turn', value: fmtInt(s.maxTurnDamage), sub: 'Reference only · not ranked' }));
+    sess.push(card({ label: 'Highest single hit', value: fmtInt(s.maxSingleHit), sub: 'Reference only · not ranked' }));
+
+    const tot = s.rows.reduce((a, r) => a + r.turns, 0);
+    const spellCards = s.rows.map(r => {
+      const st = by.get(r.kind + '|' + r.label), label = enLabel(r.label), sub = r.turns + ' turns · ' + (r.turns / tot * 100).toFixed(0) + '% of all';
+      const base = { icon: spellIcon(r), label: shortLabel(label), title: label, sub };
+      if (st) return rankedCard(st, base);
+      return card(Object.assign({ value: fmt2(r.hitsAdj != null ? r.hitsAdj : r.hitsMean), tier: tierBadge(null, 'bigtier'), rank: rankRow(null), strip: '<div class="strip empty">Needs at least 10 turns to compare</div>' }, base));
+    }).join('');
+    const dmgCards = s.rows.map(r => card({ icon: spellIcon(r), label: shortLabel(enLabel(r.label)), title: enLabel(r.label), value: fmtInt(r.maxTurnDmg),
+      sub: r.turns + ' turns · avg ' + fmt2(r.hitsAdj != null ? r.hitsAdj : r.hitsMean) + ' hits · reference only' })).join('');
+
+    const tableRows = s.rows.map((r, i) => { const st = by.get(r.kind + '|' + r.label);
+      return '<tr><td><span class="cls-share-dot" style="background:' + PAL[i % PAL.length] + '"></span>' + esc(enLabel(r.label)) + '</td><td class="num">' + r.turns + '<span class="cls-pct">(' + (r.turns / tot * 100).toFixed(1) + '%)</span></td>' +
+        '<td class="num">' + fmt2(r.hitsAdj != null ? r.hitsAdj : r.hitsMean) + '</td><td class="rank">' + (st ? rankRow(st).replace(/^<div class="rk">/, '<span>').replace(/<\/div>$/, '</span>') : '<span class="rk-muted">–</span>') + '</td><td class="strip-cell">' + (st ? miniStrip(st) : '') + '</td></tr>'; }).join('');
+
+    box.innerHTML = '<div class="ctrl">' + seg(SCOPES(), S.scope, 'scope') + seg(MODES, S.best, 'best') + '</div>' + hero +
+      '<h3 class="cls-h">Session metrics</h3><div class="cls-metrics">' + sess.join('') + '</div>' +
+      '<h3 class="cls-h">Spell metrics · adjusted average hits (grav san)</h3><div class="cls-metrics">' + spellCards + '</div>' +
+      '<h3 class="cls-h">Spell metrics · highest damage in a turn</h3><div class="cls-metrics">' + dmgCards + '</div>' +
+      '<h3 class="cls-h">Components</h3><table class="cls-table"><thead><tr><th>component</th><th class="num">turns</th><th class="num">hits avg</th><th class="rank">rank</th><th>group</th></tr></thead><tbody>' + tableRows + '</tbody></table>' +
+      '<p class="note">Tiers use the top % of the group (S ≤5, A ≤10, B ≤50, C ≤90). They are provisional (dashed) until the group has ' + MIN_CONFIRM + ' or more players. The overall score only uses gameplay metrics; damage is shown for reference and does not enter the score.</p>';
+    box.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
       if (b.dataset.k === 'scope') S.scope = b.dataset.v; else S.best = b.dataset.v === 'true';
       loadStanding();
     });
@@ -171,7 +250,7 @@
     else if (S.phase === 'submitted') body.innerHTML = '<h3>Ranking</h3><p class="rk-ok">This session is already in the ranking.</p><div class="rk-actions"><button class="ghost" id="rkClose">Close</button></div>';
     else {
       body.innerHTML = '<h3>Join the ranking</h3><div class="rk-muted">Review what will be sent.</div><div class="rk-kv">' +
-        [['Character', s.player], ['Vocation', s.vocation], ['Level', s.level], ['Date', s.date], ['Hunt', s.hunt || '?'], ['Turns', fmt(s.totalTurns)]].map(c => '<div><b>' + c[0] + '</b><span>' + esc(c[1]) + '</span></div>').join('') + '</div>' +
+        [['Character', s.player], ['Vocation', cap(s.vocation)], ['Level', s.level], ['Date', fmtDate(s.date)], ['Hunt', s.hunt || '?'], ['Turns', fmtInt(s.totalTurns)]].map(c => '<div><b>' + c[0] + '</b><span>' + esc(c[1]) + '</span></div>').join('') + '</div>' +
         '<label class="rk-check"><input type="checkbox" id="rkConsent"><span><b>Upload my session and raw logs.</b> I agree to send this session\'s summary <b>and the full server log and local chat</b> to the ranking server. The local chat may contain other players\' names. I understand the data can be reprocessed and deleted at any time.</span></label>' +
         '<label class="rk-check"><input type="checkbox" id="rkPublic"><span><b>Show my character name.</b> Otherwise I appear as anonymous in the ranking.</span></label>' +
         '<div id="rkMsg" class="rk-muted"></div><div class="rk-actions"><button class="ghost" id="rkClose">Cancel</button><button class="btn-blue" id="rkSubmit" disabled>Submit</button></div>';
@@ -194,7 +273,7 @@
       const r = await sb.rpc('ranking_submit_session', { p_player_key_hash: await sha256Hex(playerSecret()), p_character_name: pub ? S.summary.player : null,
         p_is_public: pub, p_log_hash: S.hash, p_raw_log_path: folder + '/', p_summary: S.summary });
       if (r.error) {
-        if (/duplicate key|23505/.test(r.error.message + (r.error.code || ''))) { await lookupExisting(S.run); $('rankingModal').close(); S.busy = false; return; }
+        if (/duplicate key|23505/.test(r.error.message + (r.error.code || ''))) { S.busy = false; await lookupExisting(S.run); $('rankingModal').close(); return; }
         throw r.error;
       }
       S.sessionId = r.data; S.phase = 'submitted'; S.standing = null; S.busy = false;
