@@ -298,7 +298,7 @@
         if (up.error) throw up.error;
       }
       const pub = $('rkPublic').checked;
-      const r = await sb.rpc('ranking_submit_session', { p_player_key_hash: await sha256Hex(playerSecret()), p_character_name: pub ? S.summary.player : null,
+      const r = await sb.rpc('ranking_submit_session', { p_player_key_hash: await sha256Hex(playerSecret() + '|' + String(S.summary.player).toLowerCase()), p_character_name: pub ? S.summary.player : null,
         p_is_public: pub, p_log_hash: S.hash, p_raw_log_path: folder + '/', p_summary: S.summary });
       if (r.error) {
         if (/duplicate key|23505/.test(r.error.message + (r.error.code || ''))) { S.busy = false; await lookupExisting(S.run); $('rankingModal').close(); return; }
