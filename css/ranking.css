@@ -59,6 +59,7 @@
 #rankingSection .rk { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline; font-size: 13px; padding: 8px 0 4px; margin-top: 10px; border-top: 1px solid var(--border); }
 #rankingSection .rk .r { font-weight: 600; font-variant-numeric: tabular-nums; }
 #rankingSection .rk .p { color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
+#rankingSection .rk .p.prov { opacity: .7; font-style: italic; }
 #rankingSection .rc { display: inline-grid; grid-template-columns: 22px 4.2ch 7ch; align-items: baseline; column-gap: 4px; text-align: left; }
 #rankingSection .rc b { text-align: right; font-weight: 600; }
 #rankingSection .rc i { font-style: normal; color: var(--text-muted); }
@@ -100,3 +101,18 @@
 #rankingSection .cls-metric.c2.locked { opacity: .75; border-style: dashed; }
 #rankingSection .cls-metric.c2.locked .cls-metric-label { color: var(--text-muted); }
 #rankingSection .lockbar { height: 26px; margin-top: 8px; border-radius: 6px; background: repeating-linear-gradient(90deg, var(--border) 0 14px, transparent 14px 22px); opacity: .6; }
+
+/* hover: tooltip do placar (fora da seção, no body) */
+.cls-chart-tip.rk-tip { position: fixed; z-index: 1000; max-width: 340px; min-width: 190px; }
+.cls-chart-tip.rk-tip.on { opacity: 1; }
+.rk-tip .cls-chart-tip-foot { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 10.5px; white-space: normal; line-height: 1.4; }
+.rk-tip .plist { display: flex; gap: 8px; align-items: baseline; line-height: 1.75; white-space: nowrap; }
+.rk-tip .plist .pr { width: 34px; flex: 0 0 34px; color: var(--text-muted); font: 500 11px 'JetBrains Mono', monospace; }
+.rk-tip .plist .pn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rk-tip .plist b { margin-left: auto; padding-left: 12px; font: 500 11.5px 'JetBrains Mono', monospace; }
+.rk-tip .plist.me { background: #00C49A24; border-radius: 4px; margin: 0 -5px; padding: 0 5px; }
+.rk-tip .plist.me .pn, .rk-tip .plist.me b, .rk-tip .plist.me .pr { color: var(--text); font-weight: 600; }
+.rk-tip .plist.gap { color: var(--text-muted); padding-left: 42px; line-height: 1.1; }
+#rankingSection [data-tip] { cursor: help; }
+#rankingSection .rc.tipped:hover, #rankingSection .rc.tipped:focus-visible { background: #ffffff10; border-radius: 4px; }
+#rankingSection .mini circle[data-tip]:hover { fill-opacity: 1; stroke-width: 2.2; }

@@ -124,6 +124,29 @@
   const W = { S: 8, A: 5, B: 3, C: 2, D: 1 };
   const ranked = r => r && r.rank != null && r.tier;
 
+  // ---------- hover: placar com nome (só de quem optou) e valor, top 5 + vizinhos ----------
+  const TIPS = [];
+  const tipId = h => TIPS.push(h) - 1;
+  const quantile = (asc, p) => asc[Math.min(asc.length - 1, Math.max(0, Math.ceil(p * asc.length) - 1))];
+  const metricName = r => r.metric === 'aa' ? 'Auto-attacks per hour' : r.metric === 'cast' ? 'Spell & rune casts per hour' : r.metric === 'carpet' ? 'Carpet uptime' : shortLabel(enLabel(r.label.split('|').slice(1).join('|')));
+  function statTip(r) {
+    if (!r || !r.others_values || !r.others_values.length) return null;
+    const f = fmtFor(r.metric), vals = r.others_values.map(Number), names = r.others_names || [], mine = r.others_me || [];
+    const all = vals.map((v, i) => ({ v, name: mine[i] ? 'You · other session' : (names[i] || 'Anonymous') })).concat([{ v: +r.value, name: 'You', me: true }]).sort((a, b) => b.v - a.v);
+    all.forEach(e => { e.rank = 1 + all.filter(x => x.v > e.v).length; });
+    const meIdx = all.findIndex(e => e.me), idxs = [];
+    for (let i = 0; i < Math.min(all.length, 5); i++) idxs.push(i);
+    if (meIdx >= 5) for (let i = Math.max(5, meIdx - 1); i <= Math.min(all.length - 1, meIdx + 1); i++) idxs.push(i);
+    let h = '<div class="cls-chart-tip-title">' + esc(metricName(r)) + '</div>', prev = -1;
+    idxs.forEach(i => { const e = all[i]; if (prev >= 0 && i > prev + 1) h += '<div class="plist gap">⋮</div>';
+      h += '<div class="plist' + (e.me ? ' me' : '') + '"><span class="pr">#' + e.rank + '</span><span class="pn">' + esc(e.name) + '</span><b>' + f(e.v) + '</b></div>'; prev = i; });
+    if (prev < all.length - 1) h += '<div class="plist gap">⋮ ' + (all.length - 1 - prev) + ' more</div>';
+    const asc = all.map(e => e.v).sort((a, b) => a - b);
+    return h + '<div class="cls-chart-tip-foot">Top 5% ≥ ' + f(quantile(asc, .95)) + ' · Top 10% ≥ ' + f(quantile(asc, .90)) + ' · Median ' + f(quantile(asc, .5)) +
+      (r.players < MIN_CONFIRM ? '<br>Fewer than ' + MIN_CONFIRM + ' players: the tier is provisional.' : '') + '</div>';
+  }
+  const tipAttr = r => { const h = statTip(r); return h ? ' tabindex="0" data-tip="' + tipId(h) + '"' : ''; };
+
   function tierBadge(r, cls) {
     if (!ranked(r)) return '<span class="tier none ' + (cls || '') + '" title="A tier needs at least ' + MIN_RANK + ' players in the group">–</span>';
     const prov = r.provisional;
@@ -131,8 +154,8 @@
   }
   function rankRow(r) {
     if (!ranked(r)) return '<div class="rk"><span class="r"><span class="rc"><span class="tier none">–</span><b class="nocmp">no comparison</b></span></span><span class="p"></span></div>';
-    const p = r.players >= MIN_CONFIRM ? 'p' + Math.round(r.percentile * 100) : '';
-    return '<div class="rk"><span class="r"><span class="rc">' + tierBadge(r) + '<b>#' + r.rank + '</b><i>/ ' + r.players + '</i></span></span><span class="p">' + p + '</span></div>';
+    const conf = r.players >= MIN_CONFIRM, p = r.percentile == null ? '' : (conf ? '' : '~') + 'p' + Math.round(r.percentile * 100);
+    return '<div class="rk"><span class="r"><span class="rc' + (r.others_values && r.others_values.length ? ' tipped' : '') + '"' + tipAttr(r) + '>' + tierBadge(r) + '<b>#' + r.rank + '</b><i>/ ' + r.players + '</i></span></span><span class="p' + (conf ? '' : ' prov') + '" title="' + (conf ? 'Percentile' : 'Provisional percentile (' + MIN_CONFIRM + '+ players confirm it)') + '">' + p + '</span></div>';
   }
   // faixa de dispersão: pontos neutros, você em destaque; linha tracejada = mediana
   function miniStrip(r) {
@@ -140,12 +163,14 @@
     if (!others.length) return '<div class="strip empty">No other players to compare yet</div>';
     const v = +r.value, Wd = 240, H = 28, L = 8, R = 8, Y = 14, all = others.concat([v]), lo = Math.min(...all), hi = Math.max(...all), pad = (hi - lo) * .08 || .5, a = lo - pad, b = hi + pad;
     const X = x => L + (x - a) / (b - a) * (Wd - L - R), sorted = [...others].sort((p, q) => p - q), med = X(sorted[Math.floor(sorted.length / 2)]), placed = [];
-    const dots = others.map(x => { const px = X(x), k = placed.filter(p => Math.abs(p - px) < 8).length; placed.push(px);
+    const nm = (r.others_names || []), me2 = (r.others_me || []), f0 = fmtFor(r.metric);
+    const dots = others.map((x, i) => { const px = X(x), k = placed.filter(p => Math.abs(p - px) < 8).length; placed.push(px);
       const dy = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 5;
-      return '<circle cx="' + px + '" cy="' + (Y + dy) + '" r="3.5" fill="#7F9CC2" fill-opacity=".55" stroke="#7F9CC2"></circle>'; }).join('');
+      const dt = '<div class="plist"><span class="pn">' + esc(me2[i] ? 'You · other session' : (nm[i] || 'Anonymous')) + '</span><b>' + f0(x) + '</b></div>';
+      return '<circle cx="' + px + '" cy="' + (Y + dy) + '" r="3.5" fill="#7F9CC2" fill-opacity=".55" stroke="#7F9CC2" data-tip="' + tipId(dt) + '"></circle>'; }).join('');
     return '<div class="strip"><svg class="mini" viewBox="0 0 ' + Wd + ' ' + H + '" role="img" aria-label="You are #' + r.rank + ' of ' + r.players + '">' +
       '<line x1="' + L + '" x2="' + (Wd - R) + '" y1="' + Y + '" y2="' + Y + '" stroke="#1d3350"/><line x1="' + med + '" x2="' + med + '" y1="3" y2="' + (H - 3) + '" stroke="#93AAC8" stroke-dasharray="2 2"/>' +
-      dots + '<circle cx="' + X(v) + '" cy="' + Y + '" r="6" fill="#00C49A" stroke="#E6EFF8" stroke-width="2"></circle></svg></div>';
+      dots + '<circle cx="' + X(v) + '" cy="' + Y + '" r="6" fill="#00C49A" stroke="#E6EFF8" stroke-width="2" data-tip="' + tipId(statTip(r)) + '"></circle></svg></div>';
   }
   // o que falta para subir (ou a folga de quem lidera)
   function gapHint(r) {
@@ -226,6 +251,7 @@
 
   function renderStanding() {
     const box = $('rkStanding'); if (!box || !S.standing) return;
+    TIPS.length = 0;
     const rows = S.standing, s = S.summary, by = new Map(rows.map(r => [keyOf(r), r]));
     const seg = (items, cur, key) => '<div class="seg">' + items.map(([v, l]) => '<button type="button" data-k="' + key + '" data-v="' + v + '" class="' + (v === cur ? 'active' : '') + '">' + esc(l) + '</button>').join('') + '</div>';
     const ov = overall(rows);
@@ -313,6 +339,20 @@
       btn.disabled = !$('rkConsent').checked;
     }
   }
+
+  // tooltip único, posicionado perto do cursor (delegação: funciona para o que for redesenhado)
+  const tipEl = document.createElement('div'); tipEl.className = 'cls-chart-tip rk-tip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl);
+  function placeTip(x, y) {
+    const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    tipEl.style.left = Math.max(8, Math.min(x + 14, innerWidth - w - 8)) + 'px';
+    tipEl.style.top = Math.max(8, y + 18 + h > innerHeight ? y - h - 14 : y + 18) + 'px';
+  }
+  function tipFor(e) { const t = e.target.closest && e.target.closest('#rankingSection [data-tip]'); return t && TIPS[+t.dataset.tip] != null ? t : null; }
+  document.addEventListener('mouseover', e => { const t = tipFor(e); if (!t) return; tipEl.innerHTML = TIPS[+t.dataset.tip]; tipEl.classList.add('on'); placeTip(e.clientX, e.clientY); });
+  document.addEventListener('mousemove', e => { if (tipEl.classList.contains('on')) placeTip(e.clientX, e.clientY); });
+  document.addEventListener('mouseout', e => { if (tipFor(e)) tipEl.classList.remove('on'); });
+  document.addEventListener('focusin', e => { const t = tipFor(e); if (!t) return; tipEl.innerHTML = TIPS[+t.dataset.tip]; tipEl.classList.add('on'); const b = t.getBoundingClientRect(); placeTip(b.left, b.bottom - 18); });
+  document.addEventListener('focusout', () => tipEl.classList.remove('on'));
 
   $('btnRanking').addEventListener('click', openModal);
   render();
