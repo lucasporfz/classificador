@@ -104,7 +104,7 @@
   // Prévia antes de entrar: só os números do resumo vão ao servidor (nada é gravado) e ele devolve
   // apenas a melhor métrica e contagens. O resto fica travado até o envio.
   async function loadPreview(id) {
-    const [r] = await Promise.all([sb.rpc('ranking_preview', { p_summary: S.summary }), loadIcons()]);
+    const [r] = await Promise.all([sb.rpc('ranking_preview', { p_summary: S.summary, p_player_key_hash: await sha256Hex(playerSecret() + '|' + String(S.summary.player).toLowerCase()) }), loadIcons()]);
     if (id !== S.run || S.phase !== 'ready') return;
     S.preview = r.error ? null : (r.data && r.data[0]) || null;
     render();
