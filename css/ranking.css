@@ -1,0 +1,56 @@
+/* Ranking (preview): só é carregado por index-ranking.html. Usa as variáveis de css/style.css. */
+:root { --rk-S: #F5C451; --rk-A: var(--accent); --rk-B: var(--blue); --rk-C: #A78BFA; --rk-D: var(--text-dim); }
+
+#btnRanking { margin-left: auto; background: var(--bg-raised); color: var(--accent); border: 1px solid var(--accent); }
+#btnRanking:hover { background: var(--accent); color: var(--on-accent); }
+#btnRanking + #clsStatus { margin-left: 0; }
+
+.rk-section { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; margin: 0 0 16px; }
+.rk-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.rk-head h2 { font-size: 15px; font-weight: 600; margin: 0; }
+.rk-muted { color: var(--text-muted); font-size: 12.5px; }
+.rk-warn { color: var(--amber); font-size: 12.5px; }
+.rk-err { color: var(--red); font-size: 12.5px; }
+.rk-ok { color: var(--accent); font-size: 12.5px; }
+.rk-hero { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.rk-score { font-size: 46px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.rk-score small { display: block; font-size: 11px; font-weight: 400; color: var(--text-muted); margin-top: 4px; }
+.rk-id b { font-size: 16px; } .rk-id div { color: var(--text-muted); font-size: 12.5px; }
+
+.rk-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.rk-tabs button { background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 5px 11px; font-size: 12.5px; cursor: pointer; }
+.rk-tabs button:hover { border-color: var(--border-hover); color: var(--text); }
+.rk-tabs button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+.rk-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin: 10px 0; }
+.rk-card { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 12px; }
+.rk-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.rk-card-name { color: var(--text-muted); font-size: 12px; line-height: 1.3; }
+.rk-card-val { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 2px 0 4px; }
+.rk-card-line { font-size: 12.5px; color: var(--text-muted); }
+.rk-card-line b { color: var(--text); font-weight: 500; }
+.rk-delta { font-size: 12.5px; margin-top: 4px; }
+.rk-delta.up { color: var(--amber); } .rk-delta.lead { color: var(--accent); }
+.rk-badge { flex: none; min-width: 28px; text-align: center; padding: 1px 7px; border-radius: 5px; font-weight: 700; font-size: 13px; border: 2px solid currentColor; }
+.rk-badge.prov { border-style: dashed; }
+.rk-S { color: var(--rk-S); } .rk-A { color: var(--rk-A); } .rk-B { color: var(--rk-B); } .rk-C { color: var(--rk-C); } .rk-D { color: var(--rk-D); }
+.rk-strip { position: relative; height: 14px; margin: 8px 4px 2px; }
+.rk-strip::before { content: ''; position: absolute; left: 0; right: 0; top: 6px; height: 2px; background: var(--border); }
+.rk-dot { position: absolute; top: 4px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--text-dim); }
+.rk-dot.me { top: 1px; width: 12px; height: 12px; margin-left: -6px; background: var(--accent); box-shadow: 0 0 0 3px rgba(0,196,154,.25); }
+.rk-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 10px; }
+
+/* janela dos aceites */
+#rankingModal { border: 1px solid var(--border-hover); border-radius: var(--r); background: var(--bg-surface); color: var(--text); padding: 0; width: min(560px, 94vw); }
+#rankingModal::backdrop { background: rgba(4, 8, 16, .7); }
+.rk-modal-body { padding: 18px 20px; }
+.rk-modal-body h3 { margin: 0 0 4px; font-size: 16px; }
+.rk-kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 12px 0; }
+.rk-kv div { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 6px 9px; }
+.rk-kv b { display: block; font-size: 11px; font-weight: 400; color: var(--text-muted); } .rk-kv span { font-size: 14px; font-weight: 600; }
+.rk-check { display: flex; gap: 9px; align-items: flex-start; margin: 10px 0; font-size: 13px; line-height: 1.45; cursor: pointer; }
+.rk-check input { margin-top: 3px; flex: none; }
+.rk-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.rk-actions button.ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+.rk-actions button:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 640px) { .rk-cards { grid-template-columns: 1fr; } }

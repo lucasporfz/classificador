@@ -215,7 +215,7 @@
   $('btnSubmit').addEventListener('click', async () => {
     const st = $('submitStatus'); $('btnSubmit').disabled = true; st.textContent = 'Uploading…'; st.className = 'status small';
     try {
-      const s = state.summary, logHash = await sha256Hex(state.text.sv + '\n---\n' + state.text.lc);
+      const s = state.summary, logHash = await sha256Hex(state.text.sv.trim() + '\n---\n' + state.text.lc.trim());
       const existing = await sb.rpc('ranking_session_by_hash', { p_log_hash: logHash });
       if (existing.error) throw existing.error;
       if (existing.data) { state.sessionId = existing.data; st.innerHTML = '<span class="ok">This session was already submitted.</span>'; return showRank(); }

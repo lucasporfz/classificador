@@ -9,7 +9,7 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const LOCK = path.join(ROOT, 'tools', 'classifier-lock.json');
-const EXCLUDE = new Set(['js/ranking-session-summary.js']);   // arquivo novo do ranking, fora da trava
+const EXCLUDE = new Set(['js/ranking-session-summary.js', 'js/ranking-ui.js', 'css/ranking.css']);   // arquivos novos do ranking, fora da trava
 
 function files() {
   const out = ['index.html'];

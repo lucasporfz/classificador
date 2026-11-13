@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classificador — Tibia (ranking preview)</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/ranking.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <h1 data-i18n="cls_title">Classificador</h1>
+    <span class="spacer"></span>
+    <button id="langPt" class="guide-btn active" data-i18n="btn_lang_pt">PT</button>
+    <button id="langEn" class="guide-btn" data-i18n="btn_lang_en">EN</button>
+  </div>
+
+  <p class="desc" data-i18n="cls_desc">
+    Cole o <strong>server log</strong> e o <strong>local chat</strong> da mesma hunt.
+  </p>
+
+  <div class="val-controls">
+    <button id="btnClsLocalFile" class="btn-blue" data-i18n="cls_load_local">abrir local chat .txt</button>
+    <input type="file" id="clsLocalFileInput" accept=".txt,.log" style="display:none">
+    <button id="btnClsServerFile" class="btn-blue" data-i18n="cls_load_server">abrir server log .txt</button>
+    <input type="file" id="clsServerFileInput" accept=".txt,.log" style="display:none">
+    <select id="clsPairSelect" multiple style="display:none"></select>
+    <button id="btnClassify">classificar Unified</button>
+    <button id="btnClsCancel" data-i18n="cls_cancel" style="display:none">cancelar</button>
+    <button id="btnRanking">Ranking</button>
+    <span id="clsStatus" class="sim-status" data-i18n="cls_status_ready">cole os dois logs abaixo</span>
+  </div>
+
+  <div class="logs-grid">
+    <div>
+      <label data-i18n="cls_local_label">local chat</label>
+      <textarea id="clsLocalInput" data-i18n-placeholder="cls_local_ph" placeholder="Cole aqui o local chat..."></textarea>
+    </div>
+    <div>
+      <label data-i18n="cls_server_label">server log</label>
+      <textarea id="clsServerInput" data-i18n-placeholder="cls_server_ph" placeholder="Cole aqui o server log..."></textarea>
+    </div>
+  </div>
+
+  <section id="rankingSection" class="rk-section">
+    <div class="rk-head"><h2>Ranking</h2><span class="rk-muted">preview</span></div>
+    <div id="rankingBody"></div>
+  </section>
+
+  <dialog id="rankingModal"><div class="rk-modal-body" id="rkModalBody"></div></dialog>
+
+  <div id="clsResults" style="display:none"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/mob-element-mods.js"></script>
+<script src="js/mob-element-mods-post-2026-06-16.js"></script>
+<script src="js/mob-element-mods-post-2026-08-25.js"></script>
+<script src="js/unified-session-context.js"></script>
+<script src="js/unified-formulas.js"></script>
+<script src="js/unified-parsing.js"></script>
+<script src="js/unified-setup-inference.js"></script>
+<script src="js/unified-validation.js"></script>
+<script src="js/unified-turn-resolution.js"></script>
+<script src="js/unified-classification-engine.js"></script>
+<script src="js/unified-main.js"></script>
+<script src="js/session-summary.js"></script>
+<script src="js/histogram.js"></script>
+<script src="js/charts-helpers.js"></script>
+<script src="js/classify-port.js"></script>
+<script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/ranking-session-summary.js"></script>
+<script src="js/ranking-ui.js"></script>
+</body>
+</html>
