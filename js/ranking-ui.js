@@ -73,7 +73,7 @@
     classify(sv, lc, opts, handlers) {
       const run = orig.classify(sv, lc, opts, handlers);
       const id = ++S.run;
-      Object.assign(S, { phase: 'classifying', standing: null, sessionId: null, preview: undefined }); render();
+      Object.assign(S, { phase: 'classifying', standing: null, sessionId: null, preview: undefined, scope: 'hunt', best: false }); render();
       run.promise.then(res => onClassified(id, sv, lc, res), () => { if (id === S.run) { S.phase = 'idle'; render(); } });
       return run;
     },
@@ -155,7 +155,7 @@
   function rankRow(r) {
     if (!ranked(r)) return '<div class="rk"><span class="r"><span class="rc"><span class="tier none">–</span><b class="nocmp">no comparison</b></span></span><span class="p"></span></div>';
     const conf = r.players >= MIN_CONFIRM, p = r.percentile == null ? '' : (conf ? '' : '~') + 'p' + Math.round(r.percentile * 100);
-    return '<div class="rk"><span class="r"><span class="rc' + (r.others_values && r.others_values.length ? ' tipped' : '') + '"' + tipAttr(r) + '>' + tierBadge(r) + '<b>#' + r.rank + '</b><i>/ ' + r.players + '</i></span></span><span class="p' + (conf ? '' : ' prov') + '" title="' + (conf ? 'Percentile' : 'Provisional percentile (' + MIN_CONFIRM + '+ players confirm it)') + '">' + p + '</span></div>';
+    return '<div class="rk"><span class="r"><span class="rc' + (r.others_values && r.others_values.length ? ' tipped' : '') + '"' + tipAttr(r) + '>' + tierBadge(r) + '<b>#' + r.rank + '</b><i>/ ' + (r.others_values ? r.others_values.length + 1 : (r.entries || r.players)) + '</i></span></span><span class="p' + (conf ? '' : ' prov') + '" title="' + (conf ? 'Percentile' : 'Provisional percentile (' + MIN_CONFIRM + '+ players confirm it)') + '">' + p + '</span></div>';
   }
   // faixa de dispersão: pontos neutros, você em destaque; linha tracejada = mediana
   function miniStrip(r) {
@@ -224,7 +224,7 @@
     const join = '<div class="rk-actions" style="justify-content:flex-start;margin:14px 0 0"><button id="rkJoin" class="btn-blue">Join the rank</button></div>';
     if (p === undefined) return '<div class="rk-box">' + who + '<p class="rk-muted" style="margin:0">Comparing with the other players…</p></div>';
     if (p === null) return '<div class="rk-box">' + who + '<p class="rk-muted" style="margin:0">Not in the rank yet.</p>' + join + '</div>';
-    const n = p.group_players;
+    const n = Math.max(0, p.group_players - 1);   // group_players inclui você
     const head = '<p class="rk-muted" style="margin:0 0 10px">Preview · you are <b>not in the rank yet</b>. Nothing was saved. Compared with <b>' + n + '</b> other ' + esc(s.vocation) + ' player' + (n === 1 ? '' : 's') + ' in ' + esc(s.hunt || 'this hunt') + '.</p>';
     const open = p.metric ? bestCard(p) : '<div class="cls-metric c2 off"><div class="cls-metric-label">Your position</div><div class="sub">Not enough players in this group to compare yet (3 needed). Join and be one of the first.</div></div>';
     const locked = LOCKS.map((l, i) => '<div class="cls-metric c2 locked"><div class="cls-metric-label">🔒 ' + esc(l) + '</div><div class="lockbar"></div>' + (i === 1 && p.locked > 0 ? '<div class="sub">+' + p.locked + ' more metric' + (p.locked === 1 ? '' : 's') + ' ranked</div>' : '') + '</div>').join('');
