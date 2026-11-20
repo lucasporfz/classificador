@@ -1,4 +1,4 @@
-/* Ranking (preview): só é carregado por index-ranking.html. Porta do design de ranking.proto.html (versão C), escopado em #rankingSection. */
+/* Ranking: carregado por index.html (e pela página de testes index-ranking.html). Porta do design de ranking.proto.html (versão C), escopado em #rankingSection. */
 #btnRanking { margin-left: auto; background: var(--bg-raised); color: var(--accent); border: 1px solid var(--accent); }
 #btnRanking:hover { background: var(--accent); color: var(--on-accent); }
 #btnRanking + #clsStatus { margin-left: 0; }
@@ -26,7 +26,6 @@
 #rankingSection .tier.C { color: #A78BFA; background: #A78BFA20; border-color: #A78BFA66; }
 #rankingSection .tier.D { color: #F87171; background: #F8717120; border-color: #F8717166; }
 #rankingSection .tier.none { color: var(--text-muted); background: transparent; border-color: var(--border); }
-#rankingSection .tier.prov { border-style: dashed; }
 #rankingSection .tier.bigtier { min-width: 34px; height: 34px; line-height: 32px; font-size: 18px; border-radius: 8px; margin: 0; flex: 0 0 auto; }
 #rankingSection .tier.xl { min-width: 56px; height: 56px; line-height: 54px; font-size: 30px; border-radius: 12px; margin: 0; text-align: center; font-weight: 700; }
 
@@ -59,7 +58,6 @@
 #rankingSection .rk { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline; font-size: 13px; padding: 8px 0 4px; margin-top: 10px; border-top: 1px solid var(--border); }
 #rankingSection .rk .r { font-weight: 600; font-variant-numeric: tabular-nums; }
 #rankingSection .rk .p { color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
-#rankingSection .rk .p.prov { opacity: .7; font-style: italic; }
 #rankingSection .rc { display: inline-grid; grid-template-columns: 22px 4.2ch 7ch; align-items: baseline; column-gap: 4px; text-align: left; }
 #rankingSection .rc b { text-align: right; font-weight: 600; }
 #rankingSection .rc i { font-style: normal; color: var(--text-muted); }

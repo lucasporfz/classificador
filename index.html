@@ -6,8 +6,9 @@
 <title>Classificador — Tibia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/ranking.css">
 </head>
 <body>
 <div class="wrap">
@@ -31,6 +32,7 @@
     <select id="clsPairSelect" multiple style="display:none"></select>
     <button id="btnClassify">classificar Unified</button>
     <button id="btnClsCancel" data-i18n="cls_cancel" style="display:none">cancelar</button>
+    <button id="btnRanking">Ranking</button>
     <span id="clsStatus" class="sim-status" data-i18n="cls_status_ready">cole os dois logs abaixo</span>
   </div>
 
@@ -44,6 +46,13 @@
       <textarea id="clsServerInput" data-i18n-placeholder="cls_server_ph" placeholder="Cole aqui o server log..."></textarea>
     </div>
   </div>
+
+  <section id="rankingSection" class="rk-section">
+    <div class="rk-head"><h2>Ranking</h2></div>
+    <div id="rankingBody"></div>
+  </section>
+
+  <dialog id="rankingModal"><div class="rk-modal-body" id="rkModalBody"></div></dialog>
 
   <div id="clsResults" style="display:none"></div>
 
@@ -68,5 +77,8 @@
 <script src="js/charts-helpers.js"></script>
 <script src="js/classify-port.js"></script>
 <script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/ranking-session-summary.js"></script>
+<script src="js/ranking-ui.js"></script>
 </body>
 </html>

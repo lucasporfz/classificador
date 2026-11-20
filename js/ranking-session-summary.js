@@ -2,8 +2,8 @@
  * ranking-session-summary.js
  *
  * Resumo de sessão para o ranking de jogadores. Módulo PURO: lê o resultado do Unified
- * (e a visão de UI dele) e devolve o que o cliente enviaria. Não altera o motor, não é
- * carregado por index.html e não faz I/O.
+ * (e a visão de UI dele) e devolve o que o cliente envia. Não altera o motor e não faz I/O
+ * (index.html o carrega junto com js/ranking-ui.js, que faz o envio).
  *
  * Exporta globalThis.RankingSessionSummary (+ module.exports quando disponível).
  */

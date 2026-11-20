@@ -1,10 +1,11 @@
 /*
- * ranking-ui.js — seção e janela de aceites do ranking (PREVIEW: só index-ranking.html carrega).
+ * ranking-ui.js — seção e janela de aceites do ranking (carregado por index.html e index-ranking.html, depois de js/app.js).
  *
  * Não altera js/app.js nem o motor: embrulha `ClassifyPort.classify` para receber cada resultado
  * completo (sessão inteira, nunca a fatia do gráfico) e cuida do resto: resumo, aceites, envio ao
  * Supabase e leitura da posição. O layout é a porta do protótipo (ranking.proto.html, versão C).
  * Os textos seguem o idioma escolhido no site (PT/EN), lendo a variável LANG do app (js/i18n.js) sem alterá-la.
+ * Também põe os ícones de spell no classificador (decorate*, por observação do DOM), mesmo sem o Supabase.
  */
 (function () {
   'use strict';
@@ -16,7 +17,10 @@
   const ICONS_URL = 'docs/data/ranking-icons.json';   // opcional: sem o arquivo, cai no ícone genérico
 
   const RS = window.RankingSessionSummary;
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // Sem a biblioteca do Supabase (CDN fora do ar ou bloqueado) o ranking fica indisponível, mas o resto (ícones) segue.
+  const sb = window.supabase && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+  // Página aberta direto do disco (file://): o navegador bloqueia fetch de docs/data. Sem ranking e sem ícones, sem erro no console.
+  const LOCAL_FILE = location.protocol === 'file:';
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // Idioma: o app guarda o idioma em LANG ('pt' | 'en'); aqui só se lê.
@@ -25,7 +29,7 @@
   const fmt2 = n => (+n).toFixed(2);
   const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
   const MONTHS_L = { en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'] };
-  const MIN_RANK = 3, MIN_CONFIRM = 30;
+  const MIN_RANK = 3;
   // Cortes dos tiers (percentil): fonte única para o cálculo, a nota da página e o critério no card. D = o restante.
   const TIER_CUTS = [['S', 10], ['A', 30], ['B', 70], ['C', 90]];
   const tierOfTop = top => { for (const [tier, cut] of TIER_CUTS) if (top <= cut) return tier; return 'D'; };
@@ -48,9 +52,9 @@
       m_aa: 'Auto-ataques por hora', m_cast: 'Casts de spell e runa por hora', m_carpet: 'Tempo de tapete',
       u_hits: 'hits por cast', u_hits_aa: 'hits por turno', u_aa: 'auto-ataques por hora', u_cast: 'casts por hora', u_carpet: 'do tempo com tapete',
       auto_attack: 'Auto ataque',
-      tip_more: '⋮ mais {n}', tip_median: 'Mediana', tip_prov: 'Menos de {n} jogadores: o tier é provisório.',
-      tier_need: 'O tier precisa de pelo menos {n} jogadores no grupo', tier_prov: 'Tier provisório (só {p} jogadores; {c} confirmam): ',
-      top: 'top', no_cmp: 'sem comparação', pctl: 'Percentil', pctl_prov: 'Percentil provisório ({n}+ jogadores confirmam)',
+      tip_more: '⋮ mais {n}', tip_median: 'Mediana',
+      tier_need: 'O tier precisa de pelo menos {n} jogadores no grupo',
+      top: 'top', no_cmp: 'sem comparação', pctl: 'Percentil',
       strip_none: 'Ainda não há outros jogadores para comparar', strip_aria: 'Você está em #{r} de {n}',
       gap_pass: '▲ faltam {d} para passar #{n}', gap_lead: '★ liderando por {d}',
       share: '⤴ Compartilhar', share_tip: 'Copiar uma imagem deste resultado para compartilhar', share_ok: '✓ Copiado. Cole onde quiser', share_saved: '✓ Imagem salva', share_err: 'Não foi possível criar a imagem',
@@ -64,18 +68,18 @@
       more_one: '+{n} métrica com posição', more_many: '+{n} métricas com posição',
       prev_foot: 'Entre para ver o ranking completo. Envia o resumo da sessão e os logs, com o seu consentimento.',
       sc_hunt: 'Hunt', sc_level: 'Hunt · level {b}', md_all: 'Todas as sessões', md_best: 'Melhor de cada jogador',
-      overall: 'Geral', score: 'Score', prov: 'provisório', need3: 'precisa de 3+ jogadores neste grupo',
+      overall: 'Geral', score: 'Score', need3: 'precisa de 3+ jogadores neste grupo',
       aa_off: 'Os auto-ataques quase não aparecem no log desta sessão ({p}% dos turnos), então não entram no ranking.',
       ref_few: 'Só referência · jogadores insuficientes para comparar', ref_cmp: 'Só referência · compare em "Hunt · level"', cmp_lvl: 'Comparado na mesma hunt e faixa de level · sem tier',
       of_all: '{n} turnos · {p}% do total', need10: 'Precisa de pelo menos 10 turnos para comparar',
       sub_dmg: '{n} turnos · média {h} hits · {x}', x_notier: 'sem tier', x_ref: 'só referência', x_cmp: 'compare em "Hunt · level"',
       h_sess: 'Métricas da sessão', h_hits: 'Métricas por spell · média de hits ajustada (grav san)', h_dmg: 'Métricas por spell · maior dano em um turno',
-      note: 'Os tiers usam o top % do grupo ({cuts}, D: os demais). Ficam provisórios (tracejados) até o grupo ter {c} ou mais jogadores. O score geral só usa métricas de jogabilidade. O dano só entra no ranking em "Hunt · level" (mesma hunt e faixa de level), sem tier, e não conta no score.{arrow}',
+      note: 'Os tiers usam o top % do grupo ({cuts}, D: os demais). O score geral só usa métricas de jogabilidade. O dano só entra no ranking em "Hunt · level" (mesma hunt e faixa de level), sem tier, e não conta no score.{arrow}',
       m_title: 'Ranking', m_first: 'Classifique uma sessão primeiro.', m_close: 'Fechar', m_already: 'Esta sessão já está no ranking.', m_join: 'Entrar no ranking',
       m_review: 'Revise o que será enviado.', kv_char: 'Personagem', kv_voc: 'Vocação', kv_lvl: 'Level', kv_date: 'Data', kv_hunt: 'Hunt', kv_turns: 'Turnos',
       c1: '<b>Enviar minha sessão e os logs completos.</b> Concordo em enviar o resumo desta sessão <b>e o server log e o local chat completos</b> ao servidor do ranking. O local chat pode ter nomes de outros jogadores. Entendo que os dados podem ser reprocessados e apagados a qualquer momento.',
       c2: '<b>Mostrar o nome do meu personagem nesta sessão.</b> Caso contrário, apareço como anônimo. Cada sessão tem a sua escolha, e você pode mudar depois, neste mesmo navegador.',
-      vis_label: 'Mostrar meu nome nesta sessão', vis_hint: 'Vale só para esta sessão e funciona neste navegador.', vis_ok: 'Salvo', vis_err: 'Não foi possível salvar',
+      vis_other: 'Esta sessão foi enviada de outro navegador (ou antes da identidade por personagem), então o nome não pode ser mudado daqui.', vis_label: 'Mostrar meu nome nesta sessão', vis_hint: 'Vale só para esta sessão e funciona neste navegador.', vis_ok: 'Salvo', vis_err: 'Não foi possível salvar',
       m_cancel: 'Cancelar', m_submit: 'Enviar', m_up: 'Enviando…', e_unres: 'Turnos demais sem classificação.', e_impl: 'Os valores de dano parecem implausíveis.',
       crit: '{t} = top {p}%', crit_d: 'D = os demais', pos: '#{r} de {n} · top {p}%', in_scope: 'em {s}', best_res: 'MELHOR RESULTADO', median: 'mediana'
     },
@@ -96,9 +100,9 @@
       m_aa: 'Auto-attacks per hour', m_cast: 'Spell & rune casts per hour', m_carpet: 'Carpet uptime',
       u_hits: 'hits per cast', u_hits_aa: 'hits per turn', u_aa: 'auto-attacks per hour', u_cast: 'casts per hour', u_carpet: 'of the time under carpet',
       auto_attack: 'Auto attack',
-      tip_more: '⋮ {n} more', tip_median: 'Median', tip_prov: 'Fewer than {n} players: the tier is provisional.',
-      tier_need: 'A tier needs at least {n} players in the group', tier_prov: 'Provisional tier (only {p} players; {c} confirm it): ',
-      top: 'top', no_cmp: 'no comparison', pctl: 'Percentile', pctl_prov: 'Provisional percentile ({n}+ players confirm it)',
+      tip_more: '⋮ {n} more', tip_median: 'Median',
+      tier_need: 'A tier needs at least {n} players in the group',
+      top: 'top', no_cmp: 'no comparison', pctl: 'Percentile',
       strip_none: 'No other players to compare yet', strip_aria: 'You are #{r} of {n}',
       gap_pass: '▲ {d} to pass #{n}', gap_lead: '★ leading by {d}',
       share: '⤴ Share', share_tip: 'Copy an image of this result to share', share_ok: '✓ Copied. Paste it anywhere', share_saved: '✓ Image saved', share_err: 'Could not create the image',
@@ -112,18 +116,18 @@
       more_one: '+{n} more metric ranked', more_many: '+{n} more metrics ranked',
       prev_foot: 'Join to unlock the full ranking. Sends your session summary and logs, with your consent.',
       sc_hunt: 'Hunt', sc_level: 'Hunt · level {b}', md_all: 'All sessions', md_best: 'Best of each player',
-      overall: 'Overall', score: 'Score', prov: 'provisional', need3: 'needs 3+ players in this group',
+      overall: 'Overall', score: 'Score', need3: 'needs 3+ players in this group',
       aa_off: 'Auto-attacks barely show in the log of this session ({p}% of turns), so it is not ranked.',
       ref_few: 'Reference only · not enough players to compare', ref_cmp: 'Reference only · compare in "Hunt · level"', cmp_lvl: 'Compared in the same hunt and level band · no tier',
       of_all: '{n} turns · {p}% of all', need10: 'Needs at least 10 turns to compare',
       sub_dmg: '{n} turns · avg {h} hits · {x}', x_notier: 'no tier', x_ref: 'reference only', x_cmp: 'compare in "Hunt · level"',
       h_sess: 'Session metrics', h_hits: 'Spell metrics · adjusted average hits (grav san)', h_dmg: 'Spell metrics · highest damage in a turn',
-      note: 'Tiers use the top % of the group ({cuts}, D: the rest). They are provisional (dashed) until the group has {c} or more players. The overall score only uses gameplay metrics. Damage is ranked only in "Hunt · level" (same hunt and level band), with no tier, and does not enter the score.{arrow}',
+      note: 'Tiers use the top % of the group ({cuts}, D: the rest). The overall score only uses gameplay metrics. Damage is ranked only in "Hunt · level" (same hunt and level band), with no tier, and does not enter the score.{arrow}',
       m_title: 'Ranking', m_first: 'Classify a session first.', m_close: 'Close', m_already: 'This session is already in the ranking.', m_join: 'Join the ranking',
       m_review: 'Review what will be sent.', kv_char: 'Character', kv_voc: 'Vocation', kv_lvl: 'Level', kv_date: 'Date', kv_hunt: 'Hunt', kv_turns: 'Turns',
       c1: "<b>Upload my session and raw logs.</b> I agree to send this session's summary <b>and the full server log and local chat</b> to the ranking server. The local chat may contain other players' names. I understand the data can be reprocessed and deleted at any time.",
       c2: '<b>Show my character name on this session.</b> Otherwise I appear as anonymous. Each session has its own choice, and you can change it later from this same browser.',
-      vis_label: 'Show my name on this session', vis_hint: 'Only for this session; works from this browser.', vis_ok: 'Saved', vis_err: 'Could not save',
+      vis_other: 'This session was sent from another browser (or before per-character identity), so its name cannot be changed from here.', vis_label: 'Show my name on this session', vis_hint: 'Only for this session; works from this browser.', vis_ok: 'Saved', vis_err: 'Could not save',
       m_cancel: 'Cancel', m_submit: 'Submit', m_up: 'Uploading…', e_unres: 'Too many unclassified turns.', e_impl: 'Damage values look implausible.',
       crit: '{t} = top {p}%', crit_d: 'D = the rest', pos: '#{r} of {n} · top {p}%', in_scope: 'in {s}', best_res: 'BEST RESULT', median: 'median'
     }
@@ -136,7 +140,7 @@
   const tierCuts = () => TIER_CUTS.map(([t, c]) => t + ': top ' + c + '%').join(', ');
 
   // run = id crescente: um resultado atrasado de uma classificação antiga não sobrescreve a nova.
-  const S = { run: 0, phase: 'idle', summary: null, texts: null, key: null, reason: null, hash: null, sessionId: null, scope: 'hunt', best: false, busy: false, standing: null, icons: null, preview: undefined, isPublic: false, owner: false };
+  const S = { run: 0, phase: 'idle', summary: null, texts: null, key: null, reason: null, hash: null, sessionId: null, scope: 'hunt', best: false, busy: false, standing: null, icons: null, preview: undefined, isPublic: false, owner: false, ownerErr: false };
 
   // ---------- cabeçalho do log ----------
   const MONTHS = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Sept: 9, Oct: 10, Nov: 11, Dec: 12 };
@@ -170,9 +174,10 @@
   }
   const keyHash = async () => sha256Hex(playerSecret() + '|' + String(S.summary.player).toLowerCase());
   let spawnsCache = null;
-  async function spawns() { if (!spawnsCache) spawnsCache = (await (await fetch(SPAWNS_URL)).json()).spawns; return spawnsCache; }
+  async function spawns() { if (LOCAL_FILE) throw new Error('file://'); if (!spawnsCache) spawnsCache = (await (await fetch(SPAWNS_URL)).json()).spawns; return spawnsCache; }
   async function loadIcons() {
     if (S.icons) return S.icons;
+    if (LOCAL_FILE) return (S.icons = { spells: {}, aa: {} });
     try { const r = await fetch(ICONS_URL); S.icons = r.ok ? await r.json() : { spells: {}, aa: {} }; } catch (_e) { S.icons = { spells: {}, aa: {} }; }
     return S.icons;
   }
@@ -183,7 +188,8 @@
     classify(sv, lc, opts, handlers) {
       const run = orig.classify(sv, lc, opts, handlers);
       const id = ++S.run;
-      Object.assign(S, { phase: 'classifying', standing: null, sessionId: null, preview: undefined, scope: 'hunt', best: false, owner: false, isPublic: false }); render();
+      // summary zerado: até o resumo novo chegar, os ícones de auto-ataque esperam em vez de usar a vocação da sessão anterior
+      Object.assign(S, { phase: 'classifying', summary: null, standing: null, sessionId: null, preview: undefined, scope: 'hunt', best: false, owner: false, ownerErr: false, isPublic: false }); render();
       run.promise.then(res => onClassified(id, sv, lc, res), () => { if (id === S.run) { S.phase = 'idle'; render(); } });
       return run;
     },
@@ -196,7 +202,7 @@
       const summary = RS.summaryFromUiResult(res, { level: RS.levelFromLocalChat(lc, speaker), date: info ? info.iso : null, spawns: await spawns() });
       if (id !== S.run) return;
       if (summary.error) { Object.assign(S, { phase: 'ineligible', summary: null, reason: ['err_class', { e: summary.error }] }); return render(); }
-      const reason = eligibility(summary, info && info.key, sv);
+      const reason = eligibility(summary, info && info.key, sv) || (sb ? null : ['err_unavail', { e: 'supabase-js' }]);
       Object.assign(S, { phase: reason ? 'ineligible' : 'ready', summary, texts: { sv, lc }, key: info && info.key, reason, sessionId: null,
                          hash: await sha256Hex(sv.trim() + '\n---\n' + lc.trim()) });
       render(); decorateRotation();
@@ -211,6 +217,7 @@
     S.sessionId = r.data; S.phase = 'submitted';
     const o = await sb.rpc('ranking_session_owner_state', { p_log_hash: S.hash, p_player_key_hash: await keyHash() });
     if (id !== S.run) return;
+    S.ownerErr = !!o.error; if (o.error) console.warn('ranking_session_owner_state:', o.error.message);   // função ausente = migration 0015 não rodou
     S.owner = !o.error && !!(o.data && o.data.length); S.isPublic = S.owner ? !!o.data[0].is_public : false;   // só o dono (mesmo navegador) vê e muda a escolha
     render(); loadStanding();
   }
@@ -268,21 +275,19 @@
       h += '<div class="plist' + (e.me ? ' me' : '') + '"><span class="pr">#' + e.rank + '</span><span class="pn">' + esc(e.name) + '</span><b>' + f(e.v) + '</b></div>'; prev = i; });
     if (prev < all.length - 1) h += '<div class="plist gap">' + tr('tip_more', { n: all.length - 1 - prev }) + '</div>';
     const asc = all.map(e => e.v).sort((a, b) => a - b), sC = TIER_CUTS[0][1], aC = TIER_CUTS[1][1];
-    return h + '<div class="cls-chart-tip-foot">S (top ' + sC + '%) ≥ ' + f(quantile(asc, 1 - sC / 100)) + ' · A (top ' + aC + '%) ≥ ' + f(quantile(asc, 1 - aC / 100)) + ' · ' + tr('tip_median') + ' ' + f(quantile(asc, .5)) +
-      (r.players < MIN_CONFIRM ? '<br>' + tr('tip_prov', { n: MIN_CONFIRM }) : '') + '</div>';
+    return h + '<div class="cls-chart-tip-foot">S (top ' + sC + '%) ≥ ' + f(quantile(asc, 1 - sC / 100)) + ' · A (top ' + aC + '%) ≥ ' + f(quantile(asc, 1 - aC / 100)) + ' · ' + tr('tip_median') + ' ' + f(quantile(asc, .5)) + '</div>';
   }
   const tipAttr = r => { const h = statTip(r); return h ? ' tabindex="0" data-tip="' + tipId(h) + '"' : ''; };
 
   function tierBadge(r, cls) {
     if (r && r.noTier) return cls ? '' : '<span></span>';
     if (!ranked(r)) return '<span class="tier none ' + (cls || '') + '" title="' + esc(tr('tier_need', { n: MIN_RANK })) + '">–</span>';
-    const prov = r.provisional;
-    return '<span class="tier ' + r.tier + (prov ? ' prov' : '') + ' ' + (cls || '') + '" title="' + esc((prov ? tr('tier_prov', { p: r.players, c: MIN_CONFIRM }) : '') + tr('top') + ' ' + Math.max(1, +r.top_pct) + '%') + '">' + r.tier + '</span>';
+    return '<span class="tier ' + r.tier + ' ' + (cls || '') + '" title="' + esc(tr('top') + ' ' + Math.max(1, +r.top_pct) + '%') + '">' + r.tier + '</span>';
   }
   function rankRow(r) {
     if (!ranked(r)) return '<div class="rk"><span class="r"><span class="rc"><span class="tier none">–</span><b class="nocmp">' + tr('no_cmp') + '</b></span></span><span class="p"></span></div>';
-    const conf = r.players >= MIN_CONFIRM, p = r.percentile == null ? '' : (conf ? '' : '~') + 'p' + Math.round(r.percentile * 100);
-    return '<div class="rk"><span class="r"><span class="rc' + (r.others_values && r.others_values.length ? ' tipped' : '') + '"' + tipAttr(r) + '>' + tierBadge(r) + '<b>#' + r.rank + '</b><i>/ ' + (r.others_values ? r.others_values.length + 1 : (r.entries || r.players)) + '</i></span></span><span class="p' + (conf ? '' : ' prov') + '" title="' + esc(conf ? tr('pctl') : tr('pctl_prov', { n: MIN_CONFIRM })) + '">' + p + '</span></div>';
+    const p = r.percentile == null ? '' : 'p' + Math.round(r.percentile * 100);
+    return '<div class="rk"><span class="r"><span class="rc' + (r.others_values && r.others_values.length ? ' tipped' : '') + '"' + tipAttr(r) + '>' + tierBadge(r) + '<b>#' + r.rank + '</b><i>/ ' + (r.others_values ? r.others_values.length + 1 : (r.entries || r.players)) + '</i></span></span><span class="p" title="' + esc(tr('pctl')) + '">' + p + '</span></div>';
   }
   // Faixa central dos valores: o que passa de 1,5 intervalo interquartil fora dos quartis é outlier. A faixa e o card de
   // compartilhar cortam os outliers na ponta da linha (triângulo + quantidade) para a distribuição do resto aparecer.
@@ -349,14 +354,11 @@
   const SHIELD = 'M50 175 Q160 150 205 90 Q330 20 512 20 Q700 20 820 85 Q870 150 972 172 L972 1250 Q972 1330 900 1390 Q760 1470 512 1520 Q260 1470 124 1390 Q50 1330 50 1250 Z';
   const shareBtn = r => scored(r) ? '<div class="shr"><button type="button" class="rk-share" data-share="' + (SHARES.push(r) - 1) + '" title="' + esc(tr('share_tip')) + '">' + tr('share') + '</button></div>' : '';
   const loadImg = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
-  // A página só carrega Inter 400–600; o card usa 600–900 no canvas. Carrega os pesos que faltam antes de desenhar.
+  // O card usa Inter 600–900 no canvas; a página declara esses pesos no link do Google Fonts. O canvas não dispara o
+  // download da fonte: espera os arquivos antes de desenhar.
   let cardFonts = null;
   function loadCardFonts() {
-    if (!cardFonts) cardFonts = new Promise(res => {
-      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap';
-      l.onload = l.onerror = () => Promise.all([600, 700, 800, 900].map(w => document.fonts.load(w + ' 20px Inter'))).then(res, res);
-      document.head.appendChild(l);
-    });
+    if (!cardFonts) cardFonts = Promise.all([600, 700, 800, 900].map(w => document.fonts.load(w + ' 20px Inter'))).catch(() => {});
     return cardFonts;
   }
   const hexA = (hex, a) => 'rgba(' + parseInt(hex.slice(1, 3), 16) + ',' + parseInt(hex.slice(3, 5), 16) + ',' + parseInt(hex.slice(5, 7), 16) + ',' + a + ')';
@@ -493,7 +495,7 @@
     const parts = rows.filter(scored).map(r => ({ r, pct: Math.round(r.percentile * 100), w: W[r.tier] }));
     if (!parts.length) return null;
     const score = Math.round(parts.reduce((a, p) => a + p.w * p.pct, 0) / parts.reduce((a, p) => a + p.w, 0)), top = 100 - score;
-    return { score, top, c: tierOfTop(top), prov: parts.some(p => p.r.provisional) };
+    return { score, top, c: tierOfTop(top) };
   }
 
   function renderStanding() {
@@ -503,7 +505,7 @@
     const seg = (items, cur, key) => '<div class="seg">' + items.map(([v, l]) => '<button type="button" data-k="' + key + '" data-v="' + v + '" class="' + (v === cur ? 'active' : '') + '">' + esc(l) + '</button>').join('') + '</div>';
     const ov = overall(rows);
     const ovHtml = ov
-      ? '<div class="ov"><span class="tier ' + ov.c + ' xl' + (ov.prov ? ' prov' : '') + '">' + ov.c + '</span><div><div class="ovl">' + tr('overall') + ' · ' + esc(scopeLabel()) + '</div><div class="ovs">' + tr('score') + ' ' + ov.score + ' <span class="ovt">· ' + tr('top') + ' ' + Math.max(1, ov.top) + '%' + (ov.prov ? ' · ' + tr('prov') : '') + '</span></div></div></div>'
+      ? '<div class="ov"><span class="tier ' + ov.c + ' xl">' + ov.c + '</span><div><div class="ovl">' + tr('overall') + ' · ' + esc(scopeLabel()) + '</div><div class="ovs">' + tr('score') + ' ' + ov.score + ' <span class="ovt">· ' + tr('top') + ' ' + Math.max(1, ov.top) + '%</span></div></div></div>'
       : '<div class="ov"><span class="tier none xl">–</span><div><div class="ovl">' + tr('overall') + ' · ' + esc(scopeLabel()) + '</div><div class="ovs"><span class="ovt">' + tr('need3') + '</span></div></div></div>';
     const hero = '<div class="hero2">' + ovHtml + '<div class="who"><div class="name">' + esc(s.player) + '</div><div class="meta">' + esc(cap(s.vocation)) + ' · level ' + s.level + ' · ' + esc(s.hunt || '') + ' · ' + fmtDate(s.date) + ' · ' + fmtInt(s.totalTurns) + ' ' + tr('turns') + '</div></div></div>';
 
@@ -530,12 +532,12 @@
       const sub = tr('sub_dmg', { n: r.turns, h: fmt2(r.hitsAdj != null ? r.hitsAdj : r.hitsMean), x: st ? tr('x_notier') : (S.scope === 'hunt_level' ? tr('x_ref') : tr('x_cmp')) });
       return st ? rankedCard(st, Object.assign({ sub }, base)) : card(Object.assign({ value: fmtInt(r.maxTurnDmg), sub }, base)); }).join('');
 
-    const vis = S.owner ? '<div class="rk-vis"><label><input type="checkbox" id="rkVis"' + (S.isPublic ? ' checked' : '') + '> <b>' + tr('vis_label') + '</b></label><span class="rk-muted">' + tr('vis_hint') + '</span><span id="rkVisMsg" class="rk-muted"></span></div>' : '';
+    const vis = S.owner ? '<div class="rk-vis"><label><input type="checkbox" id="rkVis"' + (S.isPublic ? ' checked' : '') + '> <b>' + tr('vis_label') + '</b></label><span class="rk-muted">' + tr('vis_hint') + '</span><span id="rkVisMsg" class="rk-muted"></span></div>' : (S.ownerErr ? '' : '<div class="rk-vis"><span class="rk-muted">' + tr('vis_other') + '</span></div>');
     box.innerHTML = vis + '<div class="ctrl">' + seg(SCOPES(), S.scope, 'scope') + seg(MODES(), S.best, 'best') + '</div>' + hero +
       '<h3 class="cls-h">' + tr('h_sess') + '</h3><div class="cls-metrics">' + sess.join('') + '</div>' +
       '<h3 class="cls-h">' + tr('h_hits') + '</h3><div class="cls-metrics">' + spellCards + '</div>' +
       '<h3 class="cls-h">' + tr('h_dmg') + '</h3><div class="cls-metrics">' + dmgCards + '</div>' +
-      '<p class="note">' + tr('note', { cuts: tierCuts(), c: MIN_CONFIRM, arrow: arrowEl() ? tr('arrow_note') : '' }) + '</p>';
+      '<p class="note">' + tr('note', { cuts: tierCuts(), arrow: arrowEl() ? tr('arrow_note') : '' }) + '</p>';
     const visBox = $('rkVis');
     if (visBox) visBox.onchange = async () => {
       const want = visBox.checked, msg = $('rkVisMsg'); visBox.disabled = true; msg.textContent = '';
@@ -678,7 +680,8 @@
     const old = wrap.previousElementSibling && wrap.previousElementSibling.classList.contains('rk-legend') ? wrap.previousElementSibling : null;
     if (old) old.remove();
     const ic = await loadIcons(), voc = S.summary && S.summary.vocation, ds = chart.data.datasets;
-    const srcs = ds.map(d => srcFor(d.label, ic, voc)); if (!srcs.some(Boolean) || /^auto at/i.test(ds.map(d => d.label).join(' ')) && !voc) return;
+    if (/^auto at/i.test(ds.map(d => d.label).join(' ')) && !voc) { wrap._rkLegChart = null; return; }   // vocação ainda desconhecida: tenta de novo na próxima mudança do DOM
+    const srcs = ds.map(d => srcFor(d.label, ic, voc)); if (!srcs.some(Boolean)) return;
     const box = document.createElement('div'); box.className = 'rk-legend'; box._chart = chart;
     ds.forEach((d, i) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'rk-leg-item' + (chart.isDatasetVisible(i) ? '' : ' off');
