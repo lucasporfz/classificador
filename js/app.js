@@ -489,12 +489,13 @@ function clsRowTotalEff(row) {
     : 0;
 }
 
-// Separador de milhar seguindo o idioma da UI: sem isto o dano total sairia com ponto
-// (2.107.064) mesmo no modo EN. As demais colunas não usam separador, mas os totais de
-// sessão chegam à casa dos milhões e ficam ilegíveis sem ele.
+// Inteiro sem separador de milhar (decisão do usuário, 20/Nov/2026): 1706, não 1.706 nem 1,706. Vale para a UI inteira,
+// inclusive os eixos dos gráficos (ver Chart.defaults abaixo).
 function clsFmtInt(n) {
-  return Math.round(+n || 0).toLocaleString(LANG === 'en' ? 'en-US' : 'pt-BR');
+  return String(Math.round(+n || 0));
 }
+// Eixos do Chart.js também sem separador de milhar.
+if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.scales && Chart.defaults.scales.linear) Chart.defaults.scales.linear.ticks.format = { useGrouping: false };
 
 // ---------------------------------------------------------------------------
 // Divisão por criatura de cada componente (tooltip da tabela de rotação).
@@ -1145,7 +1146,7 @@ function clsChartExternalTooltip(opts) {
     if (opts.hideZeros) rows = rows.filter(r => r.value > 0);
     rows.sort((a, b) => b.value - a.value);
     const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    const fmt = n => Number(n).toLocaleString(LANG === 'pt' ? 'pt-BR' : 'en-US');
+    const fmt = n => Number(n).toLocaleString(LANG === 'pt' ? 'pt-BR' : 'en-US', { useGrouping: false });
     const body = rows.length
       ? rows.map(r =>
           '<div class="cls-chart-tip-row">' +

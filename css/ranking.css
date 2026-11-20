@@ -116,3 +116,34 @@
 #rankingSection [data-tip] { cursor: help; }
 #rankingSection .rc.tipped:hover, #rankingSection .rc.tipped:focus-visible { background: #ffffff10; border-radius: 4px; }
 #rankingSection .mini circle[data-tip]:hover { fill-opacity: 1; stroke-width: 2.2; }
+
+/* compartilhar */
+#rankingSection .shr { margin-top: 8px; text-align: right; }
+#rankingSection .rk-share { background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; padding: 0 10px; min-height: 28px; font-size: 12px; cursor: pointer; }
+#rankingSection .rk-share:hover { color: var(--accent); border-color: var(--accent); }
+#rankingSection .rk-share:disabled { color: var(--accent); border-color: var(--accent); cursor: default; }
+
+/* ícones de spell no classificador (originais 32px; escala suave, sem pixelar, nos tamanhos reduzidos) */
+img.rk-ic { vertical-align: middle; flex: none; border-radius: 4px; margin: 0 8px 0 3px; }
+img.rk-ic.lg { width: 28px; height: 28px; }   /* tabela de rotação / grav san (linhas altas) */
+img.rk-ic.md { width: 22px; height: 22px; }   /* composição do dano, legenda do gráfico */
+img.rk-ic.sm { width: 18px; height: 18px; margin: 0 6px 0 0; }   /* detalhe do turno (linhas baixas) */
+img.rk-cic { position: absolute; top: 4px; width: 22px; height: 22px; border-radius: 4px; pointer-events: none; }
+.rk-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 6px; }
+.rk-leg-item { display: inline-flex; align-items: center; background: transparent; color: var(--text-muted); border: 0; border-bottom: 2px solid var(--border); padding: 2px 2px 3px; min-height: 30px; font-size: 12px; cursor: pointer; }
+.rk-leg-item:hover { color: var(--text); }
+.rk-leg-item.off { opacity: .4; text-decoration: line-through; }
+.rk-leg-item img.rk-ic { margin-left: 2px; }
+.rk-leg-sw { width: 14px; height: 14px; border-radius: 3px; margin: 0 8px 0 3px; flex: none; }
+
+/* alinhamento: a legenda dos componentes começa onde começa a área de plotagem (eixo Y de 74px) */
+.rk-legend { padding-left: 74px; }
+/* tabela de rotação sem rolagem horizontal em telas largas: o app fixa 910px de colunas + 300 de nome (1210px), mais que o contêiner de 1100px.
+   Em telas largas as colunas numéricas encolhem (cabeçalhos quebram em mais linhas); abaixo disso a rolagem original continua. */
+@media (min-width: 900px) {
+  table.cls-rotation-table { min-width: 0 !important; width: 100%; }
+  table.cls-rotation-table col:not(:first-child) { width: 110px !important; }
+  table.cls-rotation-table col:nth-child(2) { width: 112px !important; }   /* turnos (uptime): "121 (93.8%)" */
+  table.cls-rotation-table col:nth-child(3) { width: 72px !important; }    /* hits méd */
+  table.cls-rotation-table col:last-child { width: 156px !important; }     /* dano total + parcela, sem reticências */
+}

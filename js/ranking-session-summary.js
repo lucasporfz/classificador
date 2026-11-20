@@ -104,6 +104,8 @@
       engineVersion: u.version || null,
       player: u.selectedSpeaker || null,
       vocation,
+      // Royal Paladin: tipo de flecha do auto-ataque (physical, energy, ice, fire, earth), inferido pelo motor por sessão.
+      aaElement: vocation === 'paladin' ? (u.aaElement || 'physical') : null,
       level: opts.level == null ? null : opts.level,
       date: opts.date || null,
       hunt: huntOf(mobs, opts.spawns),
