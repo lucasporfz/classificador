@@ -147,3 +147,9 @@ img.rk-cic { position: absolute; top: 4px; width: 22px; height: 22px; border-rad
   table.cls-rotation-table col:nth-child(3) { width: 72px !important; }    /* hits méd */
   table.cls-rotation-table col:last-child { width: 156px !important; }     /* dano total + parcela, sem reticências */
 }
+
+/* escolha de nome por sessão */
+#rankingSection .rk-vis { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 0 0 12px; font-size: 13px; }
+#rankingSection .rk-vis label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; min-height: 32px; }
+#rankingSection .rk-vis input { accent-color: var(--accent); width: 16px; height: 16px; }
+#rankingSection .rk-ok { color: var(--accent); font-size: 12.5px; }

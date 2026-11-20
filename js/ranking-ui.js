@@ -74,7 +74,8 @@
       m_title: 'Ranking', m_first: 'Classifique uma sessão primeiro.', m_close: 'Fechar', m_already: 'Esta sessão já está no ranking.', m_join: 'Entrar no ranking',
       m_review: 'Revise o que será enviado.', kv_char: 'Personagem', kv_voc: 'Vocação', kv_lvl: 'Level', kv_date: 'Data', kv_hunt: 'Hunt', kv_turns: 'Turnos',
       c1: '<b>Enviar minha sessão e os logs completos.</b> Concordo em enviar o resumo desta sessão <b>e o server log e o local chat completos</b> ao servidor do ranking. O local chat pode ter nomes de outros jogadores. Entendo que os dados podem ser reprocessados e apagados a qualquer momento.',
-      c2: '<b>Mostrar o nome do meu personagem.</b> Caso contrário, apareço como anônimo no ranking.',
+      c2: '<b>Mostrar o nome do meu personagem nesta sessão.</b> Caso contrário, apareço como anônimo. Cada sessão tem a sua escolha, e você pode mudar depois, neste mesmo navegador.',
+      vis_label: 'Mostrar meu nome nesta sessão', vis_hint: 'Vale só para esta sessão e funciona neste navegador.', vis_ok: 'Salvo', vis_err: 'Não foi possível salvar',
       m_cancel: 'Cancelar', m_submit: 'Enviar', m_up: 'Enviando…', e_unres: 'Turnos demais sem classificação.', e_impl: 'Os valores de dano parecem implausíveis.',
       crit: '{t} = top {p}%', crit_d: 'D = os demais', pos: '#{r} de {n} · top {p}%', in_scope: 'em {s}', best_res: 'MELHOR RESULTADO', median: 'mediana'
     },
@@ -121,7 +122,8 @@
       m_title: 'Ranking', m_first: 'Classify a session first.', m_close: 'Close', m_already: 'This session is already in the ranking.', m_join: 'Join the ranking',
       m_review: 'Review what will be sent.', kv_char: 'Character', kv_voc: 'Vocation', kv_lvl: 'Level', kv_date: 'Date', kv_hunt: 'Hunt', kv_turns: 'Turns',
       c1: "<b>Upload my session and raw logs.</b> I agree to send this session's summary <b>and the full server log and local chat</b> to the ranking server. The local chat may contain other players' names. I understand the data can be reprocessed and deleted at any time.",
-      c2: '<b>Show my character name.</b> Otherwise I appear as anonymous in the ranking.',
+      c2: '<b>Show my character name on this session.</b> Otherwise I appear as anonymous. Each session has its own choice, and you can change it later from this same browser.',
+      vis_label: 'Show my name on this session', vis_hint: 'Only for this session; works from this browser.', vis_ok: 'Saved', vis_err: 'Could not save',
       m_cancel: 'Cancel', m_submit: 'Submit', m_up: 'Uploading…', e_unres: 'Too many unclassified turns.', e_impl: 'Damage values look implausible.',
       crit: '{t} = top {p}%', crit_d: 'D = the rest', pos: '#{r} of {n} · top {p}%', in_scope: 'in {s}', best_res: 'BEST RESULT', median: 'median'
     }
@@ -134,7 +136,7 @@
   const tierCuts = () => TIER_CUTS.map(([t, c]) => t + ': top ' + c + '%').join(', ');
 
   // run = id crescente: um resultado atrasado de uma classificação antiga não sobrescreve a nova.
-  const S = { run: 0, phase: 'idle', summary: null, texts: null, key: null, reason: null, hash: null, sessionId: null, scope: 'hunt', best: false, busy: false, standing: null, icons: null, preview: undefined, isPublic: false };
+  const S = { run: 0, phase: 'idle', summary: null, texts: null, key: null, reason: null, hash: null, sessionId: null, scope: 'hunt', best: false, busy: false, standing: null, icons: null, preview: undefined, isPublic: false, owner: false };
 
   // ---------- cabeçalho do log ----------
   const MONTHS = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Sept: 9, Oct: 10, Nov: 11, Dec: 12 };
@@ -166,6 +168,7 @@
     try { let s = localStorage.getItem('rankingSecret'); if (!s) { s = crypto.randomUUID() + crypto.randomUUID(); localStorage.setItem('rankingSecret', s); } return s; }
     catch (_e) { return crypto.randomUUID() + crypto.randomUUID(); }
   }
+  const keyHash = async () => sha256Hex(playerSecret() + '|' + String(S.summary.player).toLowerCase());
   let spawnsCache = null;
   async function spawns() { if (!spawnsCache) spawnsCache = (await (await fetch(SPAWNS_URL)).json()).spawns; return spawnsCache; }
   async function loadIcons() {
@@ -180,7 +183,7 @@
     classify(sv, lc, opts, handlers) {
       const run = orig.classify(sv, lc, opts, handlers);
       const id = ++S.run;
-      Object.assign(S, { phase: 'classifying', standing: null, sessionId: null, preview: undefined, scope: 'hunt', best: false }); render();
+      Object.assign(S, { phase: 'classifying', standing: null, sessionId: null, preview: undefined, scope: 'hunt', best: false, owner: false, isPublic: false }); render();
       run.promise.then(res => onClassified(id, sv, lc, res), () => { if (id === S.run) { S.phase = 'idle'; render(); } });
       return run;
     },
@@ -205,7 +208,11 @@
   async function lookupExisting(id) {
     const r = await sb.rpc('ranking_session_by_hash', { p_log_hash: S.hash });
     if (id !== S.run || r.error || !r.data) return;
-    S.sessionId = r.data; S.phase = 'submitted'; render(); loadStanding();
+    S.sessionId = r.data; S.phase = 'submitted';
+    const o = await sb.rpc('ranking_session_owner_state', { p_log_hash: S.hash, p_player_key_hash: await keyHash() });
+    if (id !== S.run) return;
+    S.owner = !o.error && !!(o.data && o.data.length); S.isPublic = S.owner ? !!o.data[0].is_public : false;   // só o dono (mesmo navegador) vê e muda a escolha
+    render(); loadStanding();
   }
 
   // Prévia antes de entrar: só os números do resumo vão ao servidor (nada é gravado) e ele devolve
@@ -523,11 +530,20 @@
       const sub = tr('sub_dmg', { n: r.turns, h: fmt2(r.hitsAdj != null ? r.hitsAdj : r.hitsMean), x: st ? tr('x_notier') : (S.scope === 'hunt_level' ? tr('x_ref') : tr('x_cmp')) });
       return st ? rankedCard(st, Object.assign({ sub }, base)) : card(Object.assign({ value: fmtInt(r.maxTurnDmg), sub }, base)); }).join('');
 
-    box.innerHTML = '<div class="ctrl">' + seg(SCOPES(), S.scope, 'scope') + seg(MODES(), S.best, 'best') + '</div>' + hero +
+    const vis = S.owner ? '<div class="rk-vis"><label><input type="checkbox" id="rkVis"' + (S.isPublic ? ' checked' : '') + '> <b>' + tr('vis_label') + '</b></label><span class="rk-muted">' + tr('vis_hint') + '</span><span id="rkVisMsg" class="rk-muted"></span></div>' : '';
+    box.innerHTML = vis + '<div class="ctrl">' + seg(SCOPES(), S.scope, 'scope') + seg(MODES(), S.best, 'best') + '</div>' + hero +
       '<h3 class="cls-h">' + tr('h_sess') + '</h3><div class="cls-metrics">' + sess.join('') + '</div>' +
       '<h3 class="cls-h">' + tr('h_hits') + '</h3><div class="cls-metrics">' + spellCards + '</div>' +
       '<h3 class="cls-h">' + tr('h_dmg') + '</h3><div class="cls-metrics">' + dmgCards + '</div>' +
       '<p class="note">' + tr('note', { cuts: tierCuts(), c: MIN_CONFIRM, arrow: arrowEl() ? tr('arrow_note') : '' }) + '</p>';
+    const visBox = $('rkVis');
+    if (visBox) visBox.onchange = async () => {
+      const want = visBox.checked, msg = $('rkVisMsg'); visBox.disabled = true; msg.textContent = '';
+      const r = await sb.rpc('ranking_set_visibility', { p_log_hash: S.hash, p_player_key_hash: await keyHash(), p_is_public: want });
+      visBox.disabled = false;
+      if (r.error || r.data !== true) { visBox.checked = !want; msg.className = 'rk-err'; msg.textContent = tr('vis_err'); return; }
+      S.isPublic = want; msg.className = 'rk-ok'; msg.textContent = tr('vis_ok');
+    };
     box.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
       if (b.dataset.k === 'scope') S.scope = b.dataset.v; else S.best = b.dataset.v === 'true';
       loadStanding();
@@ -568,7 +584,7 @@
         if (/duplicate key|23505/.test(r.error.message + (r.error.code || ''))) { S.busy = false; await lookupExisting(S.run); $('rankingModal').close(); return; }
         throw r.error;
       }
-      S.sessionId = r.data; S.phase = 'submitted'; S.standing = null; S.busy = false;
+      S.sessionId = r.data; S.phase = 'submitted'; S.standing = null; S.busy = false; S.owner = true;
       $('rankingModal').close(); render(); loadStanding();
       $('rankingSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (e) {
