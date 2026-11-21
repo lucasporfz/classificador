@@ -11,7 +11,7 @@
  */
 (function(root) {
   'use strict';
-  const VERSION = 'unified-v28-ew-bm-pierce-detection';
+  const VERSION = 'unified-209c211ee2db';
   const CUTOFF_KEY = 20260616;
   const PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS = 0.02;
   const ELEMENT_KEYS = {

@@ -7,3 +7,10 @@ if git diff --cached --name-only | grep -qx 'docs/CLASSIFICATION_RULES.md'; then
     exit 1
   }
 fi
+# Versão do motor (engine_version do ranking) = hash do conteúdo staged do motor.
+if git diff --cached --name-only | grep -qE '^js/(stats|mob-element-mods[^/]*|unified-[a-z-]+)\.js$'; then
+  node tools/engine-version.mjs --check --staged || {
+    echo "pre-commit: rode node tools/engine-version.mjs --write --staged e faça git add js/unified-formulas.js" >&2
+    exit 1
+  }
+fi
