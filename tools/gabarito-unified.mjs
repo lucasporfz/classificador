@@ -2148,6 +2148,28 @@ export const CASES = [
     ['06:53:43', 7, 9, 9], ['06:56:43', 7, 10, 8], ['06:57:20', 10, 10, 11],
   ].map(([ts, aa, spell, grenade]) => C(`radiant-class-bonus-leech/${ts}`, 'Server Log radiant.txt', 'Local Chat radiant.txt', ts,
     grenadeWithAaSpellCheck(aa, spell, grenade, 'Ethereal Barrage', [parseClock(ts)], []), '14/Oct/2026')),
+  // M-040b + Janela de mitigacao (fix-pierce-witness-mitigation-window): a rod de Nimmersatt S0
+  // (21/Nov/2026, druid `Dih Potter`) da earth 2%. A testemunha do detector so alcanca o
+  // `mega dragon 805` (mitigacao 3,13%) pela janela de +-0,005 ponto; sem o pierce o mod de earth
+  // fica 1,10 em vez de 1,11 e os hits com o bonus de +14% (dois perks alpha) erram por 1 ponto.
+  // Esperado de cada turno: todos os hits do dono no segundo sao da spell lancada nele, 0 AA
+  // (N contado nas linhas `loses ... due to your attack` do log, sem proc de charm).
+  ...[
+    ['02:59:11', 5], ['03:01:19', 6], ['03:01:24', 6], ['03:01:37', 6], ['03:01:41', 6],
+    ['03:01:55', 6], ['03:01:59', 6], ['03:03:10', 6], ['03:04:05', 6], ['03:04:23', 6],
+    ['03:06:09', 6], ['03:06:33', 6], ['03:07:25', 6], ['03:08:04', 6], ['03:08:13', 6],
+    ['03:08:22', 6], ['03:08:35', 6], ['03:09:18', 6], ['03:10:06', 4], ['03:10:18', 6],
+    ['03:10:47', 6], ['03:11:29', 6],
+    ['02:58:35', 6], ['02:59:07', 6], ['03:00:53', 6], ['03:01:33', 4], ['03:02:20', 6],
+    ['03:03:25', 6], ['03:04:31', 5], ['03:07:54', 6], ['03:09:51', 5], ['03:10:01', 5],
+    ['03:10:51', 6],
+  ].map(([ts, spell]) => C(`weapon-element-pierce/nimmersatt-${ts}`, 'Nimmersatt Breeding Grounds server log.txt',
+    'Nimmersatt Breeding Grounds local chat.txt', ts, sharedCountCheck({ arrow: 0, spell, rune: 0, grenade: 0 }), '21/Nov/2026')),
+  // Controles: AA de verdade. 03:12:57 = AA `dragolisk 30` + `exori max tera` 1417; 03:12:59 = AA
+  // `dragolisk 9` (2a linha de mana do AA de mage) + `exevo fur tera` 200 de 03:13:00.
+  ...['03:12:57', '03:12:59'].map(ts => C(`weapon-element-pierce/nimmersatt-control-${ts}`,
+    'Nimmersatt Breeding Grounds server log.txt', 'Nimmersatt Breeding Grounds local chat.txt', ts,
+    sharedCountCheck({ arrow: 1, spell: 1, rune: 0, grenade: 0 }), '21/Nov/2026')),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

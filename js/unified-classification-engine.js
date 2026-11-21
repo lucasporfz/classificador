@@ -1579,8 +1579,12 @@
   const WEAPON_DEATH_PIERCE_MIN_MOBS = 2;             // mobs
   const WEAPON_DEATH_PIERCE_MIN_SECONDS = 2;          // e instantes distintos
 
-  function deathDamageReachable(dmg, mod, mit) {
-    const aIv = invFloor(dmg, mit);
+  function deathDamageReachable(dmg, mod, mit, rawMitigation) {
+    // Janela de mitigacao (04/Nov/2026): mesma inversao de `elementalOriginalCandidates`.
+    const aIv = rawMitigation > 0
+      ? [Math.ceil(dmg / (1 - (rawMitigation - 0.005) / 100)),
+         Math.ceil((dmg + 1) / (1 - (rawMitigation + 0.005) / 100)) - 1]
+      : invFloor(dmg, mit);
     if (!aIv) return false;
     for (let e = aIv[0]; e <= aIv[1]; e++) {
       const oIv = invRound(e, mod);
@@ -1616,7 +1620,7 @@
     const tiers = WEAPON_DEATH_PIERCE_TIERS.map(tier => {
       const bad = witnesses.filter(({ hit, mods }) => !deathDamageReachable(+hit.dmg,
         effectiveMod(+mods.deathDmgMod, pierceForElement('death', hit, context) + tier),
-        mitigationMultiplier(mods, context)));
+        mitigationMultiplier(mods, context), +mods.mitigation || 0));
       return {
         tier,
         contradictions: bad.length,
@@ -1673,7 +1677,7 @@
       const tiers = candidates.map(tier => {
         const bad = witnesses.filter(({ hit, mods }) => !deathDamageReachable(+hit.dmg,
           effectiveMod(+mods[key], pierceForElement(element, hit, context) + tier),
-          mitigationMultiplier(mods, context)));
+          mitigationMultiplier(mods, context), +mods.mitigation || 0));
         return { tier, contradictions: bad.length, mobs: new Set(bad.map(b => normalizeName(b.hit.mob))).size, seconds: new Set(bad.map(b => b.hit.ts)).size };
       });
       const none = tiers.find(t => t.tier === 0);
