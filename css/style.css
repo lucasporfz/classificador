@@ -34,6 +34,9 @@ body {
 
 .topbar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
 .topbar .spacer { margin-left: auto; }
+.brand { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
+.brand .brand-mark { display: block; width: 60px; height: 60px; }
+.brand h1 { margin: 0; font-size: 20px; }
 
 button {
   font-size: 12px;

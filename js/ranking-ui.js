@@ -349,7 +349,7 @@
   // Estrutura (de cima para baixo): letra do tier + nome; número principal; unidade (com ícone, se houver); grupo; posição "#N de M · top X%";
   // mediana; faixa de distribuição (você e mediana); rodapé. Com poucos jogadores (< MIN_PERCENTILE_N): sem percentil, mediana e faixa.
   const SHARES = [];
-  const CARD_TIER = { S: '#fbbf24', A: '#c084fc', B: '#60a5fa', C: '#4ade80', D: '#f87171' };   // D não estava na especificação: vermelho do ranking
+  const CARD_TIER = { S: '#fbbf24', A: '#4ade80', B: '#60a5fa', C: '#c084fc', D: '#f87171' };   // D não estava na especificação: vermelho do ranking
   const FONT = 'Inter, "Segoe UI", system-ui, sans-serif';
   const SHIELD = 'M50 175 Q160 150 205 90 Q330 20 512 20 Q700 20 820 85 Q870 150 972 172 L972 1250 Q972 1330 900 1390 Q760 1470 512 1520 Q260 1470 124 1390 Q50 1330 50 1250 Z';
   const shareBtn = r => scored(r) ? '<div class="shr"><button type="button" class="rk-share" data-share="' + (SHARES.push(r) - 1) + '" title="' + esc(tr('share_tip')) + '">' + tr('share') + '</button></div>' : '';
@@ -430,7 +430,14 @@
       words.forEach(w => { const test = ln ? ln + ' ' + w : w; if (width(test, 600, 28) > 800 && ln) { parts([{ t: ln, w: 600, a: .75 }], 112, y, 28, TEXT, 'left'); ln = w; y += 34; } else ln = test; });
       if (ln) parts([{ t: ln, w: 600, a: .75 }], 112, y, 28, TEXT, 'left');
     }
-    parts([{ t: 'Classificador', w: 900 }, { t: ' · lucasporfz.github.io/classificador', w: 700 }], 512, 1374, 30, TEXT, 'center');
+    // rodapé: logo à esquerda do nome + link, o conjunto centralizado (sem a logo, só o texto)
+    const foot = [{ t: 'Classificador', w: 900 }, { t: ' · lucasporfz.github.io/classificador', w: 700 }], logo = LOCAL_FILE ? null : await loadImg('brand/marca/logo-180.png');   // em file:// a imagem sujaria o canvas e o toBlob falharia
+    // o escudo afunila no rodapé (~800 px úteis em y≈1370): o conjunto cabe em 680 px, encolhendo fonte e logo juntos
+    let fs = 30; const footW = sz => (logo ? sz * 1.73 + 12 : 0) + foot.reduce((a, p) => a + width(p.t, p.w, sz), 0);
+    while (fs > 20 && footW(fs) > 680) fs -= 1;
+    const lw = logo ? Math.round(fs * 1.73) : 0, lg = logo ? 12 : 0, fx = 512 - footW(fs) / 2;
+    if (logo) { c.imageSmoothingEnabled = true; c.drawImage(logo, fx, 1374 - fs * .36 - lw / 2, lw, lw); }
+    parts(foot, fx + lw + lg, 1374, fs, TEXT, 'left');
     return new Promise(res => cv.toBlob(res, 'image/png'));
   }
   async function doShare(btn) {
