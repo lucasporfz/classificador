@@ -2215,6 +2215,33 @@ export const CASES = [
   ...['03:12:57', '03:12:59'].map(ts => C(`weapon-element-pierce/nimmersatt-control-${ts}`,
     'Nimmersatt Breeding Grounds server log.txt', 'Nimmersatt Breeding Grounds local chat.txt', ts,
     sharedCountCheck({ arrow: 1, spell: 1, rune: 0, grenade: 0 }), '21/Nov/2026')),
+  // fix-mage-false-aa (23/Nov/2026). A: explosao do Death Echo de um alvo so, em overkill
+  // (`rhindeer 905 OK`, XP logo depois), com eco `rhindeer 453` x2 na metade exata em :18
+  // (M-016d-1 + D-011c). A varinha da sessao bate 108; o maior AA de mage do corpus e 290.
+  C('mage-false-aa/ingol3-16:54:17', 'ingol 3 uptime Server Log.txt', 'ingol 3 uptime Local Chat.txt', '16:54:17',
+    t => spellNoAaCheck(3, 'Death Echo')(t) || deathEchoStagesCheck(1, 2)(t), '23/Nov/2026'),
+  // B: dodge de dano zero nao tem crit-state e nao forma fronteira com o primeiro hit
+  // (Dodge de Hazard). kim: `exevo gran vis lux` em :05, `nighthunter 2856 CRIT` + dodge.
+  // picture (knight): `exori min` em :27, dodge do sabretooth + `gore horn` 2281/2240 CRIT.
+  C('mage-false-aa/kim-16:26:05', 'kim server log.txt', 'kim local chat.txt', '16:26:05',
+    spellNoAaCheck(2, 'Great Energy Beam'), '14/Jul/2026'),
+  C('mage-false-aa/picture-20:49:27', 'picture server log.txt', 'picture local chat.txt', '20:49:27',
+    spellNoAaCheck(3, 'Front Sweep')),
+  // C: AA de sorcerer/druid acima de 400 e invalido (V-016a). Os tres sao o primeiro golpe de
+  // uma sessao com o log cortado, sem cast do dono que os explique: borda (T-007), nao AA.
+  ...[
+    ['dlc-ms-21:52:34', 'dlc ms Server Log.txt', 'dlc ms Local Chat.txt', '21:52:34', '17/Jul/2026'],
+    ['hakka-21:53:00', 'Hakka Server Log.txt', 'Hakka Local Chat.txt', '21:53:00', '11/Jun/2026'],
+    ['hakka-21:56:25', 'Hakka Server Log.txt', 'Hakka Local Chat.txt', '21:56:25', '11/Jun/2026'],
+  ].map(([id, sv, lc, ts, date]) => C(`mage-false-aa/${id}`, sv, lc, ts, t => {
+    const c = counts(t);
+    return (t.partialEdge === true && t.partialEdgeMissingEvidence === true && c.arrow === 0)
+      ? null
+      : `esperado borda sem AA; status=${t.status} reason=${t.reason} partialEdge=${t.partialEdge} partialEdgeMissingEvidence=${t.partialEdgeMissingEvidence} A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+  }, date)),
+  // Controle de V-016a: o maior AA real de mage do corpus (`crypt mage 290` critico) continua AA.
+  C('mage-false-aa/control-ms-boss-20:47:43', 'ms boss server log.txt', 'ms boss local chat.txt', '20:47:43',
+    sharedCountCheck({ arrow: 1, spell: 0, rune: 15, grenade: 0 }), '12/Jun/2026'),
   ...SHARED_UNIFIED_GOLDEN_CASES.map(c => C(c.id, c.server, c.local, c.ts, sharedCountCheck(c.expected), c.date)),
 ];
 

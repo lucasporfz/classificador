@@ -32,8 +32,15 @@ const EXPECTED = [
     [8506, 1334, 666]]],
   ['ms devoted Server Log.txt', 'ms devoted Local Chat.txt', 1, [[128, 1114, 556], [686, 1099, 550], [822, 1432, 715],
     [921, 1114, 556], [1113, 1114, 556], [1501, 1122, 561], [1832, 1349, 674], [2381, 1321, 660], [2581, 1357, 679],
-    [2639, 1099, 550], [2871, 1414, 706], [3404, 1340, 669], [4890, 2534, 1267], [5085, 1403, 702], [6565, 1349, 674],
+    // 2652: emenda de 23/Nov/2026 (fix-mage-false-aa), blast so de overkill em 03:07:37.
+    [2639, 1099, 550], [2652, 1340, 669], [2871, 1414, 706], [3404, 1340, 669], [4890, 2534, 1267], [5085, 1403, 702], [6565, 1349, 674],
     [6885, 1357, 679], [8157, 1118, 559], [8598, 3061, 1531]]],
+  // fix-mage-false-aa (23/Nov/2026): fixture nova. Os 9 golpes tem eco na metade exata 1 s depois
+  // no log; o 1766 (`rhindeer 905`, 16:54:17) e a explosao de um alvo so, que so entra na prova pela
+  // emenda (janela so de overkill).
+  ['ingol 3 uptime Server Log.txt', 'ingol 3 uptime Local Chat.txt', 0, [[474, 1031, 516], [875, 1760, 879],
+    [1766, 905, 453], [4456, 957, 479], [5402, 918, 459], [5694, 951, 476], [6220, 898, 448], [6267, 905, 453],
+    [6338, 1031, 516]]],
   // As outras 6 sessoes das 8 fixtures em que o dono lanca `exevo mort ora`: nenhum golpe sai.
   ['alumnishocks server log.txt', 'alumnishocks localchat.txt', 0, []],
   ['alumnishocks 2 server log.txt', 'alumnishocks 2 localchat.txt', 0, []],

@@ -503,6 +503,20 @@
       const primaryWindow = [cast.ts - 1, cast.ts]
         .flatMap(ts => hitsByTs.get(ts) || [])
         .filter(h => !delayedByHit.has(h.id) && !h.overkill && !h.zeroDamageDodge);
+      // D-011c, emenda de 23/Nov/2026: blast so de overkill. Com a janela vazia, entra nela o
+      // golpe overkill que tem, 1-2 s depois e depois dele no log, um hit nao-overkill e
+      // nao-dodge do mesmo mob e estado com a metade (+-1) do dano mostrado. E so o filtro de
+      // entrada: a prova e a desmarcacao de D-011c seguem iguais, ao fim da prova. Caso-prova:
+      // `ingol 3 uptime` 16:54:17, explosao `rhindeer 905 OK` e eco `rhindeer 453` x2.
+      if (!primaryWindow.length) {
+        primaryWindow.push(...[cast.ts - 1, cast.ts]
+          .flatMap(ts => hitsByTs.get(ts) || [])
+          .filter(h => !delayedByHit.has(h.id) && !h.zeroDamageDodge && h.overkill
+            && [1, 2].some(d => (hitsByTs.get(h.ts + d) || []).some(e => !e.overkill && !e.zeroDamageDodge
+              && (e.seq || 0) > (h.seq || 0)
+              && normalizeName(e.mob) === normalizeName(h.mob) && elementalStateKey(e) === elementalStateKey(h)
+              && Math.abs(e.dmg - h.dmg / 2) <= 1))));
+      }
       if (!primaryWindow.length) continue;
       const primaryTerminal = Math.max(...primaryWindow.map(h => h.ts));
       // M-016d/M-016e: delays candidatos são tentados em ordem; o primeiro

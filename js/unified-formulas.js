@@ -11,7 +11,7 @@
  */
 (function(root) {
   'use strict';
-  const VERSION = 'unified-fd8c360e7363';
+  const VERSION = 'unified-1fcca8725ed6';
   const CUTOFF_KEY = 20260616;
   const PRE_CUTOFF_EXPOSE_WEAKNESS_MANA_LEECH_BONUS = 0.02;
   const ELEMENT_KEYS = {

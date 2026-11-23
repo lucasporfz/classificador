@@ -1670,8 +1670,20 @@
     return componentCritState(h);
   }
 
+  // V-016a (23/Nov/2026, decisao do usuario): AA de sorcerer/druid com hit de dano mostrado
+  // acima de 400 e invalido. Maior AA real de mage do corpus: 290 (critico); os cinco acima
+  // disso eram spell ou borda (reports/mage-aa-max/result.txt). Overkill so subestima o real.
+  const MAGE_AA_DAMAGE_CEILING = 400;
+  function mageAaAboveCeiling(block, context) {
+    const vocation = context && context.vocation;
+    if (vocation !== 'sorcerer' && vocation !== 'druid') return false;
+    return !!(block && (block.hits || []).some(h => (+h.dmg || 0) > MAGE_AA_DAMAGE_CEILING));
+  }
+
   function firstHitCritStateBoundary(hits) {
-    const main = (hits || []).filter(isMainHit);
+    // Dodge de Hazard, emenda de 23/Nov/2026: dodge de dano zero nao tem crit-state e nao
+    // forma fronteira (`kim` 16:26:05, beam critico + dodge; `picture` 20:49:27).
+    const main = (hits || []).filter(isMainHit).filter(h => !h.zeroDamageDodge);
     if (main.length < 2) return false;
     const first = main[0];
     const suffix = main.slice(1);
@@ -2493,6 +2505,7 @@
     for (const block of candidate.components) {
       const count = block.hits.length;
       if (block.comp === 'arrow' && count > 1 && (!isRp || isBoss)) violations.push({ rule: 'M-031/M-032/V-006', reason: 'multiple_arrow_hits_not_allowed', block });
+      if (block.comp === 'arrow' && mageAaAboveCeiling(block, context)) violations.push({ rule: 'V-016a', reason: 'mage_aa_above_ceiling', block });
       if (isBoss && block.comp !== 'arrow' && count > 1) violations.push({ rule: 'M-009/V-006', reason: 'boss_multi_hit_single_action', block });
       if (!isBoss && block.comp === 'grenade' && count === 1 && candidate.components.length > 1) violations.push({ rule: 'M-030/M-026', reason: 'grenade_isolated_single_hit_in_pack', block });
       if (isSingleTargetAction(block.comp, block.action) && count > 1) violations.push({ rule: 'M-006/M-033', reason: 'single_target_multi_hit', block });
@@ -4018,6 +4031,7 @@
     sameMobStateExactnessForHits,
     firstHitSeparationFixesSameMobExactness,
     firstHitCritStateBoundary,
+    mageAaAboveCeiling,
     isBeamAction,
     validateBeamSublineBlock,
     elementalBlockTolerance,

@@ -54,6 +54,7 @@
     shouldForceA1ByLeech,
     firstHitSharesExactOriginalWithRest,
     firstHitCritStateBoundary,
+    mageAaAboveCeiling,
     firstHitSeparationFixesSameMobExactness,
     isBeamAction,
     validateBeamSublineBlock,
@@ -484,6 +485,13 @@
       }
     }
 
+    // V-016a: AA de sorcerer/druid acima do teto nao existe; nenhuma heuristica acima o confirma.
+    const aaAboveCeiling = defs => defs.some(d => d.comp === 'arrow' && mageAaAboveCeiling(d, context));
+    if (chosen !== allSpell && aaAboveCeiling(chosen)) {
+      chosen = allSpell;
+      reason = 'mage_aa_above_ceiling_blocks_split';
+    }
+
     // Se o candidato a AA (primeiro hit) tem o MESMO mob, MESMO estado de
     // modificadores (EW/prey/crit/Low Blow/Onslaught) e MESMO dano de algum hit
     // que ficaria no bloco do sufixo, esses dois hits são mecanicamente o mesmo
@@ -876,7 +884,7 @@
       const alternateReason = (chosenHasAaBoundary ? 'ek_all_spell' : 'ek_positional_aa_first_hit')
         + '_confirmed_by_deterministic_validation_after_hard_veto';
       const altPicked = buildValidatedDefs(alternate, alternateReason);
-      if (altPicked && !altPicked.hardVeto) {
+      if (altPicked && !altPicked.hardVeto && !aaAboveCeiling(alternate)) {
         picked = altPicked;
         reason = alternateReason;
       } else {
