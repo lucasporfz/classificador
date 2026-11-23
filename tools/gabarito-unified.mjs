@@ -1770,6 +1770,51 @@ export const CASES = [
       ? null
       : `esperado Divine Caldera; got ${spell && spell.actionLabel || '-'}`;
   }),
+  // D-021a/D-022b + C-006 (change fix-bounty-mob-mana-charm-detection): `drone darklight` S0
+  // (05/Oct/2026, log do ranking `2021672d`). O `darklight emitter` é a criatura do Bounty
+  // (todo golpe nele tem a marca) e tem Void's Call +1,6%; com mana 16% a mana fecha exata
+  // golpe a golpe no N de cada componente (D-023). Os dois últimos são colaterais aprovados
+  // em 22/Nov/2026 (no HEAD a mana deles ficava abaixo do esperado).
+  ...[
+    ['07:26:50', 5, 2, 0, 'Ethereal Barrage'],
+    ['07:26:57', 6, 0, 0, null],
+    ['07:27:17', 6, 9, 7, 'Ethereal Barrage'],
+    ['07:27:19', 8, 8, 0, 'Divine Caldera'],
+    ['07:27:21', 8, 8, 0, 'Ethereal Barrage'],
+    ['07:27:23', 4, 0, 0, null],
+    ['07:27:37', 5, 4, 0, 'Ethereal Barrage'],
+    ['07:30:37', 4, 5, 0, 'Divine Caldera'],
+    ['07:33:02', 4, 4, 0, 'Ethereal Barrage'],
+    ['07:34:28', 8, 8, 0, 'Ethereal Barrage'],
+    ['07:26:33', 5, 7, 0, 'Ethereal Barrage'],
+    ['07:29:32', 7, 7, 0, 'Ethereal Barrage'],
+  ].map(([ts, arrow, spell, grenade, label]) =>
+    C(`drone darklight/${ts}`, 'drone darklight Server Log.txt', 'drone darklight Local Chat.txt', ts, turn => {
+      const c = counts(turn);
+      if (!(c.arrow === arrow && c.spell === spell && c.rune === 0 && c.grenade === grenade)) {
+        return `esperado A${arrow} S${spell} G${grenade}; got A${c.arrow} S${c.spell} R${c.rune} G${c.grenade}`;
+      }
+      if (!label) return null;
+      const comp = turn.components.find(x => x.comp === 'spell');
+      return comp && String(comp.actionLabel || '').includes(label) ? null : `esperado ${label}; got ${comp && comp.actionLabel || '-'}`;
+    }, '05/Oct/2026')),
+  // C-006/D-021a, colaterais do desempate do nível do charm aprovados em 22/Nov/2026
+  // (fix-bounty-mob-mana-charm-detection). `Hakka` S16: Void's Call +1,6% no rootthing
+  // nutshell; com 16 alvos a mana fecha exata nos três mobs (nutshell 52, bug tracker 47,
+  // amber shaper 47). `ms boss` S5/S18: o golpe de 128/131 no crypt mage (prey) é muito menor
+  // que os da Energy Wave (1500–1800) e a mana 18 fecha exata em N=1, logo é auto ataque.
+  C('Hakka/22:21:06-eternal-winter-16', 'Hakka Server Log.txt', 'Hakka Local Chat.txt', '22:21:06',
+    sharedCountCheck({ arrow: 0, spell: 16, rune: 0, grenade: 0 }), '11/Jun/2026'),
+  C('ms boss/21:39:07-aa-energy-wave', 'ms boss server log.txt', 'ms boss local chat.txt', '21:39:07',
+    sharedCountCheck({ arrow: 1, spell: 5, rune: 0, grenade: 0 }), '10/Jun/2026'),
+  C('ms boss/17:55:02-aa-energy-wave', 'ms boss server log.txt', 'ms boss local chat.txt', '17:55:02',
+    sharedCountCheck({ arrow: 1, spell: 5, rune: 0, grenade: 0 }), '11/Jun/2026'),
+  // `ms boss` S19 18:09:16: o golpe de 130 no roaming dread é muito menor que os do Great Fire
+  // Wave (973–1000), então é auto ataque. FALHA CONHECIDA desde 22/Nov/2026: com o charm a
+  // +1,6% o voto da taxa base (ordem ok-first) leva a mana da sessão a 9% (106 acima) e o motor
+  // dá GFW 6. Pendência do voto da base, aceita pelo usuário (tools/known-failures.json).
+  C('ms boss/18:09:16-aa-great-fire-wave', 'ms boss server log.txt', 'ms boss local chat.txt', '18:09:16',
+    sharedCountCheck({ arrow: 1, spell: 5, rune: 0, grenade: 0 }), '11/Jun/2026'),
   // M-040 — perk de pierce fisico da arma, fixture `moonsilver` (RP, pack de 5 mobs,
   // 26/Ago/2026). Sem o perk a sessao fica com 78 de 192 turnos sem classificacao; em 77
   // deles o motor JA enumera o corte certo e o descarta so porque a intersecao fisica do

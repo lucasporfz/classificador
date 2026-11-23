@@ -314,6 +314,11 @@ const procs = (dmg, count, marked, gravSanMultiplier = 1) =>
   assert.equal(life.source, 'bounty_candidate_tie_or_insufficient_evidence');
   assert.equal(life.level, null);
   assert.equal(life.ranked[0].exact, life.ranked[1].exact, 'empate no topo do ranking de Life');
+  // C-006/D-021a (change fix-bounty-mob-mana-charm-detection, 22/Nov/2026): com o desempate
+  // do nível por exatos, o Vampiric Embrace de `converter` sai +3,2% (vida 1289 exatos contra
+  // 1269 em +2,4%), o nível que os hits sem marca já apontavam.
+  assert.equal(result.leechSetup.vampiricMob, 'converter');
+  assert.ok(Math.abs(result.leechSetup.vampiricBonus - 0.032) < 1e-9, 'Vampiric Embrace +3,2% em converter: ' + result.leechSetup.vampiricBonus);
   const fallback = damage.fallbackConfirmation;
   if (fallback && fallback.confidence !== 'unknown') {
     assert.equal(fallback.contradictions, 0, 'fallback só confirma com unanimidade');

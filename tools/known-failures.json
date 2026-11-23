@@ -5,6 +5,11 @@
     "reason": "Limite declarado em S-014f (boss unitario, 3 hits, unresolved)."
   },
   {
+    "target": "gabarito prioritario + invariantes mecanicas",
+    "signature": "FAIL ms boss/18:09:16-aa-great-fire-wave:",
+    "reason": "Pendencia aceita em 22/Nov/2026 (fix-bounty-mob-mana-charm-detection): com Void's Call +1,6% o voto ok-first da taxa base leva a mana de ms boss S19 a 9% e o motor da GFW 6 em vez de AA1 + GFW5."
+  },
+  {
     "target": "tests/experimental-ui-parity.test.mjs",
     "signature": "tests/experimental-ui-parity.test.mjs ",
     "reason": "Pre-existente: assert {arrow:0} contra {arrow:1,rune:1}."

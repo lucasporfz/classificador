@@ -578,9 +578,10 @@
       if (!turn || turn.status === 'unresolved') continue;
       for (const comp of turn.components || []) {
         if (!comp || comp.comp === 'unresolved') continue;
-        // Enquanto o nível de dano Bounty ainda é unknown, a razão leech/dano
-        // desse hit não é comparável aos demais mobs do componente.
-        const hits = (comp.hits || []).filter(h => isMainHit(h) && !h.overkill && h.dmg > 0 && !h.bountyTalisman);
+        // D-022b/D-021a: hit marcado por Bounty entra no componente. A vida o pula (o Bounty
+        // Life infla a vida e viraria charm falso); a mana usa `leechDamageBasis`, que divide
+        // pelo Bounty Damage e devolve 0 enquanto o nível é unknown (o hit sai sozinho).
+        const hits = (comp.hits || []).filter(h => isMainHit(h) && !h.overkill && h.dmg > 0);
         if (new Set(hits.map(h => normalizeName(h.mob))).size < 2) continue;
         // D-023: a razão leech/dano de cada hit já vem diluída por areaFactor(N) do
         // componente. Guardar esse N permite converter o delta em bônus por observação
@@ -591,6 +592,7 @@
           const cfg = perChannel[channel];
           const byMob = new Map();
           for (const h of hits) {
+            if (channel === 'life' && h.bountyTalisman) continue;
             const leech = +h[cfg.key] || 0;
             if (!(leech > 0)) continue;
             const basis = leechDamageBasis(h, context);
@@ -711,10 +713,17 @@
               baseLow: baseScore.low,
               improvement: score.ok - baseScore.ok,
               fixedHigh: Math.max(0, baseScore.high - score.high),
+              exact: score.exact,
             };
+            // C-006/D-021a: contradições corrigidas, depois encaixes, depois mais exatos; no
+            // empate total entre níveis do mesmo mob vence o mais alto (o mais provável no jogo).
+            const tiedOnFixesAndFits = bestPick && candidate.fixedHigh === bestPick.fixedHigh
+              && candidate.improvement === bestPick.improvement;
             if (!bestPick
               || candidate.fixedHigh > bestPick.fixedHigh
-              || (candidate.fixedHigh === bestPick.fixedHigh && candidate.improvement > bestPick.improvement)) {
+              || (candidate.fixedHigh === bestPick.fixedHigh && candidate.improvement > bestPick.improvement)
+              || (tiedOnFixesAndFits && candidate.exact > bestPick.exact)
+              || (tiedOnFixesAndFits && candidate.exact === bestPick.exact && candidate.mob === bestPick.mob && bonus > bestPick.bonus)) {
               bestPick = candidate;
             }
           }
